@@ -1,0 +1,114 @@
+/* ============================================================
+   Mobile & touch refinements  —  Department of Posts, Karur Sub Division
+   Shared across the Leave Orders module pages
+   (index / employees / office-management / arrangements).
+   Loaded AFTER each page's <style> so equal-specificity rules win.
+   ============================================================ */
+
+/* Native-feeling text sizing + kill the grey tap flash */
+html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+*{ -webkit-tap-highlight-color:rgba(0,0,0,0); }
+
+/* Media assets never blow out the layout */
+img,svg,video,canvas{ max-width:100%; }
+
+/* Smooth momentum scrolling for any inner scrollers */
+.olist,.tbl-wrap,.content,.switch{ -webkit-overflow-scrolling:touch; }
+
+/* ------------------------------------------------------------
+   APP-SWITCHER  —  breakpoint-free safety net.
+   The pill row stays full when it fits (desktop) and quietly
+   becomes a horizontal swipe strip the moment it doesn't
+   (laptops, tablets, phones) — so it can never push the page wide.
+   ------------------------------------------------------------ */
+.appbar{ flex-wrap:wrap; }
+.appbar .switch{
+  min-width:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+  scroll-snap-type:x proximity;
+  -webkit-overflow-scrolling:touch;
+}
+.appbar .switch::-webkit-scrollbar{ display:none; }
+.appbar .pill{
+  flex:0 0 auto;
+  white-space:nowrap;
+  scroll-snap-align:start;
+}
+
+/* ------------------------------------------------------------
+   TABLET & BELOW (<= 900px)
+   Any data table scrolls inside itself instead of pushing the page.
+   ------------------------------------------------------------ */
+@media (max-width:900px){
+  main table{
+    display:block;
+    width:100%;
+    max-width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+}
+
+/* ------------------------------------------------------------
+   PHONES  (<= 760px)
+   ------------------------------------------------------------ */
+@media (max-width:760px){
+
+  /* ---- Switcher: full-width strip that bleeds to the edges ---- */
+  .appbar{
+    padding:8px 14px;
+    gap:8px 10px;
+    row-gap:8px;
+  }
+  .appbar .switch{
+    margin-left:0;
+    width:100%;
+    margin-right:-14px;        /* natural edge-to-edge swipe */
+    padding-right:14px;
+  }
+  .appbar .pill{
+    display:inline-flex;
+    align-items:center;
+    min-height:40px;           /* comfortable touch target */
+    padding:6px 14px;
+  }
+
+  /* ---- Header: tighter, no oversized type ---- */
+  header{ padding:16px 16px; }
+  header h1{ font-size:17px; line-height:1.2; }
+  header .sub{ font-size:11.5px; }
+  .header-inner{ gap:10px; }
+  .privacy{ margin-left:0; }
+
+  /* ---- Content gutters ---- */
+  main{ padding-left:14px; padding-right:14px; }
+  .card{ padding:16px; border-radius:14px; }
+
+  /* ---- Form controls shrink to the screen (a <select> otherwise
+          stretches to its longest option and overflows) ---- */
+  .builder{ flex-wrap:wrap; }
+  .field{ min-width:0; }
+  .field input,.field select,.field textarea{ width:100%; max-width:100%; }
+
+  /* ---- Comfortable tap targets for the common controls ---- */
+  button.btn,
+  .viewtabs button,
+  .seg button,
+  input.search,
+  select.pick{ min-height:42px; }
+
+  /* ---- 16px form text stops iOS from auto-zooming on focus ---- */
+  input,select,textarea{ font-size:16px !important; }
+}
+
+/* ------------------------------------------------------------
+   SMALL PHONES  (<= 430px) — reclaim a little more space
+   ------------------------------------------------------------ */
+@media (max-width:430px){
+  .appbar{ font-size:12px; }
+  header h1{ font-size:16px; }
+  .card{ padding:14px; }
+}

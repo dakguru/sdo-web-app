@@ -364,20 +364,27 @@
     .stat .v{font-size:22px}
     .builtby{font-size:17px}
   }
+
+  /* App switcher bar (shared classes; responsive rules live in mobile.css) */
+  .appbar{background:#1e3a5f;color:#fff;padding:9px 22px;display:flex;align-items:center;gap:14px;font:600 12.5px/1.2 'Inter',-apple-system,'Segoe UI',sans-serif;letter-spacing:.2px}
+  .appbar .switch{margin-left:auto;display:flex;gap:6px;padding:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px}
+  .appbar .pill{padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none}
+  .appbar .pill.active{color:#1e3a5f;background:#fff}
 </style>
+<link rel="stylesheet" href="/leave-orders/mobile.css">
 </head>
 <body>
 <!-- App switcher bar -->
-<div style="background:#1e3a5f;color:#fff;padding:9px 22px;display:flex;align-items:center;gap:14px;font:600 12.5px/1.2 'Inter',-apple-system,'Segoe UI',sans-serif;letter-spacing:.2px">
+<div class="appbar">
   <a href="/" style="opacity:.85;color:#fff;text-decoration:none;font-weight:700;display:flex;align-items:center;gap:6px">&#x1F3E0; Home</a>
   <span style="opacity:.4">|</span>
   <span style="opacity:.72">Department of Posts &middot; Karur Sub Division</span>
-  <div style="margin-left:auto;display:flex;gap:6px;padding:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px">
-    <span style="padding:5px 12px;font-size:12.5px;font-weight:600;color:#1e3a5f;background:#fff;border-radius:6px">Sub Divisional Manager</span>
-    <a href="/employees" style="padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none">Employee Directory</a>
-    <a href="/office-management" style="padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none">Office Management</a>
-    <a href="/arrangements" style="padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none">Temporary Arrangements</a>
-    <a href="/ir-builder/" style="padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none">Inspection Reports &rarr;</a>
+  <div class="switch">
+    <span class="pill active">Sub Divisional Manager</span>
+    <a class="pill" href="/employees">Employee Directory</a>
+    <a class="pill" href="/office-management">Office Management</a>
+    <a class="pill" href="/arrangements">Temporary Arrangements</a>
+    <a class="pill" href="/ir-builder/">Inspection Reports &rarr;</a>
   </div>
 </div>
 <header>
@@ -485,6 +492,144 @@ const NOTES = [
   "2. The appointment of substitutes by the GDS is approved on the clear understanding that the substitute may be discharged by the undersigned or by the appointing authority in case of BPMs at any time without assigning any reason.",
   "3. The substitutes are entitled only to the minimum of the TRCA applicable to GDS.",
 ];
+
+/* ============================================================
+   EARNED-LEAVE / CASUAL-LEAVE  —  official substitute-arrangement
+   format (memo header + justification paras + GDS details joined
+   from the staff database).  Other leave types keep the format above.
+   ============================================================ */
+
+// Column set for the EL/CL substitute sheets.
+const ELCL_COL_HEADERS = [
+  "Sl No","Emp_ID","Emp_Name","Designation","Office_Name",
+  "Start_Date","End_Date","No._Of_Days",
+  "Name of the GDS","Designation and Office of GDS","GDS_ID","DOB","DCCS",
+];
+
+// Justification paragraphs — vary between EL and CL.
+const ELCL_NOTES = {
+  EL:[
+    "1. The employment of substitute was absolutely essential to carry out the work of those who were granted EL/ Commute leave/ Maternity Leave",
+    "2. No LR Postman/Group D candidate was available and that the nature of the work was such that the EL/ Commuted leave/ Maternity Leave could not be managed without employment of whole time substitute.",
+    "3. Particulars furnished on the statement was checked and found correct",
+  ],
+  CL:[
+    "1. The employment of substitute was absolutely essential to carry out the work of those who were granted Casual Leave",
+    "2. No LR Postman/Group D candidate was available and that the nature of the work was such that the Casual Leave could not be managed without employment of whole time substitute.",
+    "3. Particulars furnished on the statement was checked and found correct",
+  ],
+};
+
+// Memo prefix + banner leave-type label per kind.
+const ELCL_META = {
+  EL:{ memoPrefix:"ASP/Postman & MTS EL", banner:"Earned Leave/ Comm. Leave/ ML" },
+  CL:{ memoPrefix:"ASP/Postman & MTS CL", banner:"Casual Leave (CL)" },
+};
+
+// Classify a leave-type group into the special EL / CL format (else null).
+function elclKind(name){
+  const n = norm(name).toLowerCase();
+  if(/casual\s*leave/.test(n)) return "CL";
+  if(/earned\s*leave/.test(n) || /\bel\b/.test(n)) return "EL";
+  return null;
+}
+
+// "July 2026" -> "JULY 26" for the memo line.
+function monShortUpper(leaveMonth){
+  const m = norm(leaveMonth).match(/^([A-Za-z]+)\s+(\d{4})$/);
+  if(m) return `${m[1].toUpperCase()} ${m[2].slice(-2)}`;
+  return norm(leaveMonth).toUpperCase();
+}
+
+/* ---------- GDS (substitute) directory ----------
+   Sourced from the same live staff directory the Employee Directory uses
+   (Supabase), so DOB / DCCS / Designation are always current. Falls back to
+   the local staff.json snapshot if the cloud directory can't be reached.
+   Every entry is normalised to { name, desig, office, dob, dccs } and keyed
+   by the GDS / employee id. */
+const GDS_BY_ID = new Map();
+
+const GDS_SUPABASE_URL = "https://hfzbvqpxraeoqmvhtjto.supabase.co/rest/v1";
+const GDS_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhmemJ2cXB4cmFlb3Ftdmh0anRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NDc4NDUsImV4cCI6MjEwMDUyMzg0NX0.kPcH1_YyWD32syqD2NBKWZpAVRds-SpwPTiXPpi6nIw";
+
+function gdsPut(id, entry){ const k = norm(id); if(k) GDS_BY_ID.set(k, entry); }
+
+async function loadGdsFromSupabase(){
+  const url = `${GDS_SUPABASE_URL}/app_datasets?type=in.(GDS,DS)&select=type,payload`;
+  const res = await fetch(url, { headers:{ apikey:GDS_SUPABASE_KEY, Authorization:`Bearer ${GDS_SUPABASE_KEY}` } });
+  if(!res.ok) throw new Error("Supabase HTTP "+res.status);
+  const rows = await res.json();
+  let n = 0;
+  for(const row of rows){
+    let arr = []; try{ arr = JSON.parse(row.payload); }catch(e){}
+    (Array.isArray(arr)?arr:[]).forEach(r=>{
+      const id = r.employeeId || r.employee_id || r.Employee_id;
+      gdsPut(id, {
+        name:   norm(r.name || r.Employee_name),
+        desig:  norm(r.designation || r.post_desc || r.Post_desc),
+        office: norm(r.officeName || r.office_desc || r.Office_desc || r.office),
+        dob:    r.dateOfBirth || r.Date_of_birth || r.dob,
+        dccs:   r.dateOfJoin  || r.Date_of_join  || r.doa,
+      });
+      n++;
+    });
+  }
+  if(!n) throw new Error("Supabase returned no staff records");
+  return n;
+}
+
+async function loadGdsFromLocal(){
+  const candidates = ["/data/staff.json","staff.json","../app/data/staff.json","/app/data/staff.json"];
+  for(const u of candidates){
+    try{
+      const res = await fetch(u, {cache:"no-store"});
+      if(!res.ok) continue;
+      const list = await res.json();
+      (Array.isArray(list)?list:[]).forEach(s=>gdsPut(s.employee_id, {
+        name:   norm(s.name),
+        desig:  norm(s.post_desc) || norm(s.designation),
+        office: norm(s.office_desc) || norm(s.office),
+        dob:    s.dob,
+        dccs:   s.doa,
+      }));
+      if(GDS_BY_ID.size) return GDS_BY_ID.size;
+    }catch(e){}
+  }
+  return 0;
+}
+
+const GDS_READY = (async () => {
+  try{
+    const n = await loadGdsFromSupabase();
+    console.log(`GDS directory: ${n} records from Supabase (live staff directory).`);
+    return;
+  }catch(e){
+    console.warn("Cloud staff directory unavailable, trying local snapshot…", e.message||e);
+  }
+  try{
+    const n = await loadGdsFromLocal();
+    if(n) console.log(`GDS directory: ${n} records from local staff.json.`);
+    else console.warn("GDS staff directory not available — DOB/DCCS/Designation will be blank.");
+  }catch(e){
+    console.warn("GDS staff directory not available — DOB/DCCS/Designation will be blank.", e);
+  }
+})();
+
+// Look up a person's designation/office, DOB and DCCS by their id
+// (works for both the leave-taking employee and the substitute GDS).
+function gdsInfo(id, fmt){
+  const s = GDS_BY_ID.get(norm(id));
+  if(!s) return { desig:"", office:"", desigOffice:"", dob:"", dccs:"", name:"" };
+  const desigOffice = [s.desig, s.office].filter(Boolean).join(", ");
+  return {
+    desig: s.desig,
+    office: s.office,
+    desigOffice,
+    dob:  fmtDate(parseDate(s.dob), fmt),
+    dccs: fmtDate(parseDate(s.dccs), fmt),
+    name: s.name,
+  };
+}
 
 /* ---------- Karur Sub Division offices (from Office Id in APT.xlsx) ---------- */
 const KARUR_SUB_DIV_OFFICES = [
@@ -795,6 +940,7 @@ async function handleFile(file){
       const rec = {
         empId:   empIdRaw,
         empName: empName,
+        leaveType,                // raw per-row leave type (for EL/CL substitute sheets)
         officeName,
         officeId,
         startDate: sd,
@@ -1160,6 +1306,137 @@ const HO_FILL = {
 // leave-order sheets (Palatino Linotype throughout).
 const DOC_FONT = "Palatino Linotype";
 
+// EL / CL substitute-arrangement sheet (13 cols, GDS details from staff DB).
+function renderELCLSheet(wb, {g, hoKey, rows, days, hoLabel, kind, leaveMonth, presentDate, office, fmt}){
+  const NCOLS = ELCL_COL_HEADERS.length;
+  const HEADER_ROW = 8;
+  const meta = ELCL_META[kind];
+  const notes = ELCL_NOTES[kind];
+  const klt = hoKey === "kulittalai" ? " (KLT)" : "";
+  const memo = `${meta.memoPrefix} - ${monShortUpper(leaveMonth)}${klt}/dlgs dated at Karur ${presentDate}`;
+
+  const sheetName = safeSheetName(`${hoLabel} - ${g.name}`);
+  const ws = wb.addWorksheet(sheetName,{
+    pageSetup:{
+      orientation:"landscape", paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:0,
+      margins:{left:0.4,right:0.4,top:0.45,bottom:0.45,header:0.2,footer:0.2},
+      printTitlesRow:`${HEADER_ROW}:${HEADER_ROW}`,
+      horizontalCentered:true,
+    },
+    properties:{defaultRowHeight:18},
+  });
+
+  // Letterhead
+  ws.mergeCells(1,1,1,NCOLS);
+  const r1 = ws.getCell(1,1); r1.value = DEPT_LINE;
+  r1.font={bold:true,size:16,color:{argb:"FFFFFFFF"},name:DOC_FONT};
+  r1.alignment={horizontal:"center",vertical:"middle"};
+  r1.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1F3864"}};
+  ws.getRow(1).height=26;
+
+  ws.mergeCells(2,1,2,NCOLS);
+  const r2 = ws.getCell(2,1); r2.value = office;
+  r2.font={bold:true,size:11.5,color:{argb:"FF1F3864"},name:DOC_FONT};
+  r2.alignment={horizontal:"center",vertical:"middle"};
+  r2.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFEEF3FB"}};
+  ws.getRow(2).height=20;
+
+  ws.mergeCells(3,1,3,NCOLS);
+  const r3 = ws.getCell(3,1); r3.value = `Memo No. ${memo}`;
+  r3.font={bold:true,size:11,color:{argb:"FF1F3864"},name:DOC_FONT};
+  r3.alignment={horizontal:"center",vertical:"middle"};
+  r3.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFEEF3FB"}};
+  ws.getRow(3).height=20;
+
+  for(let i=0;i<notes.length;i++){
+    const rr = 4+i;
+    ws.mergeCells(rr,1,rr,NCOLS);
+    const c = ws.getCell(rr,1); c.value = notes[i];
+    c.font={size:12,color:{argb:"FF1A2233"},name:DOC_FONT};
+    c.alignment={horizontal:"left",vertical:"center",wrapText:true,indent:1};
+    ws.getRow(rr).height = i===1?38:20;
+  }
+
+  // Leave type + totals banner
+  ws.mergeCells(7,1,7,NCOLS);
+  const r7 = ws.getCell(7,1);
+  r7.value = `Karur Sub Division - ${leaveMonth}    |    Leave Type: ${meta.banner}    |    Total Records: ${rows.length}    |    Total Days: ${days}`;
+  r7.font={bold:true,size:11.5,color:{argb:"FFFFFFFF"},name:DOC_FONT};
+  r7.alignment={horizontal:"center",vertical:"middle"};
+  r7.fill={type:"pattern",pattern:"solid",fgColor:{argb:HO_FILL[hoKey].color}};
+  ws.getRow(7).height=22;
+
+  // Header row
+  const headerRow = ws.getRow(HEADER_ROW);
+  ELCL_COL_HEADERS.forEach((h,i)=>{
+    const c = headerRow.getCell(i+1);
+    c.value=h;
+    c.font={bold:true,color:{argb:"FFFFFFFF"},size:11,name:DOC_FONT};
+    c.alignment={horizontal:"center",vertical:"middle",wrapText:true};
+    c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1F3864"}};
+    c.border={top:{style:"thin"},bottom:{style:"thin"},left:{style:"thin"},right:{style:"thin"}};
+  });
+  headerRow.height=30;
+
+  const CENTER = new Set([0,1,5,6,7,10,11,12]);
+  const WRAP   = new Set([4,8,9]);
+  const colMaxLen = ELCL_COL_HEADERS.map(h=>String(h).length);
+
+  rows.forEach((r,idx)=>{
+    const emp = gdsInfo(r.empId, fmt);   // leave-taking employee (Col B/C)
+    const g2 = gdsInfo(r.subId, fmt);    // substitute GDS
+    const row = ws.getRow(HEADER_ROW+1+idx);
+    const values = [
+      idx+1, r.empId, r.empName, emp.desig, r.officeName,
+      fmtDate(r.startDate,fmt), fmtDate(r.endDate,fmt),
+      r.noDays===""?"":r.noDays,
+      (r.subName || g2.name), g2.desigOffice, r.subId, g2.dob, g2.dccs,
+    ];
+    values.forEach((v,i)=>{
+      const c = row.getCell(i+1);
+      c.value = v;
+      c.font={size:11,name:DOC_FONT,color:{argb:"FF1A2233"}};
+      c.border={top:{style:"thin",color:{argb:"FFD9D9D9"}},bottom:{style:"thin",color:{argb:"FFD9D9D9"}},left:{style:"thin",color:{argb:"FFD9D9D9"}},right:{style:"thin",color:{argb:"FFD9D9D9"}}};
+      c.alignment = {vertical:"middle",wrapText:WRAP.has(i)};
+      if(CENTER.has(i)) c.alignment={...c.alignment,horizontal:"center"};
+      if(r.manual){
+        c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFF3C7"}};
+      } else if(idx%2===1){
+        c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF2F2F2"}};
+      }
+      if((i===1||i===10) && typeof v==="string" && /^\d+$/.test(v)) c.numFmt = "0";
+      if(i===7 && typeof v==="number") c.numFmt = "0.##";
+      const len = (v==null?"":String(v)).length;
+      if(len>colMaxLen[i]) colMaxLen[i]=len;
+    });
+  });
+
+  // Total row — TOTAL spans cols 1..7, total days in the No._Of_Days column (8)
+  const totalRowIdx = HEADER_ROW+1+rows.length;
+  const tr = ws.getRow(totalRowIdx);
+  ws.mergeCells(totalRowIdx,1,totalRowIdx,7);
+  const tlbl = tr.getCell(1); tlbl.value="TOTAL"; tlbl.alignment={horizontal:"right",vertical:"middle"};
+  tlbl.font={bold:true,size:11,color:{argb:"FF1F3864"},name:DOC_FONT};
+  tlbl.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE7EEF9"}};
+  const tnum = tr.getCell(8); tnum.value=days;
+  tnum.font={bold:true,size:11,color:{argb:"FF1F3864"},name:DOC_FONT}; tnum.alignment={horizontal:"center",vertical:"middle"};
+  tnum.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE7EEF9"}};
+  for(let cc=1;cc<=NCOLS;cc++){
+    const c = tr.getCell(cc);
+    c.border={top:{style:"medium",color:{argb:"FF1F3864"}},bottom:{style:"thin"},left:{style:"thin",color:{argb:"FFD9D9D9"}},right:{style:"thin",color:{argb:"FFD9D9D9"}}};
+    if(cc!==1 && cc!==8){
+      c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE7EEF9"}};
+    }
+  }
+
+  const MINS = [5, 11, 18, 12, 20, 12, 12, 9,  18, 24, 11, 11, 11];
+  const MAXS = [6, 16, 30, 22, 40, 14, 14, 12, 28, 40, 16, 13, 13];
+  ws.columns = ELCL_COL_HEADERS.map((_,i)=>({
+    width: Math.max(MINS[i], Math.min(MAXS[i], colMaxLen[i]+2)),
+  }));
+  ws.views=[{state:"frozen", ySplit:HEADER_ROW}];
+}
+
 async function buildWorkbook(groupsToInclude){
   const fmt = document.getElementById("opt-datefmt").value;
   const office = norm(document.getElementById("opt-office").value);
@@ -1173,17 +1450,27 @@ async function buildWorkbook(groupsToInclude){
   wb.creator = "Sub Divisional Manager — Karur Sub Division";
   wb.created = new Date();
 
+  await GDS_READY;   // ensure the GDS (substitute) directory is loaded for EL/CL sheets
+
   for(const g of groupsToInclude){
     for(const hoKey of ["karur","kulittalai","unknown"]){
       const rows = g.byHO[hoKey];
       if(!rows.length) continue;
       const hoLabel = hoKey==="karur"?"Karur HO":hoKey==="kulittalai"?"Kulittalai HO":"Unknown";
+      const days = g.daysByHO[hoKey];
+
+      // Earned Leave / Casual Leave use the official substitute-arrangement format.
+      const kind = elclKind(g.name);
+      if(kind){
+        renderELCLSheet(wb, {g, hoKey, rows, days, hoLabel, kind, leaveMonth, presentDate, office, fmt});
+        continue;
+      }
+
       let catName = g.name.replace(/-/g, ' ');
       if (g.name === 'Training') catName = 'GDS Training';
       else if (g.name === 'LWA') catName = 'GDS LWA';
       const klt = hoKey === "kulittalai" ? " (KLT)" : "";
       const memo = `KRR/${catName} - ${leaveMonth}${klt}/dlgs dated at Karur ${presentDate}`;
-      const days = g.daysByHO[hoKey];
 
       const sheetName = safeSheetName(`${hoLabel} - ${g.name}`);
       const ws = wb.addWorksheet(sheetName,{
@@ -1334,6 +1621,101 @@ async function downloadAllXlsx(){
   saveAs(blob,fname);
 }
 
+// EL / CL substitute-arrangement PDF section (13 cols, GDS details from staff DB).
+function renderELCLPdfSection(doc, {g, hoKey, rows, days, hoLabel, kind, leaveMonth, presentDate, office, fmt, layout}){
+  const {pageW, margin, innerW, HO_RGB} = layout;
+  const meta = ELCL_META[kind];
+  const notes = ELCL_NOTES[kind];
+  const klt = hoKey === "kulittalai" ? " (KLT)" : "";
+  const memo = `${meta.memoPrefix} - ${monShortUpper(leaveMonth)}${klt}/dlgs dated at Karur ${presentDate}`;
+
+  let y = margin;
+  doc.setFillColor(31,56,100);
+  doc.rect(margin, y, innerW, 28, "F");
+  doc.setTextColor(255,255,255);
+  doc.setFont("times","bold"); doc.setFontSize(16);
+  doc.text(DEPT_LINE, pageW/2, y+18.5, {align:"center"});
+  y += 30;
+
+  doc.setFillColor(238,243,251);
+  doc.rect(margin, y, innerW, 19, "F");
+  doc.setTextColor(31,56,100);
+  doc.setFont("times","bold"); doc.setFontSize(11.5);
+  doc.text(office, pageW/2, y+13, {align:"center"});
+  y += 20;
+
+  doc.setFillColor(238,243,251);
+  doc.rect(margin, y, innerW, 19, "F");
+  doc.setTextColor(31,56,100);
+  doc.setFont("times","bold"); doc.setFontSize(11);
+  doc.text(`Memo No. ${memo}`, pageW/2, y+13, {align:"center"});
+  y += 21;
+
+  doc.setTextColor(26,34,51);
+  doc.setFont("times","normal"); doc.setFontSize(12);
+  notes.forEach(note=>{
+    const lines = doc.splitTextToSize(note, innerW-12);
+    doc.text(lines, margin+6, y+11);
+    y += lines.length*15 + 3;
+  });
+  y += 4;
+
+  const [rr,bb,gg] = HO_RGB[hoKey];
+  doc.setFillColor(rr,bb,gg);
+  doc.rect(margin, y, innerW, 21, "F");
+  doc.setTextColor(255,255,255);
+  doc.setFont("times","bold"); doc.setFontSize(11.5);
+  doc.text(`Karur Sub Division - ${leaveMonth}    |    Leave Type: ${meta.banner}    |    Total Records: ${rows.length}    |    Total Days: ${days}`, pageW/2, y+14, {align:"center"});
+  y += 25;
+
+  const body = rows.map((r2,idx)=>{
+    const emp = gdsInfo(r2.empId, fmt);   // leave-taking employee (Col B/C)
+    const gi = gdsInfo(r2.subId, fmt);    // substitute GDS
+    return [
+      idx+1, r2.empId, r2.empName, emp.desig, r2.officeName,
+      fmtDate(r2.startDate,fmt), fmtDate(r2.endDate,fmt),
+      r2.noDays===""?"":r2.noDays,
+      (r2.subName || gi.name), gi.desigOffice, r2.subId, gi.dob, gi.dccs,
+    ];
+  });
+  body.push([
+    {content:"TOTAL", colSpan:7, styles:{halign:"right",fontStyle:"bold",fillColor:[231,238,249],textColor:[31,56,100]}},
+    {content:days, styles:{halign:"center",fontStyle:"bold",fillColor:[231,238,249],textColor:[31,56,100]}},
+    {content:"", colSpan:5, styles:{fillColor:[231,238,249]}},
+  ]);
+
+  doc.autoTable({
+    startY: y,
+    head: [ELCL_COL_HEADERS],
+    body,
+    theme:"grid",
+    styles:{ font:"times", fontSize:9, cellPadding:2, valign:"middle", lineColor:[217,217,217], lineWidth:0.4, overflow:"linebreak" },
+    headStyles:{ font:"times", fontSize:9, fillColor:[31,56,100], textColor:[255,255,255], fontStyle:"bold", halign:"center", valign:"middle", lineColor:[22,41,74] },
+    alternateRowStyles:{ fillColor:[242,242,242] },
+    columnStyles:{
+      0:{cellWidth:26, halign:"center"},
+      1:{cellWidth:48, halign:"center"},
+      2:{cellWidth:78},
+      3:{cellWidth:60},
+      4:{cellWidth:90},
+      5:{cellWidth:52, halign:"center"},
+      6:{cellWidth:52, halign:"center"},
+      7:{cellWidth:34, halign:"center"},
+      8:{cellWidth:78},
+      9:{cellWidth:"auto"},
+      10:{cellWidth:48, halign:"center"},
+      11:{cellWidth:50, halign:"center"},
+      12:{cellWidth:50, halign:"center"},
+    },
+    didParseCell: hook=>{
+      if(hook.section==='body' && hook.row.index<rows.length && rows[hook.row.index] && rows[hook.row.index].manual){
+        hook.cell.styles.fillColor = [254,243,199];
+      }
+    },
+    margin:{left:margin,right:margin,top:margin,bottom:margin+14},
+  });
+}
+
 /* ---------- PDF generation ---------- */
 function buildPdf(groupsToInclude){
   const { jsPDF } = window.jspdf;
@@ -1356,15 +1738,24 @@ function buildPdf(groupsToInclude){
       const rows = g.byHO[hoKey];
       if(!rows.length) return;
       const hoLabel = hoKey==="karur"?"Karur HO":hoKey==="kulittalai"?"Kulittalai HO":"Unknown";
+      const days = g.daysByHO[hoKey];
+
+      if(!isFirstSection) doc.addPage();
+      isFirstSection = false;
+
+      // Earned Leave / Casual Leave use the official substitute-arrangement format.
+      const kind = elclKind(g.name);
+      if(kind){
+        renderELCLPdfSection(doc, {g, hoKey, rows, days, hoLabel, kind, leaveMonth, presentDate, office, fmt,
+          layout:{pageW, pageH, margin, innerW, HO_RGB}});
+        return;
+      }
+
       let catName = g.name.replace(/-/g, ' ');
       if (g.name === 'Training') catName = 'GDS Training';
       else if (g.name === 'LWA') catName = 'GDS LWA';
       const klt = hoKey === "kulittalai" ? " (KLT)" : "";
       const memo = `KRR/${catName} - ${leaveMonth}${klt}/dlgs dated at Karur ${presentDate}`;
-      const days = g.daysByHO[hoKey];
-
-      if(!isFirstSection) doc.addPage();
-      isFirstSection = false;
 
       let y = margin;
       doc.setFillColor(31,56,100);
@@ -1468,17 +1859,19 @@ function buildPdf(groupsToInclude){
   return doc;
 }
 
-function downloadGroupPdf(g){
+async function downloadGroupPdf(g){
   if(!g.count){ alert("This leave type has no records yet — add at least one entry."); return; }
+  await GDS_READY;   // GDS (substitute) directory for EL/CL sheets
   const period = norm(document.getElementById("opt-period").value);
   const doc = buildPdf([g]);
   doc.save(`LeaveOrders_${slug(g.name)}${period?"_"+slug(period):""}.pdf`);
 }
 
-function downloadAllPdf(){
+async function downloadAllPdf(){
   if(!RAW) return;
   const nonEmpty = RAW.groups.filter(g=>g.count>0);
   if(!nonEmpty.length){ alert("No records to export."); return; }
+  await GDS_READY;
   const period = norm(document.getElementById("opt-period").value);
   const doc = buildPdf(nonEmpty);
   doc.save(`LeaveOrders_ALL_KarurSubDiv${period?"_"+slug(period):""}.pdf`);
