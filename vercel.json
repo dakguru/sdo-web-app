@@ -9,6 +9,7 @@
     { "source": "/leave-orders/(.*)", "destination": "/Leave Orders/$1" },
     { "source": "/data/(.*)", "destination": "/app/data/$1" },
     { "source": "/templates/(.*)", "destination": "/templates/$1" },
+    { "source": "/assets/(.*)", "destination": "/assets/$1" },
     { "source": "/(.*)", "destination": "/app/wwwroot/$1" }
   ]
 }
