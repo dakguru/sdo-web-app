@@ -91,11 +91,15 @@ html.light .bg-mesh{
 }
 .bg-mesh::before{
   content:'';position:absolute;inset:0;
-  background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,0.025) 1px, transparent 0);
-  background-size:40px 40px;
+  background-image:url('/assets/stamp-bg.jpg');
+  background-size:500px;
+  background-repeat:repeat;
+  opacity:0.06;
+  mix-blend-mode:luminosity;
 }
 html.light .bg-mesh::before{
-  background-image:radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0);
+  opacity:0.12;
+  mix-blend-mode:multiply;
 }
 
 /* Floating orbs */
