@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Login — Department of Posts, Karur Sub Division</title>
+<meta name="description" content="Secure login to the Karur Sub Division web application — Department of Posts, Government of India." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CSS RESET & VARIABLES
+   ============================================================ */
+:root {
+  --bg-deep: #07090f;
+  --bg-surface: #0d1117;
+  --glass-bg: rgba(255,255,255,0.04);
+  --glass-bg-hover: rgba(255,255,255,0.08);
+  --glass-border: rgba(255,255,255,0.08);
+  --glass-border-hover: rgba(255,255,255,0.18);
+  --glass-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  --glass-blur: 24px;
+  --text-primary: #f1f5f9;
+  --text-secondary: rgba(241,245,249,0.65);
+  --text-muted: rgba(241,245,249,0.35);
+  --accent-indigo: #818cf8;
+  --accent-violet: #a78bfa;
+  --accent-rose: #fb7185;
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;height:100%}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg-deep);
+  color:var(--text-primary);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+::selection{background:rgba(129,140,248,0.3)}
+
+/* ============================================================
+   ANIMATED BACKGROUND — deep space mesh
+   ============================================================ */
+.bg-mesh{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 800px 600px at 20% 25%, rgba(99,102,241,0.15), transparent 70%),
+    radial-gradient(ellipse 600px 500px at 80% 20%, rgba(167,139,250,0.12), transparent 65%),
+    radial-gradient(ellipse 700px 400px at 50% 90%, rgba(45,212,191,0.08), transparent 60%),
+    radial-gradient(ellipse 400px 300px at 70% 65%, rgba(251,113,133,0.06), transparent 60%),
+    linear-gradient(180deg, #07090f 0%, #0d1117 40%, #0a0e1a 100%);
+}
+.bg-mesh::before{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,0.025) 1px, transparent 0);
+  background-size:40px 40px;
+}
+
+/* Floating orbs */
+.orb{
+  position:fixed;border-radius:50%;filter:blur(100px);
+  opacity:0.35;pointer-events:none;z-index:0;
+  animation:orbFloat 25s ease-in-out infinite;
+}
+.orb-1{width:500px;height:500px;background:rgba(99,102,241,0.2);top:-120px;left:-80px;animation-delay:0s}
+.orb-2{width:400px;height:400px;background:rgba(167,139,250,0.15);top:40%;right:-100px;animation-delay:-8s}
+.orb-3{width:350px;height:350px;background:rgba(45,212,191,0.1);bottom:-80px;left:35%;animation-delay:-16s}
+@keyframes orbFloat{
+  0%,100%{transform:translate(0,0) scale(1)}
+  25%{transform:translate(30px,-25px) scale(1.06)}
+  50%{transform:translate(-25px,35px) scale(0.94)}
+  75%{transform:translate(20px,15px) scale(1.03)}
+}
+
+/* ============================================================
+   MAIN LOGIN CONTAINER
+   ============================================================ */
+.login-scene{
+  position:relative;z-index:1;
+  width:100%;max-width:460px;
+  padding:24px;
+  animation:fadeInUp 0.8s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes fadeInUp{
+  from{opacity:0;transform:translateY(30px) scale(0.97)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* ============================================================
+   GOVERNMENT CREST
+   ============================================================ */
+.crest{
+  display:flex;align-items:center;justify-content:center;
+  gap:18px;margin-bottom:28px;
+}
+.crest-logo{
+  width:64px;height:64px;object-fit:contain;flex-shrink:0;
+  border-radius:14px;padding:5px;
+  background:rgba(255,255,255,0.95);
+  box-shadow:0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1);
+}
+.crest-text{text-align:center}
+.crest-text .dept{
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;
+  font-size:13px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:2px;
+}
+.crest-text .org{
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;
+  font-size:20px;font-weight:800;letter-spacing:0.5px;
+  background:linear-gradient(135deg,#818cf8,#a78bfa,#c084fc);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  -webkit-text-fill-color:transparent;
+}
+
+/* Tricolour bar */
+.tricolour{
+  display:flex;justify-content:center;gap:0;margin:16px auto 0;
+  width:80px;height:3px;border-radius:3px;overflow:hidden;
+}
+.tricolour span{flex:1}
+.tricolour .saffron{background:#FF9933}
+.tricolour .white{background:#FFFFFF}
+.tricolour .green{background:#138808}
+
+/* ============================================================
+   GLASS CARD
+   ============================================================ */
+.login-card{
+  background:var(--glass-bg);
+  backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-xl);
+  box-shadow:var(--glass-shadow);
+  padding:40px 36px 36px;
+  position:relative;overflow:hidden;
+}
+.login-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(255,255,255,0.02) 100%);
+  pointer-events:none;
+}
+.login-card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+}
+
+.login-title{
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;
+  font-size:26px;font-weight:800;text-align:center;
+  margin-bottom:4px;letter-spacing:-0.3px;
+}
+.login-subtitle{
+  text-align:center;font-size:14px;color:var(--text-muted);
+  font-weight:500;margin-bottom:32px;line-height:1.5;
+}
+
+/* ============================================================
+   FORM FIELDS
+   ============================================================ */
+.field{
+  position:relative;margin-bottom:22px;
+}
+.field-label{
+  display:block;font-size:12px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.5px;color:var(--text-muted);margin-bottom:8px;
+  padding-left:2px;
+}
+.field-input-wrap{
+  position:relative;display:flex;align-items:center;
+}
+.field-icon{
+  position:absolute;left:16px;font-size:18px;opacity:0.4;
+  pointer-events:none;z-index:2;
+  transition:opacity 0.3s;
+}
+.field-input{
+  width:100%;padding:15px 16px 15px 48px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:var(--radius-md);
+  color:var(--text-primary);
+  font-family:'Inter',sans-serif;font-size:15px;font-weight:500;
+  outline:none;
+  transition:all 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+.field-input::placeholder{
+  color:rgba(241,245,249,0.25);font-weight:400;
+}
+.field-input:focus{
+  border-color:rgba(129,140,248,0.5);
+  background:rgba(129,140,248,0.06);
+  box-shadow:0 0 0 3px rgba(129,140,248,0.12), 0 4px 16px rgba(0,0,0,0.15);
+}
+.field-input:focus ~ .field-icon,
+.field-input:not(:placeholder-shown) ~ .field-icon{
+  opacity:0.8;
+}
+
+/* Password toggle */
+.pwd-toggle{
+  position:absolute;right:14px;z-index:2;
+  background:none;border:none;color:var(--text-muted);
+  cursor:pointer;font-size:18px;padding:4px;
+  transition:color 0.3s;
+}
+.pwd-toggle:hover{color:var(--text-primary)}
+
+/* ============================================================
+   SUBMIT BUTTON
+   ============================================================ */
+.btn-login{
+  width:100%;padding:16px;border:none;border-radius:var(--radius-md);
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;
+  font-size:15px;font-weight:700;letter-spacing:0.5px;
+  color:#fff;cursor:pointer;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#a855f7 100%);
+  background-size:200% 200%;
+  box-shadow:0 4px 20px rgba(99,102,241,0.35), 0 0 0 1px rgba(129,140,248,0.2);
+  transition:all 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+  margin-top:8px;
+}
+.btn-login::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(255,255,255,0.05) 100%);
+  pointer-events:none;
+}
+.btn-login:hover{
+  background-position:100% 100%;
+  box-shadow:0 8px 32px rgba(99,102,241,0.5), 0 0 0 1px rgba(129,140,248,0.3);
+  transform:translateY(-2px);
+}
+.btn-login:active{
+  transform:translateY(0) scale(0.98);
+  transition-duration:0.1s;
+}
+.btn-login:disabled{
+  opacity:0.5;cursor:not-allowed;transform:none !important;
+}
+
+/* Spinner inside button */
+.btn-login .spinner{
+  display:none;width:20px;height:20px;
+  border:2.5px solid rgba(255,255,255,0.3);
+  border-top-color:#fff;border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  margin:0 auto;
+}
+.btn-login.loading .btn-text{display:none}
+.btn-login.loading .spinner{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============================================================
+   ERROR / STATUS MESSAGES
+   ============================================================ */
+.msg{
+  text-align:center;font-size:13px;font-weight:600;
+  padding:12px 16px;border-radius:12px;margin-bottom:20px;
+  display:none;align-items:center;justify-content:center;gap:8px;
+  animation:fadeIn 0.3s ease;
+}
+.msg.error{
+  display:flex;
+  background:rgba(239,68,68,0.1);color:#fca5a5;
+  border:1px solid rgba(239,68,68,0.15);
+}
+.msg.success{
+  display:flex;
+  background:rgba(52,211,153,0.1);color:#6ee7b7;
+  border:1px solid rgba(52,211,153,0.15);
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.login-footer{
+  text-align:center;margin-top:24px;
+}
+.footer-line{
+  font-size:12px;color:var(--text-muted);font-weight:500;
+  letter-spacing:0.3px;line-height:1.8;
+}
+.footer-line .heart{
+  color:#fb7185;font-size:13px;margin:0 2px;
+  display:inline-block;animation:heartbeat 1.3s ease-in-out infinite;
+}
+@keyframes heartbeat{0%,100%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(0.95)}}
+.footer-credit{
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;
+  font-size:12px;font-weight:700;margin-top:4px;
+  background:linear-gradient(135deg,#818cf8,#a78bfa,#fb7185);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  -webkit-text-fill-color:transparent;
+  background-size:200% 200%;animation:shimmerGrad 5s ease-in-out infinite;
+}
+@keyframes shimmerGrad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+
+/* ============================================================
+   SECURITY BADGE
+   ============================================================ */
+.secure-badge{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  margin-top:20px;
+  font-size:11px;font-weight:600;color:var(--text-muted);
+  letter-spacing:0.5px;
+}
+.secure-badge .lock{font-size:13px;opacity:0.6}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width:520px){
+  .login-scene{padding:16px}
+  .login-card{padding:32px 24px 28px;border-radius:22px}
+  .crest{gap:12px}
+  .crest-logo{width:52px;height:52px}
+  .crest-text .org{font-size:17px}
+  .login-title{font-size:22px}
+}
+@media (max-width:380px){
+  .login-card{padding:28px 20px 24px}
+  .crest-text .dept{font-size:11px}
+  .crest-text .org{font-size:15px}
+}
+</style>
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-mesh"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="login-scene">
+
+  <!-- Government crest -->
+  <div class="crest">
+    <img src="/assets/app-logo.jpg" alt="Karur Sub Division" class="crest-logo" />
+    <div class="crest-text">
+      <div class="dept">Government of India</div>
+      <div class="org">Department of Posts</div>
+    </div>
+    <img src="/assets/india-post-logo.png" alt="India Post" class="crest-logo" />
+  </div>
+  <div class="tricolour">
+    <span class="saffron"></span>
+    <span class="white"></span>
+    <span class="green"></span>
+  </div>
+
+  <!-- Login card -->
+  <div class="login-card" style="margin-top:28px">
+    <h1 class="login-title">Welcome Back</h1>
+    <p class="login-subtitle">Sign in to Karur Sub Division Portal</p>
+
+    <div class="msg" id="msg" role="alert"></div>
+
+    <form id="loginForm" autocomplete="on">
+      <div class="field">
+        <label class="field-label" for="username">Username</label>
+        <div class="field-input-wrap">
+          <input
+            type="text" id="username" name="username" class="field-input"
+            placeholder="Enter your username"
+            autocomplete="username" autocapitalize="none" spellcheck="false"
+            required />
+          <span class="field-icon">👤</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="password">Password</label>
+        <div class="field-input-wrap">
+          <input
+            type="password" id="password" name="password" class="field-input"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required />
+          <span class="field-icon">🔒</span>
+          <button type="button" class="pwd-toggle" id="pwdToggle" title="Show/hide password">👁️</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login" id="btnLogin">
+        <span class="btn-text">Sign In</span>
+        <span class="spinner"></span>
+      </button>
+    </form>
+
+    <div class="secure-badge">
+      <span class="lock">🔐</span>
+      Secured with PBKDF2-SHA256 · 120,000 iterations
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="login-footer">
+    <div class="footer-line">
+      Built with <span class="heart">♥</span> for the Department of Posts
+    </div>
+    <div class="footer-credit">Designed by Arun Selvaraj · Karur Division</div>
+  </div>
+</div>
+
+<!-- ========== Supabase connector (to fetch app_users) ========== -->
+<script src="/leave-orders/supabase-sync.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  const SESSION_KEY = 'sdo_session';
+  const PBKDF2_ALGO = 'PBKDF2';
+  const HASH_ALGO   = 'SHA-256';
+
+  // ── If already logged in, go straight to home ─────────────────
+  try {
+    const existing = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    if (existing && existing.username && existing.ts) {
+      const TTL = 7 * 24 * 60 * 60 * 1000;
+      if (Date.now() - existing.ts < TTL) {
+        window.location.replace('/');
+        return;
+      }
+    }
+  } catch (_) {}
+
+  // ── DOM refs ──────────────────────────────────────────────────
+  const form    = document.getElementById('loginForm');
+  const uField  = document.getElementById('username');
+  const pField  = document.getElementById('password');
+  const btn     = document.getElementById('btnLogin');
+  const msgEl   = document.getElementById('msg');
+  const pwdTog  = document.getElementById('pwdToggle');
+
+  // ── Password visibility toggle ────────────────────────────────
+  pwdTog.addEventListener('click', () => {
+    const show = pField.type === 'password';
+    pField.type = show ? 'text' : 'password';
+    pwdTog.textContent = show ? '🙈' : '👁️';
+  });
+
+  // ── Message helpers ───────────────────────────────────────────
+  function showMsg(text, type) {
+    msgEl.textContent = text;
+    msgEl.className = 'msg ' + type;
+  }
+  function hideMsg() {
+    msgEl.className = 'msg';
+    msgEl.textContent = '';
+  }
+
+  // ── PBKDF2 verification (mirrors Android AuthRepository) ─────
+  function b64ToBytes(b64) {
+    const raw = atob(b64);
+    const arr = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+  }
+
+  async function pbkdf2Verify(password, saltB64, iterations, expectedHashB64) {
+    try {
+      const enc  = new TextEncoder();
+      const salt = b64ToBytes(saltB64);
+      const expected = b64ToBytes(expectedHashB64);
+
+      // Import the password as a CryptoKey
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw', enc.encode(password), PBKDF2_ALGO, false, ['deriveBits']
+      );
+
+      // Derive 256 bits using PBKDF2-HMAC-SHA256
+      const derived = await crypto.subtle.deriveBits(
+        { name: PBKDF2_ALGO, salt: salt, iterations: iterations, hash: HASH_ALGO },
+        keyMaterial, 256
+      );
+
+      // Constant-time comparison
+      const derivedArr = new Uint8Array(derived);
+      if (derivedArr.length !== expected.length) return false;
+      let diff = 0;
+      for (let i = 0; i < derivedArr.length; i++) diff |= derivedArr[i] ^ expected[i];
+      return diff === 0;
+    } catch (e) {
+      console.error('[login] PBKDF2 error:', e);
+      return false;
+    }
+  }
+
+  // ── Form submit handler ───────────────────────────────────────
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    hideMsg();
+
+    const username = uField.value.trim().toLowerCase();
+    const password = pField.value;
+
+    if (!username || !password) {
+      showMsg('Please enter both username and password.', 'error');
+      return;
+    }
+
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    try {
+      // 1. Initialize Supabase
+      const sbOk = await SB.init();
+      if (!sbOk) {
+        showMsg('Cannot connect to the server. Please check your internet.', 'error');
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        return;
+      }
+
+      // 2. Fetch user record from app_users
+      const users = await SB.select(
+        'app_users',
+        `username=eq.${encodeURIComponent(username)}&select=username,password_hash,salt,iterations,display_name,role,active`
+      );
+
+      if (!users || users.length === 0) {
+        showMsg('Invalid username or password.', 'error');
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        return;
+      }
+
+      const user = users[0];
+
+      // 3. Check if account is active
+      if (!user.active) {
+        showMsg('This account has been disabled. Contact your administrator.', 'error');
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        return;
+      }
+
+      // 4. Verify password using PBKDF2 (Web Crypto API)
+      const valid = await pbkdf2Verify(
+        password, user.salt, user.iterations, user.password_hash
+      );
+
+      if (!valid) {
+        showMsg('Invalid username or password.', 'error');
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        return;
+      }
+
+      // 5. Success → store session & redirect
+      const session = {
+        username:    user.username,
+        displayName: user.display_name,
+        role:        user.role,
+        ts:          Date.now()
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+
+      showMsg('Welcome, ' + user.display_name + '!', 'success');
+
+      // Brief pause to show success, then redirect
+      setTimeout(() => {
+        window.location.replace('/');
+      }, 600);
+
+    } catch (err) {
+      console.error('[login] Error:', err);
+      showMsg('Something went wrong. Please try again.', 'error');
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+  });
+
+  // ── Auto-focus username field ─────────────────────────────────
+  uField.focus();
+})();
+</script>
+</body>
+</html>
