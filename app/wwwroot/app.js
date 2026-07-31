@@ -140,7 +140,17 @@ function renderStatus(){const s=$('#savestat');if(s)s.textContent=S.dirty?'Savin
 
 /* ---------- bootstrap ---------- */
 async function boot(){
-  const r=await fetch('/api/bootstrap');const b=await r.json();
+  let b={};
+  try {
+    const r=await fetch('/api/bootstrap');
+    if(!r.ok) throw new Error('API unavailable');
+    b=await r.json();
+  } catch(e) {
+    console.warn('Local API /api/bootstrap failed. Falling back to static Vercel fetches...');
+    b.settings = await (await fetch('/data/settings.json')).json().catch(()=>({appName:'SDO Web App',organisation:'Karur Division'}));
+    b.clauses = await (await fetch('/templates/clauses.json')).json().catch(()=>({clauses:[]}));
+    b.offices = []; b.staff = []; b.villages = {}; b.reports = []; b.drafts = []; b.activeDraftId = null; b.draft = {};
+  }
   S.boot=b;S.settings=b.settings;S.clauses=b.clauses;S.offices=b.offices||[];S.staff=b.staff||[];S.villages=b.villages||{};S.reports=b.reports||[];
   try { await SB.init(); if(SB.ready) { /* check if cloud has newer data */ } } catch(e) { console.warn('Cloud sync check failed:', e); }
   S.drafts=b.drafts||[];S.activeDraftId=b.activeDraftId||(S.drafts[0]&&S.drafts[0].id)||null;
