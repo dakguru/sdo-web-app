@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/leave-orders/(.*)", "destination": "/Leave Orders/$1" },
+    { "source": "/(.*)", "destination": "/app/wwwroot/$1" }
+  ]
+}

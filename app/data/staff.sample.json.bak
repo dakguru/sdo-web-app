@@ -1,0 +1,5 @@
+[
+  { "name": "V GOMATHI", "designation": "BPM", "employee_id": "50089878", "trca": "L-I", "dob": "02.03.1996", "doa": "11.07.2016", "office": "MANAVASI", "status": "Active" },
+  { "name": "A R ARUMUGAM", "designation": "ABPM", "employee_id": "50089402", "trca": "L-I", "dob": "15.07.1975", "doa": "26.10.1998", "office": "MANAVASI", "status": "Active" },
+  { "name": "K SELVARAJ", "designation": "BPM", "employee_id": "50091234", "trca": "L-I", "dob": "11.11.1980", "doa": "05.01.2010", "office": "KOYAMPALLI", "status": "Active" }
+]

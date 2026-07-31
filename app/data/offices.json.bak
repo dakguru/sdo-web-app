@@ -1,0 +1,18 @@
+[
+  {
+    "office_name": "MANAVASI", "office_type": "BO", "account_office": "MAYANUR", "account_office_pin": "639 108",
+    "head_office": "KULITHALAI", "facility_id": "BO29402210003", "profit_centre_id": "2942021003",
+    "date_of_opening": "27.02.1952", "panchayat_hq": "Manavasi", "division": "Karur division",
+    "auth_min_cash": "15000", "auth_max_cash": "20000", "postage_stamp_balance": "600", "revenue_stamp_balance": "50",
+    "working_hours": "10.30 AM - 14.30 PM",
+    "fixed_villages": "Cusba, Manavasi", "unfixed_villages": "Mettanginam, Samathuvapuram, KCP Nagar, KPKulam, Aravanampettai"
+  },
+  {
+    "office_name": "KOYAMPALLI", "office_type": "BO", "account_office": "MAYANUR", "account_office_pin": "639 108",
+    "head_office": "KULITHALAI", "facility_id": "BO29402210007", "profit_centre_id": "2942021007",
+    "date_of_opening": "01.04.1960", "panchayat_hq": "Koyampalli", "division": "Karur division",
+    "auth_min_cash": "10000", "auth_max_cash": "15000", "postage_stamp_balance": "500", "revenue_stamp_balance": "50",
+    "working_hours": "08.00 AM - 12.00 PM",
+    "fixed_villages": "Koyampalli", "unfixed_villages": "Pallapatti"
+  }
+]

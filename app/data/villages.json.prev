@@ -1,0 +1,1142 @@
+{
+    "ATHUR":  {
+                  "office":  "ATHUR",
+                  "account_office":  "ANDANKOVIL",
+                  "account_office_pin":  "639008",
+                  "fixed":  [
+                                "TKPT(LB)",
+                                "BPCL(LB)"
+                            ],
+                  "unfixed":  [
+                                  "Vadamalaigoundanur",
+                                  "Sengattanur",
+                                  "O.Karuppampalayam",
+                                  "Nochipalayam",
+                                  "Athur",
+                                  "Nathamedu",
+                                  "Sellavapalayam",
+                                  "Samathuvapuram",
+                                  "Veerasolipalayam"
+                              ]
+              },
+    "POOLAMPALAYAM":  {
+                          "office":  "POOLAMPALAYAM",
+                          "account_office":  "ANDANKOVIL",
+                          "account_office_pin":  "639 008",
+                          "fixed":  [
+                                        "Thunduperumalpalayam",
+                                        "Thanthampalayam",
+                                        "Kalipalayam",
+                                        "Sengal malai Road",
+                                        "Moorthipalaym",
+                                        "Palamapuram",
+                                        "Thottaiankadu",
+                                        "Mangasolipalayam"
+                                    ],
+                          "unfixed":  [
+                                          "Thannasigoundanoor"
+                                      ]
+                      },
+    "PUNNAM":  {
+                   "office":  "PUNNAM",
+                   "account_office":  "KAGITHAPURAM",
+                   "account_office_pin":  "639 136",
+                   "fixed":  [
+                                 "Punnam",
+                                 "Sadayampalayam",
+                                 "Alampalayam",
+                                 "Kullakadai",
+                                 "Kailasapuram",
+                                 "Arul Nagar",
+                                 "Bharathi Nagar",
+                                 "Melappalayam"
+                             ],
+                   "unfixed":  [
+                                   "Pasupathipalayam",
+                                   "Ayyanur",
+                                   "Muthu Nagar",
+                                   "Nadupalayam",
+                                   "Kulathur",
+                                   "Vasantham Colony",
+                                   "VGB Nagar",
+                                   "Velayuthampalayam",
+                                   "Chinnanadupalayam"
+                               ]
+               },
+    "PUNNAM CHANDARAM":  {
+                             "office":  "PUNNAM CHANDARAM",
+                             "account_office":  "KAGITHAPURAM",
+                             "account_office_pin":  "639 136",
+                             "fixed":  [
+                                           "Periya Rengapalayam",
+                                           "Pullaiyam Palayam",
+                                           "Olappalayam",
+                                           "PonniyaGounderPudhur"
+                                       ],
+                             "unfixed":  [
+                                             "Perumal nagar",
+                                             "Sri Ram Nagar",
+                                             "K.G.Nagar",
+                                             "Sivasakthi Nagar",
+                                             "Chinnarangapalayam",
+                                             "Prem Nagar",
+                                             "MGR Nagar",
+                                             "Andavar Nagar",
+                                             "Cheran Nagar",
+                                             "Rengasamypuram",
+                                             "Ramanathapuram",
+                                             "Indian Public School Palamapuram",
+                                             "Velliyamaplayam",
+                                             "Kariyampatti",
+                                             "OKR Nagar",
+                                             "Ponni Nagar",
+                                             "Thangam Nagar",
+                                             "Avrobindo Nagar"
+                                         ]
+                         },
+    "MOOLIMANGALAM":  {
+                          "office":  "MOOLIMANGALAM",
+                          "account_office":  "KAGITHAPURAM",
+                          "account_office_pin":  "639 136",
+                          "fixed":  [
+                                        "Moolimangalam(LB)",
+                                        "Pugalur RS",
+                                        "Kandhasamypalayam",
+                                        "Nallikovil",
+                                        "Masagoundanpudhur"
+                                    ],
+                          "unfixed":  [
+                                          "Sottayur",
+                                          "Nalnlampalayam",
+                                          "Sokkankadu",
+                                          "Onavakkalmedu",
+                                          "Iyanangadu",
+                                          "Sekkumedu",
+                                          "Semmadai",
+                                          "Pudukurukkupalayam",
+                                          "Kothai Nagar",
+                                          "Amman Nagar",
+                                          "Raja Nagar",
+                                          "Kongu Nagar",
+                                          "Vangalamman Nagar",
+                                          "Athiyamankottai",
+                                          "Pandipalayam",
+                                          "Alagapuri",
+                                          "Ganapathi Nagar",
+                                          "Ganapathi Garden",
+                                          "TNPL Cement Factory",
+                                          "OMYA India Pvt. Ltd."
+                                      ]
+                      },
+    "EMUR":  {
+                 "office":  "EMUR",
+                 "account_office":  "KARUR COLLECTORATE",
+                 "account_office_pin":  "639 007",
+                 "fixed":  [
+                               "Emur (LB)",
+                               "Seethapatti (LB)",
+                               "Vengakalpatti (LB)"
+                           ],
+                 "unfixed":  [
+                                 "Emurputhur",
+                                 "Kunnanur",
+                                 "Nadupalayam"
+                             ]
+             },
+    "KATHALAPATTI":  {
+                         "office":  "KATHALAPATTI",
+                         "account_office":  "KARUR COLLECTORATE",
+                         "account_office_pin":  "639 007",
+                         "fixed":  [
+                                       "Kathalapatti",
+                                       "Maruthampatti",
+                                       "Manickapuram"
+                                   ],
+                         "unfixed":  [
+                                         "Sellipalayam",
+                                         "Maruthampatti colony",
+                                         "Mamarathupatti",
+                                         "Chinathambipalayam",
+                                         "Karuppagowdanputhur",
+                                         "Kannimarpalayam",
+                                         "Kathalapattiputhur",
+                                         "Karpagam Nagar extension"
+                                     ]
+                     },
+    "KATTALAI":  {
+                     "office":  "KATTALAI",
+                     "account_office":  "MAYANUR",
+                     "account_office_pin":  "639 108",
+                     "fixed":  [
+                                   "Kattalai(LB)",
+                                   "Nathamedu",
+                                   "Melakattalai"
+                               ],
+                     "unfixed":  [
+
+                                 ]
+                 },
+    "MANAVASI":  {
+                     "office":  "MANAVASI",
+                     "account_office":  "MAYANUR",
+                     "account_office_pin":  "639 108",
+                     "fixed":  [
+                                   "Manavasi (LB)",
+                                   "Samathuvapuram (LB)",
+                                   "K.P.Kulam",
+                                   "Aravanampettai",
+                                   "Metlanginam (LB)"
+                               ],
+                     "unfixed":  [
+
+                                 ]
+                 },
+    "RENGANATHAPURAM":  {
+                            "office":  "RENGANATHAPURAM",
+                            "account_office":  "MAYANUR",
+                            "account_office_pin":  "639 108",
+                            "fixed":  [
+                                          "Ranganathapuram",
+                                          "R,C Street",
+                                          "Melamayanur"
+                                      ],
+                            "unfixed":  [
+                                            "Keezhamayanur",
+                                            "MettuTheru"
+                                        ]
+                        },
+    "VALAYALKARANPUDUR":  {
+                              "office":  "VALAYALKARANPUDUR",
+                              "account_office":  "MAYANUR",
+                              "account_office_pin":  "639 108",
+                              "fixed":  [
+                                            "Jananur",
+                                            "R.Pudukottai",
+                                            "Valayalakaranpudhur (LB)"
+                                        ],
+                              "unfixed":  [
+                                              "Shanthi Nagar",
+                                              "Anna Nagar",
+                                              "Sakthi Nagar",
+                                              "Pappanthottam"
+                                          ]
+                          },
+    "KARUPPUR":  {
+                     "office":  "KARUPPUR",
+                     "account_office":  "MAYANUR",
+                     "account_office_pin":  "639 108",
+                     "fixed":  [
+                                   "Karuppur(LB)",
+                                   "Korakuthi",
+                                   "Sangaramalaipathi",
+                                   "Chinnamalaipathi",
+                                   "Salapathi"
+                               ],
+                     "unfixed":  [
+                                     "Nathamedu",
+                                     "Kundangalpathi"
+                                 ]
+                 },
+    "NERUR":  {
+                  "office":  "NERUR",
+                  "account_office":  "PASUPATHIPALAYAM",
+                  "account_office_pin":  "639 004",
+                  "fixed":  [
+                                "Agraharam",
+                                "Maravapalayam",
+                                "Puthupalayam"
+                            ],
+                  "unfixed":  [
+                                  "Kailash Ashram(LB)",
+                                  "Pumping House",
+                                  "New Street",
+                                  "Amman Kovil Street"
+                              ]
+              },
+    "PALAIYUR":  {
+                     "office":  "PALAIYUR",
+                     "account_office":  "PASUPATHIPALAYAM",
+                     "account_office_pin":  "639 004",
+                     "fixed":  [
+                                   "Palaiyur(LB)",
+                                   "Periyakalipalayam(LB)",
+                                   "Nerm North bazaar (LB)"
+                               ],
+                     "unfixed":  [
+                                     "Chinnakalipalayam",
+                                     "NemSouth, R.C. Street, N.S.K Nagar"
+                                 ]
+                 },
+    "PANCHAMADEVI":  {
+                         "office":  "PANCHAMADEVI",
+                         "account_office":  "PASUPATHIPALAYAM",
+                         "account_office_pin":  "639 004",
+                         "fixed":  [
+                                       "Panchamadevi",
+                                       "Santhanakalipalayam",
+                                       "Arasu Colony",
+                                       "P.Kalipalayam"
+                                   ],
+                         "unfixed":  [
+                                         "Pathinankal Mandam",
+                                         "Poolakattuthottam",
+                                         "Karunkal Colony",
+                                         "Ganapathipalayam",
+                                         "Panchamadeviputhur",
+                                         "Bharathiyar Nagar",
+                                         "Lakshmi Nagar",
+                                         "Karuppanansamy Nagar",
+                                         "Vettakaranputhur",
+                                         "Samiyanthottam"
+                                     ]
+                     },
+    "RENGANATHAMPETTAI":  {
+                              "office":  "RENGANATHAMPETTAI",
+                              "account_office":  "PASUPATHIPALAYAM",
+                              "account_office_pin":  "639 004",
+                              "fixed":  [
+                                            "Renganathapettai (LB)",
+                                            "Thirumakkudalur(LB)"
+                                        ],
+                              "unfixed":  [
+                                              "Achamapuram"
+                                          ]
+                          },
+    "SANAPIRATTI":  {
+                        "office":  "SANAPIRATTI",
+                        "account_office":  "PASUPATHIPALAYAM",
+                        "account_office_pin":  "639 004",
+                        "fixed":  [
+                                      "SANAPIRATTI"
+                                  ],
+                        "unfixed":  [
+                                        "Adidravidar Street",
+                                        "Kudi Street",
+                                        "Agraharam",
+                                        "Pathaiyur",
+                                        "Bharathiyar Nagar"
+                                    ]
+                    },
+    "S.VELLALAPATTI":  {
+                           "office":  "S.VELLALAPATTI",
+                           "account_office":  "PASUPATHIPALAYAM",
+                           "account_office_pin":  "639 004",
+                           "fixed":  [
+                                         "Narikattiyur",
+                                         "Moolakatanoor"
+                                     ],
+                           "unfixed":  [
+                                           "Vadaskupalayam",
+                                           "Sanapiratti(LB)"
+                                       ]
+                       },
+    "DALAVAPALAYAM":  {
+                          "office":  "DALAVAPALAYAM",
+                          "account_office":  "PUGALUR",
+                          "account_office_pin":  "639 113",
+                          "fixed":  [
+                                        "Philip Nagar",
+                                        "M.Kumarasamy college",
+                                        "Malayampalayam",
+                                        "Ammapatti",
+                                        "Thalavapalayam Kadaiveedhi"
+                                    ],
+                          "unfixed":  [
+                                          "Pallakattu Thottam",
+                                          "Sengal Malai Thai Theru",
+                                          "Oottaakulam Road",
+                                          "Malayampalayam Nadar Street"
+                                      ]
+                      },
+    "EAST THAVITTUPALAYAM":  {
+                                 "office":  "EAST THAVITTUPALAYAM",
+                                 "account_office":  "PUGALUR",
+                                 "account_office_pin":  "639 113",
+                                 "fixed":  [
+                                               "Govindampalayam",
+                                               "Mettupalayam",
+                                               "T.Merkalur"
+                                           ],
+                                 "unfixed":  [
+                                                 "Dharmaraijapuram",
+                                                 "Veerarajapuram",
+                                                 "Kunni Kattur"
+                                             ]
+                             },
+    "KADAMBANKURICHI":  {
+                            "office":  "KADAMBANKURICHI",
+                            "account_office":  "PUGALUR",
+                            "account_office_pin":  "639 113",
+                            "fixed":  [
+                                          "P.Kadambankurichi",
+                                          "Periya Varapalayam",
+                                          "Chinna varapalayam",
+                                          "Siviyampalaym",
+                                          "Palvarpatty"
+                                      ],
+                            "unfixed":  [
+                                            "Mettupalayam",
+                                            "Ottankulam",
+                                            "Chetti Thotttam",
+                                            "Nanjai Kaambankurichi",
+                                            "Anna Nagar"
+                                        ]
+                        },
+    "NANJAI PUGALUR":  {
+                           "office":  "NANJAI PUGALUR",
+                           "account_office":  "PUGALUR",
+                           "account_office_pin":  "639 113",
+                           "fixed":  [
+                                         "Tharuttupalayam",
+                                         "Kattipalayam",
+                                         "Thirukaduthurai"
+                                     ],
+                           "unfixed":  [
+                                           "Agraharam",
+                                           "Karupanasamy Kovil Street",
+                                           "Mothukadu",
+                                           "Navaladi Nagar",
+                                           "Kaliyappa Nagar"
+                                       ]
+                       },
+    "PUNJAI PUGALUR":  {
+                           "office":  "PUNJAI PUGALUR",
+                           "account_office":  "PUGALUR",
+                           "account_office_pin":  "639 113",
+                           "fixed":  [
+                                         "Gowthamapuram",
+                                         "Punjaipugalur"
+                                     ],
+                           "unfixed":  [
+                                           "Palanimuthu Nagar",
+                                           "Katchiappan Colony",
+                                           "Bharath Nagar"
+                                       ]
+                       },
+    "NANNIYUR":  {
+                     "office":  "NANNIYUR",
+                     "account_office":  "PUGALUR",
+                     "account_office_pin":  "639 113",
+                     "fixed":  [
+                                   "N.Pudhur",
+                                   "Thuvarapalayam",
+                                   "Kovilpalayam",
+                                   "Sevanthipalayam"
+                               ],
+                     "unfixed":  [
+                                     "Kulathur",
+                                     "Vadukar Street"
+                                 ]
+                 },
+    "PUJAITHOTTAKURICHI":  {
+                               "office":  "PUJAITHOTTAKURICHI",
+                               "account_office":  "PUGALUR",
+                               "account_office_pin":  "639 113",
+                               "fixed":  [
+                                             "Punjaithottakurichi",
+                                             "Sengattanur",
+                                             "Ayyampalayam",
+                                             "Muthuraiapuram"
+                                         ],
+                               "unfixed":  [
+                                               "Kattu kadu",
+                                               "Kattur Ayyampalayam",
+                                               "Nanjai Thottakurichi"
+                                           ]
+                           },
+    "WEST ORATHAI":  {
+                         "office":  "WEST ORATHAI",
+                         "account_office":  "PUGALUR",
+                         "account_office_pin":  "639 113",
+                         "fixed":  [
+                                       "West Orathai",
+                                       "Sengalpalayam",
+                                       "Peiyapudur",
+                                       "Avarangattupudhur",
+                                       "Moorthipalayam(Partly)",
+                                       "Ganapathipalayam",
+                                       "East Orathai",
+                                       "Moonutupalayam"
+                                   ],
+                         "unfixed":  [
+                                         "Sengalmalai",
+                                         "Aathikkal Thottam",
+                                         "Merkuthottam",
+                                         "Ellukadu",
+                                         "Pallakkadu",
+                                         "VIP City",
+                                         "Mettukattur"
+                                     ]
+                     },
+    "KOYAMPALLI":  {
+                       "office":  "KOYAMPALLI",
+                       "account_office":  "PULIYUR",
+                       "account_office_pin":  "639 114",
+                       "fixed":  [
+                                     "Koyampalli",
+                                     "Sellipalayam"
+                                 ],
+                       "unfixed":  [
+                                       "Manalmedu",
+                                       "West kudi Street",
+                                       "East kudi Street"
+                                   ]
+                   },
+    "MELAPALAYAM":  {
+                        "office":  "MELAPALAYAM",
+                        "account_office":  "PULIYUR",
+                        "account_office_pin":  "639 114",
+                        "fixed":  [
+                                      "Melapayam (LB)",
+                                      "Nathamedu",
+                                      "Raiway Station",
+                                      "Agraharam"
+                                  ],
+                        "unfixed":  [
+                                        "Velan City",
+                                        "Maruthi Nagar",
+                                        "Thoppu"
+                                    ]
+                    },
+    "PULIYUR":  {
+                    "office":  "PULIYUR",
+                    "account_office":  "PULIYUR",
+                    "account_office_pin":  "639 114",
+                    "fixed":  [
+                                  "Kulathupalaym (LB)",
+                                  "Puravipalayam",
+                                  "Odamadayarpalayam"
+                              ],
+                    "unfixed":  [
+                                    "Kollalapalayam",
+                                    "Agaraharam",
+                                    "Kovilpalayam"
+                                ]
+                },
+    "SOMUR":  {
+                  "office":  "SOMUR",
+                  "account_office":  "PULIYUR",
+                  "account_office_pin":  "639 114",
+                  "fixed":  [
+                                "Cusba",
+                                "Chellandipalayam",
+                                "KaliappaGoundanputhur",
+                                "Yeluthuparai"
+                            ],
+                  "unfixed":  [
+                                  "Anna Nagar",
+                                  "MGR Nagar",
+                                  "Kalupalayam",
+                                  "Indra Colony",
+                                  "Kalaignar Nagar"
+                              ]
+              },
+    "UPPIDAMANGALAM":  {
+                           "office":  "UPPIDAMANGALAM",
+                           "account_office":  "PULIYUR",
+                           "account_office_pin":  "639 114",
+                           "fixed":  [
+                                         "Uppidamangalam",
+                                         "Chinnagoundanur",
+                                         "Jothivodam",
+                                         "Kaliyappagoundanur",
+                                         "Lakshmanapatti",
+                                         "Puthukanjamanur",
+                                         "Lingathur",
+                                         "Rengapalayam",
+                                         "Karuppampalayam",
+                                         "Saralapatti"
+                                     ],
+                           "unfixed":  [
+                                           "Kumaragpoundanur",
+                                           "Mel Vadugapatti",
+                                           "Chinnagoundanpudhur",
+                                           "Nachiyappagoundanpudhur",
+                                           "Rasapattiyanpudhur",
+                                           "Pugaiyilaiyanpudhur",
+                                           "Vennilai",
+                                           "Balamalpuram",
+                                           "Palayakanjamanur",
+                                           "Rasagoundanur",
+                                           "Papparttiyur",
+                                           "Vaiyapurigoundanur",
+                                           "Pattakaranur",
+                                           "Mochakayanur",
+                                           "Samathuvapuram",
+                                           "Thandakaranur"
+                                       ]
+                       },
+    "VEDICHIPALAYAM":  {
+                           "office":  "VEDICHIPALAYAM",
+                           "account_office":  "PULIYUR",
+                           "account_office_pin":  "639 114",
+                           "fixed":  [
+                                         "Ottahaiyar(LB)",
+                                         "ThannasiGoundanPudgur",
+                                         "Kattukalam",
+                                         "Rengamettukalam"
+                                     ],
+                           "unfixed":  [
+                                           "Otthakadai",
+                                           "Edayarpalayam",
+                                           "Seethakattur"
+                                       ]
+                       },
+    "VEERARAKKIYAM":  {
+                          "office":  "VEERARAKKIYAM",
+                          "account_office":  "PULIYUR",
+                          "account_office_pin":  "639 114",
+                          "fixed":  [
+                                        "Ulveerarakyam",
+                                        "kamarajPanai",
+                                        "Verarakkiyam (RS)",
+                                        "Natarajpuram",
+                                        "Chinnamannayakanpatti"
+                                    ],
+                          "unfixed":  [
+                                          "Vadukkapatti",
+                                          "Papparthottam",
+                                          "Ayanthottam",
+                                          "Renganathapuram Road",
+                                          "Mariyamman Nagar",
+                                          "Ganseh Nagar",
+                                          "Andipalayam",
+                                          "Kandhasamy Nagar"
+                                      ]
+                      },
+    "KODANGIPATTI":  {
+                         "office":  "KODANGIPATTI",
+                         "account_office":  "THANTHONIMALAI",
+                         "account_office_pin":  "639 005",
+                         "fixed":  [
+                                       "Saradha College"
+                                   ],
+                         "unfixed":  [
+                                         "Chinnamanaickenickenpatti",
+                                         "K.M.Pudur",
+                                         "Malamanaickenpatti",
+                                         "Vellagoundan Nagar",
+                                         "Perumalpatti"
+                                     ]
+                     },
+    "MOOKANANKURICHI":  {
+                            "office":  "MOOKANANKURICHI",
+                            "account_office":  "THONTHONIMALAI",
+                            "account_office_pin":  "639 005",
+                            "fixed":  [
+                                          "Kanthasarapatti",
+                                          "Thammanaickenpatti",
+                                          "Veeranampalayam",
+                                          "Koravapatti",
+                                          "Vellagoundanppatti"
+                                      ],
+                            "unfixed":  [
+                                            "TherkuThottam",
+                                            "Nallamakalipatti",
+                                            "Chinnamakuttaipudur",
+                                            "Valkattupudur",
+                                            "Saradhapuram",
+                                            "Pathampatti",
+                                            "Rasagoundanpudur",
+                                            "Arumaikaranpudhur",
+                                            "Muthukuliyur",
+                                            "Nathamedu"
+                                        ]
+                        },
+    "PAGANATHAM":  {
+                       "office":  "PAGANATHAM",
+                       "account_office":  "THONTHONIMALAI",
+                       "account_office_pin":  "639 005",
+                       "fixed":  [
+                                     "Avuthipalayam",
+                                     "Chinnakulathupatty",
+                                     "Nochipatty",
+                                     "Paganatham (LB)",
+                                     "Vedikkaranpatty"
+                                 ],
+                       "unfixed":  [
+                                       "Rengapalayam"
+                                   ]
+                   },
+    "MANAVADI":  {
+                     "office":  "MANAVADI",
+                     "account_office":  "THONTHONIMALAI",
+                     "account_office_pin":  "639 005",
+                     "fixed":  [
+                                   "Ayyampalayam",
+                                   "Manavadi",
+                                   "Palvarpatti",
+                                   "Nallasellipalayam"
+                               ],
+                     "unfixed":  [
+                                     "Perumalpatti",
+                                     "Bismi Colony",
+                                     "Ayyampalayam Colony",
+                                     "Periya Colony",
+                                     "Rasampalayam",
+                                     "Vathagoundanoor",
+                                     "Perumalpatti Colony",
+                                     "Karuppagoundanpudhur",
+                                     "vellappagoundanpudhur"
+                                 ]
+                 },
+    "APPIPALAYAM":  {
+                        "office":  "APPIPALAYAM",
+                        "account_office":  "THIRUMANILAIYUR",
+                        "account_office_pin":  "639 003",
+                        "fixed":  [
+                                      "Appipalayam",
+                                      "Chettipalayam",
+                                      "Karuppmpalayam",
+                                      "Rakkiyagoundanpudhur"
+                                  ],
+                        "unfixed":  [
+                                        "Palathuputhur",
+                                        "Muthusoluipalayam",
+                                        "Goundar Thottam",
+                                        "Rasapuram",
+                                        "AK Barathi Nagar",
+                                        "Pudhu Nagar",
+                                        "SN Nagar",
+                                        "SriramNagar",
+                                        "Vengatagalpathi Nagar",
+                                        "Chettipalayam Colony",
+                                        "Therku Thottam"
+                                    ]
+                    },
+    "KAKKAVADI":  {
+                      "office":  "KAKKAVADI",
+                      "account_office":  "THIRUMANILAIYUR",
+                      "account_office_pin":  "639 003",
+                      "fixed":  [
+                                    "Kullampatti (LB)",
+                                    "Keelpasupathipalayam",
+                                    "Kakkavadi",
+                                    "Attayamparapu"
+                                ],
+                      "unfixed":  [
+                                      "Melpasupathipalayam",
+                                      "Aavarangattupudhur",
+                                      "Ammaiyagoundanpudhur",
+                                      "Karasakattupudhur",
+                                      "Naickanur",
+                                      "Velappagoundanpudhur",
+                                      "Kethampatty",
+                                      "Sadaiyappagoundanpudhur",
+                                      "Kaiyappagoundanpudhur",
+                                      "Kokkampatty",
+                                      "Oothukaraipatty",
+                                      "Manalthottam"
+                                  ]
+                  },
+    "THALAPATTI":  {
+                       "office":  "THALAPATTI",
+                       "account_office":  "THIRUMANILAIYUR",
+                       "account_office_pin":  "639 003",
+                       "fixed":  [
+                                     "Manalmedu",
+                                     "Pallamatti",
+                                     "Kodaiyur",
+                                     "Thalapatti",
+                                     "P.A. Garamam"
+                                 ],
+                       "unfixed":  [
+                                       "Machanna Nagar",
+                                       "Chinna Pallampatti",
+                                       "Kangaroo Impex",
+                                       "Mettupatti",
+                                       "Suttampatti",
+                                       "Coolingakannur Colony",
+                                       "Seiyappagoundanpudhur",
+                                       "Sengalipalayam",
+                                       "Rayapuram",
+                                       "Thalapatti Colony",
+                                       "NSN Nagar",
+                                       "Bharathi Nagar",
+                                       "Velappagoundanpudhur"
+                                   ]
+                   },
+    "THORANAKKALPATTI":  {
+                             "office":  "THORANAKKALPATTI",
+                             "account_office":  "THIRUMANILAIYUR",
+                             "account_office_pin":  "639 003",
+                             "fixed":  [
+                                           "T.Chelladipalayam",
+                                           "Rayanur"
+                                       ],
+                             "unfixed":  [
+                                             "Idachikinathur",
+                                             "Thoranakkalpatti",
+                                             "Paraiyur",
+                                             "Jallivadanaikanur",
+                                             "Othaiyur",
+                                             "Palvarpatti"
+                                         ]
+                         },
+    "SUKKALIYUR":  {
+                       "office":  "SUKKALIYUR",
+                       "account_office":  "THIRUMANILAIYUR",
+                       "account_office_pin":  "639 003",
+                       "fixed":  [
+                                     "Panduthakaranpudhur (LB)",
+                                     "Muthugoundanpudhur(LB)",
+                                     "Salaipudhur",
+                                     "North Sukkaliyur",
+                                     "Sounth Sukkaliyur",
+                                     "Periya Goundanpudhur"
+                                 ],
+                       "unfixed":  [
+                                       "Karattupalayam",
+                                       "Gandhi Nagar",
+                                       "Salaiputhur Colony",
+                                       "Naikkar Sukkaliyur",
+                                       "Mattaparai pudhur",
+                                       "SKS Nagar"
+                                   ]
+                   },
+    "PUTHAMPUR":  {
+                      "office":  "PUTHAMPUR",
+                      "account_office":  "THIRUMANILAIYUR",
+                      "account_office_pin":  "639 003",
+                      "fixed":  [
+                                    "Puthambur",
+                                    "Samathuvapuram",
+                                    "Aaru road",
+                                    "Kanagapuri"
+                                ],
+                      "unfixed":  [
+                                      "Vadugapatti",
+                                      "Kalipalayam",
+                                      "Textile park",
+                                      "MerkuThottam",
+                                      "Anju Road",
+                                      "Kakkarampatti",
+                                      "Malaiyur",
+                                      "Soliyappagoundanputhur",
+                                      "K.Venkitapuram",
+                                      "Karaipalayam",
+                                      "Valluvar College",
+                                      "G.K.Vidhyamandir"
+                                  ]
+                  },
+    "MUDIGANAM":  {
+                      "office":  "MUDIGANAM",
+                      "account_office":  "SENGUNTHAPURAM",
+                      "account_office_pin":  "639 002",
+                      "fixed":  [
+                                    "Mudiganam",
+                                    "Kasipalayam",
+                                    "P.Anaipalayam",
+                                    "Thottivadi"
+                                ],
+                      "unfixed":  [
+                                      "Ammn Nagar",
+                                      "Kankeyapalayam",
+                                      "Pudur",
+                                      "Nimithapatti",
+                                      "VanikaraiyarThottam"
+                                  ]
+                  },
+    "PAVITHIRAM":  {
+                       "office":  "PAVITHIRAM",
+                       "account_office":  "SENGUNTHAPURAM",
+                       "account_office_pin":  "639 002",
+                       "fixed":  [
+                                     "Pavithram",
+                                     "Kulathupalayam",
+                                     "Kurumbapatti",
+                                     "Salapalayam"
+                                 ],
+                       "unfixed":  [
+                                       "Mettukadai",
+                                       "Murugan Nagar \u0026 Andavar Nagar",
+                                       "Pavithram colony 1,2,3.",
+                                       "Christian street",
+                                       "Malaiyur",
+                                       "Palamalai",
+                                       "Nochipalayam",
+                                       "Kolunchekattur",
+                                       "China Kulahupalayam",
+                                       "Kurumbapatti Colony",
+                                       "Rasampalayam",
+                                       "Poopali",
+                                       "Vanavil",
+                                       "Muthusolipalayam",
+                                       "Vaangalanthottam",
+                                       "Jayanthi Nagar",
+                                       "Kanthampalayam",
+                                       "Kumaragoundanputhur",
+                                       "South Kurumbapatti",
+                                       "Salapalayam- BharaniNagar"
+                                   ]
+                   },
+    "PALLAMARUTHAPATTI":  {
+                              "office":  "PALLAMARUTHAPATTI",
+                              "account_office":  "SENGUNTHAPURAM",
+                              "account_office_pin":  "639 002",
+                              "fixed":  [
+                                            "Pallamruthapatti(LB)",
+                                            "Periyathathampalayam",
+                                            "Chinnathathampalayam",
+                                            "Malaichipudhur",
+                                            "Kothampalayam",
+                                            "Eluppakinathupatti",
+                                            "Kiluvampalayam",
+                                            "Panjamadevipudur"
+                                        ],
+                              "unfixed":  [
+                                              "Ganapathypalayam",
+                                              "P.M. Patti Mekalur",
+                                              "P.M. PattiPuthur"
+                                          ]
+                          },
+    "THUMBIVADI":  {
+                       "office":  "THUMBIVADI",
+                       "account_office":  "SENGUNTHAPURAM",
+                       "account_office_pin":  "639 002",
+                       "fixed":  [
+                                     "Thumbivadi(LB)",
+                                     "Puravipalayam",
+                                     "Sengalapuram",
+                                     "Vellaripatti",
+                                     "T.Pasupathipalayam",
+                                     "Kalathur",
+                                     "Sivan colony",
+                                     "Sakthi Nagar"
+                                 ],
+                       "unfixed":  [
+                                       "Five Road",
+                                       "Amman Nagar",
+                                       "Bharathiyar Nagar",
+                                       "Periyar Nagar"
+                                   ]
+                   },
+    "PALLAPALAYAM":  {
+                         "office":  "PALLAPALAYAM",
+                         "account_office":  "SENGUNTHAPURAM",
+                         "account_office_pin":  "639 002",
+                         "fixed":  [
+                                       "Anur",
+                                       "Pallapalayam (LB)",
+                                       "Selladipalayam"
+                                   ],
+                         "unfixed":  [
+                                         "Aannurammankovil Street",
+                                         "Petrol Bunk Medu",
+                                         "Main road- High School",
+                                         "Pallapalayamvadaku colony",
+                                         "Pasllapalayamtheru Colony",
+                                         "Suriyagoundanpudur",
+                                         "Pukkrandi Amman Nagar",
+                                         "KaavalkaaraTheru",
+                                         "MarudhaiveeranTheru",
+                                         "Agraharam",
+                                         "Gandhipuram",
+                                         "Harijana Colony",
+                                         "KaruppanswamyKovilTheru",
+                                         "PaakuraaiThottam",
+                                         "KarunanithiTheru",
+                                         "VadakuTheru",
+                                         "Vishnu garden"
+                                     ]
+                     },
+    "VISHWANATHAPURI":  {
+                            "office":  "VISHWANATHAPURI",
+                            "account_office":  "SENGUNTHAPURAM",
+                            "account_office_pin":  "639 002",
+                            "fixed":  [
+                                          "Vishwanathapuri",
+                                          "Kulathurpatti",
+                                          "Manadagiriyur",
+                                          "Thanneerpanthal",
+                                          "Anaiyrpuram",
+                                          "LGB Mochakottampalayam"
+                                      ],
+                            "unfixed":  [
+                                            "Melakulathurpatti",
+                                            "Keelakulathurpatti",
+                                            "MGR Nagar",
+                                            "Anna Nagar East",
+                                            "Pasumai Nagar",
+                                            "Ulaipali Nagar",
+                                            "Salaivaikal Street",
+                                            "ThearVeethi",
+                                            "MallammanKovil Street",
+                                            "Sengamalai Street",
+                                            "South Street",
+                                            "Ellaparai",
+                                            "Vishwanathapuripirivu",
+                                            "Anna Nagar west"
+                                        ]
+                        },
+    "VANGAL EAST":  {
+                        "office":  "VANGAL EAST",
+                        "account_office":  "VANGAL",
+                        "account_office_pin":  "639 116",
+                        "fixed":  [
+                                      "Mallampalayam (LB)",
+                                      "Senappadi(LB)",
+                                      "Muniyappanur(LB)",
+                                      "Odaiyur(LB)",
+                                      "Karuppampalayam(LB)"
+                                  ],
+                        "unfixed":  [
+
+                                    ]
+                    },
+    "MINNAMPALLI":  {
+                        "office":  "MINNAMPALLI",
+                        "account_office":  "VANGAL",
+                        "account_office_pin":  "639 116",
+                        "fixed":  [
+                                      "Aravangattur",
+                                      "Sangaranpalayam",
+                                      "Thannirpandhalpalayam",
+                                      "GoundanPudhur",
+                                      "Minnampalli (LB)"
+                                  ],
+                        "unfixed":  [
+                                        "Ambalagoudanpudhur",
+                                        "PullaGoundanPudhur",
+                                        "PeriyaGoundanPudhur"
+                                    ]
+                    },
+    "KUPPICHIPALAYAM":  {
+                            "office":  "KUPPICHIPALAYAM",
+                            "account_office":  "VANGAL",
+                            "account_office_pin":  "639 116",
+                            "fixed":  [
+                                          "Koppampalayam",
+                                          "Mari Goundanpalayam",
+                                          "Valliyappampalayam",
+                                          "Karur Vetri Vinayaka School"
+                                      ],
+                            "unfixed":  [
+                                            "Ganapathipalayam",
+                                            "Ellaiyur",
+                                            "Komakattan Thottam",
+                                            "Kirayur"
+                                        ]
+                        },
+    "VENNAMALAI":  {
+                       "office":  "VENNAMALAI",
+                       "account_office":  "VENGAMEDU",
+                       "account_office_pin":  "639 006",
+                       "fixed":  [
+                                     "Periyavadupatti (LB)",
+                                     "Chinnavadugapatti(LB)",
+                                     "Kuppuchipalayam(LB)"
+                                 ],
+                       "unfixed":  [
+                                       "Perichipalayam",
+                                       "Ram Nagar(North,South)",
+                                       "Chettipallayam",
+                                       "Vadukapatti Pudhur",
+                                       "Chettipalayam Pudhur Colony",
+                                       "Naval Nagar Extention 1 to 9"
+                                   ]
+                   },
+    "MANMANGALAM":  {
+                        "office":  "MANMANGALAM",
+                        "account_office":  "VENGAMEDU",
+                        "account_office_pin":  "639 006",
+                        "fixed":  [
+                                      "Rameshwarapatti",
+                                      "Panduthakaranpudhur",
+                                      "Thulipatti",
+                                      "Periyavallipalayam",
+                                      "Kalipalayam"
+                                  ],
+                        "unfixed":  [
+                                        "Kudukuduthanoor",
+                                        "kuppuchiyagoundanoor",
+                                        "Kizhakoor",
+                                        "Merkoor",
+                                        "Methinagar",
+                                        "Samathuvapuram",
+                                        "Chinnavallipalayam",
+                                        "Pudupalayam",
+                                        "BC Colony",
+                                        "Semmadai"
+                                    ]
+                    },
+    "NADAYANUR":  {
+                      "office":  "NADAYANUR",
+                      "account_office":  "VELAYUTHAMPALAYAM",
+                      "account_office_pin":  "639 117",
+                      "fixed":  [
+                                    "Nadayanur",
+                                    "Kombupalayam",
+                                    "Karaipalayam",
+                                    "Nathamettupalayam"
+                                ],
+                      "unfixed":  [
+                                      "Sottaiyur",
+                                      "Petchiparai",
+                                      "Kanakankadu",
+                                      "Alamarathumedu",
+                                      "R.S. Thottam",
+                                      "Kulakadu",
+                                      "konthottam"
+                                  ]
+                  },
+    "NOYYAL":  {
+                   "office":  "NOYYAL",
+                   "account_office":  "VELAYUTHAMPALAYAM",
+                   "account_office_pin":  "639 117",
+                   "fixed":  [
+                                 "Kurukkusalai",
+                                 "Velliyampalayam",
+                                 "Maravapalayam",
+                                 "Noyyal"
+                             ],
+                   "unfixed":  [
+                                   "Anna Nagar",
+                                   "Bangala Nagar",
+                                   "NadarPuram",
+                                   "Anna Nagar( North)",
+                                   "Ganapathipalayam",
+                                   "Mahathama Gandhi Nagar"
+                               ]
+               },
+    "VETTAMANGALAM":  {
+                          "office":  "VETTAMANGALAM",
+                          "account_office":  "VELAYUTHAMPALAYAM",
+                          "account_office_pin":  "639 117",
+                          "fixed":  [
+                                        "Kaalipalayam",
+                                        "Kulathupalayam",
+                                        "Unnuthupalayam",
+                                        "Kunthanipalayam"
+                                    ],
+                          "unfixed":  [
+                                          "Nathamedu",
+                                          "Aasaripattarai",
+                                          "Moonutupalayam",
+                                          "Vadugapatti",
+                                          "Pungodai",
+                                          "Vettamangalam"
+                                      ]
+                      },
+    "SEMANGI":  {
+                    "office":  "SEMANGI",
+                    "account_office":  "VELAYUTHAMPALAYAM",
+                    "account_office_pin":  "639 117",
+                    "fixed":  [
+                                  "Semangi",
+                                  "Muthanur",
+                                  "Muninathapuram",
+                                  "Selva Nagar",
+                                  "Goundanpudhur"
+                              ],
+                    "unfixed":  [
+                                    "Periyarnagar",
+                                    "MGR Nagar",
+                                    "Chettithottam",
+                                    "Vadivael Nagar",
+                                    "Orambupalayalam",
+                                    "Sullipallam",
+                                    "MLA Thottam"
+                                ]
+                }
+}

@@ -1,0 +1,1513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Department of Posts — Sub Divisional Manager, Karur Sub Division</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1F3864; --navy-2:#2A4A82; --indigo:#4f46e5; --violet:#7c3aed;
+    --pink:#ec4899; --orange:#f97316; --amber:#f59e0b; --teal:#0d9488;
+    --emerald:#059669; --cyan:#0891b2; --rose:#e11d48;
+    --bg:#eef2fb; --card:#ffffff;
+    --ink:#0f172a; --ink-2:#1e293b; --muted:#64748b; --line:#e2e8f0;
+    --good:#059669; --warn:#d97706; --bad:#dc2626;
+    --row-alt:#f8fafc;
+    --karur:#4f46e5; --kulittalai:#0d9488; --unknown:#dc2626;
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04);
+    --shadow-md:0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
+    --shadow-lg:0 12px 32px rgba(15,23,42,.12), 0 4px 12px rgba(15,23,42,.06);
+    --shadow-glow:0 0 0 1px rgba(79,70,229,.18), 0 8px 24px rgba(79,70,229,.18);
+    --grad-brand:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%);
+    --grad-warm:linear-gradient(135deg,#f97316 0%,#e11d48 100%);
+    --grad-cool:linear-gradient(135deg,#0891b2 0%,#4f46e5 100%);
+    --grad-mint:linear-gradient(135deg,#059669 0%,#0d9488 100%);
+    --grad-sun:linear-gradient(135deg,#f59e0b 0%,#f97316 60%,#e11d48 100%);
+    --grad-karur:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);
+    --grad-kulittalai:linear-gradient(135deg,#0d9488 0%,#0891b2 100%);
+    --grad-bg:radial-gradient(1200px 600px at -10% -20%, #dbe4ff 0%, transparent 60%),
+              radial-gradient(900px 500px at 110% 0%, #fce7f3 0%, transparent 55%),
+              radial-gradient(800px 600px at 50% 120%, #d1fae5 0%, transparent 60%),
+              linear-gradient(180deg,#eef2fb 0%,#f5f7fd 100%);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;color:var(--ink);font:14.5px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--grad-bg);background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:rgba(124,58,237,.22)}
+
+  /* ---------- Header ---------- */
+  header{
+    position:relative;color:#fff;padding:22px 28px;
+    background:linear-gradient(120deg,#1F3864 0%,#4f46e5 45%,#7c3aed 75%,#ec4899 110%);
+    overflow:hidden;border-bottom:1px solid rgba(255,255,255,.15);
+    box-shadow:0 8px 24px rgba(31,56,100,.18);
+  }
+  header::before{content:"";position:absolute;inset:0;background:
+    radial-gradient(600px 200px at 10% 0%, rgba(255,255,255,.18), transparent 60%),
+    radial-gradient(500px 220px at 90% 100%, rgba(255,255,255,.12), transparent 60%);pointer-events:none}
+  header::after{content:"";position:absolute;inset:0;background-image:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.14) 1px, transparent 0);
+    background-size:22px 22px;opacity:.35;pointer-events:none}
+  .header-inner{position:relative;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;max-width:1240px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{
+    width:42px;height:42px;border-radius:12px;display:grid;place-items:center;
+    background:linear-gradient(135deg,#fff 0%,#e0e7ff 100%);color:#4f46e5;
+    box-shadow:0 6px 16px rgba(0,0,0,.18), inset 0 -2px 6px rgba(79,70,229,.18);
+    font-weight:800;font-size:18px;font-family:"Plus Jakarta Sans","Inter",sans-serif;
+  }
+  header h1{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:20px;margin:0;font-weight:800;letter-spacing:.2px;line-height:1.1}
+  header .sub{font-size:12.5px;opacity:.92;margin-top:2px;font-weight:500}
+  header .privacy{
+    display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.2px;
+    background:rgba(255,255,255,.16);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.28);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .privacy .dot{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 10px #34d399;animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.25);opacity:.7}}
+
+  main{max-width:1240px;margin:0 auto;padding:24px 20px 8px}
+
+  /* ---------- Card ---------- */
+  .card{
+    position:relative;background:rgba(255,255,255,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.6);border-radius:18px;padding:22px;margin-bottom:18px;
+    box-shadow:var(--shadow-md);
+    transition:box-shadow .25s ease, transform .25s ease;
+  }
+  .card:hover{box-shadow:var(--shadow-lg)}
+  .card h2{
+    margin:0 0 14px;font-family:"Plus Jakarta Sans","Inter",sans-serif;
+    font-size:13.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1.6px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .card h2 .num{
+    width:26px;height:26px;border-radius:8px;display:inline-grid;place-items:center;color:#fff;
+    font-size:12px;font-weight:800;background:var(--grad-brand);box-shadow:0 4px 10px rgba(124,58,237,.35);
+  }
+  .card h2 .num.n2{background:var(--grad-cool);box-shadow:0 4px 10px rgba(8,145,178,.35)}
+  .card h2 .num.n3{background:var(--grad-mint);box-shadow:0 4px 10px rgba(5,150,105,.35)}
+  .card h2 .num.n4{background:var(--grad-sun);box-shadow:0 4px 10px rgba(249,115,22,.35)}
+
+  /* ---------- Drop zone ---------- */
+  .drop-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 8px 4px;text-align:center}
+  .drop{
+    position:relative;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;padding:30px 56px;min-width:min(520px,92%);
+    border:0;border-radius:22px;cursor:pointer;text-align:center;
+    background:var(--grad-brand);color:#fff;
+    box-shadow:
+      0 18px 40px rgba(124,58,237,.38),
+      0 4px 12px rgba(79,70,229,.22),
+      inset 0 1px 0 rgba(255,255,255,.28),
+      inset 0 -3px 8px rgba(0,0,0,.12);
+    transition:transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease, filter .2s ease;
+    overflow:hidden;isolation:isolate;
+  }
+  .drop::before{
+    content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;
+    background:linear-gradient(135deg,#ec4899 0%,#f97316 50%,#4f46e5 100%);
+    opacity:0;transition:opacity .35s ease;
+  }
+  .drop::after{
+    content:"";position:absolute;top:-60%;left:-30%;width:60%;height:220%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);
+    transform:rotate(18deg) translateX(-100%);transition:transform .9s ease;pointer-events:none;
+  }
+  .drop:hover{transform:translateY(-3px) scale(1.01);box-shadow:0 24px 56px rgba(124,58,237,.48), 0 6px 16px rgba(236,72,153,.28), inset 0 1px 0 rgba(255,255,255,.32), inset 0 -3px 8px rgba(0,0,0,.14)}
+  .drop:hover::before{opacity:1}
+  .drop:hover::after{transform:rotate(18deg) translateX(260%)}
+  .drop:active{transform:translateY(-1px) scale(.998)}
+  .drop:focus-within{outline:3px solid rgba(124,58,237,.35);outline-offset:4px}
+  .drop.drag{transform:translateY(-3px) scale(1.02);box-shadow:0 28px 60px rgba(236,72,153,.45), inset 0 1px 0 rgba(255,255,255,.35)}
+  .drop.drag::before{opacity:1}
+
+  .drop .cloud{
+    width:72px;height:72px;border-radius:50%;display:inline-grid;place-items:center;
+    background:rgba(255,255,255,.18);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    color:#fff;font-size:32px;border:1.5px solid rgba(255,255,255,.32);
+    box-shadow:inset 0 -3px 8px rgba(0,0,0,.12), 0 6px 16px rgba(0,0,0,.18);
+    animation:floaty 3.4s ease-in-out infinite;
+  }
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+  .drop .title{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:18px;font-weight:800;letter-spacing:.3px;color:#fff;line-height:1.3;text-shadow:0 1px 2px rgba(0,0,0,.18)}
+  .drop .title em{font-style:normal;font-weight:800}
+  .drop .hint{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.4px;color:#fff;opacity:.95;background:rgba(255,255,255,.18);padding:6px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.28)}
+  .drop input{display:none}
+  .drop-foot{margin-top:14px;font-size:11.5px;color:var(--muted);letter-spacing:.3px}
+  .drop-foot kbd{font-family:"Inter",monospace;font-size:10.5px;background:#fff;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--ink-2);font-weight:600;margin:0 2px}
+
+  /* ---------- Options ---------- */
+  .options{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+  .field input,.field select,.field textarea{
+    padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font:500 14px/1.2 inherit;background:#fff;color:var(--ink);
+    transition:.15s;
+  }
+  .field textarea{resize:vertical;min-height:40px;font-family:inherit}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 4px rgba(124,58,237,.14)}
+  .toggle{
+    display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600;color:var(--ink);
+    padding:10px 12px;background:#fff;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;
+    transition:.15s; user-select:none;
+  }
+  .toggle:hover{border-color:#7c3aed;background:#faf8ff}
+  .toggle input{appearance:none;-webkit-appearance:none;width:36px;height:20px;background:#cbd5e1;border-radius:999px;position:relative;cursor:pointer;transition:.2s;flex-shrink:0}
+  .toggle input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 2px 4px rgba(0,0,0,.15)}
+  .toggle input:checked{background:var(--grad-brand)}
+  .toggle input:checked::after{transform:translateX(16px)}
+
+  /* ---------- Stats ---------- */
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+  .stat{
+    position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;
+    box-shadow:var(--shadow-sm);overflow:hidden;transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+  .stat::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--grad-brand)}
+  .stat:nth-child(2)::before{background:var(--grad-cool)}
+  .stat:nth-child(3)::before{background:var(--grad-sun)}
+  .stat:nth-child(4)::before{background:var(--grad-mint)}
+  .stat:nth-child(5)::before{background:var(--grad-warm)}
+  .stat:nth-child(6)::before{background:var(--grad-karur)}
+  .stat:nth-child(7)::before{background:var(--grad-kulittalai)}
+  .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:700}
+  .stat .v{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:28px;font-weight:800;color:var(--ink);margin-top:6px;line-height:1}
+
+  /* ---------- Group cards ---------- */
+  .groupcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+  .gcard{
+    position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;
+    display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow-sm);overflow:hidden;
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .gcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+  .gcard::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad-brand)}
+  .gcard:nth-child(6n+2)::before{background:var(--grad-cool)}
+  .gcard:nth-child(6n+3)::before{background:var(--grad-sun)}
+  .gcard:nth-child(6n+4)::before{background:var(--grad-mint)}
+  .gcard:nth-child(6n+5)::before{background:var(--grad-warm)}
+  .gcard:nth-child(6n)::before{background:linear-gradient(135deg,#0891b2 0%,#059669 100%)}
+  .gcard .name{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-weight:700;font-size:15px;color:var(--ink);line-height:1.25}
+  .gcard .meta{display:flex;gap:6px;flex-wrap:wrap;font-size:12px}
+  .gcard .meta .chip{
+    display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;color:var(--ink-2);
+    padding:4px 10px;border-radius:999px;font-weight:600;font-size:11.5px;
+  }
+  .gcard .meta .chip.k{background:#ede9fe;color:#5b21b6}
+  .gcard .meta .chip.t{background:#ccfbf1;color:#115e59}
+  .gcard .meta .chip.d{background:#fee2e2;color:#991b1b}
+
+  /* ---------- Buttons ---------- */
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  button.btn{
+    background:var(--grad-brand);color:#fff;border:0;padding:10px 16px;border-radius:10px;cursor:pointer;
+    font:700 12.5px/1 "Inter",inherit;letter-spacing:.3px;display:inline-flex;align-items:center;gap:6px;
+    box-shadow:0 4px 12px rgba(124,58,237,.28), inset 0 1px 0 rgba(255,255,255,.2);
+    transition:.18s ease; position:relative; overflow:hidden;
+  }
+  button.btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(124,58,237,.38), inset 0 1px 0 rgba(255,255,255,.25)}
+  button.btn:active{transform:translateY(0)}
+  button.btn.alt{
+    background:#fff;color:#4f46e5;border:1.5px solid #c7d2fe;
+    box-shadow:var(--shadow-sm);
+  }
+  button.btn.alt:hover{background:#f5f3ff;border-color:#7c3aed;color:#6d28d9;box-shadow:var(--shadow-md)}
+  button.btn.big{padding:12px 22px;font-size:13.5px;border-radius:12px}
+  button.btn.warm{background:var(--grad-warm);box-shadow:0 4px 12px rgba(225,29,72,.28), inset 0 1px 0 rgba(255,255,255,.2)}
+  button.btn.warm:hover{box-shadow:0 8px 20px rgba(225,29,72,.38), inset 0 1px 0 rgba(255,255,255,.25)}
+  button.btn.mint{background:var(--grad-mint);box-shadow:0 4px 12px rgba(5,150,105,.28), inset 0 1px 0 rgba(255,255,255,.2)}
+  button.btn.mint:hover{box-shadow:0 8px 20px rgba(5,150,105,.38), inset 0 1px 0 rgba(255,255,255,.25)}
+  button.btn.tiny{padding:6px 10px;font-size:11px;border-radius:8px}
+  button.btn.danger{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);box-shadow:0 4px 12px rgba(220,38,38,.28)}
+  button.btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+
+  /* ---------- Accordion ---------- */
+  details.group{
+    border:1px solid var(--line);border-radius:14px;background:#fff;margin-bottom:12px;overflow:hidden;
+    box-shadow:var(--shadow-sm);transition:box-shadow .2s ease;
+  }
+  details.group[open]{box-shadow:var(--shadow-md)}
+  details.group>summary{
+    cursor:pointer;list-style:none;padding:14px 18px;
+    background:linear-gradient(135deg,#f8fafc 0%,#eef2ff 100%);
+    display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+    border-bottom:1px solid transparent;transition:.15s;
+  }
+  details.group[open]>summary{border-bottom-color:var(--line);background:linear-gradient(135deg,#eef2ff 0%,#fae8ff 100%)}
+  details.group>summary::-webkit-details-marker{display:none}
+  details.group>summary .ttl{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-weight:700;font-size:15px;color:var(--ink);display:flex;align-items:center;gap:10px}
+  details.group>summary .ttl::before{content:"▸";display:inline-block;color:#7c3aed;transition:.2s;font-size:13px}
+  details.group[open]>summary .ttl::before{transform:rotate(90deg)}
+  details.group>summary .badges{display:flex;gap:6px;flex-wrap:wrap}
+  .badge{
+    background:#fff;color:#4f46e5;padding:4px 10px;border-radius:999px;font-weight:700;font-size:11.5px;
+    border:1px solid #c7d2fe;box-shadow:var(--shadow-sm);
+  }
+  .badge.g{background:#d1fae5;color:#065f46;border-color:#a7f3d0}
+  .badge.k{background:#ede9fe;color:#5b21b6;border-color:#c7d2fe}
+  .badge.t{background:#ccfbf1;color:#115e59;border-color:#99f6e4}
+  .badge.d{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+  .badge.m{background:#fef3c7;color:#92400e;border-color:#fde68a}
+
+  /* HO section blocks inside accordion */
+  .ho-block{padding:14px 18px 6px;border-top:1px solid var(--line)}
+  .ho-block:first-of-type{border-top:0}
+  .ho-head{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;
+  }
+  .ho-head .ho-ttl{
+    font-family:"Plus Jakarta Sans","Inter",sans-serif;font-weight:800;font-size:13.5px;
+    display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;color:#fff;
+    text-transform:uppercase;letter-spacing:.4px;
+  }
+  .ho-head .ho-ttl.karur{background:var(--grad-karur);box-shadow:0 4px 10px rgba(124,58,237,.3)}
+  .ho-head .ho-ttl.kulittalai{background:var(--grad-kulittalai);box-shadow:0 4px 10px rgba(13,148,136,.3)}
+  .ho-head .ho-ttl.unknown{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);box-shadow:0 4px 10px rgba(220,38,38,.3)}
+  .ho-head .ho-stats{display:flex;gap:6px;flex-wrap:wrap}
+
+  .tablewrap{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:10px}
+  table.preview{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.preview th{
+    background:linear-gradient(180deg,#1F3864 0%,#4f46e5 100%);color:#fff;text-align:left;padding:10px 10px;
+    position:sticky;top:0;font-weight:700;border-right:1px solid rgba(255,255,255,.12);font-size:11.5px;
+    text-transform:uppercase;letter-spacing:.5px;z-index:1;
+  }
+  table.preview th:first-child{padding-left:14px}
+  table.preview td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+  table.preview td:first-child{padding-left:14px;font-weight:600;color:#7c3aed}
+  table.preview tr:nth-child(even) td{background:var(--row-alt)}
+  table.preview tr:hover td{background:#eef2ff}
+  table.preview tr.total td{background:linear-gradient(90deg,#ede9fe 0%,#fae8ff 100%)!important;font-weight:800;color:#5b21b6;border-top:2px solid #7c3aed;font-size:13px}
+  table.preview tr.manual td{background:#fef3c7 !important}
+  table.preview tr.manual:hover td{background:#fde68a !important}
+  table.preview .actcell{white-space:nowrap}
+  table.preview .manchip{display:inline-block;background:#f59e0b;color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;letter-spacing:.4px;margin-right:4px}
+
+  /* ---------- Manual entry form ---------- */
+  .manual-form{
+    margin:10px 18px 12px;padding:14px;border:1.5px dashed #c7d2fe;border-radius:12px;background:#faf8ff;
+  }
+  .manual-form .grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;
+  }
+  .manual-form .field label{font-size:10.5px}
+  .manual-form .field input,.manual-form .field textarea,.manual-form .field select{
+    padding:8px 10px;font-size:13px;
+  }
+  .manual-form .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+  .grp-actions{
+    padding:12px 18px;border-top:1px solid var(--line);
+    background:linear-gradient(180deg,#fafbfd 0%,#f3f5fb 100%);
+    display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  }
+  .grp-actions .spacer{flex:1}
+
+  /* ---------- Alerts ---------- */
+  .alert{padding:12px 14px;border-radius:10px;margin:10px 0;font-size:13px;font-weight:500;border:1px solid;display:flex;align-items:center;gap:10px}
+  .alert::before{content:"";width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .alert.err{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+  .alert.err::before{background:#dc2626;box-shadow:0 0 8px #dc2626}
+  .alert.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
+  .alert.warn::before{background:#d97706;box-shadow:0 0 8px #d97706}
+  .alert.info{background:#eef2ff;color:#3730a3;border-color:#c7d2fe}
+  .alert.info::before{background:#4f46e5;box-shadow:0 0 8px #4f46e5}
+
+  .spinner{display:inline-block;width:16px;height:16px;border:2.5px solid #c7d2fe;border-top-color:#4f46e5;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;flex-shrink:0}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  .hidden{display:none!important}
+  .flagrow{font-size:12.5px;color:var(--muted);margin-top:10px;padding:10px 12px;background:#f8fafc;border-radius:10px;border:1px solid var(--line)}
+  .flagrow .f{display:inline-block;margin-right:14px}
+  .flagrow .f b{color:var(--ink)}
+
+  .section-subtitle{
+    font-family:"Plus Jakarta Sans","Inter",sans-serif;
+    margin:22px 0 12px;font-size:13.5px;color:var(--muted);font-weight:700;
+    text-transform:uppercase;letter-spacing:1.6px;display:flex;align-items:center;gap:8px;
+  }
+  .section-subtitle::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line) 0%,transparent 100%)}
+
+  .footer-note{font-size:11.5px;color:var(--muted);text-align:center;padding:20px 8px 6px;letter-spacing:.3px}
+  .footer-note .tech{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
+  .footer-note .tech span{padding:3px 9px;background:rgba(255,255,255,.7);border:1px solid var(--line);border-radius:999px;font-weight:600;color:var(--ink-2);font-size:11px}
+
+  .builtby{
+    text-align:center;padding:14px 8px 32px;font-weight:800;font-size:14px;letter-spacing:.3px;
+    font-family:"Plus Jakarta Sans","Inter",sans-serif;
+    background:linear-gradient(90deg,#4f46e5 0%,#7c3aed 20%,#ec4899 45%,#f97316 70%,#4f46e5 100%);
+    background-size:200% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    -webkit-text-fill-color:transparent;
+    animation:shimmer 6s ease-in-out infinite;
+  }
+  .builtby .heart{-webkit-text-fill-color:#e11d48;color:#e11d48;font-size:13px;margin:0 4px;display:inline-block;animation:beat 1.3s ease-in-out infinite;filter:drop-shadow(0 1px 4px rgba(225,29,72,.4))}
+  @keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+  @keyframes beat{0%,100%{transform:scale(1)}30%{transform:scale(1.3)}60%{transform:scale(.95)}}
+
+  @media (max-width:640px){
+    header{padding:18px 18px}
+    header h1{font-size:17px}
+    main{padding:16px 14px}
+    .card{padding:18px;border-radius:14px}
+    .drop{padding:28px 16px}
+    .stat .v{font-size:22px}
+    .builtby{font-size:17px}
+  }
+</style>
+</head>
+<body>
+<!-- App switcher bar -->
+<div style="background:#1e3a5f;color:#fff;padding:9px 22px;display:flex;align-items:center;gap:14px;font:600 12.5px/1.2 'Inter',-apple-system,'Segoe UI',sans-serif;letter-spacing:.2px">
+  <a href="/" style="opacity:.85;color:#fff;text-decoration:none;font-weight:700;display:flex;align-items:center;gap:6px">&#x1F3E0; Home</a>
+  <span style="opacity:.4">|</span>
+  <span style="opacity:.72">Department of Posts &middot; Karur Sub Division</span>
+  <div style="margin-left:auto;display:flex;gap:6px;padding:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px">
+    <span style="padding:5px 12px;font-size:12.5px;font-weight:600;color:#1e3a5f;background:#fff;border-radius:6px">Sub Divisional Manager</span>
+    <a href="/employees" style="padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none">Employee Directory</a>
+    <a href="/office-management" style="padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none">Office Management</a>
+    <a href="/arrangements" style="padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none">Temporary Arrangements</a>
+    <a href="/ir-builder/" style="padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none">Inspection Reports &rarr;</a>
+  </div>
+</div>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">&#x2709;</div>
+      <div>
+        <h1>Department of Posts &mdash; Sub Divisional Manager, Karur Sub Division</h1>
+        <div class="sub">Split by leave type and HO (Karur / Kulittalai) — add manual entries — export to Excel &amp; PDF.</div>
+      </div>
+    </div>
+    <span class="privacy"><span class="dot"></span> 100% in-browser · your file never leaves this device</span>
+  </div>
+</header>
+<main>
+
+  <section class="card" id="upload-card">
+    <h2><span class="num">1</span> Upload Absentee Statement</h2>
+    <div class="drop-wrap">
+      <label class="drop" id="drop" tabindex="0">
+        <input type="file" id="file" accept=".xlsx,.xls" />
+        <div class="cloud">&#x2B06;</div>
+        <div class="title"><em>Click to upload</em> or drag &amp; drop</div>
+        <div class="hint">.xlsx &middot; first worksheet &middot; headers in row 1</div>
+      </label>
+      <div class="drop-foot">Tip: press <kbd>Enter</kbd> or <kbd>Space</kbd> when focused to open the file picker.</div>
+    </div>
+    <div id="parse-status"></div>
+  </section>
+
+  <section class="card" id="options-card">
+    <h2><span class="num n2">2</span> Options</h2>
+    <div class="options">
+      <div class="field" style="grid-column:1/-1">
+        <label for="opt-leave-month">Leave period month (for Memo No.)</label>
+        <input id="opt-leave-month" placeholder="e.g. July 2026" value="July 2026" />
+      </div>
+      <div class="field">
+        <label for="opt-office">Office line (issuer)</label>
+        <input id="opt-office" value="O/o the Asst Supdt of  Posts, Karur Sub Dn., Karur  639001" />
+      </div>
+      <div class="field">
+        <label for="opt-period">File-name period (optional)</label>
+        <input id="opt-period" placeholder="e.g. June-2026" value="June-2026" />
+      </div>
+      <div class="field">
+        <label for="opt-datefmt">Date format</label>
+        <select id="opt-datefmt">
+          <option value="DD-MM-YYYY" selected>DD-MM-YYYY</option>
+          <option value="DD-Mon-YYYY">DD-Mon-YYYY</option>
+        </select>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-approved" checked /> Only include Approved rows</label>
+      <label class="toggle"><input type="checkbox" id="opt-titlecase" /> Normalise names to Title Case</label>
+    </div>
+  </section>
+
+  <section class="card hidden" id="summary-card">
+    <h2><span class="num n3">3</span> Summary</h2>
+    <div class="summary" id="summary"></div>
+    <div class="flagrow" id="flags"></div>
+    <div class="section-subtitle">Leave-type groups</div>
+    <div class="groupcards" id="groupcards"></div>
+
+    <div class="section-subtitle">Add a new leave type</div>
+    <div class="manual-form" style="margin:0">
+      <div class="grid">
+        <div class="field">
+          <label for="new-lt-name">New leave-type name</label>
+          <input id="new-lt-name" placeholder="e.g. Maternity Leave" />
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn alt" id="addLeaveTypeBtn">&#x2795; Add Leave Type</button>
+      </div>
+    </div>
+
+    <div class="btnrow" style="margin-top:18px">
+      <button class="btn big" id="dlAllXlsx">&#x2B07; Download ALL (Excel · both HOs)</button>
+      <button class="btn big warm" id="dlAllPdf">&#x2B07; Download ALL (PDF · both HOs)</button>
+    </div>
+  </section>
+
+  <section class="card hidden" id="groups-card">
+    <h2><span class="num n4">4</span> Preview &amp; edit per leave type</h2>
+    <div id="groups"></div>
+  </section>
+
+  <div class="footer-note">
+    <div class="tech"><span>SheetJS</span><span>ExcelJS</span><span>jsPDF</span><span>autoTable</span><span>100% client-side</span></div>
+  </div>
+  <div class="builtby">Built with <span class="heart">&#10084;</span> by Arun Selvaraj, Karur Division</div>
+</main>
+
+<!-- Datalists used by manual-entry forms -->
+<datalist id="karurOffices"></datalist>
+
+<script>
+"use strict";
+
+/* ---------- Letterhead text ---------- */
+const DEPT_LINE = "DEPARTMENT OF POSTS";
+const NOTES = [
+  "1. The following GDS have been permitted to proceed on LWA/Paid Leave/Spl Leave/Training as per the particulars noted against each.",
+  "2. The appointment of substitutes by the GDS is approved on the clear understanding that the substitute may be discharged by the undersigned or by the appointing authority in case of BPMs at any time without assigning any reason.",
+  "3. The substitutes are entitled only to the minimum of the TRCA applicable to GDS.",
+];
+
+/* ---------- Karur Sub Division offices (from Office Id in APT.xlsx) ---------- */
+const KARUR_SUB_DIV_OFFICES = [
+  {id:'29360072', name:'Karur H.O', parent:'Karur H.O', ho:'karur'},
+  {id:'29661915', name:'Andankoil S.O', parent:'Andankoil S.O', ho:'karur'},
+  {id:'29106752', name:'Athur B.O', parent:'Andankoil S.O', ho:'karur'},
+  {id:'29106925', name:'Poolampalayam B.O', parent:'Andankoil S.O', ho:'karur'},
+  {id:'29661920', name:'Gandhigramam S.O', parent:'Gandhigramam S.O', ho:'karur'},
+  {id:'29661922', name:'Kagtithapuram S.O', parent:'Kagtithapuram S.O', ho:'karur'},
+  {id:'29106866', name:'Moolimangalam B.O', parent:'Kagtithapuram S.O', ho:'karur'},
+  {id:'29106939', name:'Punnam B.O', parent:'Kagtithapuram S.O', ho:'karur'},
+  {id:'29106940', name:'Punnamchatram B.O', parent:'Kagtithapuram S.O', ho:'karur'},
+  {id:'29106770', name:'Emur B.O', parent:'Karur Collectorate S.O', ho:'karur'},
+  {id:'29661923', name:'Karur Collectorate S.O', parent:'Karur Collectorate S.O', ho:'karur'},
+  {id:'29106813', name:'Kathalapatti B.O', parent:'Karur Collectorate S.O', ho:'karur'},
+  {id:'29661924', name:'Karur West S.O', parent:'Karur West S.O', ho:'karur'},
+  {id:'29106814', name:'Kattalai B.O', parent:'Mayanur S.O', ho:'kulittalai'},
+  {id:'29106848', name:'Manavasi B.O', parent:'Mayanur S.O', ho:'kulittalai'},
+  {id:'29661932', name:'Mayanur S.O', parent:'Mayanur S.O', ho:'kulittalai'},
+  {id:'29106950', name:'Renganathapuram B.O', parent:'Mayanur S.O', ho:'kulittalai'},
+  {id:'29106996', name:'Valayalkaranpudur B.O', parent:'Mayanur S.O', ho:'kulittalai'},
+  {id:'29106893', name:'Nerur B.O', parent:'Pasupathipalayam S.O', ho:'karur'},
+  {id:'29106899', name:'Palaiyur B.O', parent:'Pasupathipalayam S.O', ho:'karur'},
+  {id:'29106908', name:'Panjamadevi B.O', parent:'Pasupathipalayam S.O', ho:'karur'},
+  {id:'29661940', name:'Pasupathipalayam S.O', parent:'Pasupathipalayam S.O', ho:'karur'},
+  {id:'29106949', name:'Renganathampettai B.O', parent:'Pasupathipalayam S.O', ho:'karur'},
+  {id:'29106952', name:'S.Vellalapatti B.O', parent:'Pasupathipalayam S.O', ho:'karur'},
+  {id:'29106961', name:'Senapiratti B.O', parent:'Pasupathipalayam S.O', ho:'karur'},
+  {id:'29106765', name:'Dalavapalayam B.O', parent:'Pugalur Sugar Factory S.O', ho:'karur'},
+  {id:'29106766', name:'East Thavittupalayam B.O', parent:'Pugalur Sugar Factory S.O', ho:'karur'},
+  {id:'29106785', name:'Kadambankurichi B.O', parent:'Pugalur Sugar Factory S.O', ho:'karur'},
+  {id:'29106887', name:'Nanjaipugalur B.O', parent:'Pugalur Sugar Factory S.O', ho:'karur'},
+  {id:'29106889', name:'Nanniyur B.O', parent:'Pugalur Sugar Factory S.O', ho:'karur'},
+  {id:'29661941', name:'Pugalur Sugar Factory S.O', parent:'Pugalur Sugar Factory S.O', ho:'karur'},
+  {id:'29106937', name:'Punjaipugalur B.O', parent:'Pugalur Sugar Factory S.O', ho:'karur'},
+  {id:'29106938', name:'Punjaithottakurichi B.O', parent:'Pugalur Sugar Factory S.O', ho:'karur'},
+  {id:'29107017', name:'West Orathai B.O', parent:'Pugalur Sugar Factory S.O', ho:'karur'},
+  {id:'29106829', name:'Koyampalli B.O', parent:'Puliyur Cement Factory S.O', ho:'karur'},
+  {id:'29106857', name:'Melapalayam B.O', parent:'Puliyur Cement Factory S.O', ho:'karur'},
+  {id:'29106933', name:'Puliyur B.O', parent:'Puliyur Cement Factory S.O', ho:'karur'},
+  {id:'29661942', name:'Puliyur Cement Factory S.O', parent:'Puliyur Cement Factory S.O', ho:'karur'},
+  {id:'29106970', name:'Somur B.O', parent:'Puliyur Cement Factory S.O', ho:'karur'},
+  {id:'29106990', name:'Uppidamangalam B.O', parent:'Puliyur Cement Factory S.O', ho:'karur'},
+  {id:'29107002', name:'Vedichipalayam B.O', parent:'Puliyur Cement Factory S.O', ho:'karur'},
+  {id:'29107004', name:'Veerarakkiam B.O', parent:'Puliyur Cement Factory S.O', ho:'karur'},
+  {id:'29106867', name:'Mudiganam B.O', parent:'Sengunthapuram S.O', ho:'karur'},
+  {id:'29106904', name:'Pallamarudapatti B.O', parent:'Sengunthapuram S.O', ho:'karur'},
+  {id:'29106905', name:'Pallapalayam B.O', parent:'Sengunthapuram S.O', ho:'karur'},
+  {id:'29106914', name:'Pavithram B.O', parent:'Sengunthapuram S.O', ho:'karur'},
+  {id:'29661945', name:'Sengunthapuram S.O', parent:'Sengunthapuram S.O', ho:'karur'},
+  {id:'29106986', name:'Thumbivadi B.O', parent:'Sengunthapuram S.O', ho:'karur'},
+  {id:'29107016', name:'Viswanathapuri B.O', parent:'Sengunthapuram S.O', ho:'karur'},
+  {id:'29106821', name:'Kodangipatti B.O', parent:'Thanthonimalai S.O', ho:'karur'},
+  {id:'29106847', name:'Manavadi B.O', parent:'Thanthonimalai S.O', ho:'karur'},
+  {id:'29106865', name:'Mookanankurichi B.O', parent:'Thanthonimalai S.O', ho:'karur'},
+  {id:'29106898', name:'Paganatham B.O', parent:'Thanthonimalai S.O', ho:'karur'},
+  {id:'29661947', name:'Thanthonimalai S.O', parent:'Thanthonimalai S.O', ho:'karur'},
+  {id:'29106748', name:'Appipalayam B.O', parent:'Tirumanilaiyur S.O', ho:'karur'},
+  {id:'29106788', name:'Kakkavadi B.O', parent:'Tirumanilaiyur S.O', ho:'karur'},
+  {id:'29109278', name:'Othaiyur B.O', parent:'Tirumanilaiyur S.O', ho:'karur'},
+  {id:'29106941', name:'Puthambur B.O', parent:'Tirumanilaiyur S.O', ho:'karur'},
+  {id:'29106972', name:'Sukkaliyur B.O', parent:'Tirumanilaiyur S.O', ho:'karur'},
+  {id:'29106975', name:'Thalapatti B.O', parent:'Tirumanilaiyur S.O', ho:'karur'},
+  {id:'29106984', name:'Thoranakkalpatti B.O', parent:'Tirumanilaiyur S.O', ho:'karur'},
+  {id:'29661952', name:'Tirumanilaiyur S.O', parent:'Tirumanilaiyur S.O', ho:'karur'},
+  {id:'29106834', name:'Kuppachipalayam B.O', parent:'Vangal S.O', ho:'karur'},
+  {id:'29106861', name:'Minnampalli B.O', parent:'Vangal S.O', ho:'karur'},
+  {id:'29106998', name:'Vangal East B.O', parent:'Vangal S.O', ho:'karur'},
+  {id:'29661955', name:'Vangal S.O', parent:'Vangal S.O', ho:'karur'},
+  {id:'29106879', name:'Nadayanur B.O', parent:'Velayuthampalayam S.O', ho:'karur'},
+  {id:'29106894', name:'Noyyal B.O', parent:'Velayuthampalayam S.O', ho:'karur'},
+  {id:'29106959', name:'Semangi B.O', parent:'Velayuthampalayam S.O', ho:'karur'},
+  {id:'29661956', name:'Velayuthampalayam S.O', parent:'Velayuthampalayam S.O', ho:'karur'},
+  {id:'29107015', name:'Vettamangalam B.O', parent:'Velayuthampalayam S.O', ho:'karur'},
+  {id:'29106786', name:'Kadaparai B.O', parent:'Vengamedu S.O', ho:'karur'},
+  {id:'29106853', name:'Manmangalam B.O', parent:'Vengamedu S.O', ho:'karur'},
+  {id:'29661958', name:'Vengamedu S.O', parent:'Vengamedu S.O', ho:'karur'},
+  {id:'29107013', name:'Vennamalai B.O', parent:'Vengamedu S.O', ho:'karur'},
+  /* --- Manual overrides: offices that administratively report to Kulittalai HO --- */
+  {id:'29106811', name:'Karuppur B.O', parent:'Manaparai S.O', ho:'kulittalai'},
+];
+
+/* Per-employee overrides — force office / HO regardless of what the source shows.
+   Use when APT data lists the wrong office for a known employee. */
+const EMPLOYEE_OVERRIDES = {
+  // GOKUL RAJ S — sometimes shown as Velayuthampalayam S.O, but actually Kattalai B.O / Kulittalai HO
+  "50558678": { officeName: "Kattalai B.O", officeId: "29106814", ho: "kulittalai" },
+};
+
+/* Build lookup: normalised name -> office record */
+const normOfficeKey = s => String(s==null?"":s).toLowerCase()
+  .replace(/[.\-_,]/g," ")
+  .replace(/\bh\s*o\b/g,"ho")
+  .replace(/\bs\s*o\b/g,"so")
+  .replace(/\bb\s*o\b/g,"bo")
+  .replace(/\s+/g," ").trim();
+
+const OFFICE_LOOKUP_BY_NAME = (()=>{
+  const m = new Map();
+  KARUR_SUB_DIV_OFFICES.forEach(o=>{ m.set(normOfficeKey(o.name), o); });
+  // also alias "Karur" → "Karur H.O"
+  m.set(normOfficeKey("Karur"), m.get(normOfficeKey("Karur H.O")));
+  return m;
+})();
+
+const OFFICE_LOOKUP_BY_ID = (()=>{
+  const m = new Map();
+  KARUR_SUB_DIV_OFFICES.forEach(o=>{ m.set(String(o.id), o); });
+  return m;
+})();
+
+function classifyHO(officeName, officeId){
+  if(officeId){
+    const byId = OFFICE_LOOKUP_BY_ID.get(String(officeId).trim());
+    if(byId) return byId.ho;
+  }
+  const rec = OFFICE_LOOKUP_BY_NAME.get(normOfficeKey(officeName));
+  return rec ? rec.ho : "unknown";
+}
+
+/* Populate datalist for manual entry office input */
+(function fillOfficeDatalist(){
+  const dl = document.getElementById("karurOffices");
+  KARUR_SUB_DIV_OFFICES
+    .slice()
+    .sort((a,b)=>a.name.localeCompare(b.name))
+    .forEach(o=>{
+      const opt = document.createElement("option");
+      opt.value = o.name;
+      opt.label = `${o.name} — ${o.ho==='kulittalai'?'Kulittalai HO':'Karur HO'}`;
+      dl.appendChild(opt);
+    });
+})();
+
+/* ---------- Header synonyms ---------- */
+const SYN = {
+  empId:        ["employee id","emp id","employee no","emp no","employee code"],
+  empType:      ["employee type","emp type"],
+  leaveType:    ["leave type","type of leave"],
+  startDate:    ["start date","from date","leave from","from"],
+  endDate:      ["end date","to date","leave to","to"],
+  noOfDays:     ["no. of days","no of days","number of days","days"],
+  reason:       ["leave reason","reason"],
+  approveStatus:["approve status","approval status","status"],
+  approverRem:  ["approver remarks","approval remarks","approver remark"],
+  empName:      ["employee name","emp name","name","name of employee"],
+  officeName:   ["office name","office","branch","branch name"],
+  officeId:     ["office id","office_id"],
+  subName:      ["substitute employee name","substitute name","sub name","substitute"],
+  subId:        ["substitute id","sub id","substitute emp id"],
+  appId:        ["leave application id","application id"],
+};
+
+const REQUIRED = ["empId","leaveType","startDate","endDate","empName"];
+
+/* ---------- Utility ---------- */
+const norm = s => (s==null?"":String(s)).replace(/\s+/g," ").trim();
+const ciEq = (a,b)=>norm(a).toLowerCase()===norm(b).toLowerCase();
+
+function titleCase(s){
+  return norm(s).toLowerCase().replace(/\b([a-z])([a-z'`-]*)/g,(_,a,b)=>a.toUpperCase()+b);
+}
+
+function pad2(n){return String(n).padStart(2,"0");}
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function parseDate(val){
+  if(val==null||val==="") return {ok:false,raw:""};
+  if(val instanceof Date && !isNaN(val)) return {ok:true,date:val,raw:val};
+  if(typeof val === "number" && isFinite(val)){
+    const d = XLSX.SSF.parse_date_code(val);
+    if(d) return {ok:true,date:new Date(Date.UTC(d.y,d.m-1,d.d)),raw:val};
+  }
+  const s = String(val).trim();
+  let m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/);
+  if(m){
+    let [_,d,mo,y]=m; d=+d; mo=+mo; y=+y; if(y<100)y+=2000;
+    if(mo>=1&&mo<=12&&d>=1&&d<=31) return {ok:true,date:new Date(Date.UTC(y,mo-1,d)),raw:s};
+  }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m){
+    const y=+m[1],mo=+m[2],d=+m[3];
+    if(mo>=1&&mo<=12&&d>=1&&d<=31) return {ok:true,date:new Date(Date.UTC(y,mo-1,d)),raw:s};
+  }
+  const t = Date.parse(s);
+  if(!isNaN(t)) return {ok:true,date:new Date(t),raw:s};
+  return {ok:false,raw:s};
+}
+
+function fmtDate(parsed,fmt){
+  if(!parsed||!parsed.ok) return parsed?String(parsed.raw||""):"";
+  const d=parsed.date;
+  const dd=pad2(d.getUTCDate()), mm=pad2(d.getUTCMonth()+1), yyyy=d.getUTCFullYear();
+  if(fmt==="DD-Mon-YYYY") return `${dd}-${MONTHS[d.getUTCMonth()]}-${yyyy}`;
+  return `${dd}-${mm}-${yyyy}`;
+}
+
+function inclusiveDays(a,b){
+  if(!a||!a.ok||!b||!b.ok) return null;
+  const ms=b.date-a.date; return Math.round(ms/86400000)+1;
+}
+
+function slug(s){
+  return norm(s).replace(/[^\w\s\-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"");
+}
+function safeSheetName(s){
+  let n = norm(s).replace(/[\[\]\:\*\?\/\\]/g,"").slice(0,31);
+  return n||"Sheet";
+}
+
+/* ---------- Header mapping ---------- */
+function mapHeaders(headerRow){
+  const map = {};
+  const missing = [];
+  for(const key of Object.keys(SYN)){
+    const synonyms = SYN[key].map(s=>s.toLowerCase());
+    let idx = -1;
+    for(let i=0;i<headerRow.length;i++){
+      const h = norm(headerRow[i]).toLowerCase();
+      if(synonyms.includes(h)){ idx=i; break; }
+    }
+    map[key]=idx;
+  }
+  for(const r of REQUIRED){ if(map[r]<0) missing.push(r); }
+  return {map,missing};
+}
+
+/* ---------- Combine remarks ---------- */
+function combineRemarks(reason,approver){
+  const r = norm(reason);
+  const a = norm(approver);
+  if(!a || /^(ok|okay|approved|y|yes)\.?$/i.test(a)) return r;
+  if(!r) return `(Approver: ${a})`;
+  return `${r} — (Approver: ${a})`;
+}
+
+/* ---------- State ---------- */
+let RAW = null;
+let SRC_FILE_NAME = "";
+let MANUAL_BY_GROUP = new Map(); // groupName(lower) -> array of manual records
+let GROUP_ORDER_OVERRIDE = [];   // user-added new leave types
+
+/* ---------- Parsing pipeline ---------- */
+async function handleFile(file){
+  SRC_FILE_NAME = file.name;
+  const ps = document.getElementById("parse-status");
+  ps.innerHTML = `<div class="alert info"><span class="spinner"></span>Reading "${file.name}"…</div>`;
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf,{cellDates:true});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    if(!ws){ throw new Error("No worksheet found in the file."); }
+    const aoa = XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true,blankrows:false});
+    if(!aoa.length){ throw new Error("The worksheet is empty."); }
+    const header = aoa[0];
+    const {map,missing} = mapHeaders(header);
+    if(missing.length){
+      const list = missing.map(k=>SYN[k][0]).join(", ");
+      throw new Error(`Required column(s) not found: ${list}. Please check the header row.`);
+    }
+    const onlyApproved = document.getElementById("opt-approved").checked;
+    const titleNames   = document.getElementById("opt-titlecase").checked;
+
+    let totalRows=0, included=0, excludedByStatus=0, unparseableDates=0, dayMismatches=0, unknownOffices=0;
+    const groups = new Map();
+
+    for(let r=1;r<aoa.length;r++){
+      const row = aoa[r];
+      if(!row || row.every(c=>c===null||c===undefined||String(c).trim()==="")) continue;
+      totalRows++;
+
+      const status = norm(row[map.approveStatus]);
+      if(onlyApproved && status && !ciEq(status,"approved")){ excludedByStatus++; continue; }
+      if(onlyApproved && !status){ excludedByStatus++; continue; }
+
+      const leaveTypeRaw = row[map.leaveType];
+      const leaveType = norm(leaveTypeRaw);
+      if(!leaveType) continue;
+
+      const sd = parseDate(row[map.startDate]);
+      const ed = parseDate(row[map.endDate]);
+      if(!sd.ok) unparseableDates++;
+      if(!ed.ok) unparseableDates++;
+
+      const noDaysRaw = row[map.noOfDays];
+      let noDays = "";
+      if(noDaysRaw!==""&&noDaysRaw!=null){
+        const n = Number(noDaysRaw);
+        noDays = isFinite(n)?n:norm(noDaysRaw);
+      }
+      const span = inclusiveDays(sd,ed);
+      if(span!=null && typeof noDays==="number" && noDays!==span) dayMismatches++;
+
+      const empName = titleNames?titleCase(row[map.empName]):norm(row[map.empName]);
+      const subName = titleNames?titleCase(row[map.subName]):norm(row[map.subName]);
+      const empIdRaw = norm(row[map.empId]);
+      let officeName = norm(row[map.officeName]);
+      let officeId = map.officeId>=0 ? norm(row[map.officeId]) : "";
+      // Apply per-employee override (e.g. wrong office in source for known staff)
+      const ovr = EMPLOYEE_OVERRIDES[empIdRaw];
+      if(ovr){
+        if(ovr.officeName) officeName = ovr.officeName;
+        if(ovr.officeId)   officeId   = ovr.officeId;
+      }
+      const ho = (ovr && ovr.ho) ? ovr.ho : classifyHO(officeName, officeId);
+      if(ho === "unknown") unknownOffices++;
+
+      const rec = {
+        empId:   empIdRaw,
+        empName: empName,
+        officeName,
+        officeId,
+        startDate: sd,
+        endDate: ed,
+        noDays: noDays===""?"":noDays,
+        subName: subName,
+        subId: norm(row[map.subId]),
+        remarks: combineRemarks(row[map.reason], row[map.approverRem]),
+        ho,
+        manual:false,
+      };
+      const k = leaveType;
+      if(!groups.has(k)) groups.set(k,{name:leaveType, rows:[]});
+      groups.get(k).rows.push(rec);
+      included++;
+    }
+
+    // Add user-added empty leave types (kept across re-parses)
+    GROUP_ORDER_OVERRIDE.forEach(name=>{
+      if(!groups.has(name)) groups.set(name,{name,rows:[]});
+    });
+
+    finaliseGroups(groups);
+
+    const ordered = [...groups.values()].sort((a,b)=>b.count-a.count);
+
+    RAW = {
+      groups: ordered,
+      totals: {totalRows, included, excludedByStatus, unparseableDates, dayMismatches, unknownOffices},
+      fileName: file.name,
+    };
+    render();
+    ps.innerHTML = `<div class="alert info">Parsed <b>${totalRows}</b> data rows · included <b>${included}</b> · ${ordered.length} leave-type group(s).</div>`;
+  }catch(err){
+    console.error(err);
+    ps.innerHTML = `<div class="alert err"><b>Couldn't parse the file.</b> ${err.message||err}</div>`;
+    document.getElementById("summary-card").classList.add("hidden");
+    document.getElementById("groups-card").classList.add("hidden");
+  }
+}
+
+/* Sort + compute per-group derived data including manual entries and HO split */
+function finaliseGroups(groups){
+  const cmpStr = (a,b)=>a.localeCompare(b,undefined,{sensitivity:"base",numeric:true});
+  for(const g of groups.values()){
+    // attach manual entries
+    const manuals = MANUAL_BY_GROUP.get(g.name.toLowerCase()) || [];
+    const allRows = [...g.rows, ...manuals.map(m=>({...m, manual:true}))];
+
+    allRows.sort((a,b)=>{
+      const o = cmpStr(a.officeName||"", b.officeName||"");
+      if(o!==0) return o;
+      const n = cmpStr(a.empName||"", b.empName||"");
+      if(n!==0) return n;
+      const ad = a.startDate&&a.startDate.ok?a.startDate.date.getTime():Infinity;
+      const bd = b.startDate&&b.startDate.ok?b.startDate.date.getTime():Infinity;
+      return ad-bd;
+    });
+
+    g.allRows = allRows;
+    g.count = allRows.length;
+    g.totalDays = allRows.reduce((s,r)=>s+(typeof r.noDays==="number"?r.noDays:0),0);
+
+    // Split by HO
+    g.byHO = { karur:[], kulittalai:[], unknown:[] };
+    allRows.forEach(r=>{ g.byHO[r.ho||"unknown"].push(r); });
+    g.daysByHO = {
+      karur:    g.byHO.karur.reduce((s,r)=>s+(typeof r.noDays==="number"?r.noDays:0),0),
+      kulittalai: g.byHO.kulittalai.reduce((s,r)=>s+(typeof r.noDays==="number"?r.noDays:0),0),
+      unknown:  g.byHO.unknown.reduce((s,r)=>s+(typeof r.noDays==="number"?r.noDays:0),0),
+    };
+  }
+}
+
+/* Recompute after manual changes — keep existing parse */
+function refresh(){
+  if(!RAW) return;
+  const groups = new Map();
+  RAW.groups.forEach(g=>{
+    groups.set(g.name, {name:g.name, rows:g.rows.filter(r=>!r.manual)});
+  });
+  GROUP_ORDER_OVERRIDE.forEach(name=>{
+    if(!groups.has(name)) groups.set(name,{name,rows:[]});
+  });
+  finaliseGroups(groups);
+  RAW.groups = [...groups.values()].sort((a,b)=>b.count-a.count);
+  render();
+}
+
+/* ---------- Render UI ---------- */
+const COL_HEADERS = ["Sl. No","Emp_ID","Emp_Name","Office_Name","Start_Date","End_Date","No._Of_Days","Substitute_Name","Substitute_ID","Remarks"];
+
+function render(){
+  if(!RAW) return;
+  const fmt = document.getElementById("opt-datefmt").value;
+  const {totals,groups} = RAW;
+
+  // overall split
+  let karurCount=0, kulCount=0, karurDays=0, kulDays=0, unkCount=0;
+  groups.forEach(g=>{
+    karurCount += g.byHO.karur.length;
+    kulCount   += g.byHO.kulittalai.length;
+    unkCount   += g.byHO.unknown.length;
+    karurDays  += g.daysByHO.karur;
+    kulDays    += g.daysByHO.kulittalai;
+  });
+  const totalIncluded = groups.reduce((s,g)=>s+g.count,0);
+  const totalDays = groups.reduce((s,g)=>s+g.totalDays,0);
+
+  document.getElementById("summary").innerHTML = `
+    <div class="stat"><div class="k">Rows read</div><div class="v">${totals.totalRows}</div></div>
+    <div class="stat"><div class="k">Included</div><div class="v">${totalIncluded}</div></div>
+    <div class="stat"><div class="k">Excluded (status)</div><div class="v">${totals.excludedByStatus}</div></div>
+    <div class="stat"><div class="k">Leave types</div><div class="v">${groups.length}</div></div>
+    <div class="stat"><div class="k">Total days</div><div class="v">${totalDays}</div></div>
+    <div class="stat"><div class="k">Karur HO · records / days</div><div class="v">${karurCount} / ${karurDays}</div></div>
+    <div class="stat"><div class="k">Kulittalai HO · records / days</div><div class="v">${kulCount} / ${kulDays}</div></div>
+  `;
+
+  const flagBits = [];
+  if(totals.unparseableDates) flagBits.push(`<span class="f">Unparseable date cells: <b>${totals.unparseableDates}</b></span>`);
+  if(totals.dayMismatches) flagBits.push(`<span class="f">Rows where No. of Days ≠ inclusive span: <b>${totals.dayMismatches}</b></span>`);
+  if(unkCount) flagBits.push(`<span class="f" style="color:#991b1b">Records with offices outside Karur Sub Division: <b>${unkCount}</b></span>`);
+  document.getElementById("flags").innerHTML = flagBits.length?flagBits.join(""):`<span class="f">No data-quality issues flagged.</span>`;
+
+  // group summary cards
+  document.getElementById("groupcards").innerHTML = groups.map((g,i)=>`
+    <div class="gcard">
+      <div class="name">${escapeHtml(g.name)}</div>
+      <div class="meta">
+        <span class="chip k">Karur: ${g.byHO.karur.length} · ${g.daysByHO.karur}d</span>
+        <span class="chip t">Kulittalai: ${g.byHO.kulittalai.length} · ${g.daysByHO.kulittalai}d</span>
+        ${g.byHO.unknown.length?`<span class="chip d">Unknown: ${g.byHO.unknown.length}</span>`:''}
+      </div>
+      <div class="btnrow">
+        <button class="btn alt tiny" data-act="xlsx" data-i="${i}">&#x2B07; Excel</button>
+        <button class="btn alt tiny" data-act="pdf"  data-i="${i}">&#x2B07; PDF</button>
+      </div>
+    </div>
+  `).join("");
+
+  document.getElementById("groupcards").querySelectorAll("button[data-act]").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      const i=+btn.dataset.i;
+      if(btn.dataset.act==="xlsx") downloadGroupXlsx(groups[i]);
+      else downloadGroupPdf(groups[i]);
+    });
+  });
+
+  // accordion groups
+  document.getElementById("groups").innerHTML = groups.map((g,i)=>{
+    const hoBlocks = ["karur","kulittalai","unknown"].map(hoKey=>{
+      const rows = g.byHO[hoKey];
+      if(!rows.length) return "";
+      const label = hoKey==="karur"?"Karur HO":hoKey==="kulittalai"?"Kulittalai HO":"Unknown / Outside Sub-Division";
+      const days = g.daysByHO[hoKey];
+      const rowHtml = rows.map((r,idx)=>{
+        const manualTag = r.manual?'<span class="manchip">MANUAL</span>':'';
+        const actBtn = r.manual?`<button class="btn danger tiny" data-act="del-manual" data-grp="${escapeHtml(g.name)}" data-mid="${r.manualId}">Remove</button>`:'';
+        return `
+        <tr class="${r.manual?'manual':''}">
+          <td>${idx+1}</td>
+          <td>${escapeHtml(r.empId)}</td>
+          <td>${manualTag}${escapeHtml(r.empName)}</td>
+          <td>${escapeHtml(r.officeName)}</td>
+          <td>${escapeHtml(fmtDate(r.startDate,fmt))}</td>
+          <td>${escapeHtml(fmtDate(r.endDate,fmt))}</td>
+          <td>${escapeHtml(String(r.noDays))}</td>
+          <td>${escapeHtml(r.subName)}</td>
+          <td>${escapeHtml(r.subId)}</td>
+          <td>${escapeHtml(r.remarks)}</td>
+          <td class="actcell">${actBtn}</td>
+        </tr>`;
+      }).join("");
+      return `
+        <div class="ho-block">
+          <div class="ho-head">
+            <span class="ho-ttl ${hoKey}">${label}</span>
+            <span class="ho-stats">
+              <span class="badge ${hoKey==='karur'?'k':hoKey==='kulittalai'?'t':'d'}">${rows.length} record${rows.length===1?'':'s'}</span>
+              <span class="badge g">${days} day${days===1?'':'s'}</span>
+            </span>
+          </div>
+          <div class="tablewrap">
+            <table class="preview">
+              <thead><tr>${[...COL_HEADERS,'Action'].map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+              <tbody>${rowHtml}
+                <tr class="total"><td colspan="6" style="text-align:right">TOTAL (${label})</td><td>${days}</td><td colspan="4"></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }).join("");
+
+    return `
+      <details class="group" ${i===0?"open":""}>
+        <summary>
+          <span class="ttl">${escapeHtml(g.name)}</span>
+          <span class="badges">
+            <span class="badge k">Karur: ${g.byHO.karur.length} (${g.daysByHO.karur}d)</span>
+            <span class="badge t">Kulittalai: ${g.byHO.kulittalai.length} (${g.daysByHO.kulittalai}d)</span>
+            ${g.byHO.unknown.length?`<span class="badge d">Unknown: ${g.byHO.unknown.length}</span>`:''}
+            <span class="badge">${g.count} total</span>
+          </span>
+        </summary>
+        ${hoBlocks || '<div class="ho-block"><em style="color:var(--muted)">No records yet — add a manual entry below.</em></div>'}
+        ${manualFormHtml(g.name)}
+        <div class="grp-actions">
+          <button class="btn" data-act="xlsx2" data-i="${i}">&#x2B07; Download Excel (2 sheets)</button>
+          <button class="btn warm" data-act="pdf2" data-i="${i}">&#x2B07; Download PDF (2 lists)</button>
+          <div class="spacer"></div>
+          <button class="btn alt" data-act="toggle-form" data-i="${i}">&#x2795; Add manual entry</button>
+        </div>
+      </details>`;
+  }).join("");
+
+  // wire up the per-group buttons
+  document.getElementById("groups").querySelectorAll("button[data-act]").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      const act = btn.dataset.act;
+      if(act==="xlsx2") return downloadGroupXlsx(RAW.groups[+btn.dataset.i]);
+      if(act==="pdf2")  return downloadGroupPdf(RAW.groups[+btn.dataset.i]);
+      if(act==="toggle-form"){
+        const form = btn.closest("details").querySelector(".manual-form");
+        if(form) form.classList.toggle("hidden");
+        return;
+      }
+      if(act==="del-manual"){
+        const grp = btn.dataset.grp.toLowerCase();
+        const mid = btn.dataset.mid;
+        const arr = MANUAL_BY_GROUP.get(grp) || [];
+        MANUAL_BY_GROUP.set(grp, arr.filter(r=>r.manualId!==mid));
+        refresh();
+        return;
+      }
+      if(act==="add-manual"){
+        const form = btn.closest(".manual-form");
+        const grp = form.dataset.grp;
+        addManualEntryFromForm(form, grp);
+        return;
+      }
+    });
+  });
+
+  // wire datalist office change → auto-fill empId placeholder?
+  document.getElementById("summary-card").classList.remove("hidden");
+  document.getElementById("groups-card").classList.remove("hidden");
+}
+
+function manualFormHtml(grpName){
+  const safeGrp = escapeHtml(grpName);
+  return `
+    <div class="manual-form hidden" data-grp="${safeGrp}">
+      <div class="grid">
+        <div class="field"><label>Emp ID</label><input data-f="empId" placeholder="e.g. 10293847" /></div>
+        <div class="field"><label>Emp Name</label><input data-f="empName" placeholder="e.g. Mr. R. Kumar" /></div>
+        <div class="field"><label>Office Name</label><input list="karurOffices" data-f="officeName" placeholder="Type / pick from list" /></div>
+        <div class="field"><label>Start Date</label><input type="date" data-f="startDate" /></div>
+        <div class="field"><label>End Date</label><input type="date" data-f="endDate" /></div>
+        <div class="field"><label>No. of Days</label><input type="number" min="0" step="0.5" data-f="noDays" /></div>
+        <div class="field"><label>Substitute Name</label><input data-f="subName" /></div>
+        <div class="field"><label>Substitute ID</label><input data-f="subId" /></div>
+        <div class="field" style="grid-column:1/-1"><label>Remarks</label><textarea data-f="remarks" rows="2"></textarea></div>
+      </div>
+      <div class="actions">
+        <button class="btn mint" data-act="add-manual">&#x2795; Add entry</button>
+      </div>
+    </div>`;
+}
+
+function addManualEntryFromForm(form, grpName){
+  const get = f => (form.querySelector(`[data-f="${f}"]`).value||"").trim();
+  const empId = get("empId");
+  const empName = get("empName");
+  const officeName = get("officeName");
+  if(!empName && !empId){
+    alert("Please enter at least Emp ID or Emp Name.");
+    return;
+  }
+  if(!officeName){
+    alert("Please pick or type an Office Name.");
+    return;
+  }
+  const titleNames = document.getElementById("opt-titlecase").checked;
+  const sdRaw = get("startDate"), edRaw = get("endDate");
+  const sd = parseDate(sdRaw), ed = parseDate(edRaw);
+  let noDays = get("noDays");
+  if(noDays!=="") noDays = Number(noDays); else {
+    const span = inclusiveDays(sd,ed);
+    if(span!=null) noDays = span;
+  }
+  // Per-employee override beats anything the user typed
+  const ovr = EMPLOYEE_OVERRIDES[empId];
+  let finalOfficeName = officeName;
+  let finalOfficeId   = "";
+  if(ovr){
+    if(ovr.officeName) finalOfficeName = ovr.officeName;
+    if(ovr.officeId)   finalOfficeId   = ovr.officeId;
+  }
+  const office = OFFICE_LOOKUP_BY_NAME.get(normOfficeKey(finalOfficeName));
+  if(office){
+    finalOfficeName = office.name;
+    if(!finalOfficeId) finalOfficeId = office.id;
+  }
+  const ho = (ovr && ovr.ho) ? ovr.ho : (office ? office.ho : "unknown");
+
+  const rec = {
+    manualId: "m"+Date.now()+Math.floor(Math.random()*1000),
+    empId,
+    empName: titleNames?titleCase(empName):empName,
+    officeName: finalOfficeName,
+    officeId: finalOfficeId,
+    startDate: sd,
+    endDate: ed,
+    noDays: noDays===""?"":noDays,
+    subName: titleNames?titleCase(get("subName")):get("subName"),
+    subId: get("subId"),
+    remarks: get("remarks"),
+    ho,
+    manual: true,
+  };
+  const key = grpName.toLowerCase();
+  const arr = MANUAL_BY_GROUP.get(key) || [];
+  arr.push(rec);
+  MANUAL_BY_GROUP.set(key, arr);
+  refresh();
+}
+
+function escapeHtml(s){
+  return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ---------- Add new leave type ---------- */
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("addLeaveTypeBtn").addEventListener("click",()=>{
+    const inp = document.getElementById("new-lt-name");
+    const name = (inp.value||"").trim();
+    if(!name){ alert("Type the new leave type name first."); return; }
+    if(!RAW){
+      // create a stub RAW so the UI can render
+      RAW = {
+        groups: [],
+        totals: {totalRows:0, included:0, excludedByStatus:0, unparseableDates:0, dayMismatches:0, unknownOffices:0},
+        fileName: SRC_FILE_NAME || "(manual)",
+      };
+    }
+    if(!RAW.groups.find(g=>g.name.toLowerCase()===name.toLowerCase())){
+      GROUP_ORDER_OVERRIDE.push(name);
+    }
+    inp.value = "";
+    refresh();
+  });
+});
+
+/* ---------- Excel generation (ExcelJS, styled) ---------- */
+const HO_FILL = {
+  karur:      {color:"FF4F46E5"},  // indigo
+  kulittalai: {color:"FF0D9488"},  // teal
+  unknown:    {color:"FFDC2626"},  // red
+};
+
+// Font used across the generated documents — matches the office's standard
+// leave-order sheets (Palatino Linotype throughout).
+const DOC_FONT = "Palatino Linotype";
+
+async function buildWorkbook(groupsToInclude){
+  const fmt = document.getElementById("opt-datefmt").value;
+  const office = norm(document.getElementById("opt-office").value);
+  const leaveMonth = norm(document.getElementById("opt-leave-month").value) || "July 2026";
+  const now = new Date();
+  const presentDate = String(now.getDate()).padStart(2, '0') + '.' + String(now.getMonth()+1).padStart(2, '0') + '.' + now.getFullYear();
+  const NCOLS  = COL_HEADERS.length;
+  const HEADER_ROW = 8;
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Sub Divisional Manager — Karur Sub Division";
+  wb.created = new Date();
+
+  for(const g of groupsToInclude){
+    for(const hoKey of ["karur","kulittalai","unknown"]){
+      const rows = g.byHO[hoKey];
+      if(!rows.length) continue;
+      const hoLabel = hoKey==="karur"?"Karur HO":hoKey==="kulittalai"?"Kulittalai HO":"Unknown";
+      let catName = g.name.replace(/-/g, ' ');
+      if (g.name === 'Training') catName = 'GDS Training';
+      else if (g.name === 'LWA') catName = 'GDS LWA';
+      const klt = hoKey === "kulittalai" ? " (KLT)" : "";
+      const memo = `KRR/${catName} - ${leaveMonth}${klt}/dlgs dated at Karur ${presentDate}`;
+      const days = g.daysByHO[hoKey];
+
+      const sheetName = safeSheetName(`${hoLabel} - ${g.name}`);
+      const ws = wb.addWorksheet(sheetName,{
+        pageSetup:{
+          orientation:"landscape", paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:0,
+          margins:{left:0.4,right:0.4,top:0.45,bottom:0.45,header:0.2,footer:0.2},
+          printTitlesRow:`${HEADER_ROW}:${HEADER_ROW}`,
+          horizontalCentered:true,
+        },
+        properties:{defaultRowHeight:18},
+      });
+
+      // Letterhead
+      ws.mergeCells(1,1,1,NCOLS);
+      const r1 = ws.getCell(1,1); r1.value = DEPT_LINE;
+      r1.font={bold:true,size:16,color:{argb:"FFFFFFFF"},name:DOC_FONT};
+      r1.alignment={horizontal:"center",vertical:"middle"};
+      r1.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1F3864"}};
+      ws.getRow(1).height=26;
+
+      ws.mergeCells(2,1,2,NCOLS);
+      const r2 = ws.getCell(2,1); r2.value = office;
+      r2.font={bold:true,size:11.5,color:{argb:"FF1F3864"},name:DOC_FONT};
+      r2.alignment={horizontal:"center",vertical:"middle"};
+      r2.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFEEF3FB"}};
+      ws.getRow(2).height=20;
+
+      ws.mergeCells(3,1,3,NCOLS);
+      const r3 = ws.getCell(3,1); r3.value = `Memo No. ${memo}`;
+      r3.font={bold:true,size:11,color:{argb:"FF1F3864"},name:DOC_FONT};
+      r3.alignment={horizontal:"center",vertical:"middle"};
+      r3.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFEEF3FB"}};
+      ws.getRow(3).height=20;
+
+      for(let i=0;i<NOTES.length;i++){
+        const rr = 4+i;
+        ws.mergeCells(rr,1,rr,NCOLS);
+        const c = ws.getCell(rr,1); c.value = NOTES[i];
+        c.font={size:12,color:{argb:"FF1A2233"},name:DOC_FONT};
+        c.alignment={horizontal:"left",vertical:"center",wrapText:true,indent:1};
+        ws.getRow(rr).height = i===1?38:20;
+      }
+
+      // Leave type + HO + totals banner
+      ws.mergeCells(7,1,7,NCOLS);
+      const r7 = ws.getCell(7,1);
+      r7.value = `${hoLabel}    |    Leave Type: ${g.name}    |    Total Records: ${rows.length}    |    Total Days: ${days}`;
+      r7.font={bold:true,size:11.5,color:{argb:"FFFFFFFF"},name:DOC_FONT};
+      r7.alignment={horizontal:"center",vertical:"middle"};
+      r7.fill={type:"pattern",pattern:"solid",fgColor:{argb:HO_FILL[hoKey].color}};
+      ws.getRow(7).height=22;
+
+      // Header row
+      const headerRow = ws.getRow(HEADER_ROW);
+      COL_HEADERS.forEach((h,i)=>{
+        const c = headerRow.getCell(i+1);
+        c.value=h;
+        c.font={bold:true,color:{argb:"FFFFFFFF"},size:11,name:DOC_FONT};
+        c.alignment={horizontal:"center",vertical:"middle",wrapText:true};
+        c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1F3864"}};
+        c.border={top:{style:"thin"},bottom:{style:"thin"},left:{style:"thin"},right:{style:"thin"}};
+      });
+      headerRow.height=22;
+
+      // Body
+      const colMaxLen = COL_HEADERS.map(h=>String(h).length);
+      rows.forEach((r,idx)=>{
+        const row = ws.getRow(HEADER_ROW+1+idx);
+        const values = [
+          idx+1, r.empId, r.empName, r.officeName,
+          fmtDate(r.startDate,fmt), fmtDate(r.endDate,fmt),
+          r.noDays===""?"":r.noDays,
+          r.subName, r.subId, r.remarks,
+        ];
+        values.forEach((v,i)=>{
+          const c = row.getCell(i+1);
+          c.value = v;
+          c.font={size:11,name:DOC_FONT,color:{argb:"FF1A2233"}};
+          c.border={top:{style:"thin",color:{argb:"FFD9D9D9"}},bottom:{style:"thin",color:{argb:"FFD9D9D9"}},left:{style:"thin",color:{argb:"FFD9D9D9"}},right:{style:"thin",color:{argb:"FFD9D9D9"}}};
+          c.alignment = {vertical:"middle",wrapText:(i===3||i===9)};
+          if(i===0||i===1||i===4||i===5||i===6||i===8) c.alignment={...c.alignment,horizontal:"center"};
+          if(r.manual){
+            c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFF3C7"}};
+          } else if(idx%2===1){
+            c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF2F2F2"}};
+          }
+          if(i===1||i===8){
+            if(typeof v==="string" && /^\d+$/.test(v)){
+              c.numFmt = "0";
+            }
+          }
+          if(i===6 && typeof v==="number") c.numFmt = "0.##";
+          const len = (v==null?"":String(v)).length;
+          if(len>colMaxLen[i]) colMaxLen[i]=len;
+        });
+        // NOTE: do not set row.alignment here — in ExcelJS the Row.alignment
+        // setter overwrites every cell's alignment, which would wipe the
+        // per-column horizontal centering and wrapText set above. Each cell
+        // already carries vertical:"middle" individually.
+      });
+
+      // Total row
+      const totalRowIdx = HEADER_ROW+1+rows.length;
+      const tr = ws.getRow(totalRowIdx);
+      ws.mergeCells(totalRowIdx,1,totalRowIdx,6);
+      const tlbl = tr.getCell(1); tlbl.value=`TOTAL (${hoLabel})`; tlbl.alignment={horizontal:"right",vertical:"middle"};
+      tlbl.font={bold:true,size:11,color:{argb:"FF1F3864"},name:DOC_FONT};
+      tlbl.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE7EEF9"}};
+      const tnum = tr.getCell(7); tnum.value=days;
+      tnum.font={bold:true,size:11,color:{argb:"FF1F3864"},name:DOC_FONT}; tnum.alignment={horizontal:"center",vertical:"middle"};
+      tnum.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE7EEF9"}};
+      for(let cc=1;cc<=COL_HEADERS.length;cc++){
+        const c = tr.getCell(cc);
+        c.border={top:{style:"medium",color:{argb:"FF1F3864"}},bottom:{style:"thin"},left:{style:"thin",color:{argb:"FFD9D9D9"}},right:{style:"thin",color:{argb:"FFD9D9D9"}}};
+        if(cc!==1 && cc!==7){
+          c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE7EEF9"}};
+        }
+      }
+
+      const MINS = [5, 11, 22, 26, 13, 13, 10, 22, 12, 36];
+      const MAXS = [6, 16, 32, 44, 14, 14, 12, 32, 16, 60];
+      ws.columns = COL_HEADERS.map((_,i)=>({
+        width: Math.max(MINS[i], Math.min(MAXS[i], colMaxLen[i]+2)),
+      }));
+      ws.views=[{state:"frozen", ySplit:HEADER_ROW}];
+    }
+  }
+
+  const buf = await wb.xlsx.writeBuffer();
+  return new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+
+async function downloadGroupXlsx(g){
+  if(!g.count){ alert("This leave type has no records yet — add at least one entry."); return; }
+  const period = norm(document.getElementById("opt-period").value);
+  const blob = await buildWorkbook([g]);
+  const fname = `LeaveOrders_${slug(g.name)}${period?"_"+slug(period):""}.xlsx`;
+  saveAs(blob,fname);
+}
+
+async function downloadAllXlsx(){
+  if(!RAW) return;
+  const nonEmpty = RAW.groups.filter(g=>g.count>0);
+  if(!nonEmpty.length){ alert("No records to export."); return; }
+  const period = norm(document.getElementById("opt-period").value);
+  const blob = await buildWorkbook(nonEmpty);
+  const fname = `LeaveOrders_ALL_KarurSubDiv${period?"_"+slug(period):""}.xlsx`;
+  saveAs(blob,fname);
+}
+
+/* ---------- PDF generation ---------- */
+function buildPdf(groupsToInclude){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:"landscape",unit:"pt",format:"a4"});
+  const fmt = document.getElementById("opt-datefmt").value;
+  const office = norm(document.getElementById("opt-office").value);
+  const leaveMonth = norm(document.getElementById("opt-leave-month").value) || "July 2026";
+  const now = new Date();
+  const presentDate = String(now.getDate()).padStart(2, '0') + '.' + String(now.getMonth()+1).padStart(2, '0') + '.' + now.getFullYear();
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 28;
+  const innerW = pageW - margin*2;
+
+  const HO_RGB = { karur:[79,70,229], kulittalai:[13,148,136], unknown:[220,38,38] };
+  let isFirstSection = true;
+
+  groupsToInclude.forEach((g)=>{
+    ["karur","kulittalai","unknown"].forEach(hoKey=>{
+      const rows = g.byHO[hoKey];
+      if(!rows.length) return;
+      const hoLabel = hoKey==="karur"?"Karur HO":hoKey==="kulittalai"?"Kulittalai HO":"Unknown";
+      let catName = g.name.replace(/-/g, ' ');
+      if (g.name === 'Training') catName = 'GDS Training';
+      else if (g.name === 'LWA') catName = 'GDS LWA';
+      const klt = hoKey === "kulittalai" ? " (KLT)" : "";
+      const memo = `KRR/${catName} - ${leaveMonth}${klt}/dlgs dated at Karur ${presentDate}`;
+      const days = g.daysByHO[hoKey];
+
+      if(!isFirstSection) doc.addPage();
+      isFirstSection = false;
+
+      let y = margin;
+      doc.setFillColor(31,56,100);
+      doc.rect(margin, y, innerW, 28, "F");
+      doc.setTextColor(255,255,255);
+      doc.setFont("times","bold");
+      doc.setFontSize(16);
+      doc.text(DEPT_LINE, pageW/2, y+18.5, {align:"center"});
+      y += 30;
+
+      doc.setFillColor(238,243,251);
+      doc.rect(margin, y, innerW, 19, "F");
+      doc.setTextColor(31,56,100);
+      doc.setFont("times","bold");
+      doc.setFontSize(11.5);
+      doc.text(office, pageW/2, y+13, {align:"center"});
+      y += 20;
+
+      doc.setFillColor(238,243,251);
+      doc.rect(margin, y, innerW, 19, "F");
+      doc.setTextColor(31,56,100);
+      doc.setFont("times","bold");
+      doc.setFontSize(11);
+      doc.text(`Memo No. ${memo}`, pageW/2, y+13, {align:"center"});
+      y += 21;
+
+      doc.setTextColor(26,34,51);
+      doc.setFont("times","normal");
+      doc.setFontSize(12);
+      NOTES.forEach(note=>{
+        const lines = doc.splitTextToSize(note, innerW-12);
+        doc.text(lines, margin+6, y+11);
+        y += lines.length*15 + 3;
+      });
+      y += 4;
+
+      // HO + leave-type banner
+      const [r,b,gn] = HO_RGB[hoKey];
+      doc.setFillColor(r,b,gn);
+      doc.rect(margin, y, innerW, 21, "F");
+      doc.setTextColor(255,255,255);
+      doc.setFont("times","bold");
+      doc.setFontSize(11.5);
+      doc.text(`${hoLabel}    |    Leave Type: ${g.name}    |    Total Records: ${rows.length}    |    Total Days: ${days}`, pageW/2, y+14, {align:"center"});
+      y += 25;
+
+      const body = rows.map((r2,idx)=>[
+        idx+1, r2.empId, r2.empName, r2.officeName,
+        fmtDate(r2.startDate,fmt), fmtDate(r2.endDate,fmt),
+        r2.noDays===""?"":r2.noDays,
+        r2.subName, r2.subId, r2.remarks,
+      ]);
+      body.push([
+        {content:`TOTAL (${hoLabel})`, colSpan:6, styles:{halign:"right",fontStyle:"bold",fillColor:[231,238,249],textColor:[31,56,100]}},
+        {content:days, styles:{halign:"center",fontStyle:"bold",fillColor:[231,238,249],textColor:[31,56,100]}},
+        {content:"", colSpan:3, styles:{fillColor:[231,238,249]}}
+      ]);
+
+      doc.autoTable({
+        startY: y,
+        head: [COL_HEADERS],
+        body,
+        theme:"grid",
+        styles:{ font:"times", fontSize:11, cellPadding:2.5, valign:"middle", lineColor:[217,217,217], lineWidth:0.4, overflow:"linebreak" },
+        headStyles:{ font:"times", fontSize:11, fillColor:[31,56,100], textColor:[255,255,255], fontStyle:"bold", halign:"center", valign:"middle", lineColor:[22,41,74] },
+        alternateRowStyles:{ fillColor:[242,242,242] },
+        columnStyles:{
+          0:{cellWidth:28, halign:"center"},
+          1:{cellWidth:55, halign:"center"},
+          2:{cellWidth:110},
+          3:{cellWidth:130},
+          4:{cellWidth:60, halign:"center"},
+          5:{cellWidth:60, halign:"center"},
+          6:{cellWidth:38, halign:"center"},
+          7:{cellWidth:110},
+          8:{cellWidth:55, halign:"center"},
+          9:{cellWidth:"auto"},
+        },
+        didParseCell: hook=>{
+          if(hook.section==='body' && hook.row.index<rows.length && rows[hook.row.index] && rows[hook.row.index].manual){
+            hook.cell.styles.fillColor = [254,243,199];
+          }
+        },
+        margin:{left:margin,right:margin,top:margin,bottom:margin+14},
+      });
+    });
+  });
+
+  // page numbers
+  const total = doc.internal.getNumberOfPages();
+  for(let i=1;i<=total;i++){
+    doc.setPage(i);
+    doc.setFont("times","normal");
+    doc.setFontSize(9);
+    doc.setTextColor(91,102,119);
+    doc.setFillColor(255,255,255);
+    doc.rect(pageW-margin-80, pageH-22, 80, 14, "F");
+    doc.text(`Page ${i} of ${total}`, pageW-margin, pageH-10, {align:"right"});
+  }
+
+  return doc;
+}
+
+function downloadGroupPdf(g){
+  if(!g.count){ alert("This leave type has no records yet — add at least one entry."); return; }
+  const period = norm(document.getElementById("opt-period").value);
+  const doc = buildPdf([g]);
+  doc.save(`LeaveOrders_${slug(g.name)}${period?"_"+slug(period):""}.pdf`);
+}
+
+function downloadAllPdf(){
+  if(!RAW) return;
+  const nonEmpty = RAW.groups.filter(g=>g.count>0);
+  if(!nonEmpty.length){ alert("No records to export."); return; }
+  const period = norm(document.getElementById("opt-period").value);
+  const doc = buildPdf(nonEmpty);
+  doc.save(`LeaveOrders_ALL_KarurSubDiv${period?"_"+slug(period):""}.pdf`);
+}
+
+/* ---------- Wire up UI ---------- */
+const drop = document.getElementById("drop");
+const fileInput = document.getElementById("file");
+drop.addEventListener("click",e=>{ if(e.target!==fileInput) fileInput.click(); });
+drop.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); fileInput.click(); }});
+fileInput.addEventListener("change",e=>{ if(fileInput.files[0]) handleFile(fileInput.files[0]); });
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag");}));
+drop.addEventListener("drop",e=>{
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if(f) handleFile(f);
+});
+
+["opt-approved","opt-titlecase"].forEach(id=>{
+  document.getElementById(id).addEventListener("change",()=>{
+    if(fileInput.files[0]) handleFile(fileInput.files[0]);
+  });
+});
+["opt-datefmt","opt-office","opt-period","opt-leave-month"].forEach(id=>{
+  document.getElementById(id).addEventListener("input",()=>{ if(RAW) render(); });
+});
+
+document.getElementById("dlAllXlsx").addEventListener("click",downloadAllXlsx);
+document.getElementById("dlAllPdf").addEventListener("click",downloadAllPdf);
+</script>
+</body>
+</html>

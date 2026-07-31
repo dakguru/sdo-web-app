@@ -1,0 +1,8 @@
+{
+  "_comment": "OPTIONAL. Copy to sources.json only if your source files live OUTSIDE the project (e.g. a live network drive). Paths may be absolute or relative to the project root. If this file is absent, Import-Masters.ps1 auto-discovers GS*.xlsx and *village*.docx from the project's source-files\\ folder.",
+  "gsFiles": [
+    "source-files/GS MAYANUR SO.xlsx",
+    "G:/KARUR SUB DN/GS MAY 2026.xlsx"
+  ],
+  "villageDoc": "source-files/village sorting List Karur Sub Division.docx"
+}

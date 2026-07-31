@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Karur Division Directory brand emblem: a gradient (indigo -> violet -> pink) rounded
+  badge with a glossy top-light, a clean open envelope, a gold letter peeking out, and a
+  sparkle. Crisp at every density; used on the launch screen.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+
+    <!-- badge -->
+    <path android:pathData="M66,16 L174,16 A52,52 0 0 1 226,68 L226,172 A52,52 0 0 1 174,224 L66,224 A52,52 0 0 1 14,172 L14,68 A52,52 0 0 1 66,16 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear"
+                android:startX="24" android:startY="20" android:endX="216" android:endY="224">
+                <item android:offset="0" android:color="#FF4F46E5" />
+                <item android:offset="0.55" android:color="#FF7C3AED" />
+                <item android:offset="1" android:color="#FFEC4899" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- glossy top-light -->
+    <path android:pathData="M66,16 L174,16 A52,52 0 0 1 226,68 L226,172 A52,52 0 0 1 174,224 L66,224 A52,52 0 0 1 14,172 L14,68 A52,52 0 0 1 66,16 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear"
+                android:startX="120" android:startY="16" android:endX="120" android:endY="150">
+                <item android:offset="0" android:color="#57FFFFFF" />
+                <item android:offset="1" android:color="#00FFFFFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- gold letter card -->
+    <path android:pathData="M84,72 L156,72 A8,8 0 0 1 164,80 L164,112 A8,8 0 0 1 156,120 L84,120 A8,8 0 0 1 76,112 L76,80 A8,8 0 0 1 84,72 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear"
+                android:startX="76" android:startY="70" android:endX="164" android:endY="122">
+                <item android:offset="0" android:color="#FFFDE68A" />
+                <item android:offset="0.5" android:color="#FFFBBF24" />
+                <item android:offset="1" android:color="#FFF59E0B" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M90,90 L150,90 A3,3 0 0 1 150,96 L90,96 A3,3 0 0 1 90,90 Z"
+        android:fillColor="#B45309" android:fillAlpha="0.5" />
+    <path android:pathData="M90,101 L132,101 A3,3 0 0 1 132,107 L90,107 A3,3 0 0 1 90,101 Z"
+        android:fillColor="#B45309" android:fillAlpha="0.38" />
+
+    <!-- envelope body -->
+    <path android:pathData="M66,108 L174,108 A14,14 0 0 1 188,122 L188,156 A14,14 0 0 1 174,170 L66,170 A14,14 0 0 1 52,156 L52,122 A14,14 0 0 1 66,108 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- envelope front pocket (V) -->
+    <path android:pathData="M52,122 L120,158 L188,122 L188,156 A14,14 0 0 1 174,170 L66,170 A14,14 0 0 1 52,156 Z"
+        android:fillColor="#EEF3FC" />
+    <path android:pathData="M52,122 L120,158 L188,122"
+        android:strokeColor="#C7D2FE" android:strokeWidth="3"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+
+    <!-- sparkle -->
+    <path android:pathData="M196,46 C198,58 200,60 212,62 C200,64 198,66 196,78 C194,66 192,64 180,62 C192,60 194,58 196,46 Z"
+        android:fillColor="#FFFFFF" />
+</vector>

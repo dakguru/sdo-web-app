@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Adaptive-icon foreground: the Karur SDO app logo (Government of India emblem +
+  "GOVT. OF INDIA / O/o the Asst. Supdt. of Posts / KARUR SUB DN"), centred and
+  scaled to sit inside the adaptive-icon safe zone so nothing is clipped by the mask.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:width="68dp"
+        android:height="70dp"
+        android:gravity="center"
+        android:drawable="@drawable/app_logo" />
+</layer-list>

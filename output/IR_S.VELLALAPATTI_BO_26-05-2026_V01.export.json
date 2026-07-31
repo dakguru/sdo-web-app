@@ -1,0 +1,18 @@
+﻿{
+    "reportBase":  "IR_S.VELLALAPATTI_BO_26-05-2026_V01",
+    "template":  "IR_BO_TEMPLATE.docx",
+    "data":  "_generate.json",
+    "generatedAt":  "2026-06-27T21:59:45",
+    "docx":  "IR_S.VELLALAPATTI_BO_26-05-2026_V01.docx",
+    "docxBytes":  55261,
+    "docxSha256":  "384EDF6FC78E0B94E5F48907A0CF05E93FFB6B931E947E6EB57692B03001404A",
+    "pdf":  null,
+    "pdfBytes":  null,
+    "pdfSha256":  null,
+    "pages":  0,
+    "warnings":  [
+                     "Repeatable table \u0027pli_collection\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027ippb_txns\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "PDF generation skipped after 2 Word COM failures: The object invoked has disconnected from its clients. (Exception from HRESULT: 0x80010108 (RPC_E_DISCONNECTED)). DOCX was produced; open it in Word and use File \u003e Save As \u003e PDF."
+                 ]
+}

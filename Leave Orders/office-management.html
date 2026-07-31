@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Department of Posts — Office Management, Karur Division</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1F3864; --indigo:#4f46e5; --violet:#7c3aed; --pink:#ec4899;
+    --teal:#0d9488; --emerald:#059669; --amber:#f59e0b; --rose:#e11d48;
+    --ink:#0f172a; --ink-2:#1e293b; --muted:#64748b; --line:#e2e8f0; --card:#fff;
+    --grad-brand:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%);
+    --grad-bg:radial-gradient(1200px 600px at -10% -20%,#dbe4ff 0%,transparent 60%),
+              radial-gradient(900px 500px at 110% 0%,#fce7f3 0%,transparent 55%),
+              radial-gradient(800px 600px at 50% 120%,#d1fae5 0%,transparent 60%),
+              linear-gradient(180deg,#eef2fb 0%,#f5f7fd 100%);
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06),0 1px 3px rgba(15,23,42,.04);
+    --shadow-md:0 4px 12px rgba(15,23,42,.08),0 2px 4px rgba(15,23,42,.04);
+    --shadow-lg:0 12px 32px rgba(15,23,42,.12),0 4px 12px rgba(15,23,42,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;color:var(--ink);font:14.5px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--grad-bg);background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .appbar{background:#1e3a5f;color:#fff;padding:9px 22px;display:flex;align-items:center;gap:14px;font:600 12.5px/1.2 'Inter',sans-serif;letter-spacing:.2px}
+  .appbar .switch{margin-left:auto;display:flex;gap:6px;padding:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px;flex-wrap:wrap}
+  .appbar .pill{padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none}
+  .appbar .pill.active{color:#1e3a5f;background:#fff}
+  header{background:linear-gradient(120deg,#1e3a5f 0%,#4f46e5 60%,#7c3aed 100%);color:#fff;padding:20px 22px;box-shadow:var(--shadow-md)}
+  .header-inner{max-width:1320px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:24px;border:1.5px solid rgba(255,255,255,.3)}
+  header h1{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:20px;margin:0;font-weight:800;letter-spacing:.2px;line-height:1.15}
+  header .sub{font-size:12.5px;opacity:.92;margin-top:2px;font-weight:500}
+  .privacy{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;background:rgba(255,255,255,.14);padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.24)}
+  .privacy .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80}
+  main{max-width:1320px;margin:0 auto;padding:20px 18px 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);padding:18px 20px;margin-bottom:18px}
+  .card h2{font-family:"Plus Jakarta Sans","Inter",sans-serif;margin:0 0 14px;font-size:13px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1.4px;display:flex;align-items:center;gap:10px}
+  .card h2 .num{width:22px;height:22px;border-radius:7px;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:var(--grad-brand)}
+  .up-wrap{display:flex;gap:16px;flex-wrap:wrap;align-items:stretch}
+  .drop{flex:1;min-width:300px;border:2px dashed #c7d2fe;border-radius:14px;background:linear-gradient(135deg,#eef2ff,#faf5ff);padding:20px;text-align:center;cursor:pointer;transition:.15s}
+  .drop:hover,.drop.drag{border-color:#7c3aed;background:linear-gradient(135deg,#e0e7ff,#f3e8ff);transform:translateY(-1px)}
+  .drop .ic{font-size:28px}
+  .drop .t{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-weight:800;font-size:14px;margin-top:6px}
+  .drop .h{font-size:12px;color:var(--muted);margin-top:4px}
+  .up-side{flex:1;min-width:260px;display:flex;flex-direction:column;gap:9px;justify-content:center}
+  .muted{color:var(--muted)}
+  button.btn{cursor:pointer;border:none;border-radius:10px;padding:10px 16px;font:700 13px/1 "Inter",sans-serif;color:#fff;background:var(--grad-brand);box-shadow:var(--shadow-sm);display:inline-flex;align-items:center;gap:8px;transition:.15s}
+  button.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+  button.btn[disabled]{opacity:.5;cursor:not-allowed}
+  button.btn.ghost{background:#fff;color:var(--ink-2);border:1.5px solid var(--line)}
+  button.btn.tiny{padding:6px 11px;font-size:12px;border-radius:8px}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 16px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:var(--shadow-sm);min-width:120px}
+  .stat .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+  .stat .v{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:24px;font-weight:800;margin-top:2px;line-height:1}
+  .browse{display:grid;grid-template-columns:360px 1fr;gap:18px;align-items:start}
+  @media (max-width:900px){ .browse{grid-template-columns:1fr} }
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden}
+  .phead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+  .ptitle{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:space-between}
+  select.pick,input.search{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font:500 14px/1.2 "Inter",sans-serif;background:#fff;color:var(--ink)}
+  select.pick:focus,input.search:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.14)}
+  .seg{display:flex;gap:4px;background:#f1f5f9;border:1px solid var(--line);border-radius:9px;padding:3px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:64px;border:none;background:transparent;border-radius:6px;padding:6px 8px;font:700 11.5px/1 "Inter",sans-serif;color:var(--muted);cursor:pointer}
+  .seg button.on{background:#fff;color:var(--indigo);box-shadow:var(--shadow-sm)}
+  .olist{max-height:64vh;overflow:auto}
+  .oitem{padding:11px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:.1s}
+  .oitem:hover{background:#f8fafc}
+  .oitem.sel{background:linear-gradient(90deg,#eef2ff,#faf5ff);border-left:3px solid #7c3aed;padding-left:13px}
+  .oitem .on{font-weight:700;font-size:13.5px;line-height:1.2}
+  .oitem .om{font-size:11px;color:var(--muted);margin-top:2px}
+  .tp{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;white-space:nowrap}
+  .tp.BPO{background:#dcfce7;color:#166534}.tp.SPO{background:#e0e7ff;color:#3730a3}.tp.SDO{background:#fef9c3;color:#854d0e}.tp.HPO{background:#fee2e2;color:#991b1b}.tp.OTH{background:#f1f5f9;color:#475569}
+  .content{min-height:320px}
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);padding:56px 20px;text-align:center}
+  .empty .big{font-size:40px;opacity:.5}
+  .detail{padding:18px}
+  .dhero{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:16px 18px;border-radius:14px;background:linear-gradient(120deg,#1e3a5f,#4f46e5);color:#fff;margin-bottom:16px}
+  .avatar{width:54px;height:54px;border-radius:14px;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:24px}
+  .dhero .nm{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:20px;font-weight:800;line-height:1.15}
+  .dhero .sb{font-size:12.5px;opacity:.92;margin-top:2px}
+  .dhero .tags{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .dhero .tag{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:4px 11px;font-size:11.5px;font-weight:700}
+  .sect{margin-bottom:16px}
+  .sect .st{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:800;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+  .sect .st::after{content:"";flex:1;height:1px;background:var(--line)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px 16px}
+  .kv{display:flex;flex-direction:column;padding:8px 12px;background:#f8fafc;border:1px solid #eef2f7;border-radius:10px}
+  .kv .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+  .kv .v{font-size:14px;font-weight:600;color:var(--ink-2);word-break:break-word;margin-top:1px}
+  .kv .v a{color:var(--indigo);text-decoration:none;font-weight:700}
+  table.staff{width:100%;border-collapse:collapse;font-size:13px}
+  table.staff th{text-align:left;background:#f8fafc;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding:9px 12px;border-bottom:1px solid var(--line)}
+  table.staff td{padding:9px 12px;border-bottom:1px solid #f1f5f9}
+  .type-badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px}
+  .type-badge.DS{background:#e0e7ff;color:#3730a3}.type-badge.GDS{background:#ccfbf1;color:#0f766e}.type-badge.OUT{background:#fef9c3;color:#854d0e}
+  .cnt{font-size:11px;font-weight:800;color:#3730a3;background:#e0e7ff;border-radius:999px;padding:2px 9px}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#0f172a;color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.25s;z-index:99}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:#7f1d1d}
+  .link-btn{background:none;border:none;color:var(--indigo);font-weight:700;cursor:pointer;font-size:13px;padding:0}
+  .builtby{text-align:center;font-weight:800;font-size:14px;padding:16px 8px 30px;font-family:"Plus Jakarta Sans","Inter"}
+</style>
+</head>
+<body>
+<div class="appbar">
+  <a href="/" style="opacity:.85;color:#fff;text-decoration:none;font-weight:700;display:flex;align-items:center;gap:6px">&#x1F3E0; Home</a>
+  <span style="opacity:.4">|</span>
+  <span style="opacity:.72">Department of Posts &middot; Karur Division</span>
+  <div class="switch">
+    <a class="pill" href="/leave-orders">Sub Divisional Manager</a>
+    <a class="pill" href="/employees">Employee Directory</a>
+    <span class="pill active">Office Management</span>
+    <a class="pill" href="/arrangements">Temporary Arrangements</a>
+    <a class="pill" href="/ir-builder/">Inspection Reports &rarr;</a>
+  </div>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">&#127970;</div>
+      <div>
+        <h1>Office Management &mdash; Karur Division</h1>
+        <div class="sub">Sub-division-wise office details &middot; hierarchy, contact &amp; operations &middot; staff mapped to each office</div>
+      </div>
+    </div>
+    <span class="privacy"><span class="dot"></span> On this device &middot; localhost</span>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <h2><span class="num">&#8593;</span> Office master data</h2>
+    <div class="up-wrap">
+      <div class="drop" id="drop" tabindex="0">
+        <div class="ic">&#128194;</div>
+        <div class="t">Drop the Office Management export here — or click to browse</div>
+        <div class="h">Upload the office master (.xlsx) to refresh office details. Offices are grouped by <b>sub&#8209;division</b> and matched to staff by office ID.</div>
+        <input type="file" id="file" accept=".xls,.xlsx" style="display:none" />
+      </div>
+      <div class="up-side">
+        <div class="muted" id="src-meta" style="font-size:12.5px">No office data loaded yet.</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+          <button class="btn" id="saveBtn" disabled>&#128190; Save office data</button>
+          <button class="btn ghost tiny" id="discardBtn" style="display:none">Discard</button>
+        </div>
+        <div class="muted" id="pending" style="font-size:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Download staff directory (rendered by /leave-orders/directory-export.js) -->
+  <div id="dir-export"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="browse">
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle"><span>Offices</span><span id="office-count" class="muted" style="font-weight:600;font-size:12px"></span></div>
+        <select class="pick" id="officePick"><option value="">— Jump to office —</option></select>
+        <input class="search" id="officeSearch" placeholder="&#128269;  Search office, pincode, SOL…" autocomplete="off" />
+        <div class="seg" id="subSeg"></div>
+      </div>
+      <div class="olist" id="olist"></div>
+    </div>
+    <div class="panel content" id="content">
+      <div class="empty"><div class="big">&#127970;</div><div>Pick a sub-division and select an office to see its full details and staff.</div></div>
+    </div>
+  </div>
+
+  <div class="builtby">Built by Arun Selvaraj, Karur Division</div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const S={ offices:[], meta:{}, emps:[], mobiles:{}, byOffice:new Map(), pending:null, sub:'ALL', q:'', selId:null };
+const $=s=>document.querySelector(s);
+const el=(t,a,...k)=>{const e=document.createElement(t);if(a)for(const p in a){if(p==='class')e.className=a[p];else if(p==='html')e.innerHTML=a[p];else if(p.startsWith('on'))e.addEventListener(p.slice(2),a[p]);else if(a[p]!=null)e.setAttribute(p,a[p]);}for(const c of k){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(c));}return e;};
+function toast(m,err){const t=$('#toast');t.textContent=m;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2600);}
+const clean=v=>(v==null?'':String(v)).trim();
+function tpClass(t){return ['BPO','SPO','SDO','HPO'].includes(t)?t:'OTH';}
+function empName(e){ return e._type==='OUT' ? [e.first_name,e.middle_name,e.last_name].map(clean).filter(Boolean).join(' ') : clean(e.Employee_name); }
+function empDesig(e){ return e._type==='OUT' ? clean(e.post_desc||e.Post_desc||'Outsider') : clean(e.Post_desc); }
+function empOfficeId(e){ return e._type==='OUT' ? clean(e.office_id) : clean(e.Office_id); }
+function mobileOf(e){ return e._type==='OUT' ? clean(e.mobile_no) : clean(S.mobiles[clean(e.Employee_id)]); }
+
+/* ---------- data ---------- */
+function buildIndex(){
+  S.byOffice=new Map();
+  for(const e of S.emps){ const id=empOfficeId(e); if(!id)continue; if(!S.byOffice.has(id))S.byOffice.set(id,[]); S.byOffice.get(id).push(e); }
+}
+function subdivisions(){
+  const m=new Map();
+  for(const o of S.offices){ const s=clean(o.sub_division)||'(Head / Admin)'; m.set(s,(m.get(s)||0)+1); }
+  return [...m.entries()].sort((a,b)=>b[1]-a[1]);
+}
+function filteredOffices(){
+  const q=S.q.toLowerCase();
+  return S.offices.filter(o=>{
+    if(S.sub!=='ALL' && (clean(o.sub_division)||'(Head / Admin)')!==S.sub) return false;
+    if(q && !(clean(o.office_name).toLowerCase().includes(q)||clean(o.pincode).includes(q)||clean(o.sol_id).toLowerCase().includes(q)||clean(o.office_id).includes(q)||clean(o.village).toLowerCase().includes(q))) return false;
+    return true;
+  }).sort((a,b)=>clean(a.office_name).localeCompare(clean(b.office_name)));
+}
+
+/* ---------- render ---------- */
+function renderStats(){
+  const subs=new Set(S.offices.map(o=>clean(o.sub_division)||'(Head / Admin)')).size;
+  const bpo=S.offices.filter(o=>o.office_type==='BPO').length;
+  const so=S.offices.filter(o=>/SPO|SDO/.test(o.office_type)).length;
+  const mapped=S.offices.filter(o=>(S.byOffice.get(clean(o.office_id))||[]).length).length;
+  const items=[['Offices',S.offices.length],['Sub-divisions',subs],['Branch POs',bpo],['Sub/Head POs',so],['Offices with staff',mapped]];
+  $('#stats').innerHTML='';
+  for(const [k,v] of items) $('#stats').append(el('div',{class:'stat'},el('div',{class:'k'},k),el('div',{class:'v'},String(v))));
+}
+function renderMeta(){ const m=S.meta||{}; $('#src-meta').textContent = m.count?`${m.count} offices · ${m.subdivisions||''} sub-divisions · ${m.fileName||'file'} · updated ${(m.updatedAt||'').slice(0,10)}`:'No office data loaded yet.'; }
+function renderSeg(){
+  const seg=$('#subSeg'); seg.innerHTML='';
+  seg.append(el('button',{class:(S.sub==='ALL'?'on':''),onclick:()=>{S.sub='ALL';renderSeg();renderList();}},'All'));
+  for(const [s,c] of subdivisions()) seg.append(el('button',{class:(S.sub===s?'on':''),onclick:()=>{S.sub=s;renderSeg();renderList();}}, s));
+}
+function renderPick(){
+  const sel=$('#officePick'); const cur=sel.value; sel.innerHTML='<option value="">— Jump to office —</option>';
+  for(const o of S.offices.slice().sort((a,b)=>clean(a.office_name).localeCompare(clean(b.office_name)))) sel.append(el('option',{value:o.office_id}, `${clean(o.office_name)}`));
+  sel.value=cur;
+}
+function renderList(){
+  const list=$('#olist'); list.innerHTML='';
+  const offs=filteredOffices();
+  $('#office-count').textContent=`${offs.length} of ${S.offices.length}`;
+  if(!offs.length){ list.append(el('div',{class:'empty',style:'padding:30px'}, S.offices.length?'No offices match.':'Upload the office master to begin.')); return; }
+  for(const o of offs){
+    const staffN=(S.byOffice.get(clean(o.office_id))||[]).length;
+    list.append(el('div',{class:'oitem'+(o.office_id===S.selId?' sel':''),onclick:()=>{S.selId=o.office_id;renderList();renderDetail();}},
+      el('div',null, el('div',{class:'on'},clean(o.office_name)), el('div',{class:'om'}, `${clean(o.sub_division)||'—'} · ${clean(o.ho_name)}`)),
+      el('div',{style:'display:flex;gap:6px;align-items:center'}, el('span',{class:'tp '+tpClass(o.office_type)},o.office_type||'—'), staffN?el('span',{class:'cnt'},String(staffN)):null)));
+  }
+}
+function kv(k,v){ return el('div',{class:'kv'},el('div',{class:'k'},k),el('div',{class:'v'},clean(v)||'—')); }
+function kvNode(k,node){ return el('div',{class:'kv'},el('div',{class:'k'},k),el('div',{class:'v'},node)); }
+function renderDetail(){
+  const c=$('#content'); c.innerHTML='';
+  if(!S.selId){ c.append(el('div',{class:'empty'},el('div',{class:'big'},'🏢'),el('div',null,'Pick a sub-division and select an office to see its full details and staff.'))); return; }
+  const o=S.offices.find(x=>x.office_id===S.selId);
+  if(!o){ S.selId=null; return renderDetail(); }
+  const staff=(S.byOffice.get(clean(o.office_id))||[]).slice().sort((a,b)=>empName(a).localeCompare(empName(b)));
+  const w=el('div',{class:'detail'});
+  w.append(el('div',{class:'dhero'},
+    el('div',{class:'avatar'},'🏤'),
+    el('div',null, el('div',{class:'nm'},clean(o.office_name)), el('div',{class:'sb'}, `${clean(o.sub_division)||'—'} Sub-Division · ${clean(o.division)} · ${clean(o.ho_name)}`)),
+    el('div',{class:'tags'}, el('span',{class:'tag'},clean(o.office_type)||'Office'), el('span',{class:'tag'},clean(o.office_status)||'—'), staff.length?el('span',{class:'tag'},staff.length+' staff'):null)));
+
+  const sect=(title,pairs)=>{ const s=el('div',{class:'sect'},el('div',{class:'st'},title)); const g=el('div',{class:'grid'}); for(const p of pairs){ if(p.node) g.append(kvNode(p.k,p.node)); else g.append(kv(p.k,p.v)); } s.append(g); w.append(s); };
+
+  sect('Identity & Hierarchy',[
+    {k:'Office name',v:o.office_name},{k:'Office ID',v:o.office_id},{k:'Type',v:o.office_type},{k:'Class',v:o.office_class},{k:'Status',v:o.office_status},
+    {k:'Sub-division',v:o.sub_division},{k:'Division',v:o.division},{k:'Head Office',v:o.ho_name},{k:'Sub Office (S.O)',v:o.so_name},{k:'Region',v:o.region},{k:'Circle',v:o.circle}]);
+  const addr=[o.address1,o.address2,o.address3,o.village,o.taluk,o.city,o.state].map(clean).filter(Boolean).join(', ');
+  const contactNode = clean(o.contact)? el('a',{href:'tel:'+clean(o.contact)},clean(o.contact)) : document.createTextNode('—');
+  const emailNode = clean(o.email)? el('a',{href:'mailto:'+clean(o.email)},clean(o.email)) : document.createTextNode('—');
+  sect('Contact & Address',[
+    {k:'Email',node:emailNode},{k:'Contact',node:contactNode},{k:'Pincode',v:o.pincode},{k:'Village',v:o.village},{k:'Taluk',v:o.taluk},{k:'City',v:o.city},{k:'Address',v:addr}]);
+  const mapNode = (clean(o.latitude)&&clean(o.longitude)) ? el('a',{href:`https://www.google.com/maps?q=${clean(o.latitude)},${clean(o.longitude)}`,target:'_blank',rel:'noopener'},`${clean(o.latitude)}, ${clean(o.longitude)} ↗`) : document.createTextNode('—');
+  sect('Operations',[
+    {k:'Working days',v:o.working_days},{k:'Hours',v:(clean(o.working_hours_from)||'—')+' – '+(clean(o.working_hours_to)||'—')},
+    {k:'SOL ID',v:o.sol_id},{k:'CSI facility ID',v:o.csi_facility_id},{k:'PLI ID',v:o.pli_id},{k:'GSTN',v:o.gstn},{k:'PAO code',v:o.pao_code},
+    {k:'Delivery office',v:o.delivery_office},{k:'Location',node:mapNode},{k:'Head of office (ID)',v:o.head_of_office_id}]);
+
+  // staff mapped to this office
+  const ss=el('div',{class:'sect'},el('div',{class:'st'},`Staff at this office (${staff.length})`));
+  if(!staff.length){ ss.append(el('div',{class:'muted',style:'font-size:13px;padding:4px 2px'},'No staff mapped to this office in the employee directory.')); }
+  else{
+    const t=el('table',{class:'staff'});
+    t.append(el('thead',null,el('tr',null,el('th',null,'Name'),el('th',null,'Employee ID'),el('th',null,'Designation'),el('th',null,'Type'),el('th',null,'Mobile'))));
+    const tb=el('tbody');
+    for(const e of staff){ const mob=mobileOf(e);
+      tb.append(el('tr',null,
+        el('td',{style:'font-weight:600'},empName(e)||'—'),
+        el('td',null,clean(e.Employee_id||e.resource_id)),
+        el('td',null,empDesig(e)||'—'),
+        el('td',null,el('span',{class:'type-badge '+(e._type||'DS')}, e._type==='DS'?'DS':e._type==='OUT'?'OUT':'GDS')),
+        el('td', mob?null:{class:'muted'}, mob? el('a',{href:'tel:'+mob,style:'color:#4f46e5;text-decoration:none;font-weight:600'},mob):'—')));
+    }
+    t.append(tb); ss.append(t);
+  }
+  w.append(ss);
+  c.append(w);
+}
+function renderAll(){ buildIndex(); renderStats(); renderMeta(); renderSeg(); renderPick(); renderList(); renderDetail(); }
+
+/* ---------- upload/persist ---------- */
+function parseOffices(buf){
+  const wb=XLSX.read(buf);                          // no cellDates: keep times as fractions
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{raw:true,defval:''});
+  const out=[]; let subsSet=new Set();
+  const g=(r,k)=>{ const v=r[k]; return v==null?'':(v instanceof Date? v.toISOString().slice(0,10) : String(v).trim()); };
+  const intg=(r,k)=>{ let s=g(r,k).replace(/[^0-9]/g,''); return (s==='0'||!s)?'':s; };
+  const hourStr=(r,k)=>{ const v=r[k]; if(v==null||v==='')return ''; if(typeof v==='number'){ const frac=v-Math.floor(v); const mins=Math.round(frac*1440); if(!mins)return ''; const p=n=>String(n).padStart(2,'0'); return p(Math.floor(mins/60))+':'+p(mins%60); } const s=String(v).trim(); const m=s.match(/^(\d{1,2}):(\d{2})/); return m?(String(m[1]).padStart(2,'0')+':'+m[2]):s; };
+  for(const raw of rows){
+    const r={}; for(const k in raw) r[clean(k)]=raw[k];
+    const oid=intg(r,'office_id'); if(!oid) continue;
+    let sd=g(r,'sub_division_name')||'(Head / Admin)'; subsSet.add(sd);
+    out.push({ office_id:oid, office_name:g(r,'office_name'), office_type:g(r,'office_type_code'), office_class:g(r,'office_class'), office_status:g(r,'office_status'),
+      sub_division:sd, sub_division_office_id:intg(r,'sub_division_office_id'), division:g(r,'division_name'), ho_name:g(r,'ho_name'), so_name:g(r,'so_name'), region:g(r,'region_name'), circle:g(r,'circle_name'),
+      email:g(r,'email_id'), contact:intg(r,'contact_number'), pincode:intg(r,'pincode'), address1:g(r,'office_address1'), address2:g(r,'office_address2'), address3:g(r,'office_address3'),
+      village:g(r,'village_name'), taluk:g(r,'taluk_name'), city:g(r,'city_name'), state:g(r,'state_name'), latitude:g(r,'latitude'), longitude:g(r,'longitude'),
+      working_days:g(r,'working_days'), working_hours_from:hourStr(r,'working_hours_from'), working_hours_to:hourStr(r,'working_hours_to'),
+      sol_id:g(r,'sol_id'), csi_facility_id:g(r,'csi_facility_id'), pli_id:g(r,'pli_id'), gstn:g(r,'gstn_code'), pao_code:g(r,'pao_code'), delivery_office:g(r,'delivery_office_flag'),
+      reporting_office_id:intg(r,'reporting_office_id'), head_of_office_id:intg(r,'head_of_the_office') });
+  }
+  return {out,subs:subsSet.size};
+}
+async function handleFile(f){
+  try{
+    const buf=await f.arrayBuffer();
+    const {out,subs}=parseOffices(buf);
+    if(!out.length){ toast('No offices found — is this the Office Management export?',true); return; }
+    S.pending={offices:out,subs,fileName:f.name};
+    $('#pending').innerHTML=`Parsed <b>${out.length}</b> offices (${subs} sub-divisions) from ${f.name}. Click <b>Save</b>.`;
+    $('#saveBtn').disabled=false; $('#discardBtn').style.display='inline-flex';
+    toast(`Parsed ${out.length} offices.`);
+  }catch(e){ toast('Failed to read file: '+e.message,true); }
+}
+async function saveData(){
+  if(!S.pending)return;
+  const now=new Date().toISOString();
+  const meta={fileName:S.pending.fileName,count:S.pending.offices.length,subdivisions:S.pending.subs,updatedAt:now};
+  $('#saveBtn').disabled=true; $('#saveBtn').textContent='Saving…';
+  try{
+    try {
+      const r=await fetch('/api/offices-master',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({meta,offices:S.pending.offices})});
+      if(r.ok) { const d=await r.json(); if(!d.ok) console.warn(d.error||'save failed'); }
+    } catch(err) { console.warn('Local API unavailable'); }
+    if(typeof SB!=='undefined' && SB.ready) try { await SB.putDataset('OFFICES', S.pending.offices, 'web'); } catch(e) { console.warn('Cloud sync failed:', e); }
+    S.offices=S.pending.offices; S.meta=meta; S.pending=null; S.selId=null;
+    $('#pending').textContent=''; $('#discardBtn').style.display='none';
+    renderAll(); toast('Office data saved.');
+  }catch(e){ toast('Save failed: '+e.message,true); $('#saveBtn').disabled=false; }
+  $('#saveBtn').textContent='💾 Save office data';
+}
+
+async function loadData(){
+  try{ const d=await (await fetch('/api/offices-master',{cache:'no-store'})).json(); S.offices=Array.isArray(d.offices)?d.offices:[]; S.meta=d.meta||{}; }catch(e){ S.offices=[]; S.meta={}; }
+  try{ const e=await (await fetch('/api/employees',{cache:'no-store'})).json(); S.emps=Array.isArray(e.employees)?e.employees:[]; }catch(e){ S.emps=[]; }
+  try{ const m=await (await fetch('/api/mobiles',{cache:'no-store'})).json(); S.mobiles=m.map||{}; }catch(e){ S.mobiles={}; }
+  
+  try {
+    if (typeof SB !== 'undefined') {
+      await SB.init();
+      if (SB.ready) {
+        const offCloud = await SB.getDataset('OFFICES');
+        const dsCloud = await SB.getDataset('DS');
+        const gsCloud = await SB.getDataset('GDS');
+        const outCloud = await SB.getDataset('OUT');
+        const telCloud = await SB.getDataset('TEL');
+        
+        const locUp = S.meta && S.meta.updatedAt ? new Date(S.meta.updatedAt).getTime() : 0;
+        
+        if (offCloud && offCloud.uploadedAt && new Date(offCloud.uploadedAt).getTime() > locUp) {
+          S.offices = Array.isArray(offCloud.data) ? offCloud.data : [];
+          if (!S.meta) S.meta = {};
+          S.meta.updatedAt = new Date(offCloud.uploadedAt).toISOString();
+        }
+        if (dsCloud && dsCloud.uploadedAt && new Date(dsCloud.uploadedAt).getTime() > locUp) {
+          S.emps = S.emps.filter(e => e._type !== 'DS').concat(dsCloud.data);
+        }
+        if (gsCloud && gsCloud.uploadedAt && new Date(gsCloud.uploadedAt).getTime() > locUp) {
+          S.emps = S.emps.filter(e => e._type !== 'GDS').concat(gsCloud.data);
+        }
+        if (outCloud && outCloud.uploadedAt && new Date(outCloud.uploadedAt).getTime() > locUp) {
+          S.emps = S.emps.filter(e => e._type !== 'OUT').concat(outCloud.data);
+        }
+        if (telCloud && telCloud.uploadedAt && new Date(telCloud.uploadedAt).getTime() > locUp) {
+          Object.assign(S.mobiles, telCloud.data);
+        }
+      }
+    }
+  } catch(e) { console.warn('Cloud sync failed:', e); }
+
+  renderAll();
+}
+
+/* ---------- wire ---------- */
+const drop=$('#drop'), fileInput=$('#file');
+drop.addEventListener('click',e=>{ if(e.target!==fileInput) fileInput.click(); });
+drop.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();fileInput.click();} });
+fileInput.addEventListener('change',()=>{ if(fileInput.files[0]) handleFile(fileInput.files[0]); fileInput.value=''; });
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) handleFile(f); });
+$('#saveBtn').addEventListener('click',saveData);
+$('#discardBtn').addEventListener('click',()=>{S.pending=null;$('#pending').textContent='';$('#discardBtn').style.display='none';$('#saveBtn').disabled=true;});
+$('#officeSearch').addEventListener('input',e=>{S.q=e.target.value;renderList();});
+$('#officePick').addEventListener('change',e=>{ if(e.target.value){ S.selId=e.target.value; const o=S.offices.find(x=>x.office_id===e.target.value); if(o){S.sub='ALL';renderSeg();} renderList(); renderDetail(); }});
+loadData();
+
+/* ---------- live sync with the Employee Directory ---------- */
+// The Employee Directory broadcasts on 'sdo-data' after every save (mobile
+// edits, payroll uploads). Reload staff/mobile data so this page always shows
+// the latest — selection, filter and search state are preserved.
+let lastSyncReload=0;
+function reloadFresh(){ const n=Date.now(); if(n-lastSyncReload<1500) return; lastSyncReload=n; loadData(); }
+if('BroadcastChannel' in window){
+  const bc=new BroadcastChannel('sdo-data');
+  bc.onmessage=ev=>{ if(ev.data && ev.data.type==='data-updated') reloadFresh(); };
+}
+// Fallback: refresh when this tab regains focus (covers saves made while
+// this page was in a background tab or another browser window).
+window.addEventListener('focus',reloadFresh);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) reloadFresh(); });
+</script>
+<script src="/leave-orders/directory-export.js"></script>
+<script src="/leave-orders/supabase-sync.js"></script>
+</body>
+</html>

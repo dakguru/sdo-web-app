@@ -1,0 +1,231 @@
+{
+  "schemaVersion": "1.0.0",
+  "templateId": "IR_BO_TN_KARUR",
+  "templateName": "Branch Office Inspection Report (Karur Division pattern)",
+  "officeType": "BO",
+  "sourceFile": "IR_MASTER_TEMPLATE.docx",
+  "engine": "docxtpl",
+  "analysedFrom": {
+    "sampleOffice": "Manavasi BO",
+    "pages": 19,
+    "topLevelParagraphs": 211,
+    "tables": 23
+  },
+  "document": {
+    "pageSize": { "wTwips": 12240, "hTwips": 15840, "label": "US Letter 8.5in x 11in" },
+    "margins": { "topTwips": 1080, "rightTwips": 1080, "bottomTwips": 1080, "leftTwips": 1276, "headerTwips": 568, "footerTwips": 720 },
+    "defaultFont": { "family": "Palatino Linotype", "sizeHalfPoints": 24, "sizePt": 12, "lang": "en-IN" },
+    "header": { "content": "empty" },
+    "footer": { "content": "centered PAGE field", "fieldCode": "PAGE \\* MERGEFORMAT", "alignment": "center" },
+    "embeddedImages": [
+      { "rId": "rId8", "target": "media/image1.png", "bytes": 3471, "note": "small inline graphic (VML pict). Carry through verbatim; not parameterised." }
+    ]
+  },
+  "scalarFields": [
+    { "key": "office_name", "label": "Branch Office name", "type": "string", "upper": true, "sample": "MANAVASI", "locations": ["title", "intro", "table1.r2", "table5.r1", "memo", "copyTo"] },
+    { "key": "office_type", "label": "Office type", "type": "enum", "options": ["BO", "SO", "HO"], "sample": "BO", "locations": ["title"] },
+    { "key": "account_office", "label": "Account office (SO)", "type": "string", "sample": "MAYANUR", "locations": ["title", "intro", "table1.r3"] },
+    { "key": "account_office_pin", "label": "A/O PIN", "type": "pincode", "sample": "639108", "preserveLeadingZeros": true, "locations": ["title", "copyTo"] },
+    { "key": "head_office", "label": "Head office", "type": "string", "sample": "KULITHALAI", "locations": ["table1.r4"] },
+    { "key": "facility_id", "label": "Facility ID of BO", "type": "string", "preserveLeadingZeros": true, "sample": "BO29402210003", "locations": ["table1.r5", "table5.r2"] },
+    { "key": "profit_centre_id", "label": "Profit/Cost centre ID", "type": "string", "preserveLeadingZeros": true, "sample": "2942021003", "locations": ["table1.r6"] },
+    { "key": "date_of_opening", "label": "Date of opening", "type": "date", "format": "DD.MM.YYYY", "sample": "27.02.1952", "locations": ["table1.r7"] },
+    { "key": "div_head_last_visit", "label": "Date of last inspection/Visit by Divisional head", "type": "string", "sample": "29.07.2021 Inspected by SPOs Karur dn", "locations": ["table1.r8"] },
+    { "key": "last_inspection_date", "label": "Date of last inspection", "type": "date", "format": "DD.MM.YYYY", "sample": "26.05.2025", "locations": ["table1.r9"] },
+    { "key": "last_inspected_by", "label": "Last inspected by", "type": "string", "sample": "Shri.S.Manoj,IP(CS),Karur Division", "locations": ["table1.r10"] },
+    { "key": "subdiv_head_visits", "label": "Subsequent visits by Sub Divisional head", "type": "string", "sample": "-", "locations": ["table1.r11"] },
+    { "key": "mail_overseer_visits", "label": "Subsequent visits by Mail overseer", "type": "string", "multiline": true, "sample": "Shri.R.Loganathan: 27.06.25,06.09.25,02.12.25 Shri:A.Chandrasekaran:07.03.26", "locations": ["table1.r12"] },
+    { "key": "inspection_date", "label": "Inspection date", "type": "date", "format": "DD.MM.YYYY", "sample": "26.05.2026", "locations": ["title", "intro"] },
+    { "key": "inspection_year", "label": "Inspection year", "type": "integer", "sample": 2026, "locations": ["intro"] },
+    { "key": "inspection_type", "label": "Type of inspection", "type": "enum", "options": ["Annual inspection", "Surprise visit", "Follow-up visit", "Special inspection"], "sample": "Surprise visit + annual", "locations": ["intro"], "note": "Intro wording is clause-driven; e.g. 'Paid a surprise visit ... and carried out its annual inspection'." },
+    { "key": "working_hours", "label": "Working hours", "type": "string", "sample": "10.30 AM - 14.30 PM", "locations": ["table2.r2"] },
+    { "key": "wh_receipt", "type": "time", "sample": "10.30 AM", "locations": ["table2.r2"] },
+    { "key": "wh_delivery", "type": "time", "sample": "10.45 AM", "locations": ["table2.r3"] },
+    { "key": "wh_lb_clearance", "type": "time", "sample": "14.15 PM", "locations": ["table2.r4"] },
+    { "key": "wh_dispatch", "type": "time", "sample": "14.30 PM", "locations": ["table2.r5"] },
+    { "key": "auth_min_cash", "label": "Authorised minimum cash", "type": "currency", "sample": "15000", "locations": ["table2.r6", "para24", "para25"] },
+    { "key": "auth_max_cash", "label": "Authorised maximum cash", "type": "currency", "sample": "20000", "locations": ["table2.r7"] },
+    { "key": "postage_stamp_balance", "label": "Postage stamps", "type": "currency", "sample": "600", "locations": ["table2.r8"] },
+    { "key": "revenue_stamp_balance", "label": "Revenue stamps", "type": "currency", "sample": "50", "locations": ["table2.r9"] },
+    { "key": "panchayat_hq", "label": "Panchayat HQ", "type": "string", "sample": "Manavasi", "locations": ["table2.r16"] },
+    { "key": "fixed_villages", "label": "Fixed villages", "type": "string", "sample": "Cusba, Manavasi", "locations": ["table2.r13"] },
+    { "key": "unfixed_villages", "label": "Unfixed villages", "type": "string", "sample": "Mettanginam, Samathuvapuram, KCP Nagar, KPKulam, Aravanampettai", "locations": ["table2.r13"] },
+    { "key": "households_approx", "label": "Approx households", "type": "string", "sample": "App 1000 HHs", "locations": ["table2.r14"] },
+    { "key": "user_name", "label": "Device user name", "type": "string", "sample": "GOMATHI", "locations": ["table5.r3"] },
+    { "key": "user_id", "label": "Device user id", "type": "string", "preserveLeadingZeros": true, "sample": "50089878", "locations": ["table5.r4"] },
+    { "key": "user_role", "label": "User role", "type": "string", "sample": "BPM", "locations": ["table5.r5"] },
+    { "key": "cash_verified_amount", "label": "Physical cash verified", "type": "currency", "sample": "15000", "locations": ["para25"] },
+    { "key": "cash_verified_words", "label": "Cash in words", "type": "string", "derivedFrom": "cash_verified_amount", "sample": "Rupees Fifteen Thousand only", "locations": ["para25"] },
+    { "key": "conclusion_result", "label": "Overall result", "type": "enum", "options": ["SATISFACTORY", "SATISFACTORY with omissions", "UNSATISFACTORY"], "sample": "SATISFACTORY", "locations": ["para204"] },
+    { "key": "compliance_days", "label": "Compliance period (days)", "type": "integer", "default": 10, "sample": 10, "locations": ["para205"] },
+    { "key": "memo_number", "label": "Memo number", "type": "string", "pattern": "ASP/IR/{OFFICE}/{YEAR}/Dlgs", "sample": "ASP/IR/MANAVASI/2026/Dlgs", "locations": ["memo"] },
+    { "key": "memo_place", "label": "Memo place", "type": "string", "sample": "Karur 639001", "locations": ["memo"] },
+    { "key": "memo_date", "label": "Memo date", "type": "date", "format": "DD.MM.YYYY", "sample": "13.06.2026", "locations": ["memo"] },
+    { "key": "signatory_name", "label": "Signatory name", "type": "string", "sample": "P.RAMANI", "locations": ["signature"] },
+    { "key": "signatory_designation", "label": "Signatory designation", "type": "string", "sample": "ASP, Karur Sub Division, Karur-639001", "locations": ["signature"] }
+  ],
+  "repeatableTables": [
+    { "id": "table3", "name": "Establishment of the BO", "anchor": "para10", "repeatable": true, "minRows": 1, "loopVar": "establishment", "columns": [
+      { "key": "sn", "label": "S.N", "type": "serial" },
+      { "key": "name", "label": "Name of incumbent", "type": "string" },
+      { "key": "designation", "label": "Designation", "type": "string" },
+      { "key": "employee_id", "label": "Employee ID", "type": "string", "preserveLeadingZeros": true },
+      { "key": "trca", "label": "TRCA / level", "type": "string" },
+      { "key": "dob", "label": "DOB", "type": "date" },
+      { "key": "doa", "label": "Date of appointment", "type": "date" },
+      { "key": "remarks", "label": "Remarks", "type": "string" }
+    ] },
+    { "id": "table4", "name": "DARPAN devices & versions", "anchor": "para32", "repeatable": true, "minRows": 1, "loopVar": "devices", "columns": [
+      { "key": "sno", "type": "serial" },
+      { "key": "device", "label": "Device", "type": "string" },
+      { "key": "serial", "label": "IMEI / serial number(s)", "type": "string", "multiline": true, "preserveLeadingZeros": true },
+      { "key": "version", "label": "Version", "type": "string" }
+    ] },
+    { "id": "table6", "name": "Articles in deposit", "anchor": "para61", "repeatable": true, "minRows": 0, "emptyDeclaration": "Nil", "loopVar": "deposit_articles", "columns": [
+      { "key": "slno", "type": "serial" },
+      { "key": "article_no", "label": "Article no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "received_date", "label": "Received date", "type": "date" },
+      { "key": "remarks", "type": "string" }
+    ] },
+    { "id": "table7", "name": "Random BO balance checks", "anchor": "para76", "repeatable": true, "minRows": 1, "loopVar": "bo_balance_checks", "columns": [
+      { "key": "date", "type": "date" },
+      { "key": "bal_per_account", "label": "BO balance as per BO account", "type": "currency" },
+      { "key": "bal_acknowledged", "label": "BO balance acknowledged", "type": "currency" }
+    ], "validation": ["bal_per_account == bal_acknowledged else flag"] },
+    { "id": "table8", "name": "MO receipts (MS-87a)", "anchor": "para79", "repeatable": true, "layout": "twoUpPaired", "minRows": 0, "emptyDeclaration": "Nil", "loopVar": "mo_receipts", "columns": [
+      { "key": "rect_no", "label": "Receipt no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "date", "type": "date" },
+      { "key": "amount", "type": "currency" }
+    ] },
+    { "id": "table9", "name": "MO paid / VP-COD checks", "anchor": "para85", "repeatable": true, "minRows": 0, "emptyDeclaration": "Nil", "loopVar": "vpcod_checks", "columns": [
+      { "key": "date", "type": "date" },
+      { "key": "mo_paid", "label": "MO paid", "type": "currency" },
+      { "key": "article_no", "label": "VP/COD article no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "date_receipt", "label": "Date of receipt", "type": "date" },
+      { "key": "date_delivery", "label": "Date of delivery", "type": "date" },
+      { "key": "amount", "label": "VP/COD amount", "type": "currency" }
+    ] },
+    { "id": "table10", "name": "SB-26 receipts", "anchor": "para97", "repeatable": true, "layout": "twoUpPaired", "minRows": 0, "emptyDeclaration": "Nil", "loopVar": "sb26_receipts", "columns": [
+      { "key": "book_no", "label": "Book no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "rpt_no", "label": "Receipt no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "date", "type": "date" },
+      { "key": "amount", "label": "Amount / scheme", "type": "string" },
+      { "key": "remarks", "type": "string" }
+    ] },
+    { "id": "table11", "name": "Passbooks checked by scheme", "anchor": "para105", "repeatable": true, "grouped": true, "groupBy": "scheme", "groupOrder": ["SB", "RD", "SSA", "TD"], "minRows": 1, "loopVar": "passbooks_checked", "columns": [
+      { "key": "sl", "type": "serial" },
+      { "key": "scheme", "label": "Scheme", "type": "enum", "options": ["SB", "RD", "SSA", "TD"] },
+      { "key": "account_no", "label": "Account no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "dlt", "label": "Date of last transaction", "type": "date" },
+      { "key": "deposit", "label": "Deposit/credit", "type": "currency" },
+      { "key": "withdrawal", "label": "Wdl/Debit", "type": "currency" },
+      { "key": "bat", "label": "Balance after transaction", "type": "currency" },
+      { "key": "remarks", "type": "string" }
+    ] },
+    { "id": "table12", "name": "SB-28 receipts", "anchor": "para108", "repeatable": true, "layout": "twoUpPaired", "minRows": 0, "emptyDeclaration": "Nil", "loopVar": "sb28_receipts", "columns": [
+      { "key": "book_no", "label": "Book no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "receipt_no", "label": "Receipt no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "date", "type": "date" }
+    ] },
+    { "id": "table13", "name": "EOI passbook list (format)", "anchor": "para118", "repeatable": true, "minRows": 0, "emptyDeclaration": "Nil", "loopVar": "eoi_list", "columns": [
+      { "key": "sn", "type": "serial" },
+      { "key": "account_no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "depositor_name", "type": "string" },
+      { "key": "pb_received_date", "type": "date" },
+      { "key": "pb_sent_ao_date", "type": "date" },
+      { "key": "pb_recv_ao_date", "type": "date" },
+      { "key": "pb_delivery_date", "type": "date" },
+      { "key": "acquittance", "type": "string" }
+    ] },
+    { "id": "table14", "name": "SSA accounts collected", "anchor": "para121", "repeatable": true, "minRows": 0, "emptyDeclaration": "Nil", "loopVar": "ssa_collected", "columns": [
+      { "key": "sno", "type": "serial" },
+      { "key": "account_no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "name", "type": "string" },
+      { "key": "cif", "label": "CIF", "type": "string", "preserveLeadingZeros": true },
+      { "key": "address", "type": "string", "multiline": true }
+    ] },
+    { "id": "table15", "name": "SB accounts collected", "anchor": "para123", "repeatable": true, "minRows": 0, "emptyDeclaration": "Nil", "loopVar": "sb_collected", "columns": [
+      { "key": "sno", "type": "serial" },
+      { "key": "account_no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "name", "label": "Cust1 Name", "type": "string" },
+      { "key": "cif", "label": "Cust1 CIF ID", "type": "string", "preserveLeadingZeros": true },
+      { "key": "address", "type": "string", "multiline": true }
+    ] },
+    { "id": "table16", "name": "Transaction totals selected for verification", "anchor": "para127", "repeatable": true, "minRows": 1, "loopVar": "txn_totals", "columns": [
+      { "key": "date", "type": "date" },
+      { "key": "sb_dep", "label": "SB DEP", "type": "currency" },
+      { "key": "rd_dep", "label": "RD DEP", "type": "currency" },
+      { "key": "rd_df", "label": "RD DF", "type": "currency" },
+      { "key": "ssa_dep", "label": "SSA DEP", "type": "currency" },
+      { "key": "sb_wd", "label": "SB WD", "type": "currency" },
+      { "key": "ippb_wd", "label": "IPPB WD", "type": "currency" }
+    ] },
+    { "id": "table17", "name": "Discontinued RD accounts", "anchor": "para131", "repeatable": true, "minRows": 0, "emptyDeclaration": "Nil", "loopVar": "discontinued_accounts", "columns": [
+      { "key": "sl", "type": "serial" },
+      { "key": "account_no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "dlt", "type": "date" },
+      { "key": "transaction", "type": "currency" },
+      { "key": "bat", "type": "currency" }
+    ] },
+    { "id": "table18", "name": "PLI/RPLI premium collection", "anchor": "para153", "repeatable": true, "layout": "twoUpPaired", "minRows": 0, "emptyDeclaration": "Nil", "loopVar": "pli_collection", "columns": [
+      { "key": "date", "type": "date" },
+      { "key": "amount", "label": "Amount", "type": "currency" }
+    ] },
+    { "id": "table19", "name": "PLI/RPLI policy passbook checks", "anchor": "para154", "repeatable": true, "minRows": 0, "emptyDeclaration": "Nil", "loopVar": "pli_passbooks", "columns": [
+      { "key": "sl", "type": "serial" },
+      { "key": "policy_no", "label": "Policy no", "type": "string", "preserveLeadingZeros": true },
+      { "key": "date", "type": "date" },
+      { "key": "premium", "label": "Premium credit", "type": "currency" },
+      { "key": "paid_upto", "label": "Paid upto", "type": "string" }
+    ] },
+    { "id": "table22", "name": "IPPB quarterly transaction checks", "anchor": "para196", "repeatable": true, "minRows": 0, "emptyDeclaration": "Nil", "loopVar": "ippb_txns", "columns": [
+      { "key": "date", "type": "date" },
+      { "key": "dep", "label": "Dep", "type": "currency" },
+      { "key": "wdl", "label": "Wdl", "type": "currency" }
+    ] }
+  ],
+  "fixedTables": [
+    { "id": "table1", "name": "General office information", "layout": "keyValue", "note": "11 fixed rows; values bound to scalarFields (office_name, account_office, head_office, facility_id, profit_centre_id, date_of_opening, div_head_last_visit, last_inspection_date, last_inspected_by, subdiv_head_visits, mail_overseer_visits)." },
+    { "id": "table2", "name": "Technical information", "layout": "mergedGroups", "mergedCells": true, "note": "Complex vertical merges: Working hours (4 sub-rows), Authorized balance (4 sub-rows), Location (multi), Villages (multi). Bound to scalarFields; cells NOT free-form repeatable." },
+    { "id": "table5", "name": "Device/user information", "layout": "keyValue", "note": "5 fixed rows bound to office_name, facility_id, user_name, user_id, user_role." },
+    { "id": "table20", "name": "Business development new accounts", "layout": "mergedHeader", "mergedCells": true, "note": "Two-row header SB/RD/SSA/TD/PLI(No,Prm,SA)/RPLI(No,Prm,SA); single editable data row." },
+    { "id": "table21", "name": "BO business register (format)", "layout": "mergedHeader", "mergedCells": true, "note": "Prescribed blank format printed in report; usually left blank." },
+    { "id": "table23", "name": "Conclusion scoring", "layout": "fixedScoring", "note": "6 fixed activity rows; only 'Points awarded' and 'Remarks' editable. Max points fixed: 5,5,40,10,20,20 (total 100). Score validation: awarded <= max.", "rows": [
+      { "activity": "Maintenance of basic records", "max": 5 },
+      { "activity": "Maintenance and use of hardware", "max": 5 },
+      { "activity": "Use of RICT Application (CBS/CIS/Del App/Booking App)", "max": 40 },
+      { "activity": "IPPB (Micro ATM/Accounts processing/Accounts servicing)", "max": 10 },
+      { "activity": "Business Development & attitude of BPM towards Business Development", "max": 20 },
+      { "activity": "Service standards (delivery/booking/MO/Savings Bank/Insurance)", "max": 20 }
+    ] }
+  ],
+  "clauseSections": [
+    { "code": "A", "title": "ADMINISTRATION", "paraRange": "1-9", "pointCount": 9 },
+    { "code": "B", "title": "TECHNOLOGY AND DARPAN", "paraRange": "10-16", "pointCount": 7, "note": "para 16 has sub-points 16.1-16.12; 16.3 & 16.6 are DELETED per Dte Lr." },
+    { "code": "C", "title": "MAILS", "paraRange": "17-23", "pointCount": 7 },
+    { "code": "D", "title": "FINANCE AND ACCOUNTING", "paraRange": "24-33", "pointCount": 10 },
+    { "code": "E", "title": "SAVINGS BANK", "paraRange": "34-48", "pointCount": 15, "note": "41(i) DELETED per Dte Lr." },
+    { "code": "F", "title": "POSTAL LIFE INSURANCE / RURAL POSTAL LIFE INSURANCE", "paraRange": "49.1-49.18", "pointCount": 18 },
+    { "code": "G", "title": "GRIEVANCE HANDLING AND PUBLIC RELATIONS", "paraRange": "50-52", "pointCount": 3 },
+    { "code": "H", "title": "BUSINESS DEVELOPMENT", "paraRange": "53-55", "pointCount": 3 },
+    { "code": "I", "title": "TRAINING", "paraRange": "56-57", "pointCount": 2 },
+    { "code": "J", "title": "INDIA POST PAYMENTS BANK (IPPB)", "paraRange": "58.1-58.13", "pointCount": 13 },
+    { "code": "K", "title": "CONCLUSION", "paraRange": "59-60", "pointCount": 2 }
+  ],
+  "deletedParagraphs": [
+    { "para": "16.3", "order": "Dte Lr.No.16-01/2017-Inspn-(Pt-II) dated 12.8.21" },
+    { "para": "16.6", "order": "Dte Lr.No.16-01/2017-Inspn-(Pt-II) dated 12.8.21" },
+    { "para": "41(i)", "order": "Dte Lr no. 16-02/2017-Inspn dated 24.09.2020" }
+  ],
+  "clauseOutcomes": ["Satisfactory", "Satisfactory with observation", "Deficiency observed", "Not applicable", "No transaction since DLI", "Record not available", "Deleted under Directorate order", "Verification pending", "Compliance required", "Custom approved clause"],
+  "generationNotes": [
+    "Do NOT generate via HTML-to-Word. Clone this DOCX and use docxtpl jinja tags injected into the runs.",
+    "Replace scalar values with {{ key }} placeholders at run level to preserve Palatino Linotype 12pt formatting.",
+    "Convert repeatable table data rows to {%tr for row in loopVar %} ... {%tr endfor %} so header rows and borders are preserved.",
+    "Set w:tblHeader on table header rows so they repeat across pages; set cantSplit on rows to avoid mid-row page breaks.",
+    "Keep section headings 'keep with next' to avoid an orphan heading at page bottom.",
+    "Footer PAGE field must be preserved verbatim; never rebuild the footer.",
+    "Run unresolved-placeholder scan ({{ or {% remaining) before declaring DOCX valid.",
+    "PDF via headless LibreOffice (soffice --headless --convert-to pdf) in an isolated temp dir with timeout."
+  ]
+}

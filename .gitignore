@@ -1,0 +1,7 @@
+node_modules/
+android-app/app/build/
+android-app/.gradle/
+android-toolchain/
+app/generate/node_modules/
+.env
+.DS_Store

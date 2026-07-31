@@ -1,0 +1,29 @@
+﻿{
+    "reportBase":  "IR_KOYAMPALLI_BO_06-06-2026_V01",
+    "template":  "IR_BO_TEMPLATE.docx",
+    "data":  "_generate.json",
+    "generatedAt":  "2026-06-29T11:41:39",
+    "docx":  "IR_KOYAMPALLI_BO_06-06-2026_V01.docx",
+    "docxBytes":  50676,
+    "docxSha256":  "C6B863C6556387687B3C07DBD6AA282F7876D031811616DA703A6A4A5EC2A023",
+    "pdf":  "IR_KOYAMPALLI_BO_06-06-2026_V01.pdf",
+    "pdfBytes":  302257,
+    "pdfSha256":  "257F975417292751689CA660DDAAAADDB7A87304C385785C7D6FC5A1BCFA69CF",
+    "pages":  16,
+    "warnings":  [
+                     "Repeatable table \u0027bo_balance_checks\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027mo_receipts\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027vpcod_checks\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027sb26_receipts\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027passbooks_checked\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027sb28_receipts\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027ssa_collected\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027sb_collected\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027txn_totals\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027discontinued_accounts\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027pli_collection\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027pli_passbooks\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027ippb_txns\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "AllowBlanks: filled 32 unresolved placeholder(s) with em-dash: {{bd_details}}, {{bd_pli_no}}, {{bd_pli_prm}}, {{bd_pli_sa}}, {{bd_rd}}, {{bd_rpli_no}}, {{bd_rpli_prm}}, {{bd_rpli_sa}}, {{bd_sb}}, {{bd_ssa}}, {{bd_td}}, {{date_of_opening}}, {{memo_date}}, {{memo_place}}, {{remarks_bd}}, {{remarks_hardware}}, {{remarks_ippb}}, {{remarks_records}}, {{remarks_rict}}, {{remarks_service}}, {{sb26_note}}, {{sb28_note}}, {{score_bd}}, {{score_hardware}}, {{score_ippb}}, {{score_records}}, {{score_rict}}, {{score_service}}, {{signatory_designation}}, {{tech_remark_balance}}, {{tech_remark_hours}}, {{villages_served}}"
+                 ]
+}

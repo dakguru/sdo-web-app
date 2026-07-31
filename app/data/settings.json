@@ -1,0 +1,10 @@
+{
+  "appName": "Inspection Report Builder",
+  "organisation": "Department of Posts",
+  "templateId": "IR_BO_TEMPLATE",
+  "templateVersion": "1.0.0",
+  "clauseLibraryVersion": "1.0.0",
+  "defaultComplianceDays": 10,
+  "memoPattern": "ASP/IR/{OFFICE}/{YEAR}/Dlgs",
+  "roles": ["Administrator", "Inspector", "Reviewer", "Read-only"]
+}

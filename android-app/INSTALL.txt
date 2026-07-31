@@ -1,0 +1,32 @@
+KARUR SDO — ANDROID APP · QUICK INSTALL
+========================================
+
+APK:  app\build\outputs\apk\release\app-release.apk  (signed, internal keystore)
+
+On the phone
+------------
+1. Copy the APK to the phone (USB cable / SHAREit / file share).
+2. Settings > Apps > Special app access > Install unknown apps >
+   allow your file manager.
+3. Tap the APK, install, open.
+4. The app comes PRE-LOADED with the full current data:
+   130 departmental + 263 GDS staff, 149 outsiders, 341 offices,
+   and the mapped mobile numbers (as of the JUN 2026 payroll).
+5. Next month, go to Home > "Update monthly data" and pick the new
+   files (several at once is fine) — new records are added,
+   existing ones updated:
+      DS JUL 2026.xlsx, GS JUL 2026.xlsx, Outsiders Details.xls,
+      Mobile Numbers.xlsx
+   Then tap "Save & update directory".
+
+Rebuild on this PC
+------------------
+  cd C:\Users\ADMIN\Desktop\SDO\android-app
+  set JAVA_HOME=C:\Users\ADMIN\Desktop\SDO\android-toolchain\jdk-21.0.11+10
+  ..\android-toolchain\gradle-8.11.1\bin\gradle.bat :app:assembleRelease
+
+Security notes
+--------------
+- App asks for fingerprint/PIN on open and after switching away.
+- Database is encrypted (SQLCipher). No internet access at all.
+- Screenshots are blocked on purpose (staff bank/pay details).

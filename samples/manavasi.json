@@ -1,0 +1,208 @@
+{
+  "office_name": "MANAVASI",
+  "office_type": "BO",
+  "account_office": "MAYANUR",
+  "account_office_pin": "639 108",
+  "head_office": "KULITHALAI",
+  "facility_id": "BO29402210003",
+  "profit_centre_id": "2942021003",
+  "date_of_opening": "27.02.1952",
+  "div_head_last_visit": "29.07.2021 Inspected by SPOs Karur dn",
+  "last_inspection_date": "26.05.2025",
+  "last_inspected_by": "Shri.S.Manoj,IP(CS),Karur Division",
+  "subdiv_head_visits": "-",
+  "mail_overseer_visits": "Shri.R.Loganathan: 27.06.25,06.09.25,02.12.25 Shri:A.Chandrasekaran:07.03.26",
+
+  "inspection_date": "26.05.2026",
+  "inspection_year": "2026",
+  "visit_kind": "surprise visit",
+  "inspection_nature": "annual",
+
+  "working_hours": "10.30 AM - 14.30 PM",
+  "wh_receipt": "10.30 AM",
+  "wh_delivery": "10.45 AM",
+  "wh_lb_clearance": "14.15 PM",
+  "wh_dispatch": "14.30 PM",
+  "tech_remark_hours": "This BO is functioning as per norms of minimum four hours and maximum five hours.",
+  "auth_min_cash": "15000",
+  "auth_max_cash": "20000",
+  "postage_stamp_balance": "600",
+  "revenue_stamp_balance": "50",
+  "tech_remark_balance": "No need for revision",
+  "location_type": "Non Standard",
+  "location_remark": "Panchayat building",
+  "building_condition": "BO building meets the conditions laid down in the Dte.Lr. no.17-31/2016-GDS (PL) dt. 28.09.18.",
+  "cleanliness_remark": "Pay in slips, Forms are not arranged properly. BPM instructed to arrange properly and improve its ambience.",
+  "villages_served": "Fixed villages: Cusba, Manavasi   Unfixed Villages: Mettanginam, Samathuvapuram, KCP Nagar, KPKulam, Aravanampettai",
+  "households_remark": "App 1000 HHs, BPM did not having the exact data; she was instructed to get the list from the Panchayat authorities.",
+  "services_remark": "Covered maximum public in the villages in most of the schemes.",
+  "panchayat_hq": "Manavasi",
+  "mail_arrangement": "BO mail along with Karuppur and Valayalkaranpudur BO bags conveyed by ABPM of this BO from AO in both ways. The arrangement is satisfactory.",
+  "fg_bonds_remark": "No need as per Dte.Lr no. 17-18/2018-GDS dated 17.11.2021",
+
+  "darpan_rollout_date": "03.10.2023",
+
+  "user_name": "GOMATHI",
+  "user_id": "50089878",
+  "user_role": "BPM",
+
+  "sb26_note": "Unused receipts from no. 01 to 50 were found intact in the last book.",
+  "sb28_note": "U/u/r 11 to 50 intact in duplicate.",
+
+  "bd_details": "New accounts last FY",
+  "bd_sb": "", "bd_rd": "", "bd_ssa": "", "bd_td": "",
+  "bd_pli_no": "", "bd_pli_prm": "", "bd_pli_sa": "",
+  "bd_rpli_no": "", "bd_rpli_prm": "", "bd_rpli_sa": "",
+
+  "conclusion_result": "SATISFACTORY",
+  "compliance_days": "10",
+
+  "memo_number": "ASP/IR/MANAVASI/2026 /Dlgs",
+  "memo_place": "Karur 639001",
+  "memo_date": "13.06.2026",
+  "division": "Karur division",
+  "division_pin": "Karur - 639 001",
+  "signatory_name": "P.RAMANI",
+  "signatory_designation": "ASP, Karur Sub Division, Karur-639001",
+
+  "score_records": "5",   "remarks_records": "",
+  "score_hardware": "5",  "remarks_hardware": "",
+  "score_rict": "35",     "remarks_rict": "Minor lapses in deposit-article handling",
+  "score_ippb": "8",      "remarks_ippb": "",
+  "score_bd": "12",       "remarks_bd": "Targets not achieved",
+  "score_service": "15",  "remarks_service": "",
+
+  "clauses": {
+    "B11": { "outcome": "satisfactory_observation", "observation": "Signal strength is sufficient to run the applications but issue persists during working hours." },
+    "B13": { "outcome": "deficiency", "observation": "BPM is not aware of the procedure of raising ticket for connectivity/Power issues and is contacting System Admin.", "instruction": "BPM is instructed to follow the prescribed ticketing procedure." },
+    "F49_3": { "outcome": "satisfactory_observation", "observation": "Network connectivity functions properly except a peak-hour issue." },
+    "F49_4": { "outcome": "deficiency", "observation": "Log book for panel breakdown is not maintained and BPM is not aware of the complaint-logging process.", "instruction": "BPM is instructed to maintain the log and learn the process." },
+    "F49_12": { "outcome": "deficiency", "observation": "Growth rate of PLI/RPLI business of this office is not satisfactory.", "instruction": "BPM is instructed to achieve the assigned target during the financial year without fail." },
+    "F49_13": { "outcome": "deficiency", "observation": "BPM did not achieve the targets assigned to the BO for the last three years.", "instruction": "BPM was motivated appropriately." },
+    "J58_3": { "outcome": "deficiency", "observation": "No suitable staffing arrangement is made with trained and certified end user in leave vacancy.", "instruction": "DO to arrange a certified substitute." },
+    "J58_11": { "outcome": "deficiency", "observation": "BPM is not focusing on merchant acquisition and promoting the digital eco system.", "instruction": "BPM is motivated to acquire merchants." },
+    "J58_13": { "outcome": "deficiency", "observation": "Frequent visits are not being made by the Territory Manager/Territory Officer of IPPB.", "instruction": "TM/TO to visit regularly for handholding on new products and services." }
+  },
+
+  "establishment": [
+    { "name": "V GOMATHI",    "designation": "BPM",  "employee_id": "50089878", "trca": "L-I", "dob": "02.03.1996", "doa": "11.07.2016", "remarks": "-" },
+    { "name": "A R ARUMUGAM", "designation": "ABPM", "employee_id": "50089402", "trca": "L-I", "dob": "15.07.1975", "doa": "26.10.1998", "remarks": "-" }
+  ],
+
+  "devices": [
+    { "device": "Darpan mobile supplied", "serial": "1. 351733714953057  2. 356722394953052", "version": "1.0.30" },
+    { "device": "mATM", "serial": "", "version": "1.17.40" }
+  ],
+
+  "deposit_articles": [
+    { "article_no": "VP-AC000606461IN", "received_date": "25.05.26", "remarks": "Intimation" }
+  ],
+
+  "bo_balance_checks": [
+    { "date": "09.06.25", "bal_per_account": "15000", "bal_acknowledged": "15000" },
+    { "date": "15.07.25", "bal_per_account": "15005", "bal_acknowledged": "15005" },
+    { "date": "22.08.25", "bal_per_account": "15000", "bal_acknowledged": "15000" },
+    { "date": "19.09.25", "bal_per_account": "653",   "bal_acknowledged": "653" },
+    { "date": "28.10.25", "bal_per_account": "15000", "bal_acknowledged": "15000" },
+    { "date": "06.11.25", "bal_per_account": "15000", "bal_acknowledged": "15000" },
+    { "date": "22.12.25", "bal_per_account": "14999", "bal_acknowledged": "14999" },
+    { "date": "30.01.26", "bal_per_account": "15000", "bal_acknowledged": "15000" },
+    { "date": "05.02.26", "bal_per_account": "2505",  "bal_acknowledged": "2505" },
+    { "date": "18.03.26", "bal_per_account": "15000", "bal_acknowledged": "15000" },
+    { "date": "07.04.26", "bal_per_account": "14500", "bal_acknowledged": "14500" },
+    { "date": "25.05.26", "bal_per_account": "15000", "bal_acknowledged": "15000" }
+  ],
+
+  "mo_receipts": [
+    { "rect_no": "81",  "date": "14.06.25", "amount": "11" },
+    { "rect_no": "100", "date": "14.06.25", "amount": "11" },
+    { "rect_no": "01",  "date": "14.06.25", "amount": "11" },
+    { "rect_no": "76",  "date": "11.05.26", "amount": "55" }
+  ],
+
+  "vpcod_checks": [
+    { "date": "27.06.25", "mo_paid": "", "article_no": "EZ754144049IN", "date_receipt": "24.06.26", "date_delivery": "27.06.26", "amount": "1110" },
+    { "date": "22.08.25", "mo_paid": "", "article_no": "RT883454936IN", "date_receipt": "21.08.26", "date_delivery": "22.08.26", "amount": "740" },
+    { "date": "14.10.25", "mo_paid": "", "article_no": "CT393554538IN", "date_receipt": "13.10.26", "date_delivery": "14.10.26", "amount": "1060" },
+    { "date": "03.12.25", "mo_paid": "", "article_no": "YA555038830IN", "date_receipt": "01.12.26", "date_delivery": "03.12.26", "amount": "1800" },
+    { "date": "06.02.26", "mo_paid": "", "article_no": "CT307187263IN", "date_receipt": "05.02.26", "date_delivery": "06.02.26", "amount": "403" },
+    { "date": "13.04.26", "mo_paid": "", "article_no": "EL775889814IN", "date_receipt": "09.04.26", "date_delivery": "13.04.26", "amount": "1316" }
+  ],
+
+  "sb26_receipts": [
+    { "book_no": "03999",  "rpt_no": "17", "date": "12.06.25", "amount": "500/SSA",  "remarks": "" },
+    { "book_no": "03999",  "rpt_no": "50", "date": "23.10.25", "amount": "1000/RD",  "remarks": "Rpt 50 new account number not noted" },
+    { "book_no": "012889", "rpt_no": "01", "date": "28.10.25", "amount": "1000/RD",  "remarks": "Rpt 1 new account number not noted" },
+    { "book_no": "012889", "rpt_no": "50", "date": "21.05.26", "amount": "1000/SSA", "remarks": "" }
+  ],
+
+  "passbooks_checked": [
+    { "scheme": "SB",  "account_no": "2040598325",   "dlt": "17.04.26", "deposit": "-",    "withdrawal": "10000", "bat": "6379",  "remarks": "" },
+    { "scheme": "SB",  "account_no": "010029796677", "dlt": "04.02.26", "deposit": "-",    "withdrawal": "12000", "bat": "4692",  "remarks": "" },
+    { "scheme": "SB",  "account_no": "2040596819",   "dlt": "25.04.26", "deposit": "-",    "withdrawal": "20000", "bat": "13008", "remarks": "" },
+    { "scheme": "RD",  "account_no": "020087843230", "dlt": "11.05.26", "deposit": "100",  "withdrawal": "-",     "bat": "3300",  "remarks": "" },
+    { "scheme": "RD",  "account_no": "020027016656", "dlt": "21.05.26", "deposit": "100",  "withdrawal": "-",     "bat": "5400",  "remarks": "" },
+    { "scheme": "RD",  "account_no": "020201179080", "dlt": "08.05.26", "deposit": "100",  "withdrawal": "-",     "bat": "400",   "remarks": "" },
+    { "scheme": "RD",  "account_no": "020201176746", "dlt": "08.05.26", "deposit": "100",  "withdrawal": "-",     "bat": "400",   "remarks": "" },
+    { "scheme": "RD",  "account_no": "020201177917", "dlt": "08.05.26", "deposit": "100",  "withdrawal": "-",     "bat": "400",   "remarks": "" },
+    { "scheme": "RD",  "account_no": "020173078080", "dlt": "11.05.26", "deposit": "100",  "withdrawal": "-",     "bat": "900",   "remarks": "" },
+    { "scheme": "SSA", "account_no": "4569662679",   "dlt": "15.04.26", "deposit": "1000", "withdrawal": "-",     "bat": "97121", "remarks": "" },
+    { "scheme": "SSA", "account_no": "2040680624",   "dlt": "16.04.26", "deposit": "400",  "withdrawal": "-",     "bat": "28004", "remarks": "" },
+    { "scheme": "SSA", "account_no": "010021445693", "dlt": "04.02.26", "deposit": "2000", "withdrawal": "-",     "bat": "21405", "remarks": "" },
+    { "scheme": "SSA", "account_no": "2040680129",   "dlt": "04.05.26", "deposit": "1000", "withdrawal": "-",     "bat": "86302", "remarks": "" },
+    { "scheme": "SSA", "account_no": "010017113266", "dlt": "29.04.26", "deposit": "1000", "withdrawal": "-",     "bat": "28043", "remarks": "" },
+    { "scheme": "TD",  "account_no": "020219955386", "dlt": "15.05.26", "deposit": "1000", "withdrawal": "-",     "bat": "1000",  "remarks": "2 YEAR" },
+    { "scheme": "TD",  "account_no": "020219955764", "dlt": "15.05.26", "deposit": "1000", "withdrawal": "-",     "bat": "1000",  "remarks": "2 YEAR" },
+    { "scheme": "TD",  "account_no": "020219955499", "dlt": "15.05.26", "deposit": "1000", "withdrawal": "-",     "bat": "1000",  "remarks": "2 YEAR" }
+  ],
+
+  "sb28_receipts": [
+    { "book_no": "2503", "receipt_no": "08", "date": "28.07.2025" },
+    { "book_no": "2503", "receipt_no": "10", "date": "28.04.2026" }
+  ],
+
+  "ssa_collected": [
+    { "account_no": "010001084514", "name": "K V KANVIKA",    "cif": "398585703", "address": "KUDI STREET, MANAVASI, KARUR, TAMIL NADU, 639108" },
+    { "account_no": "010001473914", "name": "K BHAVISHKA",    "cif": "399194849", "address": "3, SANGARAMALAI PATTI, MANAVASI BO, KARUR, TAMIL NADU, 639108" },
+    { "account_no": "010001474024", "name": "K DHARSHANIKA",  "cif": "399193690", "address": "3, SANGARAMALAI PATTI, MANAVASI BO, KARUR, TAMIL NADU, 639108" },
+    { "account_no": "010003385442", "name": "HEASHIKA N G",   "cif": "402197479", "address": "75 1 MANAVASI, KARUR, TAMIL NADU, 639108" },
+    { "account_no": "010014578655", "name": "A RANITHA",      "cif": "418173130", "address": "2/175 INDRA COLONY, MANAVASI, KARUR, TAMIL NADU, 639108" }
+  ],
+
+  "sb_collected": [
+    { "account_no": "010002299935", "name": "SANGEETHA T",    "cif": "400146344", "address": "1/96 PERUMAL KOVIL MANAVASI, KARUR, TAMIL NADU, 639108" },
+    { "account_no": "010002612095", "name": "MAKUDESWARI A",  "cif": "401000052", "address": "2/135 MANAVASI, KARUR, TAMIL NADU, 639108" },
+    { "account_no": "010005580974", "name": "M KALIYAMMAL",   "cif": "405096074", "address": "INDIRA COLONY, MANAVASI, KARUR, TAMIL NADU, 639108" },
+    { "account_no": "010006754639", "name": "G JENIFAR",      "cif": "406753039", "address": "1/328 NANDHINI NAGAR, MANAVASI, KARUR, TAMIL NADU, 639108" }
+  ],
+
+  "txn_totals": [
+    { "date": "03.06.25", "sb_dep": "-",     "rd_dep": "4000", "rd_df": "20", "ssa_dep": "3000", "sb_wd": "-",     "ippb_wd": "-" },
+    { "date": "22.08.25", "sb_dep": "-",     "rd_dep": "4000", "rd_df": "60", "ssa_dep": "2600", "sb_wd": "-",     "ippb_wd": "1000" },
+    { "date": "22.10.25", "sb_dep": "30000", "rd_dep": "1000", "rd_df": "-",  "ssa_dep": "2000", "sb_wd": "20000", "ippb_wd": "16900" },
+    { "date": "22.12.25", "sb_dep": "-",     "rd_dep": "1000", "rd_df": "-",  "ssa_dep": "4500", "sb_wd": "-",     "ippb_wd": "3000" },
+    { "date": "05.02.26", "sb_dep": "2150",  "rd_dep": "1000", "rd_df": "-",  "ssa_dep": "1000", "sb_wd": "-",     "ippb_wd": "11000" },
+    { "date": "10.04.26", "sb_dep": "17000", "rd_dep": "2500", "rd_df": "-",  "ssa_dep": "2000", "sb_wd": "-",     "ippb_wd": "13000" },
+    { "date": "25.05.26", "sb_dep": "50000", "rd_dep": "3500", "rd_df": "45", "ssa_dep": "-",    "sb_wd": "-",     "ippb_wd": "5500" }
+  ],
+
+  "discontinued_accounts": [
+    { "account_no": "020171949605", "dlt": "30.08.25", "transaction": "100", "bat": "100" },
+    { "account_no": "020100055532", "dlt": "24.01.24", "transaction": "100", "bat": "100" },
+    { "account_no": "020087728406", "dlt": "28.03.24", "transaction": "100", "bat": "300" },
+    { "account_no": "020097111997", "dlt": "15.05.24", "transaction": "300", "bat": "500" }
+  ],
+
+  "pli_collection": [],
+
+  "pli_passbooks": [
+    { "policy_no": "0000009774280", "date": "13.05.26", "premium": "2075", "paid_upto": "MAY 26" },
+    { "policy_no": "0000001095003", "date": "06.05.26", "premium": "670",  "paid_upto": "MAY 26" },
+    { "policy_no": "0000006899191", "date": "20.05.26", "premium": "670",  "paid_upto": "MAY 26" },
+    { "policy_no": "0000002840230", "date": "15.05.26", "premium": "915",  "paid_upto": "MAY 26" },
+    { "policy_no": "0000014177618", "date": "15.05.26", "premium": "915",  "paid_upto": "MAY 26" },
+    { "policy_no": "0000013621028", "date": "20.05.26", "premium": "615",  "paid_upto": "MAY 26" }
+  ],
+
+  "ippb_txns": []
+}

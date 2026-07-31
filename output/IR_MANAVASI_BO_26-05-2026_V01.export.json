@@ -1,0 +1,17 @@
+﻿{
+    "reportBase":  "IR_MANAVASI_BO_26-05-2026_V01",
+    "template":  "IR_BO_TEMPLATE.docx",
+    "data":  "_generate.json",
+    "generatedAt":  "2026-06-27T17:02:58",
+    "docx":  "IR_MANAVASI_BO_26-05-2026_V01.docx",
+    "docxBytes":  55215,
+    "docxSha256":  "C51AB62EB10952EA9C8F3093E4D4AF8A27C79F54D22698CF515C374145B20BCC",
+    "pdf":  "IR_MANAVASI_BO_26-05-2026_V01.pdf",
+    "pdfBytes":  345355,
+    "pdfSha256":  "ABA3E0657BBF9574C648AAABDA0D3E816A990E32231AE40FAD4F88A15E9FAEC9",
+    "pages":  18,
+    "warnings":  [
+                     "Repeatable table \u0027pli_collection\u0027 had no data; rendered as \u0027Nil\u0027.",
+                     "Repeatable table \u0027ippb_txns\u0027 had no data; rendered as \u0027Nil\u0027."
+                 ]
+}

@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Department of Posts — Temporary Arrangements, Karur Sub Division</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1F3864; --indigo:#4f46e5; --violet:#7c3aed; --pink:#ec4899;
+    --teal:#0d9488; --emerald:#059669; --amber:#f59e0b; --rose:#e11d48;
+    --ink:#0f172a; --ink-2:#1e293b; --muted:#64748b; --line:#e2e8f0; --card:#fff;
+    --grad-brand:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%);
+    --grad-bg:radial-gradient(1200px 600px at -10% -20%,#dbe4ff 0%,transparent 60%),
+              radial-gradient(900px 500px at 110% 0%,#fce7f3 0%,transparent 55%),
+              radial-gradient(800px 600px at 50% 120%,#d1fae5 0%,transparent 60%),
+              linear-gradient(180deg,#eef2fb 0%,#f5f7fd 100%);
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06),0 1px 3px rgba(15,23,42,.04);
+    --shadow-md:0 4px 12px rgba(15,23,42,.08),0 2px 4px rgba(15,23,42,.04);
+    --shadow-lg:0 12px 32px rgba(15,23,42,.12),0 4px 12px rgba(15,23,42,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;color:var(--ink);font:14.5px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--grad-bg);background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .appbar{background:#1e3a5f;color:#fff;padding:9px 22px;display:flex;align-items:center;gap:14px;font:600 12.5px/1.2 'Inter',sans-serif;letter-spacing:.2px}
+  .appbar .switch{margin-left:auto;display:flex;gap:6px;padding:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px;flex-wrap:wrap}
+  .appbar .pill{padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none}
+  .appbar .pill.active{color:#1e3a5f;background:#fff}
+  header{background:linear-gradient(120deg,#1e3a5f 0%,#4f46e5 60%,#7c3aed 100%);color:#fff;padding:20px 22px;box-shadow:var(--shadow-md)}
+  .header-inner{max-width:1320px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:24px;border:1.5px solid rgba(255,255,255,.3)}
+  header h1{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:20px;margin:0;font-weight:800;letter-spacing:.2px;line-height:1.15}
+  header .sub{font-size:12.5px;opacity:.92;margin-top:2px;font-weight:500}
+  .privacy{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;background:rgba(255,255,255,.14);padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.24)}
+  .privacy .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80}
+  main{max-width:1320px;margin:0 auto;padding:20px 18px 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);padding:18px 20px;margin-bottom:18px}
+  .card h2{font-family:"Plus Jakarta Sans","Inter",sans-serif;margin:0 0 14px;font-size:13px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1.4px;display:flex;align-items:center;gap:10px}
+  .card h2 .num{width:22px;height:22px;border-radius:7px;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:var(--grad-brand)}
+  .up-wrap{display:flex;gap:16px;flex-wrap:wrap;align-items:stretch}
+  .drop{flex:1;min-width:300px;border:2px dashed #c7d2fe;border-radius:14px;background:linear-gradient(135deg,#eef2ff,#faf5ff);padding:22px;text-align:center;cursor:pointer;transition:.15s}
+  .drop:hover,.drop.drag{border-color:#7c3aed;background:linear-gradient(135deg,#e0e7ff,#f3e8ff);transform:translateY(-1px)}
+  .drop .ic{font-size:30px}
+  .drop .t{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-weight:800;font-size:15px;margin-top:6px}
+  .drop .h{font-size:12px;color:var(--muted);margin-top:4px}
+  .up-side{flex:1;min-width:260px;display:flex;flex-direction:column;gap:9px;justify-content:center}
+  .muted{color:var(--muted)}
+  .up-stat{display:flex;gap:10px;align-items:center;font-size:13px}
+  .badge{min-width:52px;text-align:center;font-weight:800;border-radius:8px;padding:4px 8px;font-size:12px}
+  .badge.gds{background:#e0e7ff;color:#3730a3}
+  .badge.ns{background:#fef9c3;color:#854d0e}
+  button.btn{cursor:pointer;border:none;border-radius:10px;padding:10px 16px;font:700 13px/1 "Inter",sans-serif;color:#fff;background:var(--grad-brand);box-shadow:var(--shadow-sm);display:inline-flex;align-items:center;gap:8px;transition:.15s}
+  button.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+  button.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+  button.btn.ghost{background:#fff;color:var(--ink-2);border:1.5px solid var(--line)}
+  button.btn.excel{background:linear-gradient(135deg,#059669,#0d9488)}
+  button.btn.pdf{background:linear-gradient(135deg,#e11d48,#f97316)}
+  button.btn.tiny{padding:6px 11px;font-size:12px;border-radius:8px}
+  /* report builder */
+  .builder{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.7px}
+  .field input,.field select{padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font:600 14px/1.2 "Inter",sans-serif;background:#fff;color:var(--ink)}
+  .field input:focus,.field select:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.14)}
+  .gen-actions{display:flex;gap:10px;margin-left:auto;align-items:flex-end;flex-wrap:wrap}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 14px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:var(--shadow-sm);min-width:120px}
+  .stat .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+  .stat .v{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:24px;font-weight:800;margin-top:2px;line-height:1}
+  .viewtabs{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap}
+  .viewtabs button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 18px;font:800 13.5px/1 "Plus Jakarta Sans","Inter",sans-serif;color:var(--muted);cursor:pointer;box-shadow:var(--shadow-sm);display:inline-flex;align-items:center;gap:8px;transition:.15s}
+  .viewtabs button:hover{transform:translateY(-1px)}
+  .viewtabs button.on{background:var(--grad-brand);color:#fff;border-color:transparent}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden}
+  .tbl-wrap{max-height:70vh;overflow:auto}
+  table.rep{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.rep th{position:sticky;top:0;z-index:1;text-align:left;background:#1F3864;color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding:10px 12px;border-right:1px solid rgba(255,255,255,.12);white-space:nowrap}
+  table.rep td{padding:8px 12px;border-bottom:1px solid #f1f5f9}
+  table.rep tbody tr:nth-child(even){background:#f8fafc}
+  table.rep tbody tr:hover{background:#eef2ff}
+  table.rep td.num,table.rep th.num{text-align:center}
+  table.rep .lead{font-weight:700}
+  table.rep tfoot td{position:sticky;bottom:0;background:#e7eef9;font-weight:800;color:#1F3864;padding:10px 12px;border-top:2px solid #1F3864}
+  .cat-badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px}
+  .cat-badge.GDS{background:#e0e7ff;color:#3730a3}
+  .cat-badge.NONSANC{background:#fef9c3;color:#854d0e}
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);padding:56px 20px;text-align:center}
+  .empty .big{font-size:40px;opacity:.5}
+  .note{font-size:12px;color:var(--muted);padding:8px 12px;background:#fffbeb;border-top:1px solid #fde68a}
+  /* group rows */
+  .grp{border-bottom:1px solid #f1f5f9}
+  .grp-head{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:.1s}
+  .grp-head:hover{background:#f8fafc}
+  .grp-head .gt{font-weight:700;font-size:14px}
+  .grp-head .gm{font-size:12px;color:var(--muted)}
+  .grp-head .chips{margin-left:auto;display:flex;gap:8px}
+  .chip{font-size:11.5px;font-weight:800;border-radius:999px;padding:3px 11px}
+  .chip.a{background:#e0e7ff;color:#3730a3}
+  .chip.d{background:#dcfce7;color:#166534}
+  .grp-body{padding:0 16px 12px 16px;display:none}
+  .grp.open .grp-body{display:block}
+  .grp.open .caret{transform:rotate(90deg)}
+  .caret{transition:.15s;color:#7c3aed;font-size:12px}
+  .mini{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+  .mini th{text-align:left;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding:6px 10px;border-bottom:1px solid var(--line)}
+  .mini td{padding:6px 10px;border-bottom:1px solid #f4f6fa}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#0f172a;color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.25s;z-index:99}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:#7f1d1d}
+  .builtby{text-align:center;font-weight:800;font-size:14px;padding:14px 8px 30px;font-family:"Plus Jakarta Sans","Inter"}
+  .search{padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font:600 13.5px/1.2 "Inter";background:#fff;min-width:220px}
+  .search:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.14)}
+</style>
+</head>
+<body>
+<div class="appbar">
+  <a href="/" style="opacity:.85;color:#fff;text-decoration:none;font-weight:700;display:flex;align-items:center;gap:6px">&#x1F3E0; Home</a>
+  <span style="opacity:.4">|</span>
+  <span style="opacity:.72">Department of Posts &middot; Karur Sub Division</span>
+  <div class="switch">
+    <a class="pill" href="/leave-orders">Sub Divisional Manager</a>
+    <a class="pill" href="/employees">Employee Directory</a>
+    <a class="pill" href="/office-management">Office Management</a>
+    <span class="pill active">Temporary Arrangements</span>
+    <a class="pill" href="/ir-builder/">Inspection Reports &rarr;</a>
+  </div>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">&#128203;</div>
+      <div>
+        <h1>Temporary Arrangements &mdash; Karur Sub Division</h1>
+        <div class="sub">Outsource-resource substitutes &middot; GDS &amp; Non-Sanctioned posts &middot; office &amp; substitute-wise reports</div>
+      </div>
+    </div>
+    <span class="privacy"><span class="dot"></span> On this device &middot; localhost</span>
+  </div>
+</header>
+
+<main>
+  <!-- Upload -->
+  <div class="card">
+    <h2><span class="num">&#8593;</span> Upload arrangement data</h2>
+    <div class="up-wrap">
+      <div class="drop" id="drop" tabindex="0">
+        <div class="ic">&#128194;</div>
+        <div class="t">Drop the arrangements export here — or click to browse</div>
+        <div class="h">Upload the HRMS arrangements export (.xls/.xlsx). Only <b>GDS Post by Outsrc Resource</b> and <b>Non&#8209;Sanc Post by Outsrc Resource</b> are kept. Re-uploading replaces the data.</div>
+        <input type="file" id="file" accept=".xls,.xlsx" style="display:none" />
+      </div>
+      <div class="up-side">
+        <div class="up-stat"><span class="badge gds">GDS</span><span id="gds-meta" class="muted">—</span></div>
+        <div class="up-stat"><span class="badge ns">N.S.</span><span id="ns-meta" class="muted">—</span></div>
+        <div class="up-stat"><span id="src-meta" class="muted" style="font-size:12px">No data loaded yet.</span></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+          <button class="btn" id="saveBtn" disabled>&#128190; Save uploaded data</button>
+          <button class="btn ghost tiny" id="discardBtn" style="display:none">Discard</button>
+        </div>
+        <div class="muted" id="pending" style="font-size:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report builder -->
+  <div class="card">
+    <h2><span class="num">&#9881;</span> Generate report</h2>
+    <div class="builder">
+      <div class="field"><label>Category</label>
+        <select id="catSel">
+          <option value="ALL">Both categories</option>
+          <option value="GDS">GDS Post by Outsrc Resource</option>
+          <option value="NONSANC">Non-Sanctioned Post by Outsrc Resource</option>
+        </select>
+      </div>
+      <div class="field"><label>Sub-division</label>
+        <select id="subDivSel"><option value="ALL">All sub-divisions</option></select>
+      </div>
+      <div class="field"><label>From date</label><input type="date" id="fromDate" /></div>
+      <div class="field"><label>To date</label><input type="date" id="toDate" /></div>
+      <div class="field"><label>Status</label>
+        <select id="statusSel"><option value="Approved">Approved only</option><option value="ALL">All (incl. cancelled)</option></select>
+      </div>
+      <div class="gen-actions">
+        <button class="btn excel" id="xlsxBtn">&#8595; Excel</button>
+        <button class="btn pdf" id="pdfBtn">&#8595; PDF</button>
+      </div>
+    </div>
+    <div class="muted" id="rangeHint" style="font-size:12px;margin-top:8px"></div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="viewtabs" id="viewtabs">
+    <button data-v="report" class="on">&#128203; Report</button>
+    <button data-v="subdiv">&#128506; Sub-division-wise</button>
+    <button data-v="office">&#127970; Office-wise</button>
+    <button data-v="sub">&#129489; Substitute-wise</button>
+  </div>
+
+  <div class="panel">
+    <div style="padding:10px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div id="viewTitle" style="font-family:'Plus Jakarta Sans','Inter';font-weight:800;font-size:15px">Arrangement report</div>
+      <input class="search" id="viewSearch" placeholder="&#128269;  Filter by office, substitute, post…" autocomplete="off" style="margin-left:auto" />
+    </div>
+    <div id="viewBody"></div>
+  </div>
+
+  <div class="builtby">Built by Arun Selvaraj, Karur Division</div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEPT_LINE="DEPARTMENT OF POSTS";
+const OFFICE_LINE="O/o the Asst Supdt of Posts, Karur Sub Dn., Karur 639001";
+const CAT_LABEL={ALL:"Both categories",GDS:"GDS Post by Outsrc Resource",NONSANC:"Non-Sanctioned Post by Outsrc Resource"};
+function reportTitle(){ return `Temporary Arrangements — ${CAT_LABEL[S.cat]}` + (S.subDiv!=='ALL' ? ` — ${S.subDiv} Sub-Division` : ''); }
+const S={ all:[], meta:{}, pending:null, view:'report', cat:'ALL', subDiv:'ALL', from:'', to:'', status:'Approved', q:'', open:new Set(), subMap:{} };
+function subDivOf(a){ return S.subMap[clean(a.officeId)] || S.subMap[clean(a.office)] || '(Unmapped)'; }
+const $=s=>document.querySelector(s);
+const el=(t,a,...k)=>{const e=document.createElement(t);if(a)for(const p in a){if(p==='class')e.className=a[p];else if(p==='html')e.innerHTML=a[p];else if(p.startsWith('on'))e.addEventListener(p.slice(2),a[p]);else if(a[p]!=null)e.setAttribute(p,a[p]);}for(const c of k){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(c));}return e;};
+function toast(m,err){const t=$('#toast');t.textContent=m;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2800);}
+const clean=v=>(v==null?'':String(v)).trim();
+
+/* ---------- dates ---------- */
+function datePart(v){ if(v instanceof Date){const p=n=>String(n).padStart(2,'0');return v.getFullYear()+'-'+p(v.getMonth()+1)+'-'+p(v.getDate());} const s=clean(v); let m=s.match(/(\d{4})-(\d{2})-(\d{2})/); if(m)return m[1]+'-'+m[2]+'-'+m[3]; m=s.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{4})/); if(m)return m[3]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0'); return ''; }
+function dmy(iso){ if(!iso)return '—'; const p=iso.split('-'); return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:iso; }
+function daysBetween(a,b){ if(!a||!b)return ''; const da=new Date(a+'T00:00:00'),db=new Date(b+'T00:00:00'); const n=Math.round((db-da)/86400000)+1; return n>0?n:''; }
+function postOf(a){ return a.post || (a.cat==='NONSANC'?'Non-Sanctioned Post':'—'); }
+
+/* ---------- filtering ---------- */
+function filtered(){
+  const q=S.q.toLowerCase();
+  return S.all.filter(a=>{
+    if(S.cat!=='ALL' && a.cat!==S.cat) return false;
+    if(S.subDiv!=='ALL' && subDivOf(a)!==S.subDiv) return false;
+    if(S.status==='Approved' && a.status!=='Approved') return false;
+    if(S.from && a.to && a.to < S.from) return false;   // ends before window
+    if(S.to && a.from && a.from > S.to) return false;   // starts after window
+    if(q && !(clean(a.office).toLowerCase().includes(q)||clean(a.subName).toLowerCase().includes(q)||clean(a.subId).includes(q)||postOf(a).toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+function sortedReport(){
+  return filtered().slice().sort((a,b)=> clean(a.office).localeCompare(clean(b.office)) || clean(a.from).localeCompare(clean(b.from)) || clean(a.subName).localeCompare(clean(b.subName)));
+}
+
+/* ---------- rendering ---------- */
+function renderStats(){
+  const f=filtered();
+  const days=f.reduce((s,a)=>s+(Number(daysBetween(a.from,a.to))||0),0);
+  const offices=new Set(f.map(a=>a.office||a.officeId)).size;
+  const subs=new Set(f.map(a=>a.subId)).size;
+  const items=[['Arrangements',f.length],['Offices',offices],['Substitutes',subs],['Total days',days.toLocaleString('en-IN')]];
+  $('#stats').innerHTML='';
+  for(const [k,v] of items) $('#stats').append(el('div',{class:'stat'},el('div',{class:'k'},k),el('div',{class:'v'},String(v))));
+}
+function renderMeta(){
+  const m=S.meta||{};
+  $('#gds-meta').textContent = m.gds!=null?`${m.gds} GDS-post arrangements`:'—';
+  $('#ns-meta').textContent  = m.nonsanc!=null?`${m.nonsanc} non-sanctioned-post arrangements`:'—';
+  $('#src-meta').textContent = m.count?`${m.count} arrangements · ${m.fileName||'file'} · updated ${(m.updatedAt||'').slice(0,10)}`:'No data loaded yet.';
+}
+function renderRangeHint(){
+  const ds=S.all.map(a=>a.from).filter(Boolean).sort();
+  const min=ds[0], max=S.all.map(a=>a.to).filter(Boolean).sort().slice(-1)[0];
+  $('#rangeHint').textContent = S.all.length? `Showing arrangements active between ${dmy(S.from)} and ${dmy(S.to)}. Data covers ${dmy(min)} to ${dmy(max)}.` : 'Upload an export to begin.';
+}
+
+function renderView(){
+  document.querySelectorAll('#viewtabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));
+  $('#viewTitle').textContent = S.view==='report'?'Arrangement report':S.view==='subdiv'?'Sub-division-wise arrangements':S.view==='office'?'Office-wise arrangements':'Substitute-wise arrangements';
+  const body=$('#viewBody'); body.innerHTML='';
+  if(!S.all.length){ body.append(el('div',{class:'empty'},el('div',{class:'big'},'📋'),el('div',null,'Upload the arrangements export above to begin.'))); return; }
+  if(S.view==='report') return renderReport(body);
+  if(S.view==='subdiv') return renderGrouped(body,'subdiv');
+  if(S.view==='office') return renderGrouped(body,'office');
+  return renderGrouped(body,'sub');
+}
+
+function renderReport(body){
+  const rows=sortedReport();
+  const CAP=500;
+  const wrap=el('div',{class:'tbl-wrap'});
+  const t=el('table',{class:'rep'});
+  t.append(el('thead',null,el('tr',null,
+    el('th',{class:'num'},'Sl.No'),el('th',null,'Post Name'),el('th',null,'Office Name'),
+    el('th',{class:'num'},'From Date'),el('th',{class:'num'},'To Date'),el('th',{class:'num'},'No. of Days'),
+    el('th',{class:'num'},'Substitute ID'),el('th',null,'Substitute Name'))));
+  const tb=el('tbody');
+  const shown=rows.slice(0,CAP);
+  shown.forEach((a,i)=>{
+    tb.append(el('tr',null,
+      el('td',{class:'num'},String(i+1)),
+      el('td',{class:'lead'},postOf(a)),
+      el('td',null,clean(a.office)||'—'),
+      el('td',{class:'num'},dmy(a.from)),
+      el('td',{class:'num'},dmy(a.to)),
+      el('td',{class:'num'},String(daysBetween(a.from,a.to)||'—')),
+      el('td',{class:'num'},clean(a.subId)||'—'),
+      el('td',null,clean(a.subName)||'—')));
+  });
+  t.append(tb);
+  const totDays=rows.reduce((s,a)=>s+(Number(daysBetween(a.from,a.to))||0),0);
+  t.append(el('tfoot',null,el('tr',null,
+    el('td',{colspan:'5',style:'text-align:right'},`TOTAL — ${rows.length} arrangements`),
+    el('td',{class:'num'},String(totDays)),el('td',{colspan:'2'},''))));
+  wrap.append(t); body.append(wrap);
+  if(rows.length>CAP) body.append(el('div',{class:'note'},`Showing first ${CAP} of ${rows.length} rows on screen. Use the date range/search to narrow, or export to Excel/PDF for the complete list.`));
+}
+
+function renderGrouped(body,mode){
+  const rows=filtered();
+  const map=new Map();
+  for(const a of rows){
+    const key = mode==='office' ? (clean(a.office)||a.officeId||'—') : mode==='subdiv' ? subDivOf(a) : (clean(a.subId)+'|'+clean(a.subName));
+    if(!map.has(key)) map.set(key,{key,items:[],label:'',sub:''});
+    const g=map.get(key); g.items.push(a);
+    if(mode==='office'){ g.label=clean(a.office)||'—'; }
+    else if(mode==='subdiv'){ g.label=key; }
+    else { g.label=clean(a.subName)||'(no name)'; g.sub='ID '+clean(a.subId); }
+  }
+  const groups=[...map.values()].map(g=>{
+    g.days=g.items.reduce((s,a)=>s+(Number(daysBetween(a.from,a.to))||0),0);
+    g.extra = mode==='office' ? new Set(g.items.map(a=>a.subId)).size+' substitutes'
+            : mode==='subdiv' ? new Set(g.items.map(a=>a.office||a.officeId)).size+' offices · '+new Set(g.items.map(a=>a.subId)).size+' substitutes'
+            : new Set(g.items.map(a=>a.office||a.officeId)).size+' offices';
+    return g;
+  }).sort((a,b)=> b.items.length-a.items.length || a.label.localeCompare(b.label));
+  if(!groups.length){ body.append(el('div',{class:'empty'},el('div',{class:'big'},'🔍'),el('div',null,'No arrangements match the current filters.'))); return; }
+  for(const g of groups){
+    const open=S.open.has(mode+':'+g.key);
+    const head=el('div',{class:'grp-head',onclick:()=>{ const id=mode+':'+g.key; if(S.open.has(id))S.open.delete(id); else S.open.add(id); renderView(); }},
+      el('span',{class:'caret'},'▶'),
+      el('div',null, el('div',{class:'gt'},g.label), el('div',{class:'gm'}, g.sub||g.extra)),
+      el('div',{class:'chips'}, el('span',{class:'chip a'},g.items.length+' arr.'), el('span',{class:'chip d'},g.days+' days')));
+    const bodyEl=el('div',{class:'grp-body'});
+    const mt=el('table',{class:'mini'});
+    if(mode==='office'){
+      mt.append(el('thead',null,el('tr',null,el('th',null,'Post'),el('th',null,'Substitute'),el('th',null,'ID'),el('th',null,'From'),el('th',null,'To'),el('th',null,'Days'))));
+      const tb=el('tbody');
+      g.items.slice().sort((a,b)=>clean(a.from).localeCompare(clean(b.from))).forEach(a=>tb.append(el('tr',null,
+        el('td',null,postOf(a)),el('td',null,clean(a.subName)),el('td',null,clean(a.subId)),el('td',null,dmy(a.from)),el('td',null,dmy(a.to)),el('td',null,String(daysBetween(a.from,a.to)||'—')))));
+      mt.append(tb);
+    } else if(mode==='subdiv'){
+      mt.append(el('thead',null,el('tr',null,el('th',null,'Office'),el('th',null,'Post'),el('th',null,'Substitute'),el('th',null,'From'),el('th',null,'To'),el('th',null,'Days'))));
+      const tb=el('tbody');
+      g.items.slice().sort((a,b)=>clean(a.office).localeCompare(clean(b.office))||clean(a.from).localeCompare(clean(b.from))).forEach(a=>tb.append(el('tr',null,
+        el('td',null,clean(a.office)),el('td',null,postOf(a)),el('td',null,clean(a.subName)),el('td',null,dmy(a.from)),el('td',null,dmy(a.to)),el('td',null,String(daysBetween(a.from,a.to)||'—')))));
+      mt.append(tb);
+    } else {
+      mt.append(el('thead',null,el('tr',null,el('th',null,'Post'),el('th',null,'Office'),el('th',null,'From'),el('th',null,'To'),el('th',null,'Days'))));
+      const tb=el('tbody');
+      g.items.slice().sort((a,b)=>clean(a.from).localeCompare(clean(b.from))).forEach(a=>tb.append(el('tr',null,
+        el('td',null,postOf(a)),el('td',null,clean(a.office)),el('td',null,dmy(a.from)),el('td',null,dmy(a.to)),el('td',null,String(daysBetween(a.from,a.to)||'—')))));
+      mt.append(tb);
+    }
+    bodyEl.append(mt);
+    body.append(el('div',{class:'grp'+(open?' open':'')}, head, bodyEl));
+  }
+  body.append(el('div',{class:'note',style:'background:#eef2ff;border-color:#c7d2fe;color:#3730a3'},`${groups.length} ${mode==='office'?'offices':mode==='subdiv'?'sub-divisions':'substitutes'} · click a row to expand its arrangements.`));
+}
+
+function renderAll(){ renderStats(); renderMeta(); renderRangeHint(); renderView(); }
+
+/* ---------- Excel export ---------- */
+async function buildWorkbook(rows){
+  const wb=new ExcelJS.Workbook(); wb.creator='Sub Divisional Manager — Karur Sub Division';
+  const ws=wb.addWorksheet('Arrangements',{pageSetup:{orientation:'landscape',paperSize:9,fitToPage:true,fitToWidth:1,fitToHeight:0,margins:{left:0.4,right:0.4,top:0.5,bottom:0.5,header:0.2,footer:0.2}},properties:{defaultRowHeight:18}});
+  const F='Palatino Linotype'; const NC=8;
+  ws.mergeCells(1,1,1,NC); const r1=ws.getCell(1,1); r1.value=DEPT_LINE; r1.font={bold:true,size:16,name:F,color:{argb:'FFFFFFFF'}}; r1.alignment={horizontal:'center',vertical:'middle'}; r1.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1F3864'}}; ws.getRow(1).height=26;
+  ws.mergeCells(2,1,2,NC); const r2=ws.getCell(2,1); r2.value=OFFICE_LINE; r2.font={bold:true,size:11.5,name:F,color:{argb:'FF1F3864'}}; r2.alignment={horizontal:'center',vertical:'middle'}; r2.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEEF3FB'}}; ws.getRow(2).height=20;
+  ws.mergeCells(3,1,3,NC); const r3=ws.getCell(3,1); r3.value=reportTitle(); r3.font={bold:true,size:12,name:F,color:{argb:'FF1F3864'}}; r3.alignment={horizontal:'center',vertical:'middle'}; ws.getRow(3).height=20;
+  ws.mergeCells(4,1,4,NC); const r4=ws.getCell(4,1); r4.value=`Period: ${dmy(S.from)} to ${dmy(S.to)}   |   Status: ${S.status==='Approved'?'Approved':'All'}   |   ${rows.length} arrangements`; r4.font={size:10.5,name:F,italic:true,color:{argb:'FF475569'}}; r4.alignment={horizontal:'center',vertical:'middle'}; ws.getRow(4).height=18;
+  const HR=5; const heads=['Sl.No','Post_Name','Office_Name','From_Date','To_Date','No._of_Days','Substitute_ID','Substitute_Name'];
+  const hr=ws.getRow(HR); heads.forEach((h,i)=>{const c=hr.getCell(i+1);c.value=h;c.font={bold:true,size:11,name:F,color:{argb:'FFFFFFFF'}};c.alignment={horizontal:'center',vertical:'middle',wrapText:true};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1F3864'}};c.border={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};}); hr.height=22;
+  let tot=0;
+  rows.forEach((a,idx)=>{
+    const d=Number(daysBetween(a.from,a.to))||0; tot+=d;
+    const row=ws.getRow(HR+1+idx);
+    const vals=[idx+1,postOf(a),clean(a.office),dmy(a.from),dmy(a.to),d||'',clean(a.subId),clean(a.subName)];
+    vals.forEach((v,i)=>{const c=row.getCell(i+1);c.value=v;c.font={size:11,name:F,color:{argb:'FF1A2233'}};c.border={top:{style:'thin',color:{argb:'FFD9D9D9'}},bottom:{style:'thin',color:{argb:'FFD9D9D9'}},left:{style:'thin',color:{argb:'FFD9D9D9'}},right:{style:'thin',color:{argb:'FFD9D9D9'}}};c.alignment={vertical:'middle',wrapText:(i===1||i===2||i===7)};if(i===0||i===3||i===4||i===5||i===6)c.alignment={...c.alignment,horizontal:'center'};if(idx%2===1)c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF2F2F2'}};});
+  });
+  const tr=ws.getRow(HR+1+rows.length); ws.mergeCells(tr.number,1,tr.number,5);
+  const tl=tr.getCell(1); tl.value=`TOTAL — ${rows.length} arrangements`; tl.font={bold:true,size:11,name:F,color:{argb:'FF1F3864'}}; tl.alignment={horizontal:'right',vertical:'middle'}; tl.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE7EEF9'}};
+  const tn=tr.getCell(6); tn.value=tot; tn.font={bold:true,size:11,name:F,color:{argb:'FF1F3864'}}; tn.alignment={horizontal:'center',vertical:'middle'}; tn.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE7EEF9'}};
+  for(let c=1;c<=NC;c++){const cc=tr.getCell(c);cc.border={top:{style:'medium',color:{argb:'FF1F3864'}},bottom:{style:'thin'}};if(c>6)cc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE7EEF9'}};}
+  ws.columns=[{width:6},{width:26},{width:28},{width:13},{width:13},{width:11},{width:14},{width:24}];
+  ws.views=[{state:'frozen',ySplit:HR}];
+  return new Blob([await wb.xlsx.writeBuffer()],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+async function downloadExcel(){
+  const rows=sortedReport(); if(!rows.length){toast('No arrangements match the current filters.',true);return;}
+  const btn=$('#xlsxBtn'); btn.disabled=true; const o=btn.textContent; btn.textContent='…';
+  try{ const blob=await buildWorkbook(rows); saveAs(blob,`Temp_Arrangements_${S.cat}${S.subDiv!=='ALL'?'_'+S.subDiv:''}_${S.from}_to_${S.to}.xlsx`); toast(`Excel generated — ${rows.length} arrangements.`);}catch(e){toast('Excel failed: '+e.message,true);}
+  btn.disabled=false; btn.textContent=o;
+}
+
+/* ---------- PDF export ---------- */
+function buildPdf(rows){
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  const pw=doc.internal.pageSize.getWidth(), ph=doc.internal.pageSize.getHeight(), M=28, IW=pw-M*2;
+  let y=M;
+  doc.setFillColor(31,56,100); doc.rect(M,y,IW,26,'F'); doc.setTextColor(255,255,255); doc.setFont('times','bold'); doc.setFontSize(16); doc.text(DEPT_LINE,pw/2,y+17.5,{align:'center'}); y+=28;
+  doc.setFillColor(238,243,251); doc.rect(M,y,IW,18,'F'); doc.setTextColor(31,56,100); doc.setFont('times','bold'); doc.setFontSize(11.5); doc.text(OFFICE_LINE,pw/2,y+12.5,{align:'center'}); y+=19;
+  doc.setFont('times','bold'); doc.setFontSize(12); doc.text(reportTitle(),pw/2,y+11,{align:'center'}); y+=17;
+  doc.setFont('times','italic'); doc.setFontSize(10); doc.setTextColor(71,85,105); doc.text(`Period: ${dmy(S.from)} to ${dmy(S.to)}   |   Status: ${S.status==='Approved'?'Approved':'All'}   |   ${rows.length} arrangements`,pw/2,y+10,{align:'center'}); y+=16;
+  let tot=0; const body=rows.map((a,i)=>{const d=Number(daysBetween(a.from,a.to))||0;tot+=d;return [i+1,postOf(a),clean(a.office),dmy(a.from),dmy(a.to),d||'',clean(a.subId),clean(a.subName)];});
+  body.push([{content:`TOTAL — ${rows.length} arrangements`,colSpan:5,styles:{halign:'right',fontStyle:'bold',fillColor:[231,238,249],textColor:[31,56,100]}},{content:tot,styles:{halign:'center',fontStyle:'bold',fillColor:[231,238,249],textColor:[31,56,100]}},{content:'',colSpan:2,styles:{fillColor:[231,238,249]}}]);
+  doc.autoTable({ startY:y, head:[['Sl.No','Post_Name','Office_Name','From_Date','To_Date','No._of_Days','Substitute_ID','Substitute_Name']], body,
+    theme:'grid', styles:{font:'times',fontSize:9,cellPadding:3,valign:'middle',lineColor:[217,217,217],lineWidth:0.4,overflow:'linebreak'},
+    headStyles:{font:'times',fontSize:10,fillColor:[31,56,100],textColor:[255,255,255],fontStyle:'bold',halign:'center',valign:'middle'},
+    alternateRowStyles:{fillColor:[242,242,242]},
+    columnStyles:{0:{cellWidth:32,halign:'center'},1:{cellWidth:120},2:{cellWidth:130},3:{cellWidth:62,halign:'center'},4:{cellWidth:62,halign:'center'},5:{cellWidth:52,halign:'center'},6:{cellWidth:70,halign:'center'},7:{cellWidth:'auto'}},
+    margin:{left:M,right:M,top:M,bottom:M+14} });
+  const tp=doc.internal.getNumberOfPages();
+  for(let i=1;i<=tp;i++){ doc.setPage(i); doc.setFont('times','normal'); doc.setFontSize(9); doc.setTextColor(91,102,119); doc.text(`Page ${i} of ${tp}`,pw-M,ph-10,{align:'right'}); }
+  return doc;
+}
+function downloadPdf(){
+  const rows=sortedReport(); if(!rows.length){toast('No arrangements match the current filters.',true);return;}
+  try{ buildPdf(rows).save(`Temp_Arrangements_${S.cat}${S.subDiv!=='ALL'?'_'+S.subDiv:''}_${S.from}_to_${S.to}.pdf`); toast(`PDF generated — ${rows.length} arrangements.`);}catch(e){toast('PDF failed: '+e.message,true);}
+}
+
+/* ---------- parse & persist ---------- */
+function parseExport(buf){
+  const wb=XLSX.read(buf,{cellDates:true});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{raw:true,defval:''});
+  const out=[]; let gds=0,ns=0;
+  for(const r of rows){
+    const rr={}; for(const k in r) rr[clean(k)]=r[k];
+    const type=clean(rr['arrangement_type_desc']); let cat=null;
+    if(type==='GDS Post by Outsrc Resource'){cat='GDS';gds++;}
+    else if(type==='Non Sanc Post by Outsrc Resource'){cat='NONSANC';ns++;}
+    else continue;
+    out.push({cat,post:clean(rr['new_designation']),office:clean(rr['new_office_name']),officeId:clean(rr['new_office_id']),subId:clean(rr['employee_id']),subName:clean(rr['employee_name']),from:datePart(rr['arrangement_from_date']),to:datePart(rr['revised_arrangement_to_date'])||datePart(rr['arrangement_to_date']),status:clean(rr['approve_status'])});
+  }
+  return {out,gds,ns};
+}
+async function handleFile(f){
+  try{
+    const buf=await f.arrayBuffer();
+    const {out,gds,ns}=parseExport(buf);
+    if(!out.length){ toast('No GDS/Non-Sanc outsource arrangements found in this file.',true); return; }
+    S.pending={arrangements:out,gds,ns,fileName:f.name};
+    $('#pending').innerHTML=`Parsed <b>${out.length}</b> arrangements (${gds} GDS · ${ns} Non-Sanc) from ${f.name}. Click <b>Save</b> to apply.`;
+    $('#saveBtn').disabled=false; $('#discardBtn').style.display='inline-flex';
+    toast(`Parsed ${out.length} arrangements.`);
+  }catch(e){ toast('Failed to read file: '+e.message,true); }
+}
+async function saveData(){
+  if(!S.pending)return;
+  const now=new Date().toISOString();
+  const meta={fileName:S.pending.fileName,count:S.pending.arrangements.length,gds:S.pending.gds,nonsanc:S.pending.ns,updatedAt:now};
+  $('#saveBtn').disabled=true; $('#saveBtn').textContent='Saving…';
+  try{
+    try {
+      const r=await fetch('/api/arrangements',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({meta,arrangements:S.pending.arrangements})});
+      if(r.ok) { const d=await r.json(); if(!d.ok) console.warn(d.error||'save failed'); }
+    } catch(err) { console.warn('Local API unavailable'); }
+    if(SB.ready) try { await SB.putDataset('ARR', S.pending.arrangements, 'web'); } catch(e) { console.warn('Cloud sync failed:', e); }
+    S.all=S.pending.arrangements; S.meta=meta; S.pending=null;
+    $('#pending').textContent=''; $('#discardBtn').style.display='none';
+    initDates(); renderAll(); toast('Arrangement data saved.');
+  }catch(e){ toast('Save failed: '+e.message,true); $('#saveBtn').disabled=false; }
+  $('#saveBtn').textContent='💾 Save uploaded data';
+}
+
+/* ---------- init ---------- */
+function initDates(){
+  const froms=S.all.map(a=>a.from).filter(Boolean).sort();
+  const tos=S.all.map(a=>a.to).filter(Boolean).sort();
+  if(froms.length){ S.from=froms[0]; S.to=tos[tos.length-1]; $('#fromDate').value=S.from; $('#toDate').value=S.to; }
+}
+function populateSubDivs(){
+  const set=new Set(Object.values(S.subMap));
+  const order=['Karur','Kulittalai','Manaparai','Aravakurichi'];
+  const list=[...set].sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?9:ia)-(ib<0?9:ib)||a.localeCompare(b);});
+  const sel=$('#subDivSel'); const cur=sel.value; sel.innerHTML='<option value="ALL">All sub-divisions</option>';
+  for(const s of list) sel.append(el('option',{value:s},s));
+  sel.value=cur||'ALL';
+}
+async function loadData(){
+  try{ const d=await (await fetch('/api/arrangements',{cache:'no-store'})).json(); S.all=Array.isArray(d.arrangements)?d.arrangements:[]; S.meta=d.meta||{}; }
+  catch(e){ S.all=[]; S.meta={}; }
+  let omMeta = {};
+  try{ const om=await (await fetch('/api/offices-master',{cache:'no-store'})).json(); omMeta=om.meta||{}; S.subMap={}; for(const o of (om.offices||[])){ const sd=clean(o.sub_division)||'(Head / Admin)'; S.subMap[clean(o.office_id)]=sd; } }
+  catch(e){ S.subMap={}; }
+  
+  try {
+    await SB.init();
+    if(SB.ready) {
+      const arrCloud = await SB.getDataset('ARR');
+      const offCloud = await SB.getDataset('OFFICES');
+      
+      if(arrCloud && arrCloud.meta && new Date(arrCloud.meta.updatedAt||0) > new Date(S.meta.updatedAt||0)) {
+        S.all = Array.isArray(arrCloud.data) ? arrCloud.data : [];
+        S.meta = arrCloud.meta;
+      }
+      if(offCloud && offCloud.meta && new Date(offCloud.meta.updatedAt||0) > new Date(omMeta.updatedAt||0)) {
+        S.subMap = {};
+        for(const o of (offCloud.data||[])) {
+          const sd=clean(o.sub_division)||'(Head / Admin)';
+          S.subMap[clean(o.office_id)]=sd;
+        }
+      }
+    }
+  } catch(e) { console.warn('Cloud sync failed:', e); }
+
+  populateSubDivs();
+  initDates(); renderAll();
+}
+
+/* ---------- wire up ---------- */
+const drop=$('#drop'), fileInput=$('#file');
+drop.addEventListener('click',e=>{ if(e.target!==fileInput) fileInput.click(); });
+drop.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();fileInput.click();} });
+fileInput.addEventListener('change',()=>{ if(fileInput.files[0]) handleFile(fileInput.files[0]); fileInput.value=''; });
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) handleFile(f); });
+$('#saveBtn').addEventListener('click',saveData);
+$('#discardBtn').addEventListener('click',()=>{S.pending=null;$('#pending').textContent='';$('#discardBtn').style.display='none';$('#saveBtn').disabled=true;toast('Discarded.');});
+$('#catSel').addEventListener('change',e=>{S.cat=e.target.value;S.open.clear();renderAll();});
+$('#subDivSel').addEventListener('change',e=>{S.subDiv=e.target.value;S.open.clear();renderAll();});
+$('#statusSel').addEventListener('change',e=>{S.status=e.target.value;S.open.clear();renderAll();});
+$('#fromDate').addEventListener('change',e=>{S.from=e.target.value;renderAll();});
+$('#toDate').addEventListener('change',e=>{S.to=e.target.value;renderAll();});
+$('#viewSearch').addEventListener('input',e=>{S.q=e.target.value;S.open.clear();renderStats();renderView();});
+$('#xlsxBtn').addEventListener('click',downloadExcel);
+$('#pdfBtn').addEventListener('click',downloadPdf);
+document.querySelectorAll('#viewtabs button').forEach(b=>b.addEventListener('click',()=>{S.view=b.dataset.v;renderView();}));
+
+loadData();
+</script>
+<script src="/leave-orders/supabase-sync.js"></script>
+</body>
+</html>

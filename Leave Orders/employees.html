@@ -1,0 +1,1029 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Department of Posts — Employee Directory, Karur Sub Division</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1F3864; --indigo:#4f46e5; --violet:#7c3aed; --pink:#ec4899;
+    --teal:#0d9488; --emerald:#059669; --amber:#f59e0b; --rose:#e11d48;
+    --bg:#eef2fb; --card:#ffffff;
+    --ink:#0f172a; --ink-2:#1e293b; --muted:#64748b; --line:#e2e8f0;
+    --good:#059669; --warn:#d97706; --bad:#dc2626;
+    --grad-brand:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%);
+    --grad-bg:radial-gradient(1200px 600px at -10% -20%, #dbe4ff 0%, transparent 60%),
+              radial-gradient(900px 500px at 110% 0%, #fce7f3 0%, transparent 55%),
+              radial-gradient(800px 600px at 50% 120%, #d1fae5 0%, transparent 60%),
+              linear-gradient(180deg,#eef2fb 0%,#f5f7fd 100%);
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04);
+    --shadow-md:0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
+    --shadow-lg:0 12px 32px rgba(15,23,42,.12), 0 4px 12px rgba(15,23,42,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;color:var(--ink);font:14.5px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--grad-bg);background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  a{color:inherit}
+
+  /* App switcher bar */
+  .appbar{background:#1e3a5f;color:#fff;padding:9px 22px;display:flex;align-items:center;gap:14px;font:600 12.5px/1.2 'Inter',-apple-system,'Segoe UI',sans-serif;letter-spacing:.2px}
+  .appbar .switch{margin-left:auto;display:flex;gap:6px;padding:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px}
+  .appbar .pill{padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none}
+  .appbar .pill.active{color:#1e3a5f;background:#fff}
+
+  header{background:linear-gradient(120deg,#1e3a5f 0%,#4f46e5 60%,#7c3aed 100%);color:#fff;padding:20px 22px;box-shadow:var(--shadow-md)}
+  .header-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:24px;border:1.5px solid rgba(255,255,255,.3)}
+  header h1{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:20px;margin:0;font-weight:800;letter-spacing:.2px;line-height:1.15}
+  header .sub{font-size:12.5px;opacity:.92;margin-top:2px;font-weight:500}
+  .privacy{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;background:rgba(255,255,255,.14);padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.24)}
+  .privacy .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80}
+
+  main{max-width:1280px;margin:0 auto;padding:20px 18px 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);padding:18px 20px;margin-bottom:18px}
+  .card h2{font-family:"Plus Jakarta Sans","Inter",sans-serif;margin:0 0 14px;font-size:13px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1.4px;display:flex;align-items:center;gap:10px}
+  .card h2 .num{width:22px;height:22px;border-radius:7px;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:var(--grad-brand)}
+
+  /* Upload */
+  .up-wrap{display:flex;gap:16px;flex-wrap:wrap;align-items:stretch}
+  .drop{flex:1;min-width:280px;border:2px dashed #c7d2fe;border-radius:14px;background:linear-gradient(135deg,#eef2ff,#faf5ff);padding:22px;text-align:center;cursor:pointer;transition:.15s}
+  .drop:hover,.drop.drag{border-color:#7c3aed;background:linear-gradient(135deg,#e0e7ff,#f3e8ff);transform:translateY(-1px)}
+  .drop .ic{font-size:30px}
+  .drop .t{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-weight:800;font-size:15px;margin-top:6px}
+  .drop .h{font-size:12px;color:var(--muted);margin-top:4px}
+  .up-side{flex:1;min-width:260px;display:flex;flex-direction:column;gap:10px;justify-content:center}
+  .up-stat{display:flex;gap:10px;align-items:center;font-size:13px}
+  .up-stat .badge{min-width:52px;text-align:center;font-weight:800;border-radius:8px;padding:4px 8px;font-size:12px}
+  .badge.ds{background:#e0e7ff;color:#3730a3}
+  .badge.gds{background:#ccfbf1;color:#0f766e}
+  .badge.out{background:#fef9c3;color:#854d0e}
+  .badge.mob{background:#dcfce7;color:#166534}
+  .viewtabs{display:flex;gap:8px;margin:0 0 16px}
+  .viewtabs button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 18px;font:800 13.5px/1 "Plus Jakarta Sans","Inter",sans-serif;color:var(--muted);cursor:pointer;box-shadow:var(--shadow-sm);display:inline-flex;align-items:center;gap:8px;transition:.15s}
+  .viewtabs button:hover{transform:translateY(-1px)}
+  .viewtabs button.on{background:var(--grad-brand);color:#fff;border-color:transparent}
+  .vt-count{background:rgba(255,255,255,.28);border-radius:999px;padding:1px 8px;font-size:11.5px;font-weight:800}
+  .viewtabs button:not(.on) .vt-count{background:#eef2ff;color:#4338ca}
+  .muted{color:var(--muted)}
+  .row-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+  button.btn{cursor:pointer;border:none;border-radius:10px;padding:10px 16px;font:700 13px/1 "Inter",sans-serif;color:#fff;background:var(--grad-brand);box-shadow:var(--shadow-sm);display:inline-flex;align-items:center;gap:8px;transition:.15s}
+  button.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+  button.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+  button.btn.ghost{background:#fff;color:var(--ink-2);border:1.5px solid var(--line)}
+  button.btn.tiny{padding:6px 11px;font-size:12px;border-radius:8px}
+
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:var(--shadow-sm);min-width:120px}
+  .stat .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+  .stat .v{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:24px;font-weight:800;margin-top:2px;line-height:1}
+
+  /* Browse layout */
+  .browse{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}
+  @media (max-width:880px){ .browse{grid-template-columns:1fr} }
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden}
+  .panel .phead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+  .panel .ptitle{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:space-between}
+  input.search,select.pick{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font:500 14px/1.2 "Inter",sans-serif;background:#fff;color:var(--ink)}
+  input.search:focus,select.pick:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.14)}
+  .seg{display:flex;gap:4px;background:#f1f5f9;border:1px solid var(--line);border-radius:9px;padding:3px}
+  .seg button{flex:1;border:none;background:transparent;border-radius:6px;padding:6px 8px;font:700 12px/1 "Inter",sans-serif;color:var(--muted);cursor:pointer}
+  .seg button.on{background:#fff;color:var(--indigo);box-shadow:var(--shadow-sm)}
+
+  .olist{max-height:62vh;overflow:auto}
+  .oitem{padding:11px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:.1s}
+  .oitem:hover{background:#f8fafc}
+  .oitem.sel{background:linear-gradient(90deg,#eef2ff,#faf5ff);border-left:3px solid #7c3aed;padding-left:13px}
+  .oitem .on{font-weight:700;font-size:13.5px;line-height:1.2}
+  .oitem .om{font-size:11px;color:var(--muted);margin-top:2px}
+  .oitem .cnt{font-size:11px;font-weight:800;color:#3730a3;background:#e0e7ff;border-radius:999px;padding:2px 9px;white-space:nowrap}
+
+  .content{min-height:300px}
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);padding:60px 20px;text-align:center}
+  .empty .big{font-size:40px;opacity:.5}
+
+  .content .chead{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .content .chead .ct{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-weight:800;font-size:17px}
+  .content .chead .cm{font-size:12.5px;color:var(--muted)}
+
+  table.staff{width:100%;border-collapse:collapse;font-size:13px}
+  table.staff th{position:sticky;top:0;text-align:left;background:#f8fafc;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;padding:10px 14px;border-bottom:1px solid var(--line)}
+  table.staff td{padding:10px 14px;border-bottom:1px solid #f1f5f9}
+  table.staff tbody tr{cursor:pointer}
+  table.staff tbody tr:hover{background:#f8fafc}
+  .type-badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;letter-spacing:.3px}
+  .type-badge.DS{background:#e0e7ff;color:#3730a3}
+  .type-badge.GDS{background:#ccfbf1;color:#0f766e}
+  .type-badge.OUT{background:#fef9c3;color:#854d0e}
+  .status-chip{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
+  .status-chip.paid{background:#dcfce7;color:#166534}
+  .status-chip.other{background:#fef3c7;color:#92400e}
+  .lead{font-weight:700}
+
+  /* Detail */
+  .detail{padding:18px}
+  .dhero{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:16px 18px;border-radius:14px;background:linear-gradient(120deg,#1e3a5f,#4f46e5);color:#fff;margin-bottom:16px}
+  .avatar{width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:"Plus Jakarta Sans","Inter"}
+  .dhero .nm{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:20px;font-weight:800;line-height:1.15}
+  .dhero .sb{font-size:12.5px;opacity:.92;margin-top:2px}
+  .dhero .tags{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .dhero .tag{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:4px 11px;font-size:11.5px;font-weight:700}
+
+  .sect{margin-bottom:16px}
+  .sect .st{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:800;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+  .sect .st::after{content:"";flex:1;height:1px;background:var(--line)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px 16px}
+  .kv{display:flex;flex-direction:column;padding:8px 12px;background:#f8fafc;border:1px solid #eef2f7;border-radius:10px}
+  .kv .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+  .kv .v{font-size:14px;font-weight:600;color:var(--ink-2);word-break:break-word;margin-top:1px}
+  .money-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 14px}
+  .mrow{display:flex;justify-content:space-between;gap:10px;padding:6px 10px;border-bottom:1px dashed #e7ecf3;font-size:13px}
+  .mrow .mk{color:var(--ink-2)}
+  .mrow .mv{font-weight:700;font-variant-numeric:tabular-nums}
+  .totals{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+  .tcard{flex:1;min-width:150px;border-radius:12px;padding:12px 14px;color:#fff}
+  .tcard .tk{font-size:11px;text-transform:uppercase;letter-spacing:.5px;opacity:.9;font-weight:700}
+  .tcard .tv{font-family:"Plus Jakarta Sans","Inter";font-size:20px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+  .tcard.earn{background:linear-gradient(135deg,#059669,#0d9488)}
+  .tcard.ded{background:linear-gradient(135deg,#e11d48,#f97316)}
+  .tcard.net{background:linear-gradient(135deg,#4f46e5,#7c3aed)}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#0f172a;color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;font-size:13px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.25s;z-index:99}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:#7f1d1d}
+  .footer-note{text-align:center;color:var(--muted);font-size:11.5px;padding:20px 8px}
+  .builtby{text-align:center;font-weight:800;font-size:14px;padding:6px 8px 30px;font-family:"Plus Jakarta Sans","Inter"}
+  .link-btn{background:none;border:none;color:var(--indigo);font-weight:700;cursor:pointer;font-size:13px;padding:0;display:inline-flex;align-items:center;gap:5px}
+
+  /* Inline mobile-number editor */
+  .mob-wrap{display:inline-flex;align-items:center;gap:6px}
+  .mob-link{color:#4f46e5;text-decoration:none;font-weight:600}
+  .mob-edit-btn{background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;line-height:1;padding:2px 5px;border-radius:6px;transition:.12s}
+  .mob-edit-btn:hover{color:var(--indigo);background:#eef2ff}
+  .mob-edit-btn.save{color:var(--good);font-weight:800}
+  .mob-edit-btn.save:hover{background:#dcfce7}
+  .mob-edit-btn.cancel:hover{background:#fee2e2;color:var(--bad)}
+  .mob-edit-btn[disabled]{opacity:.5;cursor:default}
+  .mob-input{width:128px;padding:5px 9px;border:1.5px solid #c7d2fe;border-radius:8px;font:600 13px/1.2 "Inter",sans-serif;color:var(--ink)}
+  .mob-input:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.14)}
+</style>
+</head>
+<body>
+<div class="appbar">
+  <a href="/" style="opacity:.85;color:#fff;text-decoration:none;font-weight:700;display:flex;align-items:center;gap:6px">&#x1F3E0; Home</a>
+  <span style="opacity:.4">|</span>
+  <span style="opacity:.72">Department of Posts &middot; Karur Sub Division</span>
+  <div class="switch">
+    <a class="pill" href="/leave-orders">Sub Divisional Manager</a>
+    <span class="pill active">Employee Directory</span>
+    <a class="pill" href="/office-management">Office Management</a>
+    <a class="pill" href="/arrangements">Temporary Arrangements</a>
+    <a class="pill" href="/ir-builder/">Inspection Reports &rarr;</a>
+  </div>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">&#128101;</div>
+      <div>
+        <h1>Employee Directory &mdash; Karur Sub Division</h1>
+        <div class="sub">Office-wise staff (departmental &amp; GDS) &middot; outsider staff &middot; full service, bank &amp; pay details</div>
+      </div>
+    </div>
+    <span class="privacy"><span class="dot"></span> On this device &middot; localhost</span>
+  </div>
+</header>
+
+<main>
+  <!-- Upload / update -->
+  <div class="card">
+    <h2><span class="num">&#8593;</span> Update monthly data</h2>
+    <div class="up-wrap">
+      <div class="drop" id="drop" tabindex="0">
+        <div class="ic">&#128194;</div>
+        <div class="t">Drop payroll files here — or click to browse</div>
+        <div class="h">Upload <b>DS</b> (Departmental), <b>GS</b> (GDS), <b>Outsiders</b>, or the <b>Mobile Numbers</b> roster (.xls/.xlsx) — drop several at once. Type is auto-detected; new records are added and existing ones updated. The mobile roster is matched to staff by office &amp; name.</div>
+        <input type="file" id="file" accept=".xlsx,.xls" multiple style="display:none" />
+      </div>
+      <div class="up-side">
+        <div class="up-stat"><span class="badge ds">DS</span><span id="ds-meta" class="muted">No departmental data loaded yet.</span></div>
+        <div class="up-stat"><span class="badge gds">GDS</span><span id="gds-meta" class="muted">No GDS data loaded yet.</span></div>
+        <div class="up-stat"><span class="badge out">OUT</span><span id="out-meta" class="muted">No outsiders data loaded yet.</span></div>
+        <div class="up-stat"><span class="badge mob">TEL</span><span id="mob-meta" class="muted">No mobile numbers mapped yet.</span></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2);cursor:pointer">
+          <input type="checkbox" id="replaceChk" />
+          Replace whole set for uploaded type(s) — removes staff not in this upload
+        </label>
+        <div class="row-actions">
+          <button class="btn" id="saveBtn" disabled>&#128190; Save &amp; update directory</button>
+          <button class="btn ghost tiny" id="discardBtn" style="display:none">Discard pending upload</button>
+        </div>
+        <div class="muted" id="pending" style="font-size:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Download staff directory (rendered by /leave-orders/directory-export.js) -->
+  <div id="dir-export"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <!-- View switch: office-wise staff vs. outsiders -->
+  <div class="viewtabs" id="viewtabs">
+    <button data-v="offices" class="on">&#127970; By Office</button>
+    <button data-v="outsiders">&#129489; Outsiders <span id="vt-out-count" class="vt-count"></span></button>
+  </div>
+
+  <!-- Office-wise browse (DS + GDS) -->
+  <div id="view-offices">
+    <div class="browse">
+      <div class="panel">
+        <div class="phead">
+          <div class="ptitle"><span>Offices</span><span id="office-count" class="muted" style="font-weight:600;font-size:12px"></span></div>
+          <select class="pick" id="officePick"><option value="">— Jump to office —</option></select>
+          <input class="search" id="officeSearch" placeholder="&#128269;  Search office name…" autocomplete="off" />
+          <div class="seg" id="typeSeg">
+            <button data-t="ALL" class="on">All</button>
+            <button data-t="DS">Departmental</button>
+            <button data-t="GDS">GDS</button>
+          </div>
+        </div>
+        <div class="olist" id="olist"></div>
+      </div>
+
+      <div class="panel content" id="content">
+        <div class="empty">
+          <div class="big">&#127970;</div>
+          <div>Select an office on the left to see its staff,<br>or search a person below.</div>
+          <input class="search" id="globalSearch" style="max-width:320px;margin-top:6px" placeholder="&#128269;  Search any staff by name or ID…" autocomplete="off" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Outsiders (separate option) -->
+  <div id="view-outsiders" style="display:none">
+    <div class="browse">
+      <div class="panel">
+        <div class="phead">
+          <div class="ptitle"><span>Outsider staff</span><span id="out-list-count" class="muted" style="font-weight:600;font-size:12px"></span></div>
+          <input class="search" id="outSearch" placeholder="&#128269;  Search name, ID, mobile, PAN…" autocomplete="off" />
+        </div>
+        <div class="olist" id="outlist"></div>
+      </div>
+
+      <div class="panel content" id="outcontent">
+        <div class="empty">
+          <div class="big">&#129489;</div>
+          <div>Select an outsider on the left to see their full details.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">Data source: monthly DS &amp; GS payroll extracts. Stored locally on this machine and refreshed on re-upload.</div>
+  <div class="builtby">Built by Arun Selvaraj, Karur Division</div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= state ================= */
+const S = {
+  employees: [],          // saved (persisted) dataset — DS, GDS and OUT records
+  meta: {},               // { ds, gs, out, updatedAt }
+  mobiles: {},            // { <Employee_id>: "<phone>" } for DS/GDS staff
+  mobilesMeta: {},        // { fileName, count, updatedAt }
+  pending: {},            // { DS:[rows], GDS:[rows], OUT:[rows], MOBILE:{...} } not yet saved
+  offices: [],            // [{id,name,staff:[],ds,gds}]  (DS/GDS only)
+  view: 'offices',        // 'offices' | 'outsiders'
+  typeFilter: 'ALL',
+  officeFilter: '',
+  outFilter: '',
+  selectedOfficeId: null,
+  selectedEmpKey: null,
+  selectedOutKey: null,
+};
+const TYPES = ['DS','GDS','OUT'];
+const $ = s => document.querySelector(s);
+const el = (t,a,...k)=>{const e=document.createElement(t);if(a)for(const p in a){if(p==='class')e.className=a[p];else if(p==='html')e.innerHTML=a[p];else if(p.startsWith('on'))e.addEventListener(p.slice(2),a[p]);else if(a[p]!=null)e.setAttribute(p,a[p]);}for(const c of k){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(c));}return e;};
+
+function toast(msg,isErr){const t=$('#toast');t.textContent=msg;t.className='toast show'+(isErr?' err':'');setTimeout(()=>t.className='toast',2600);}
+
+// Cross-page sync: whenever staff data is saved here, tell other open pages
+// (Office Management etc.) so they refresh their copy automatically.
+const syncBC = 'BroadcastChannel' in window ? new BroadcastChannel('sdo-data') : null;
+function announceUpdate(){ if(syncBC){ try{ syncBC.postMessage({type:'data-updated',at:Date.now()}); }catch(e){} } }
+
+/* ================= helpers ================= */
+const clean = v => (v==null?'':String(v)).trim();
+function fmtDate(d){const p=n=>String(n).padStart(2,'0');return p(d.getDate())+'-'+p(d.getMonth()+1)+'-'+d.getFullYear();}
+function empKey(e){return (e._type||'')+':'+clean(e.Employee_id)+':'+clean(e.Payroll_id);}
+function isMoney(n){return typeof n==='number' && isFinite(n);}
+function inr(v){
+  const n = typeof v==='number'?v:Number(String(v).replace(/,/g,''));
+  if(!isFinite(n)) return clean(v)||'—';
+  return '₹' + n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function nz(v){ // non-zero-ish?
+  if(v==null||v==='') return false;
+  const n = typeof v==='number'?v:Number(String(v).replace(/,/g,''));
+  if(isFinite(n)) return n!==0;
+  return true;
+}
+function statusClass(s){return /paid/i.test(clean(s))?'paid':'other';}
+function typeTag(t){return t==='DS'?'DS':t==='OUT'?'OUT':'GDS';}
+// Mobile number for a staff record: outsiders carry their own; DS/GDS come from the mobiles map.
+function mobileOf(e){ return e._type==='OUT' ? clean(e.mobile_no) : clean(S.mobiles[clean(e.Employee_id)]); }
+// Outsider records are keyed by resource_id and have a split name.
+function idOf(e){return clean(e.Employee_id)||clean(e.resource_id);}
+function outName(e){return [e.first_name,e.middle_name,e.last_name].map(clean).filter(Boolean).join(' ');}
+function outKey(e){return 'OUT:'+clean(e.resource_id);}
+function outAddress(e){return [e.address1,e.address2,e.address3,e.address4].map(clean).filter(Boolean).join(', ');}
+// dd-mm-yyyy from a Date, or from an ISO/`yyyy-mm-dd` string, else unchanged.
+function normDateStr(v){
+  if(v instanceof Date) return fmtDate(v);
+  const s=clean(v); const m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : s;
+}
+
+/* ================= parsing (client-side, SheetJS) ================= */
+function detectType(headers){
+  const h = headers.map(x=>clean(x).toLowerCase());
+  if(h.includes('basic pay')) return 'DS';
+  if(h.includes('trca') || h.includes('officiating pay') || h.includes('sdbs')) return 'GDS';
+  if(h.includes('resource_id') || h.includes('aadhaar_number') || (h.includes('first_name') && h.includes('last_name'))) return 'OUT';
+  if(h.includes('ph number') || h.includes('name of the offices')) return 'MOBILE';
+  return null;
+}
+// Spreadsheet helper columns that carry no directory value (e.g. a "Concat"
+// key formula) are dropped so datasets from different offices stay uniform.
+const SKIP_COLS = new Set(['Concat']);
+function parseWorkbook(buf){
+  const wb = XLSX.read(buf,{cellDates:true});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws,{raw:true,defval:''});
+  if(!rows.length) return {type:null,rows:[]};
+  const type = detectType(Object.keys(rows[0]));
+  const dateKeys = new Set(['Date_of_birth','Date_of_join','date_of_birth']);
+  const mapped = rows.map(r=>{
+    const o = {_type:type};
+    for(const k in r){
+      const kk=k.trim();   // headers occasionally carry trailing spaces (e.g. "Ph Number ")
+      if(SKIP_COLS.has(kk)|| (type!=='MOBILE' && /^__EMPTY/.test(kk)))continue;
+      let v=r[k];
+      if(v instanceof Date) v=fmtDate(v);
+      else if(dateKeys.has(kk) || (typeof v==='string' && /^\d{4}-\d{2}-\d{2}T/.test(v))) v=normDateStr(v);
+      o[kk]=v;
+    }
+    return o;
+  }).filter(r=> type==='MOBILE' ? clean(r['Name of the offices']) : (clean(r.Employee_id)||clean(r.Employee_name)||clean(r.resource_id)||clean(r.first_name)));
+  return {type,rows:mapped};
+}
+
+/* ============ mobile-roster matching (office + name) ============ */
+function levJS(a,b){
+  const n=a.length,m=b.length; if(!n)return m; if(!m)return n;
+  let prev=Array.from({length:m+1},(_,j)=>j);
+  for(let i=1;i<=n;i++){ const cur=[i];
+    for(let j=1;j<=m;j++){ const cost=a[i-1]===b[j-1]?0:1; cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+cost); }
+    prev=cur;
+  }
+  return prev[m];
+}
+function normOffice(s){ s=clean(s).toLowerCase().replace(/[^a-z0-9]/g,''); return s.replace(/(s\.?o|b\.?o|h\.?o|sso)$/,''); }
+const OFFICE_ALIAS={etpalayam:'eastthavittupalayam',ptkurichi:'punjaithottakurichi',pugalursf:'pugalursugarfactory'};
+function nameToks(s){ return clean(s).toUpperCase().replace(/GDS/g,' ').replace(/O\s*\/\s*S/g,' ').replace(/[^A-Z]/g,' ').split(/\s+/).filter(t=>t.length>=2); }
+function bestNameMatch(mt,cands){
+  let best=null,bestScore=0;
+  for(const e of cands){
+    const et=nameToks(e.Employee_name);
+    const shared=mt.filter(t=>et.includes(t));
+    let maxLen=shared.length?Math.max(...shared.map(t=>t.length)):0;
+    let score=shared.length*100+maxLen;
+    if(maxLen<4){ let fz=0;
+      for(const a of mt){ if(a.length<5)continue; for(const b of et){ if(b.length>=5 && Math.abs(a.length-b.length)<=1 && levJS(a,b)<=1 && a.length>fz) fz=a.length; } }
+      if(fz>=5){ score=100+fz; maxLen=fz; }
+    }
+    if(score>bestScore){ bestScore=score; best={e,maxLen}; }
+  }
+  return (best && best.maxLen>=4) ? best.e : null;
+}
+const phoneStr=v=>{ const s=clean(v).replace(/[^0-9]/g,''); return s.length>=10?s:''; };
+// Build an Employee_id -> phone map from parsed Mobile-roster rows, matching by office then name.
+function matchMobileRows(rows, employees){
+  const byOffice=new Map(), keys=[];
+  for(const e of employees){ if(e._type==='OUT')continue; const d=clean(e.Office_desc); if(!d)continue; const no=normOffice(d); if(!byOffice.has(no)){byOffice.set(no,[]);keys.push(no);} byOffice.get(no).push(e); }
+  const resolveOffice=(off)=>{ let no=normOffice(off); if(OFFICE_ALIAS[no])no=OFFICE_ALIAS[no]; if(byOffice.has(no))return no; let bd=99,bk=null; for(const k of keys){ const dd=levJS(no,k); if(dd<bd){bd=dd;bk=k;} } return bd<=2?bk:null; };
+  const map={}; let matched=0,noOffice=0,noName=0;
+  for(const r of rows){
+    const target=resolveOffice(r['Name of the offices']); if(!target){ noOffice++; continue; }
+    const cands=byOffice.get(target);
+    const nm=clean(r['Name']); const ph=phoneStr(r['Ph Number']);
+    if(!/o\s*\/\s*s/i.test(nm)){ const hit=bestNameMatch(nameToks(nm),cands); if(hit){ if(ph){ map[clean(hit.Employee_id)]=ph; matched++; } } else noName++; }
+    const altNm=clean(r['Alternative Staff']); const altPh=phoneStr(r['__EMPTY']);
+    if(altNm && altPh && !/o\s*\/\s*s/i.test(altNm)){ const ah=bestNameMatch(nameToks(altNm),cands); if(ah){ const ak=clean(ah.Employee_id); if(!map[ak]){ map[ak]=altPh; matched++; } } }
+  }
+  return {map, matched, noOffice, noName, total:rows.length};
+}
+
+/* ============ inline mobile editing (DS / GDS / Outsiders) ============ */
+// Normalise a typed phone: digits only, strip a leading 0 or 91 country code.
+function normPhone(raw){
+  let s=clean(raw).replace(/[^0-9]/g,'');
+  if(s.length===11 && s[0]==='0') s=s.slice(1);
+  if(s.length===12 && s.slice(0,2)==='91') s=s.slice(2);
+  return s;
+}
+// Persist one staff member's mobile. Outsiders carry mobile_no on their own
+// record (employees.json); DS/GDS numbers live in the separate mobiles map.
+async function persistMobile(e, phone){
+  if(e._type==='OUT'){
+    e.mobile_no=phone;
+    const meta=Object.assign({},S.meta,{updatedAt:new Date().toISOString()});
+    try {
+      const r=await fetch('/api/employees',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({meta,employees:S.employees})});
+      if(r.ok) { const d=await r.json(); if(!d.ok) console.warn(d.error||'save failed'); }
+    } catch(err) { console.warn('Local API unavailable'); }
+    S.meta=meta;
+  } else {
+    const id=clean(e.Employee_id);
+    if(!id) throw new Error('This record has no Employee ID to attach the number to.');
+    const map=Object.assign({},S.mobiles);
+    if(phone) map[id]=phone; else delete map[id];
+    const mmeta={fileName:(S.mobilesMeta&&S.mobilesMeta.fileName)||'manual edit',count:Object.keys(map).length,updatedAt:new Date().toISOString()};
+    try {
+      const r=await fetch('/api/mobiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({meta:mmeta,map})});
+      if(r.ok) { const d=await r.json(); if(!d.ok) console.warn(d.error||'save failed'); }
+    } catch(err) { console.warn('Local API unavailable'); }
+    S.mobiles=map; S.mobilesMeta=mmeta;
+  }
+  try {
+    if(typeof SB !== 'undefined' && SB.ready) {
+      const isOut = e._type === 'OUT';
+      const empId = isOut ? clean(e.resource_id) : clean(e.Employee_id);
+      await SB.putPhoneEdit(isOut ? 'OUTSIDER' : 'EMPLOYEE', empId, phone, 'web');
+    }
+  } catch(err) { console.error('SB Sync error:', err); }
+  announceUpdate();
+}
+// Small view/edit widget: shows the number (tel: link) with a pencil; the
+// pencil swaps in an input with save/cancel. Saving persists then re-renders.
+function mobileEditor(e){
+  const wrap=el('span',{class:'mob-wrap',onclick:ev=>ev.stopPropagation()});
+  function view(){
+    wrap.innerHTML='';
+    const mob=mobileOf(e);
+    if(mob) wrap.append(el('a',{href:'tel:'+mob,class:'mob-link'},mob));
+    else wrap.append(el('span',{class:'muted'},'—'));
+    wrap.append(el('button',{class:'mob-edit-btn',title:'Edit mobile number',onclick:edit},'✎'));
+  }
+  function edit(){
+    wrap.innerHTML='';
+    const input=el('input',{class:'mob-input',type:'tel',value:mobileOf(e),placeholder:'10-digit mobile',maxlength:'14'});
+    const save=el('button',{class:'mob-edit-btn save',title:'Save',onclick:doSave},'✔');
+    const cancel=el('button',{class:'mob-edit-btn cancel',title:'Cancel',onclick:view},'✕');
+    input.addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ev.preventDefault();doSave();} else if(ev.key==='Escape'){view();} });
+    wrap.append(input,save,cancel);
+    input.focus(); input.select();
+    async function doSave(){
+      const ph=normPhone(input.value);
+      if(clean(input.value) && ph.length!==10){ toast('Enter a valid 10-digit mobile number.',true); input.focus(); return; }
+      save.disabled=true; cancel.disabled=true;
+      try{
+        await persistMobile(e, ph);
+        toast(ph?'Mobile number saved.':'Mobile number cleared.');
+        renderAll();
+      }catch(err){ toast('Save failed: '+err.message,true); save.disabled=false; cancel.disabled=false; }
+    }
+  }
+  view();
+  return wrap;
+}
+function mobileKv(e){ return el('div',{class:'kv'},el('div',{class:'k'},'Mobile'),el('div',{class:'v'},mobileEditor(e))); }
+
+/* ================= office index ================= */
+function buildOffices(){
+  const map = new Map();
+  for(const e of S.employees){
+    if(e._type==='OUT') continue;   // outsiders have no office; shown in their own view
+    const id = clean(e.Office_id) || '(unassigned)';
+    const name = clean(e.Office_desc) || id;
+    if(!map.has(id)) map.set(id,{id,name,staff:[],ds:0,gds:0});
+    const o = map.get(id);
+    o.staff.push(e);
+    if(e._type==='DS') o.ds++; else o.gds++;
+    // keep the most descriptive name
+    if(name.length>o.name.length) o.name=name;
+  }
+  for(const o of map.values()) o.staff.sort((a,b)=>clean(a.Employee_name).localeCompare(clean(b.Employee_name)));
+  S.offices = [...map.values()].sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+function filteredOffices(){
+  const q = S.officeFilter.toLowerCase();
+  return S.offices.filter(o=>{
+    if(S.typeFilter==='DS' && !o.ds) return false;
+    if(S.typeFilter==='GDS' && !o.gds) return false;
+    if(q && !o.name.toLowerCase().includes(q) && !o.id.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+function officeStaff(o){
+  if(S.typeFilter==='ALL') return o.staff;
+  return o.staff.filter(e=>e._type===S.typeFilter);
+}
+
+/* ================= rendering ================= */
+function renderStats(){
+  const ds = S.employees.filter(e=>e._type==='DS').length;
+  const gds = S.employees.filter(e=>e._type==='GDS').length;
+  const out = S.employees.filter(e=>e._type==='OUT').length;
+  const items = [
+    ['Total staff', ds+gds],
+    ['Offices', S.offices.length],
+    ['Departmental', ds],
+    ['GDS', gds],
+    ['Outsiders', out],
+  ];
+  $('#stats').innerHTML='';
+  for(const [k,v] of items) $('#stats').append(el('div',{class:'stat'},el('div',{class:'k'},k),el('div',{class:'v'},String(v))));
+}
+
+function renderMeta(){
+  const dm=S.meta.ds, gm=S.meta.gs, om=S.meta.out;
+  $('#ds-meta').textContent = dm ? `${dm.count} staff · ${dm.fileName||'file'} · updated ${(dm.uploadedAt||'').slice(0,10)}` : 'No departmental data loaded yet.';
+  $('#gds-meta').textContent = gm ? `${gm.count} staff · ${gm.fileName||'file'} · updated ${(gm.uploadedAt||'').slice(0,10)}` : 'No GDS data loaded yet.';
+  $('#out-meta').textContent = om ? `${om.count} outsiders · ${om.fileName||'file'} · updated ${(om.uploadedAt||'').slice(0,10)}` : 'No outsiders data loaded yet.';
+  const mm=S.mobilesMeta;
+  $('#mob-meta').textContent = (mm && mm.count) ? `${mm.count} mobile numbers mapped · ${mm.fileName||'file'} · updated ${(mm.updatedAt||'').slice(0,10)}` : 'No mobile numbers mapped yet.';
+}
+
+function renderOfficePick(){
+  const sel=$('#officePick');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— Jump to office —</option>';
+  for(const o of S.offices){
+    const opt=el('option',{value:o.id}, `${o.name}  (${o.staff.length})`);
+    sel.append(opt);
+  }
+  sel.value=cur;
+}
+
+function renderOfficeList(){
+  const list=$('#olist'); list.innerHTML='';
+  const offs=filteredOffices();
+  $('#office-count').textContent = `${offs.length} of ${S.offices.length}`;
+  if(!offs.length){ list.append(el('div',{class:'empty',style:'padding:30px'}, S.employees.length?'No offices match your filter.':'Upload payroll files above to begin.')); return; }
+  for(const o of offs){
+    const staffN = officeStaff(o).length;
+    const item=el('div',{class:'oitem'+(o.id===S.selectedOfficeId?' sel':''),onclick:()=>selectOffice(o.id)},
+      el('div',null,
+        el('div',{class:'on'},o.name),
+        el('div',{class:'om'}, `${o.ds?o.ds+' dept':''}${o.ds&&o.gds?' · ':''}${o.gds?o.gds+' GDS':''}`)),
+      el('div',{class:'cnt'},String(staffN)));
+    list.append(item);
+  }
+}
+
+function renderContent(){
+  const c=$('#content'); c.innerHTML='';
+  if(S.selectedEmpKey){ renderStaffDetail(c); return; }
+  if(S.selectedOfficeId){ renderOfficeStaff(c); return; }
+  // empty state with global search
+  const box=el('div',{class:'empty'},
+    el('div',{class:'big'},'🏢'),
+    el('div',{html:'Select an office on the left to see its staff,<br>or search a person below.'}),
+    (()=>{const i=el('input',{class:'search',id:'globalSearch',placeholder:'🔍  Search any staff by name or ID…',autocomplete:'off',style:'max-width:340px;margin-top:6px'});i.addEventListener('input',onGlobalSearch);return i;})());
+  c.append(box);
+  const res=el('div',{id:'gsResults',style:'width:100%;max-width:640px;margin:0 auto'});
+  c.append(res);
+}
+
+function onGlobalSearch(e){
+  const q=clean(e.target.value).toLowerCase();
+  const res=$('#gsResults'); if(!res) return; res.innerHTML='';
+  if(q.length<2){ return; }
+  const hits=S.employees.filter(x=>x._type!=='OUT' && (clean(x.Employee_name).toLowerCase().includes(q)||clean(x.Employee_id).includes(q)||mobileOf(x).includes(q))).slice(0,40);
+  if(!hits.length){ res.append(el('div',{class:'muted',style:'text-align:center;padding:14px'},'No matching staff.')); return; }
+  const tbl=el('table',{class:'staff'});
+  tbl.append(el('thead',null,el('tr',null,el('th',null,'Name'),el('th',null,'Employee ID'),el('th',null,'Office'),el('th',null,'Mobile'),el('th',null,'Type'))));
+  const tb=el('tbody');
+  for(const e2 of hits){
+    const mob=mobileOf(e2);
+    tb.append(el('tr',{onclick:()=>openStaffAnywhere(e2)},
+      el('td',{class:'lead'},clean(e2.Employee_name)),
+      el('td',null,clean(e2.Employee_id)),
+      el('td',null,clean(e2.Office_desc)),
+      el('td', mob?null:{class:'muted'}, mob||'—'),
+      el('td',null,el('span',{class:'type-badge '+e2._type},typeTag(e2._type)))));
+  }
+  tbl.append(tb); res.append(tbl);
+}
+function openStaffAnywhere(e){
+  S.selectedOfficeId = clean(e.Office_id)||'(unassigned)';
+  S.selectedEmpKey = empKey(e);
+  renderOfficeList(); renderContent();
+}
+
+function renderOfficeStaff(c){
+  const o=S.offices.find(x=>x.id===S.selectedOfficeId);
+  if(!o){ S.selectedOfficeId=null; renderContent(); return; }
+  const staff=officeStaff(o);
+  c.append(el('div',{class:'chead'},
+    el('div',null,
+      el('div',{class:'ct'},o.name),
+      el('div',{class:'cm'}, `Office ID ${o.id} · ${staff.length} staff${S.typeFilter!=='ALL'?' ('+typeTag(S.typeFilter)+' only)':''}`)),
+    el('div',{style:'margin-left:auto'}, el('button',{class:'link-btn',onclick:()=>{S.selectedOfficeId=null;S.selectedEmpKey=null;renderOfficeList();renderContent();}},'✕ Clear'))));
+  const tbl=el('table',{class:'staff'});
+  tbl.append(el('thead',null,el('tr',null,
+    el('th',null,'Name'),el('th',null,'Employee ID'),el('th',null,'Designation'),el('th',null,'Mobile'),el('th',null,'Type'),el('th',null,'Status'),el('th',null,'Net Pay'))));
+  const tb=el('tbody');
+  for(const e of staff){
+    tb.append(el('tr',{onclick:()=>{S.selectedEmpKey=empKey(e);renderContent();}},
+      el('td',{class:'lead'},clean(e.Employee_name)),
+      el('td',null,clean(e.Employee_id)),
+      el('td',null,clean(e.Post_desc)),
+      el('td',null,mobileEditor(e)),
+      el('td',null,el('span',{class:'type-badge '+e._type},typeTag(e._type))),
+      el('td',null,el('span',{class:'status-chip '+statusClass(e.Status)},clean(e.Status)||'—')),
+      el('td',{style:'font-weight:700;font-variant-numeric:tabular-nums'},inr(e.Net_payable))));
+  }
+  tbl.append(tb); c.append(tbl);
+}
+
+/* ---- staff detail ---- */
+const CORE = new Set(['_type','Payroll_id','DDO_Office_ID','Employee_id','Employee_name','Gender','Level','Post_id','Post_desc','Est_key','Est_description','Office_id','Office_desc','Pancard_number','Date_of_birth','Date_of_join','Bank_acc_no','IFSC_code','Bank_type','Status']);
+function kv(k,v){return el('div',{class:'kv'},el('div',{class:'k'},k),el('div',{class:'v'},clean(v)||'—'));}
+function moneyRows(container,keys,emp,showAll){
+  let any=false;
+  for(const k of keys){
+    const v=emp[k];
+    if(!showAll && !nz(v)) continue;
+    any=true;
+    container.append(el('div',{class:'mrow'},el('span',{class:'mk'},k),el('span',{class:'mv'},inr(v))));
+  }
+  if(!any) container.append(el('div',{class:'muted',style:'padding:6px 10px;font-size:12.5px'},'None'));
+}
+function renderStaffDetail(c){
+  const emp=S.employees.find(e=>empKey(e)===S.selectedEmpKey);
+  if(!emp){ S.selectedEmpKey=null; renderContent(); return; }
+  const o=S.offices.find(x=>x.id===(clean(emp.Office_id)||'(unassigned)'));
+  const keys=Object.keys(emp).filter(k=>k!=='_type');
+  const iStatus=keys.indexOf('Status'), iEarn=keys.indexOf('Total_earnings'), iDed=keys.indexOf('Total_deductions'), iTP=keys.indexOf('Total_thirdparty_deduction');
+  const earnKeys = iStatus>=0&&iEarn>iStatus ? keys.slice(iStatus+1,iEarn) : [];
+  const dedKeys  = iEarn>=0&&iDed>iEarn ? keys.slice(iEarn+1,iDed) : [];
+  const tpKeys   = iDed>=0&&iTP>iDed ? keys.slice(iDed+1,iTP) : [];
+  const govKeys  = keys.filter(k=>/gov/i.test(k));
+  const initials = clean(emp.Employee_name).split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase();
+
+  const wrap=el('div',{class:'detail'});
+  // breadcrumb / back
+  wrap.append(el('div',{style:'margin-bottom:10px'},
+    el('button',{class:'link-btn',onclick:()=>{S.selectedEmpKey=null;renderContent();}}, '← Back to '+(o?o.name:'office'))));
+  // hero
+  wrap.append(el('div',{class:'dhero'},
+    el('div',{class:'avatar'}, initials||'?'),
+    el('div',null,
+      el('div',{class:'nm'},clean(emp.Employee_name)),
+      el('div',{class:'sb'}, `${clean(emp.Post_desc)||'—'} · ${clean(emp.Office_desc)||'—'}`)),
+    (()=>{ const mob=mobileOf(emp); const tags=[
+      el('span',{class:'tag'}, typeTag(emp._type)==='DS'?'Departmental':'GDS'),
+      el('span',{class:'tag'}, 'ID '+clean(emp.Employee_id)),
+      el('span',{class:'tag'}, 'Level '+clean(emp.Level)),
+      el('span',{class:'tag'}, clean(emp.Status)||'—')];
+      if(mob) tags.push(el('span',{class:'tag'}, '📱 '+mob));
+      return el('div',{class:'tags'}, ...tags); })()));
+
+  // Service & personal
+  const s1=el('div',{class:'sect'},el('div',{class:'st'},'Service & Personal'));
+  const g1=el('div',{class:'grid'});
+  [['Employee name','Employee_name'],['Employee ID','Employee_id'],['Gender','Gender'],['Date of birth','Date_of_birth'],['Date of joining','Date_of_join'],['Level','Level'],['Designation','Post_desc'],['Establishment','Est_description'],['PAN','Pancard_number'],['Status','Status']].forEach(([lbl,k])=>g1.append(kv(lbl,emp[k])));
+  g1.append(mobileKv(emp));
+  s1.append(g1); wrap.append(s1);
+
+  // Office & payroll ids
+  const s2=el('div',{class:'sect'},el('div',{class:'st'},'Office & Identifiers'));
+  const g2=el('div',{class:'grid'});
+  [['Office','Office_desc'],['Office ID','Office_id'],['DDO office ID','DDO_Office_ID'],['Payroll ID','Payroll_id'],['Post ID','Post_id'],['Est. key','Est_key']].forEach(([lbl,k])=>g2.append(kv(lbl,emp[k])));
+  s2.append(g2); wrap.append(s2);
+
+  // Bank
+  const s3=el('div',{class:'sect'},el('div',{class:'st'},'Bank'));
+  const g3=el('div',{class:'grid'});
+  [['Account no.','Bank_acc_no'],['IFSC','IFSC_code'],['Bank type','Bank_type']].forEach(([lbl,k])=>g3.append(kv(lbl,emp[k])));
+  s3.append(g3); wrap.append(s3);
+
+  // Pay summary cards
+  const s4=el('div',{class:'sect'},el('div',{class:'st'},'Pay Summary'));
+  s4.append(el('div',{class:'totals'},
+    el('div',{class:'tcard earn'},el('div',{class:'tk'},'Total earnings'),el('div',{class:'tv'},inr(emp.Total_earnings))),
+    el('div',{class:'tcard ded'},el('div',{class:'tk'},'Total deductions'),el('div',{class:'tv'},inr(emp.Total_deductions))),
+    el('div',{class:'tcard net'},el('div',{class:'tk'},'Net payable'),el('div',{class:'tv'},inr(emp.Net_payable)))));
+  wrap.append(s4);
+
+  // toggle for all fields
+  let showAll=false;
+  const toggleWrap=el('div',{style:'margin:2px 0 12px'});
+  const tgl=el('button',{class:'btn ghost tiny'},'Show all pay fields (incl. nil)');
+  toggleWrap.append(tgl); wrap.append(toggleWrap);
+
+  const breakdown=el('div');
+  function renderBreakdown(){
+    breakdown.innerHTML='';
+    const cols=el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:18px'});
+    const colA=el('div'); const colB=el('div');
+    const secE=el('div',{class:'sect'},el('div',{class:'st'},'Earnings'));
+    const bE=el('div'); moneyRows(bE,earnKeys,emp,showAll);
+    bE.append(el('div',{class:'mrow',style:'border-bottom:none;font-weight:800;color:#059669'},el('span',{class:'mk'},'Total earnings'),el('span',{class:'mv'},inr(emp.Total_earnings))));
+    secE.append(bE); colA.append(secE);
+    const secD=el('div',{class:'sect'},el('div',{class:'st'},'Deductions'));
+    const bD=el('div'); moneyRows(bD,dedKeys,emp,showAll);
+    bD.append(el('div',{class:'mrow',style:'border-bottom:none;font-weight:800;color:#e11d48'},el('span',{class:'mk'},'Total deductions'),el('span',{class:'mv'},inr(emp.Total_deductions))));
+    secD.append(bD); colB.append(secD);
+    const secT=el('div',{class:'sect'},el('div',{class:'st'},'Third-party deductions'));
+    const bT=el('div'); moneyRows(bT,tpKeys,emp,showAll);
+    bT.append(el('div',{class:'mrow',style:'border-bottom:none;font-weight:800;color:#b45309'},el('span',{class:'mk'},'Total third-party'),el('span',{class:'mv'},inr(emp.Total_thirdparty_deduction))));
+    secT.append(bT); colB.append(secT);
+    if(govKeys.length){
+      const secG=el('div',{class:'sect'},el('div',{class:'st'},'Government contributions'));
+      const bG=el('div'); moneyRows(bG,govKeys,emp,true); secG.append(bG); colA.append(secG);
+    }
+    cols.append(colA,colB); breakdown.append(cols);
+  }
+  tgl.addEventListener('click',()=>{showAll=!showAll;tgl.textContent=showAll?'Show only applicable fields':'Show all pay fields (incl. nil)';renderBreakdown();});
+  renderBreakdown();
+  wrap.append(breakdown);
+
+  c.append(wrap);
+}
+
+/* ---- outsiders view (separate option) ---- */
+function outsiders(){ return S.employees.filter(e=>e._type==='OUT'); }
+function filteredOutsiders(){
+  const q=S.outFilter.toLowerCase();
+  let list=outsiders();
+  if(q) list=list.filter(e=>outName(e).toLowerCase().includes(q)||clean(e.resource_id).includes(q)||clean(e.mobile_no).includes(q)||clean(e.pan_number).toLowerCase().includes(q)||clean(e.personal_email_id).toLowerCase().includes(q)||clean(e.office_name).toLowerCase().includes(q));
+  return list.sort((a,b)=>outName(a).localeCompare(outName(b)));
+}
+function renderOutsiders(){
+  const all=outsiders();
+  const vc=$('#vt-out-count'); if(vc) vc.textContent = all.length?String(all.length):'';
+  const list=$('#outlist'); if(!list) return; list.innerHTML='';
+  const items=filteredOutsiders();
+  $('#out-list-count').textContent = `${items.length} of ${all.length}`;
+  if(!items.length){ list.append(el('div',{class:'empty',style:'padding:30px'}, all.length?'No outsiders match your search.':'Upload an Outsiders file above to begin.')); return; }
+  for(const e of items){
+    const item=el('div',{class:'oitem'+(outKey(e)===S.selectedOutKey?' sel':''),onclick:()=>selectOutsider(outKey(e))},
+      el('div',null,
+        el('div',{class:'on'}, outName(e)||'(no name)'),
+        el('div',{class:'om'}, `${clean(e.office_name)||clean(e.education_qualification)||'—'}${clean(e.mobile_no)?' · '+clean(e.mobile_no):''}`)),
+      el('div',{class:'cnt',style:'background:#fef9c3;color:#854d0e'}, clean(e.gender).slice(0,1)||'—'));
+    list.append(item);
+  }
+}
+function selectOutsider(k){ S.selectedOutKey=k; renderOutsiders(); renderOutContent(); }
+function renderOutContent(){
+  const c=$('#outcontent'); if(!c) return; c.innerHTML='';
+  if(!S.selectedOutKey){
+    c.append(el('div',{class:'empty'}, el('div',{class:'big'},'🧑'), el('div',null,'Select an outsider on the left to see their full details.')));
+    return;
+  }
+  const e=outsiders().find(x=>outKey(x)===S.selectedOutKey);
+  if(!e){ S.selectedOutKey=null; renderOutContent(); return; }
+  const initials=((outName(e).split(/\s+/).map(x=>x[0]).slice(0,2).join(''))||'?').toUpperCase();
+  const wrap=el('div',{class:'detail'});
+  wrap.append(el('div',{style:'margin-bottom:10px'}, el('button',{class:'link-btn',onclick:()=>{S.selectedOutKey=null;renderOutsiders();renderOutContent();}},'← Back to outsiders')));
+  const tags=[el('span',{class:'tag'},'Outsider'),el('span',{class:'tag'},'Resource '+clean(e.resource_id)),el('span',{class:'tag'},clean(e.gender)||'—')];
+  if(clean(e.resource_status)) tags.push(el('span',{class:'tag'},clean(e.resource_status)));
+  wrap.append(el('div',{class:'dhero'},
+    el('div',{class:'avatar'},initials),
+    el('div',null,
+      el('div',{class:'nm'}, outName(e)||'(no name)'),
+      el('div',{class:'sb'}, `${clean(e.office_name)||'—'} · ${clean(e.education_qualification)||'—'}`)),
+    el('div',{class:'tags'}, ...tags)));
+  const section=(title,pairs)=>{
+    const s=el('div',{class:'sect'},el('div',{class:'st'},title));
+    const g=el('div',{class:'grid'});
+    for(const [lbl,k] of pairs) g.append(kv(lbl, typeof k==='function'?k(e):e[k]));
+    s.append(g); wrap.append(s);
+  };
+  section('Identity',[['Full name',()=>outName(e)],['Father / Guardian','father_name'],['Gender','gender'],['Date of birth','date_of_birth'],['Community','community']]);
+  // Contact — built by hand so the mobile number is editable in place.
+  {
+    const sc=el('div',{class:'sect'},el('div',{class:'st'},'Contact'));
+    const gc=el('div',{class:'grid'});
+    gc.append(mobileKv(e));
+    gc.append(kv('Email',e.personal_email_id));
+    gc.append(kv('Address',outAddress(e)));
+    gc.append(kv('Pin code',e.pin_code));
+    sc.append(gc); wrap.append(sc);
+  }
+  section('Posting',[['Office','office_name'],['Office ID','office_id'],['Sub-division ID','sub_division_id'],['Division','division_name'],['Status','resource_status']]);
+  section('Bank',[['Account no.','bank_acc_no'],['IFSC','ifsc_code'],['Bank type','bank_type']]);
+  section('Identifiers & Qualification',[['Resource ID','resource_id'],['Aadhaar','aadhaar_number'],['PAN','pan_number'],['Education','education_qualification'],['Approver post ID','approver_post_id'],['Login required','login_required'],['Maker ID','maker_id'],['Remarks','remarks']]);
+  c.append(wrap);
+}
+function applyView(){
+  $('#view-offices').style.display = S.view==='offices'?'':'none';
+  $('#view-outsiders').style.display = S.view==='outsiders'?'':'none';
+  document.querySelectorAll('#viewtabs button').forEach(b=>b.classList.toggle('on', b.dataset.v===S.view));
+}
+
+function renderAll(){ buildOffices(); renderStats(); renderMeta(); renderOfficePick(); renderOfficeList(); renderContent(); renderOutsiders(); renderOutContent(); applyView(); }
+
+/* ================= actions ================= */
+function selectOffice(id){ S.selectedOfficeId=id; S.selectedEmpKey=null; renderOfficeList(); renderContent(); }
+
+async function loadData(){
+  try{
+    const r=await fetch('/api/employees',{cache:'no-store'});
+    const d=await r.json();
+    S.employees=Array.isArray(d.employees)?d.employees:[];
+    S.meta=d.meta||{};
+  }catch(e){ S.employees=[]; S.meta={}; }
+  try{
+    const m=await (await fetch('/api/mobiles',{cache:'no-store'})).json();
+    S.mobiles=m.map||{}; S.mobilesMeta=m.meta||{};
+  }catch(e){ S.mobiles={}; S.mobilesMeta={}; }
+  try {
+    if (typeof SB !== 'undefined') {
+      await SB.init();
+      if (SB.ready) {
+        const dsCloud = await SB.getDataset('DS');
+        const gsCloud = await SB.getDataset('GDS');
+        const outCloud = await SB.getDataset('OUT');
+        const telCloud = await SB.getDataset('TEL');
+        
+        const locUp = S.meta.updatedAt ? new Date(S.meta.updatedAt).getTime() : 0;
+        
+        if (dsCloud && dsCloud.uploadedAt && new Date(dsCloud.uploadedAt).getTime() > locUp) {
+          S.employees = S.employees.filter(e => e._type !== 'DS').concat(dsCloud.data);
+        }
+        if (gsCloud && gsCloud.uploadedAt && new Date(gsCloud.uploadedAt).getTime() > locUp) {
+          S.employees = S.employees.filter(e => e._type !== 'GDS').concat(gsCloud.data);
+        }
+        if (outCloud && outCloud.uploadedAt && new Date(outCloud.uploadedAt).getTime() > locUp) {
+          S.employees = S.employees.filter(e => e._type !== 'OUT').concat(outCloud.data);
+        }
+        if (telCloud && telCloud.uploadedAt && new Date(telCloud.uploadedAt).getTime() > locUp) {
+          Object.assign(S.mobiles, telCloud.data);
+        }
+        
+        const edits = await SB.getPhoneEdits();
+        for (const ed of (edits || [])) {
+          if (ed.role === 'OUTSIDER') {
+            const emp = S.employees.find(e => e._type === 'OUT' && clean(e.resource_id) === ed.emp_id);
+            if (emp) emp.mobile_no = ed.phone;
+          } else {
+            if (ed.phone) S.mobiles[ed.emp_id] = ed.phone;
+            else delete S.mobiles[ed.emp_id];
+          }
+        }
+      }
+    }
+  } catch(e) { console.error('SB Sync error:', e); }
+  renderAll();
+}
+
+async function handleFiles(fileList){
+  const files=[...fileList];
+  for(const f of files){
+    try{
+      const buf=await f.arrayBuffer();
+      const {type,rows}=parseWorkbook(buf);
+      if(!type){ toast(`Could not detect DS / GDS / Outsiders / Mobile type in "${f.name}"`,true); continue; }
+      if(type==='MOBILE'){
+        // Not employee records — match phone numbers to existing staff by office & name.
+        const res=matchMobileRows(rows, S.employees);
+        if(!S.pending.MOBILE) S.pending.MOBILE={map:{},files:[]};
+        Object.assign(S.pending.MOBILE.map, res.map);
+        S.pending.MOBILE.files.push(f.name);
+        S.pending.MOBILE.matched=Object.keys(S.pending.MOBILE.map).length;
+        toast(`Mapped ${res.matched} of ${res.total} rows to staff (by office & name)`);
+        continue;
+      }
+      // Accumulate across files of the same type in this session (e.g. main
+      // GDS extract + a separate sub-office file), de-duplicating by id.
+      if(!S.pending[type]) S.pending[type]={rows:[],files:[]};
+      const map=new Map(S.pending[type].rows.map(r=>[idOf(r),r]));
+      for(const r of rows) map.set(idOf(r),r);
+      S.pending[type].rows=[...map.values()];
+      S.pending[type].files.push(f.name);
+      S.pending[type].count=S.pending[type].rows.length;
+      toast(`Parsed ${rows.length} ${typeTag(type)} staff from ${f.name}`);
+    }catch(err){ toast(`Failed to read ${f.name}: ${err.message}`,true); }
+  }
+  reflectPending();
+}
+function reflectPending(){
+  const parts=[];
+  const lbl={DS:'DS',GDS:'GDS',OUT:'Outsiders'};
+  for(const t of TYPES){ if(S.pending[t]) parts.push(`${lbl[t]}: ${S.pending[t].count} (${S.pending[t].files.join(' + ')})`); }
+  if(S.pending.MOBILE) parts.push(`Mobiles: ${S.pending.MOBILE.matched} matched (${S.pending.MOBILE.files.join(' + ')})`);
+  const has=parts.length>0;
+  const replace = $('#replaceChk') && $('#replaceChk').checked;
+  $('#pending').innerHTML = has ? 'Pending — '+parts.join(' · ')+`. On save: <b>${replace?'replace the whole set for the uploaded type(s)':'add new staff &amp; update existing'}</b>.` : '';
+  $('#saveBtn').disabled = !has;
+  $('#discardBtn').style.display = has?'inline-flex':'none';
+}
+async function saveData(){
+  const hasEmp = TYPES.some(t=>S.pending[t]);
+  const hasMob = !!S.pending.MOBILE;
+  if(!hasEmp && !hasMob){ return; }
+  const replace = $('#replaceChk') && $('#replaceChk').checked;
+  const now=new Date().toISOString();
+  $('#saveBtn').disabled=true; $('#saveBtn').textContent='Saving…';
+  try{
+    if(hasEmp){
+      // Default = merge/upsert by id (add new, update existing, keep the rest).
+      // Replace mode wipes all records of an uploaded type first.
+      let employees = S.employees.slice();
+      for(const type of TYPES){
+        const p = S.pending[type]; if(!p) continue;
+        if(replace){
+          employees = employees.filter(e=>e._type!==type).concat(p.rows);
+        } else {
+          const idx = new Map(); employees.forEach((e,i)=>idx.set(e._type+':'+idOf(e), i));
+          for(const r of p.rows){
+            const k = type+':'+idOf(r);
+            if(idx.has(k)) employees[idx.get(k)] = r;
+            else { idx.set(k, employees.length); employees.push(r); }
+          }
+        }
+      }
+      const meta=Object.assign({},S.meta);
+      const metaKey={DS:'ds',GDS:'gs',OUT:'out'};
+      for(const type of TYPES){ if(S.pending[type]) meta[metaKey[type]]={fileName:S.pending[type].files.join(' + '),count:employees.filter(e=>e._type===type).length,uploadedAt:now}; }
+      meta.updatedAt=now;
+      try {
+        const r=await fetch('/api/employees',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({meta,employees})});
+        if(r.ok) { const d=await r.json(); if(!d.ok) console.warn(d.error||'save failed'); }
+      } catch(err) { console.warn('Local API unavailable'); }
+      S.employees=employees; S.meta=meta;
+      try {
+        if(typeof SB !== 'undefined' && SB.ready) {
+          const dsEmps = S.employees.filter(e => !e._type || e._type==='DS');
+          const gsEmps = S.employees.filter(e => e._type==='GDS');
+          const outEmps = S.employees.filter(e => e._type==='OUT');
+          await SB.putDataset('DS', dsEmps, 'web');
+          await SB.putDataset('GDS', gsEmps, 'web');
+          await SB.putDataset('OUT', outEmps, 'web');
+        }
+      } catch(e) { console.error('SB Sync error:', e); }
+    }
+    if(hasMob){
+      // Merge new phone numbers over the existing map (a re-upload updates matched staff).
+      const mp=S.pending.MOBILE;
+      const map=Object.assign({}, S.mobiles, mp.map);
+      const mmeta={fileName:mp.files.join(' + '),count:Object.keys(map).length,updatedAt:now};
+      try {
+        const r=await fetch('/api/mobiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({meta:mmeta,map})});
+        if(r.ok) { const d=await r.json(); if(!d.ok) console.warn(d.error||'mobiles save failed'); }
+      } catch(err) { console.warn('Local API unavailable'); }
+      S.mobiles=map; S.mobilesMeta=mmeta;
+      try { if(typeof SB !== 'undefined' && SB.ready) await SB.putDataset('TEL', map, 'web'); } catch(e) { console.error('SB Sync error:', e); }
+    }
+    S.pending={};
+    S.selectedOfficeId=null; S.selectedEmpKey=null; S.selectedOutKey=null;
+    reflectPending(); renderAll();
+    announceUpdate();
+    toast('Saved.');
+  }catch(err){ toast('Save failed: '+err.message,true); }
+  $('#saveBtn').textContent='💾 Save & update directory';
+  reflectPending();
+}
+
+/* ================= wire up ================= */
+const drop=$('#drop'), fileInput=$('#file');
+drop.addEventListener('click',e=>{ if(e.target!==fileInput) fileInput.click(); });
+drop.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();fileInput.click();} });
+fileInput.addEventListener('change',()=>{ if(fileInput.files.length) handleFiles(fileInput.files); fileInput.value=''; });
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+drop.addEventListener('drop',e=>{ const fs=e.dataTransfer.files; if(fs&&fs.length) handleFiles(fs); });
+$('#saveBtn').addEventListener('click',saveData);
+$('#discardBtn').addEventListener('click',()=>{S.pending={};reflectPending();toast('Pending upload discarded.');});
+$('#replaceChk').addEventListener('change',reflectPending);
+
+$('#officeSearch').addEventListener('input',e=>{S.officeFilter=e.target.value;renderOfficeList();});
+$('#officePick').addEventListener('change',e=>{ if(e.target.value){ selectOffice(e.target.value); const o=S.offices.find(x=>x.id===e.target.value); if(o){$('#officeSearch').value=o.name;S.officeFilter=o.name;renderOfficeList();} } });
+document.querySelectorAll('#typeSeg button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#typeSeg button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); S.typeFilter=b.dataset.t; S.selectedEmpKey=null;
+  renderOfficePick(); renderOfficeList(); renderContent();
+}));
+
+document.querySelectorAll('#viewtabs button').forEach(b=>b.addEventListener('click',()=>{ S.view=b.dataset.v; applyView(); }));
+$('#outSearch').addEventListener('input',e=>{S.outFilter=e.target.value;renderOutsiders();});
+
+loadData();
+</script>
+<script src="/leave-orders/directory-export.js"></script>
+<script src="/leave-orders/supabase-sync.js"></script>
+</body>
+</html>

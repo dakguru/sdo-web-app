@@ -1,0 +1,38 @@
+INSPECTION REPORT BUILDER + LEAVE ORDERS
+========================================
+For Karur Sub Division, Department of Posts
+
+REQUIREMENTS (every office PC already has these)
+  - Windows 10 or 11
+  - Microsoft Word (any modern version)
+
+INSTALLATION
+  1. Copy this entire folder to anywhere on your PC.
+     Suggested location:  C:\IR-Builder\
+  2. Double-click  "Launch IR Builder.bat"
+  3. Your browser opens automatically at the Dashboard.
+     Use it like any web page.
+
+WHILE YOU WORK
+  - Drafts auto-save every second; you can also click
+    "Save now" in the workspace toolbar.
+  - The small black "IR Server" window in the taskbar must
+    stay open while you use the app (it can stay minimised).
+
+WHEN YOU FINISH
+  - Close the browser tab.
+  - Click on the launcher window and press ANY KEY to stop
+    the server cleanly.
+
+OFFLINE
+  - The whole thing runs on your machine. No internet needed.
+  - Your data stays in this folder under  app\data\
+
+UPDATING THE OFFICE / STAFF / WORKING-HOURS / MAIL DATA
+  Replace the source files in the project root, then in a
+  PowerShell window inside the folder, run:
+      .\app\Import-Masters.ps1
+  This refreshes  app\data\offices.json,  staff.json,  villages.json
+
+SUPPORT
+  Built by Arun Selvaraj, Karur Division

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "548115178284",
+    "project_id": "karur-sdo",
+    "storage_bucket": "karur-sdo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:548115178284:android:b0e8639b66a729be540289",
+        "android_client_info": {
+          "package_name": "com.karursdo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEAygjomiCXCyL6gqKDoDvRo-IWzbNcgE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
