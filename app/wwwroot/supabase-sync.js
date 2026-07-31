@@ -67,22 +67,20 @@ const SB = (() => {
 
   // ── Dataset helpers (app_datasets table) ────────────────────
   // The Android app stores whole-dataset snapshots in `app_datasets`:
-  //   type:          'DS' | 'GDS' | 'OUT' | 'TEL' | 'OFFICES' | 'ARR'
+  //   type:          'DS' | 'GDS' | 'OUT' | 'TEL' | 'OFFICES' | 'ARR'  (primary key)
   //   payload:       JSON string of the full dataset
-  //   dataset_id:    'DS' | 'GDS' | 'OUT' | 'TEL' | 'OFFICES' | 'ARR'
-  //   data:          JSON string of the full dataset
   //   count:         number of records
   //   uploaded_by:   username who uploaded
   //   uploaded_at_ms: epoch ms
 
   /** Fetch a dataset by type, returns parsed payload or null. */
   async function getDataset(type) {
-    const rows = await select('app_datasets', `dataset_id=eq.${encodeURIComponent(type)}&select=data,count,uploaded_by,uploaded_at_ms`);
+    const rows = await select('app_datasets', `type=eq.${encodeURIComponent(type)}&select=payload,count,uploaded_by,uploaded_at_ms`);
     if (!rows.length) return null;
     const row = rows[0];
     try {
       return {
-        data:        JSON.parse(row.data),
+        data:        JSON.parse(row.payload),
         count:       row.count,
         uploadedBy:  row.uploaded_by,
         uploadedAt:  row.uploaded_at_ms,
@@ -98,8 +96,8 @@ const SB = (() => {
     const dataStr = JSON.stringify(dataObj);
     const count   = Array.isArray(dataObj) ? dataObj.length : (typeof dataObj === 'object' ? Object.keys(dataObj).length : 0);
     return upsert('app_datasets', {
-      dataset_id: type,
-      data: dataStr,
+      type: type,
+      payload: dataStr,
       count,
       uploaded_by:    uploadedBy || 'web',
       uploaded_at_ms: Date.now()
@@ -109,17 +107,17 @@ const SB = (() => {
   /** Fetch ALL datasets at once (useful on boot). Returns a map of type -> { data, count, uploadedAt } */
   async function getAllDatasets() {
     const map = {};
-    const rows = await select('app_datasets', 'select=dataset_id,data,count,uploaded_by,uploaded_at_ms');
+    const rows = await select('app_datasets', 'select=type,payload,count,uploaded_by,uploaded_at_ms');
     for (const row of rows) {
       try {
-        map[row.dataset_id] = {
-          data:       JSON.parse(row.data),
+        map[row.type] = {
+          data:       JSON.parse(row.payload),
           count:      row.count,
           uploadedBy: row.uploaded_by,
           uploadedAt: row.uploaded_at_ms,
         };
       } catch (e) {
-        console.warn(`SB.getAllDatasets: skipping ${row.dataset_id}`, e);
+        console.warn(`SB.getAllDatasets: skipping ${row.type}`, e);
       }
     }
     return map;

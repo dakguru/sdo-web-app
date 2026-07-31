@@ -46,22 +46,22 @@ const SB = (() => {
   }
 
   async function getDataset(type) {
-    const rows = await select('app_datasets', `dataset_id=eq.${encodeURIComponent(type)}&select=data,count,uploaded_by,uploaded_at_ms`);
+    const rows = await select('app_datasets', `type=eq.${encodeURIComponent(type)}&select=payload,count,uploaded_by,uploaded_at_ms`);
     if (!rows.length) return null;
-    try { return { data: JSON.parse(rows[0].data), count: rows[0].count, uploadedBy: rows[0].uploaded_by, uploadedAt: rows[0].uploaded_at_ms }; }
+    try { return { data: JSON.parse(rows[0].payload), count: rows[0].count, uploadedBy: rows[0].uploaded_by, uploadedAt: rows[0].uploaded_at_ms }; }
     catch (e) { console.error(`SB.getDataset parse error for ${type}`, e); return null; }
   }
 
   async function putDataset(type, dataObj, uploadedBy) {
     const dataStr = JSON.stringify(dataObj);
     const count = Array.isArray(dataObj) ? dataObj.length : (typeof dataObj === 'object' ? Object.keys(dataObj).length : 0);
-    return upsert('app_datasets', { dataset_id: type, data: dataStr, count, uploaded_by: uploadedBy || 'web', uploaded_at_ms: Date.now() });
+    return upsert('app_datasets', { type: type, payload: dataStr, count, uploaded_by: uploadedBy || 'web', uploaded_at_ms: Date.now() });
   }
 
   async function getAllDatasets() {
     const map = {};
-    const rows = await select('app_datasets', 'select=dataset_id,data,count,uploaded_by,uploaded_at_ms');
-    for (const r of rows) { try { map[r.dataset_id] = { data: JSON.parse(r.data), count: r.count, uploadedBy: r.uploaded_by, uploadedAt: r.uploaded_at_ms }; } catch (e) {} }
+    const rows = await select('app_datasets', 'select=type,payload,count,uploaded_by,uploaded_at_ms');
+    for (const r of rows) { try { map[r.type] = { data: JSON.parse(r.payload), count: r.count, uploadedBy: r.uploaded_by, uploadedAt: r.uploaded_at_ms }; } catch (e) {} }
     return map;
   }
 
