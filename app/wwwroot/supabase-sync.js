@@ -69,55 +69,57 @@ const SB = (() => {
   // The Android app stores whole-dataset snapshots in `app_datasets`:
   //   type:          'DS' | 'GDS' | 'OUT' | 'TEL' | 'OFFICES' | 'ARR'
   //   payload:       JSON string of the full dataset
+  //   dataset_id:    'DS' | 'GDS' | 'OUT' | 'TEL' | 'OFFICES' | 'ARR'
+  //   data:          JSON string of the full dataset
   //   count:         number of records
   //   uploaded_by:   username who uploaded
   //   uploaded_at_ms: epoch ms
 
   /** Fetch a dataset by type, returns parsed payload or null. */
   async function getDataset(type) {
-    const rows = await select('app_datasets', `type=eq.${encodeURIComponent(type)}&select=payload,count,uploaded_by,uploaded_at_ms`);
+    const rows = await select('app_datasets', `dataset_id=eq.${encodeURIComponent(type)}&select=data,count,uploaded_by,uploaded_at_ms`);
     if (!rows.length) return null;
     const row = rows[0];
     try {
       return {
-        data:        JSON.parse(row.payload),
+        data:        JSON.parse(row.data),
         count:       row.count,
         uploadedBy:  row.uploaded_by,
         uploadedAt:  row.uploaded_at_ms,
       };
     } catch (e) {
-      console.error(`SB.getDataset: failed to parse payload for ${type}`, e);
+      console.error(`SB.getDataset: failed to parse data for ${type}`, e);
       return null;
     }
   }
 
   /** Upload a dataset snapshot. */
-  async function putDataset(type, data, uploadedBy) {
-    const payload = JSON.stringify(data);
-    const count   = Array.isArray(data) ? data.length : (typeof data === 'object' ? Object.keys(data).length : 0);
+  async function putDataset(type, dataObj, uploadedBy) {
+    const dataStr = JSON.stringify(dataObj);
+    const count   = Array.isArray(dataObj) ? dataObj.length : (typeof dataObj === 'object' ? Object.keys(dataObj).length : 0);
     return upsert('app_datasets', {
-      type,
-      payload,
+      dataset_id: type,
+      data: dataStr,
       count,
-      uploaded_by:   uploadedBy || 'web',
-      uploaded_at_ms: Date.now(),
+      uploaded_by:    uploadedBy || 'web',
+      uploaded_at_ms: Date.now()
     });
   }
 
-  /** Fetch ALL datasets at once (for bootstrap). */
+  /** Fetch ALL datasets at once (useful on boot). Returns a map of type -> { data, count, uploadedAt } */
   async function getAllDatasets() {
-    const rows = await select('app_datasets', 'select=type,payload,count,uploaded_by,uploaded_at_ms');
     const map = {};
+    const rows = await select('app_datasets', 'select=dataset_id,data,count,uploaded_by,uploaded_at_ms');
     for (const row of rows) {
       try {
-        map[row.type] = {
-          data:       JSON.parse(row.payload),
+        map[row.dataset_id] = {
+          data:       JSON.parse(row.data),
           count:      row.count,
           uploadedBy: row.uploaded_by,
           uploadedAt: row.uploaded_at_ms,
         };
       } catch (e) {
-        console.warn(`SB.getAllDatasets: skipping ${row.type}`, e);
+        console.warn(`SB.getAllDatasets: skipping ${row.dataset_id}`, e);
       }
     }
     return map;
