@@ -342,6 +342,21 @@ html.light .gov-header::after{
 .card-accent.accent-office{background:linear-gradient(90deg,#34d399,#fbbf24)}
 .card-accent.accent-arr{background:linear-gradient(90deg,#fb7185,#fb923c)}
 .card-accent.accent-ir{background:linear-gradient(90deg,#fbbf24,#fb923c)}
+.card-icon.icon-mo{background:linear-gradient(135deg,rgba(34,211,238,0.25),rgba(56,189,248,0.25));box-shadow:0 4px 16px rgba(34,211,238,0.2),inset 0 1px 0 rgba(255,255,255,0.1)}
+.card-icon.icon-bday{background:linear-gradient(135deg,rgba(244,114,182,0.25),rgba(167,139,250,0.25));box-shadow:0 4px 16px rgba(244,114,182,0.2),inset 0 1px 0 rgba(255,255,255,0.1)}
+.card-icon.icon-retire{background:linear-gradient(135deg,rgba(251,191,36,0.25),rgba(251,113,133,0.25));box-shadow:0 4px 16px rgba(251,191,36,0.2),inset 0 1px 0 rgba(255,255,255,0.1)}
+html.light .card-icon.icon-mo{background:linear-gradient(135deg,rgba(34,211,238,0.15),rgba(56,189,248,0.15));box-shadow:0 4px 16px rgba(34,211,238,0.12),inset 0 1px 0 rgba(255,255,255,0.5)}
+html.light .card-icon.icon-bday{background:linear-gradient(135deg,rgba(244,114,182,0.15),rgba(167,139,250,0.15));box-shadow:0 4px 16px rgba(244,114,182,0.12),inset 0 1px 0 rgba(255,255,255,0.5)}
+html.light .card-icon.icon-retire{background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(251,113,133,0.15));box-shadow:0 4px 16px rgba(251,191,36,0.12),inset 0 1px 0 rgba(255,255,255,0.5)}
+.badge-mo{background:rgba(34,211,238,0.15);color:#67e8f9;border:1px solid rgba(34,211,238,0.2)}
+.badge-bday{background:rgba(244,114,182,0.15);color:#f9a8d4;border:1px solid rgba(244,114,182,0.2)}
+.badge-retire{background:rgba(251,191,36,0.15);color:#fcd34d;border:1px solid rgba(251,191,36,0.2)}
+html.light .badge-mo{background:rgba(8,145,178,0.1);color:#0e7490;border-color:rgba(8,145,178,0.15)}
+html.light .badge-bday{background:rgba(219,39,119,0.1);color:#be185d;border-color:rgba(219,39,119,0.15)}
+html.light .badge-retire{background:rgba(217,119,6,0.1);color:#b45309;border-color:rgba(217,119,6,0.15)}
+.accent-mo{background:linear-gradient(90deg,#22d3ee,#38bdf8)}
+.accent-bday{background:linear-gradient(90deg,#f472b6,#a78bfa)}
+.accent-retire{background:linear-gradient(90deg,#fbbf24,#fb7185)}
 
 /* ============================================================
    QUICK STATS BAR
@@ -656,6 +671,24 @@ html.light .theme-toggle .icon-moon{opacity:0;transform:rotate(90deg) scale(0.5)
       <div class="card-desc">Build Branch Office inspection reports with clause-by-clause evaluation. Auto-fill from masters and generate official DOCX &amp; PDF output.</div>
       <span class="card-badge badge-ir">Open Module →</span>
       <div class="card-accent accent-ir"></div>
+    </a>
+
+    <!-- 6. Staff Birthdays -->
+    <a href="/birthdays" class="nav-card">
+      <div class="card-icon icon-bday">🎂</div>
+      <div class="card-title">Staff Birthdays</div>
+      <div class="card-desc">Upcoming birthdays of Departmental staff, GDS &amp; outsource resources — today's celebrations, this-week and this-month highlights, pulled from the directory.</div>
+      <span class="card-badge badge-bday">Open Module →</span>
+      <div class="card-accent accent-bday"></div>
+    </a>
+
+    <!-- 7. Retirements & Discharges -->
+    <a href="/retirements" class="nav-card">
+      <div class="card-icon icon-retire">🎉</div>
+      <div class="card-title">Retirements &amp; Discharges</div>
+      <div class="card-desc">Year-wise superannuation of Departmental staff (60) and discharge of GDS (65), with dates auto-computed from date of birth per DoP rules.</div>
+      <span class="card-badge badge-retire">Open Module →</span>
+      <div class="card-accent accent-retire"></div>
     </a>
 
   </div>

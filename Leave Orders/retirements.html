@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Department of Posts — Retirements & Discharges, Karur Sub Division</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1F3864; --indigo:#4f46e5; --violet:#7c3aed; --pink:#ec4899;
+    --teal:#0d9488; --emerald:#059669; --amber:#f59e0b; --rose:#e11d48; --sky:#0284c7;
+    --bg:#eef2fb; --card:#ffffff;
+    --ink:#0f172a; --ink-2:#1e293b; --muted:#64748b; --line:#e2e8f0;
+    --dept:#4f46e5; --dept-2:#7c3aed; --gds:#0d9488; --gds-2:#059669;
+    --grad-bg:radial-gradient(1200px 600px at -10% -20%, #dbe4ff 0%, transparent 60%),
+              radial-gradient(900px 500px at 110% 0%, #fce7f3 0%, transparent 55%),
+              radial-gradient(800px 600px at 50% 120%, #d1fae5 0%, transparent 60%),
+              linear-gradient(180deg,#eef2fb 0%,#f5f7fd 100%);
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04);
+    --shadow-md:0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
+    --shadow-lg:0 12px 32px rgba(15,23,42,.12), 0 4px 12px rgba(15,23,42,.06);
+  }
+  html.dark{
+    --bg:#0a0e1a; --card:#141a2b; --ink:#f1f5f9; --ink-2:#e2e8f0; --muted:#94a3b8; --line:#26314b;
+    --grad-bg:radial-gradient(1100px 600px at -5% -15%, rgba(99,102,241,.18) 0%, transparent 60%),
+              radial-gradient(900px 500px at 108% -5%, rgba(167,139,250,.15) 0%, transparent 58%),
+              radial-gradient(800px 600px at 50% 120%, rgba(13,148,136,.13) 0%, transparent 60%),
+              linear-gradient(180deg,#0a0e1a 0%,#0f1729 100%);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;color:var(--ink);font:14.5px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--grad-bg);background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  a{color:inherit}
+
+  .appbar{background:#1e3a5f;color:#fff;padding:9px 22px;display:flex;align-items:center;gap:14px;font:600 12.5px/1.2 'Inter',sans-serif;letter-spacing:.2px;flex-wrap:wrap}
+  .appbar .switch{margin-left:auto;display:flex;gap:6px;padding:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px;flex-wrap:wrap}
+  .appbar .pill{padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none}
+  .appbar .pill.active{color:#1e3a5f;background:#fff}
+
+  header{background:linear-gradient(120deg,#7c2d12 0%,#b45309 42%,#e11d48 100%);color:#fff;padding:22px;box-shadow:var(--shadow-md);position:relative;overflow:hidden}
+  header::after{content:"";position:absolute;inset:0;background:radial-gradient(600px 200px at 90% -40%,rgba(255,255,255,.25),transparent 70%);pointer-events:none}
+  .header-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;position:relative;z-index:1}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{width:46px;height:46px;border-radius:13px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:26px;border:1.5px solid rgba(255,255,255,.3)}
+  h1{margin:0;font:800 22px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.3px}
+  .sub{opacity:.9;font-size:13px;margin-top:2px}
+  .theme-btn{margin-left:auto;background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.3);color:#fff;width:40px;height:40px;border-radius:11px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+  main{max-width:1280px;margin:0 auto;padding:22px}
+
+  /* Category summary cards */
+  .cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-bottom:18px}
+  .cat-card{border-radius:20px;padding:22px;color:#fff;position:relative;overflow:hidden;box-shadow:var(--shadow-lg);transform:translateZ(0);transition:transform .25s ease}
+  .cat-card:hover{transform:translateY(-4px)}
+  .cat-card.dept{background:linear-gradient(135deg,#4f46e5,#7c3aed 55%,#a855f7)}
+  .cat-card.gds{background:linear-gradient(135deg,#0d9488,#059669 55%,#10b981)}
+  .cat-card .glow{position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.18);filter:blur(30px);top:-70px;right:-40px}
+  .cat-head{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+  .cat-ic{width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid rgba(255,255,255,.3)}
+  .cat-name{font:800 18px/1.1 'Plus Jakarta Sans',sans-serif}
+  .cat-rule{font-size:12px;opacity:.9;margin-top:2px}
+  .cat-nums{display:flex;gap:26px;margin-top:18px;position:relative;z-index:1;flex-wrap:wrap}
+  .cat-num .n{font:900 30px/1 'Plus Jakarta Sans',sans-serif}
+  .cat-num .l{font-size:11px;text-transform:uppercase;letter-spacing:.6px;opacity:.85;margin-top:5px}
+
+  /* Mini stat tiles */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:15px 17px;box-shadow:var(--shadow-sm)}
+  .tile .l{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+  .tile .n{font:800 26px/1.1 'Plus Jakarta Sans',sans-serif;margin-top:5px}
+  .tile.rose .n{color:var(--rose)} .tile.amber .n{color:var(--amber)} .tile.indigo .n{color:var(--indigo)} .tile.teal .n{color:var(--teal)}
+
+  /* Controls */
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .seg{display:flex;gap:4px;padding:4px;background:var(--card);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow-sm)}
+  .seg button{border:0;background:transparent;color:var(--muted);font-weight:700;font-size:13px;padding:7px 15px;border-radius:8px;cursor:pointer}
+  .seg button.active{color:#fff;background:linear-gradient(135deg,var(--indigo),var(--violet))}
+  .seg.gdsseg button.active{background:linear-gradient(135deg,var(--teal),var(--emerald))}
+  .search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 13px;box-shadow:var(--shadow-sm)}
+  .search input{border:0;outline:0;background:transparent;color:var(--ink);font-size:14px;width:100%}
+
+  /* Year sections */
+  .year-sec{margin-bottom:22px}
+  .year-head{display:flex;align-items:center;gap:12px;margin:0 2px 12px}
+  .year-badge{font:900 17px/1 'Plus Jakarta Sans',sans-serif;color:#fff;background:linear-gradient(135deg,#334155,#0f172a);padding:9px 15px;border-radius:12px;box-shadow:var(--shadow-md)}
+  .year-badge.soon{background:linear-gradient(135deg,#e11d48,#f59e0b)}
+  .year-fy{font-size:12px;color:var(--muted);font-weight:600}
+  .year-count{margin-left:auto;font-size:12px;color:var(--muted);font-weight:700}
+  .year-line{flex:1;height:2px;background:linear-gradient(90deg,var(--line),transparent);border-radius:2px}
+
+  .row{display:grid;grid-template-columns:44px 1fr 150px 150px 120px;gap:14px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin-bottom:9px;box-shadow:var(--shadow-sm);transition:transform .15s ease,box-shadow .15s ease;position:relative;overflow:hidden}
+  .row::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
+  .row.dept::before{background:linear-gradient(180deg,#6366f1,#a855f7)}
+  .row.gds::before{background:linear-gradient(180deg,#0d9488,#10b981)}
+  .row:hover{transform:translateX(3px);box-shadow:var(--shadow-md)}
+  .avatar{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:800 16px 'Plus Jakarta Sans';color:#fff}
+  .avatar.dept{background:linear-gradient(135deg,#6366f1,#a855f7)}
+  .avatar.gds{background:linear-gradient(135deg,#0d9488,#10b981)}
+  .who .nm{font-weight:700;font-size:14.5px}
+  .who .meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .chip{display:inline-block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:3px 8px;border-radius:20px;margin-left:8px;vertical-align:middle}
+  .chip.dept{background:rgba(99,102,241,.14);color:var(--dept)} .chip.gds{background:rgba(13,148,136,.14);color:var(--gds)}
+  html.dark .chip.dept{background:rgba(129,140,248,.2);color:#c7d2fe} html.dark .chip.gds{background:rgba(45,212,191,.2);color:#99f6e4}
+  .col .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700}
+  .col .v{font-weight:700;font-size:14px;margin-top:2px}
+  .col .v.date{color:var(--rose)}
+  .rem{text-align:right}
+  .rem .big{font:800 16px 'Plus Jakarta Sans';line-height:1}
+  .rem .sm{font-size:11px;color:var(--muted);margin-top:3px}
+  .rem.past .big{color:var(--muted)}
+  .loading{text-align:center;padding:60px;color:var(--muted);font-size:15px}
+  .empty{text-align:center;padding:50px;color:var(--muted)}
+  .foot{text-align:center;color:var(--muted);font-size:12px;padding:24px}
+  @media(max-width:760px){
+    .row{grid-template-columns:40px 1fr;gap:10px}
+    .row .col.hide-sm,.row .rem.hide-sm{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="appbar">
+  <a href="/" style="opacity:.85;color:#fff;text-decoration:none;font-weight:700;display:flex;align-items:center;gap:6px">&#x1F3E0; Home</a>
+  <span style="opacity:.4">|</span>
+  <span style="opacity:.72">Department of Posts &middot; Karur Sub Division</span>
+  <div class="switch">
+    <a class="pill" href="/employees">Employee Directory</a>
+    <a class="pill" href="/office-management">Office Management</a>
+    <a class="pill" href="/arrangements">Temporary Arrangements</a>
+    <a class="pill" href="/birthdays">Birthdays</a>
+    <span class="pill active">Retirements</span>
+  </div>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">&#127881;</div>
+      <div>
+        <h1>Retirements &amp; Discharges &mdash; Karur Sub Division</h1>
+        <div class="sub">Superannuation of Departmental staff (60) &amp; discharge of GDS (65) &middot; year-wise</div>
+      </div>
+    </div>
+    <button class="theme-btn" id="themeBtn" title="Toggle theme">&#127769;</button>
+  </div>
+</header>
+
+<main>
+  <div class="cat-grid" id="catGrid"></div>
+  <div class="tiles" id="tiles"></div>
+
+  <div class="controls">
+    <div class="seg" id="catSeg">
+      <button data-cat="ALL" class="active">All</button>
+      <button data-cat="DS">Departmental</button>
+      <button data-cat="GDS">GDS</button>
+    </div>
+    <div class="search">
+      <span>&#128269;</span>
+      <input id="search" placeholder="Search name, office, employee ID…" />
+    </div>
+  </div>
+
+  <div id="list"><div class="loading">&#8987; Loading staff &amp; computing retirement dates…</div></div>
+  <div class="foot">Retirement dates are computed from date of birth per DoP rules. Departmental: last day of the birth month on attaining 60 (previous month-end if born on the 1st). GDS: the day before the 65th birth-date anniversary.</div>
+</main>
+
+<script src="/leave-orders/supabase-sync.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const state = { people: [], cat: 'ALL', q: '' };
+
+/* ---------- theme ---------- */
+(function(){
+  const saved = localStorage.getItem('theme');
+  if(saved === 'dark') document.documentElement.classList.add('dark');
+  $('#themeBtn').onclick = () => {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    $('#themeBtn').innerHTML = document.documentElement.classList.contains('dark') ? '&#9728;' : '&#127769;';
+  };
+  if(saved==='dark') $('#themeBtn').innerHTML='&#9728;';
+})();
+
+/* ---------- date helpers ---------- */
+function parseDMY(s){ const m = String(s||'').match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/); if(!m) return null; const d=+m[1], mo=+m[2], y=+m[3]; if(mo<1||mo>12||d<1||d>31) return null; return {d,mo,y}; }
+function lastDayOfMonth(y, mo1){ return new Date(y, mo1, 0); }           // mo1 = 1-based month
+// Departmental: retires on the last day of the birth month on attaining 60.
+// Born on the 1st -> last day of the previous month.
+function deptRetire(dob){
+  const p = parseDMY(dob); if(!p) return null;
+  const y = p.y + 60;
+  if(p.d === 1){ let mo = p.mo - 1, yy = y; if(mo === 0){ mo = 12; yy = y - 1; } return lastDayOfMonth(yy, mo); }
+  return lastDayOfMonth(y, p.mo);
+}
+// GDS: discharged on the day before the 65th anniversary of the birth date.
+function gdsRetire(dob){
+  const p = parseDMY(dob); if(!p) return null;
+  const d = new Date(p.y + 65, p.mo - 1, p.d); d.setDate(d.getDate() - 1); return d;
+}
+function fmt(dt){ return dt ? `${String(dt.getDate()).padStart(2,'0')} ${MONTHS[dt.getMonth()]} ${dt.getFullYear()}` : '—'; }
+function fyLabel(dt){ const y = dt.getFullYear(), m = dt.getMonth(); const start = m>=3 ? y : y-1; return `FY ${start}–${String(start+1).slice(2)}`; }
+function initials(name){ const p = String(name||'').trim().split(/\s+/); return ((p[0]||'')[0]||'?').toUpperCase() + ((p[1]||'')[0]||'').toUpperCase(); }
+
+/* ---------- load ---------- */
+async function load(){
+  try{
+    await SB.init();
+    const [ds, gds] = await Promise.all([SB.getDataset('DS'), SB.getDataset('GDS')]);
+    const people = [];
+    for(const e of (ds?.data || [])){
+      const rd = deptRetire(e.Date_of_birth); if(!rd) continue;
+      people.push({ cat:'DS', name:e.Employee_name, id:e.Employee_id, desig:e.Post_desc, office:e.Office_desc, dob:parseDMY(e.Date_of_birth), retire:rd });
+    }
+    for(const e of (gds?.data || [])){
+      const rd = gdsRetire(e.Date_of_birth); if(!rd) continue;
+      people.push({ cat:'GDS', name:e.Employee_name, id:e.Employee_id, desig:e.Post_desc, office:e.Office_desc, dob:parseDMY(e.Date_of_birth), retire:rd });
+    }
+    people.sort((a,b)=> a.retire - b.retire);
+    state.people = people;
+    renderSummary(); render();
+  }catch(err){ $('#list').innerHTML = `<div class="empty">Could not load data: ${err.message}</div>`; }
+}
+
+function renderSummary(){
+  const now = new Date(); const yNow = now.getFullYear();
+  const fyStart = now.getMonth()>=3 ? yNow : yNow-1;
+  const inFY = p => { const s = new Date(fyStart,3,1), e = new Date(fyStart+1,2,31,23,59); return p.retire>=s && p.retire<=e; };
+  const upcoming = p => p.retire >= new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const by = c => state.people.filter(p=>p.cat===c);
+  const mk = (c,label,icon,rule) => {
+    const list = by(c);
+    const fyN = list.filter(inFY).length;
+    const cyN = list.filter(p=>p.retire.getFullYear()===yNow && upcoming(p)).length;
+    const total = list.filter(upcoming).length;
+    return `<div class="cat-card ${c==='DS'?'dept':'gds'}"><div class="glow"></div>
+      <div class="cat-head"><div class="cat-ic">${icon}</div><div><div class="cat-name">${label}</div><div class="cat-rule">${rule}</div></div></div>
+      <div class="cat-nums">
+        <div class="cat-num"><div class="n" data-count="${fyN}">0</div><div class="l">This FY</div></div>
+        <div class="cat-num"><div class="n" data-count="${cyN}">0</div><div class="l">${yNow} (left)</div></div>
+        <div class="cat-num"><div class="n" data-count="${total}">0</div><div class="l">Total upcoming</div></div>
+      </div></div>`;
+  };
+  $('#catGrid').innerHTML = mk('DS','Departmental','&#128188;','Superannuation at 60 &middot; month-end') + mk('GDS','Gramin Dak Sevak','&#127993;','Discharge at 65 &middot; day before DOB');
+
+  const now2 = new Date(); const mStart = new Date(now2.getFullYear(),now2.getMonth(),1), mEnd = new Date(now2.getFullYear(),now2.getMonth()+1,0,23,59);
+  const thisMonth = state.people.filter(p=>p.retire>=mStart && p.retire<=mEnd).length;
+  const next90 = state.people.filter(p=>{const diff=(p.retire-now2)/864e5; return diff>=0 && diff<=90;}).length;
+  const cyTotal = state.people.filter(p=>p.retire.getFullYear()===now2.getFullYear() && p.retire>=new Date(now2.getFullYear(),now2.getMonth(),now2.getDate())).length;
+  const grand = state.people.filter(p=>p.retire>=new Date(now2.getFullYear(),now2.getMonth(),now2.getDate())).length;
+  $('#tiles').innerHTML = `
+    <div class="tile rose"><div class="l">Retiring this month</div><div class="n" data-count="${thisMonth}">0</div></div>
+    <div class="tile amber"><div class="l">Next 90 days</div><div class="n" data-count="${next90}">0</div></div>
+    <div class="tile indigo"><div class="l">Calendar ${now2.getFullYear()} (left)</div><div class="n" data-count="${cyTotal}">0</div></div>
+    <div class="tile teal"><div class="l">Total upcoming</div><div class="n" data-count="${grand}">0</div></div>`;
+  animateCounts();
+}
+function animateCounts(){
+  document.querySelectorAll('[data-count]').forEach(el=>{
+    const target=+el.dataset.count; let cur=0; const step=Math.max(1,Math.ceil(target/28));
+    const t=setInterval(()=>{ cur+=step; if(cur>=target){cur=target;clearInterval(t);} el.textContent=cur; }, 22);
+  });
+}
+
+function render(){
+  const now = new Date(); const today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  let list = state.people.filter(p=>p.retire>=today);           // upcoming only
+  if(state.cat!=='ALL') list = list.filter(p=>p.cat===state.cat);
+  if(state.q){ const q=state.q.toLowerCase(); list = list.filter(p=>(`${p.name} ${p.office} ${p.id} ${p.desig}`).toLowerCase().includes(q)); }
+  if(!list.length){ $('#list').innerHTML = `<div class="empty">No retirements match your filter.</div>`; return; }
+  const groups = {};
+  for(const p of list){ (groups[p.retire.getFullYear()] ||= []).push(p); }
+  const years = Object.keys(groups).map(Number).sort((a,b)=>a-b);
+  let html='';
+  for(const y of years){
+    const soon = y===now.getFullYear();
+    html += `<div class="year-sec"><div class="year-head">
+      <span class="year-badge ${soon?'soon':''}">${y}</span>
+      <span class="year-line"></span>
+      <span class="year-count">${groups[y].length} ${groups[y].length===1?'person':'people'}</span></div>`;
+    for(const p of groups[y]){
+      const days = Math.round((p.retire - today)/864e5);
+      const c = p.cat==='DS'?'dept':'gds';
+      html += `<div class="row ${c}">
+        <div class="avatar ${c}">${initials(p.name)}</div>
+        <div class="who"><div class="nm">${p.name||'—'}<span class="chip ${c}">${p.cat==='DS'?'Dept':'GDS'}</span></div>
+          <div class="meta">${p.desig||''}${p.office?' · '+p.office:''} · ID ${p.id||'—'}</div></div>
+        <div class="col hide-sm"><div class="k">Date of birth</div><div class="v">${p.dob?fmt(new Date(p.dob.y,p.dob.mo-1,p.dob.d)):'—'}</div></div>
+        <div class="col hide-sm"><div class="k">${p.cat==='DS'?'Retirement':'Discharge'}</div><div class="v date">${fmt(p.retire)}</div></div>
+        <div class="rem hide-sm ${days<0?'past':''}"><div class="big">${days}</div><div class="sm">days · ${fyLabel(p.retire)}</div></div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  $('#list').innerHTML = html;
+}
+
+/* ---------- events ---------- */
+$('#catSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return;
+  $('#catSeg').querySelectorAll('button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  $('#catSeg').classList.toggle('gdsseg', b.dataset.cat==='GDS'); state.cat=b.dataset.cat; render(); });
+$('#search').addEventListener('input', e=>{ state.q=e.target.value.trim(); render(); });
+
+load();
+</script>
+</body>
+</html>

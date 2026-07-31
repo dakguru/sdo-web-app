@@ -6,6 +6,8 @@
     { "source": "/arrangements", "destination": "/Leave Orders/arrangements.html" },
     { "source": "/employees", "destination": "/Leave Orders/employees.html" },
     { "source": "/office-management", "destination": "/Leave Orders/office-management.html" },
+    { "source": "/birthdays", "destination": "/Leave Orders/birthdays.html" },
+    { "source": "/retirements", "destination": "/Leave Orders/retirements.html" },
     { "source": "/leave-orders/(.*)", "destination": "/Leave Orders/$1" },
     { "source": "/data/(.*)", "destination": "/app/data/$1" },
     { "source": "/templates/(.*)", "destination": "/templates/$1" },
