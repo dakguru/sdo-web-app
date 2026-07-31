@@ -32,6 +32,25 @@
   --radius-md: 14px;
 }
 
+/* ============================================================
+   LIGHT MODE OVERRIDES
+   ============================================================ */
+html.light {
+  --bg-deep: #f0f2f7;
+  --bg-surface: #ffffff;
+  --glass-bg: rgba(255,255,255,0.65);
+  --glass-bg-hover: rgba(255,255,255,0.85);
+  --glass-border: rgba(0,0,0,0.08);
+  --glass-border-hover: rgba(0,0,0,0.15);
+  --glass-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  --text-primary: #0f172a;
+  --text-secondary: rgba(15,23,42,0.7);
+  --text-muted: rgba(15,23,42,0.4);
+  --accent-indigo: #4f46e5;
+  --accent-violet: #7c3aed;
+  --accent-rose: #e11d48;
+}
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;height:100%}
 body{
@@ -45,8 +64,10 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
+  transition:background 0.5s ease, color 0.4s ease;
 }
 ::selection{background:rgba(129,140,248,0.3)}
+html.light ::selection{background:rgba(79,70,229,0.18)}
 
 /* ============================================================
    ANIMATED BACKGROUND — deep space mesh
@@ -60,10 +81,21 @@ body{
     radial-gradient(ellipse 400px 300px at 70% 65%, rgba(251,113,133,0.06), transparent 60%),
     linear-gradient(180deg, #07090f 0%, #0d1117 40%, #0a0e1a 100%);
 }
+html.light .bg-mesh{
+  background:
+    radial-gradient(ellipse 900px 600px at 15% 20%, rgba(99,102,241,0.08), transparent 70%),
+    radial-gradient(ellipse 700px 500px at 85% 15%, rgba(167,139,250,0.06), transparent 65%),
+    radial-gradient(ellipse 600px 400px at 50% 85%, rgba(45,212,191,0.06), transparent 60%),
+    radial-gradient(ellipse 500px 300px at 75% 60%, rgba(251,113,133,0.04), transparent 60%),
+    linear-gradient(180deg, #f0f2f7 0%, #e8ecf4 50%, #f0f2f7 100%);
+}
 .bg-mesh::before{
   content:'';position:absolute;inset:0;
   background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,0.025) 1px, transparent 0);
   background-size:40px 40px;
+}
+html.light .bg-mesh::before{
+  background-image:radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0);
 }
 
 /* Floating orbs */
@@ -75,6 +107,7 @@ body{
 .orb-1{width:500px;height:500px;background:rgba(99,102,241,0.2);top:-120px;left:-80px;animation-delay:0s}
 .orb-2{width:400px;height:400px;background:rgba(167,139,250,0.15);top:40%;right:-100px;animation-delay:-8s}
 .orb-3{width:350px;height:350px;background:rgba(45,212,191,0.1);bottom:-80px;left:35%;animation-delay:-16s}
+html.light .orb{opacity:0.15}
 @keyframes orbFloat{
   0%,100%{transform:translate(0,0) scale(1)}
   25%{transform:translate(30px,-25px) scale(1.06)}
@@ -318,6 +351,89 @@ body{
 .secure-badge .lock{font-size:13px;opacity:0.6}
 
 /* ============================================================
+   LIGHT MODE — component overrides
+   ============================================================ */
+html.light .crest-logo{box-shadow:0 4px 20px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.04)}
+html.light .crest-text .org{
+  background:linear-gradient(135deg,#4f46e5,#7c3aed,#a855f7);
+  -webkit-background-clip:text;background-clip:text;
+}
+html.light .login-card{
+  background:rgba(255,255,255,0.7);
+  border-color:rgba(0,0,0,0.08);
+  box-shadow:0 8px 32px rgba(0,0,0,0.08);
+}
+html.light .login-card::before{
+  background:linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 50%, rgba(255,255,255,0.3) 100%);
+}
+html.light .login-card::after{
+  background:linear-gradient(90deg, transparent, rgba(0,0,0,0.04), transparent);
+}
+html.light .field-input{
+  background:rgba(0,0,0,0.03);
+  border-color:rgba(0,0,0,0.1);
+  color:#0f172a;
+}
+html.light .field-input::placeholder{color:rgba(15,23,42,0.3)}
+html.light .field-input:focus{
+  border-color:rgba(79,70,229,0.4);
+  background:rgba(79,70,229,0.04);
+  box-shadow:0 0 0 3px rgba(79,70,229,0.08), 0 4px 16px rgba(0,0,0,0.06);
+}
+html.light .field-icon{color:#0f172a}
+html.light .pwd-toggle{color:rgba(15,23,42,0.4)}
+html.light .pwd-toggle:hover{color:#0f172a}
+html.light .btn-login{
+  box-shadow:0 4px 20px rgba(79,70,229,0.25), 0 0 0 1px rgba(79,70,229,0.15);
+}
+html.light .btn-login:hover{
+  box-shadow:0 8px 32px rgba(79,70,229,0.35), 0 0 0 1px rgba(79,70,229,0.2);
+}
+html.light .msg.error{
+  background:rgba(239,68,68,0.08);color:#dc2626;
+  border-color:rgba(239,68,68,0.12);
+}
+html.light .msg.success{
+  background:rgba(22,163,74,0.08);color:#15803d;
+  border-color:rgba(22,163,74,0.12);
+}
+html.light .footer-credit{
+  background:linear-gradient(135deg,#4f46e5,#7c3aed,#e11d48);
+  -webkit-background-clip:text;background-clip:text;
+}
+
+/* ============================================================
+   THEME TOGGLE BUTTON
+   ============================================================ */
+.theme-toggle{
+  position:fixed;top:20px;right:24px;z-index:100;
+  width:48px;height:48px;border-radius:50%;border:none;cursor:pointer;
+  background:var(--glass-bg);
+  backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);
+  box-shadow:var(--glass-shadow);
+  display:grid;place-items:center;
+  font-size:22px;line-height:1;
+  transition:all 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+  color:var(--text-primary);
+}
+.theme-toggle:hover{
+  background:var(--glass-bg-hover);
+  border-color:var(--glass-border-hover);
+  transform:scale(1.1) rotate(15deg);
+}
+.theme-toggle:active{
+  transform:scale(0.95);
+  transition-duration:0.1s;
+}
+.theme-toggle .icon-sun,
+.theme-toggle .icon-moon{transition:opacity 0.3s, transform 0.4s;position:absolute}
+.theme-toggle .icon-sun{opacity:0;transform:rotate(-90deg) scale(0.5)}
+.theme-toggle .icon-moon{opacity:1;transform:rotate(0) scale(1)}
+html.light .theme-toggle .icon-sun{opacity:1;transform:rotate(0) scale(1)}
+html.light .theme-toggle .icon-moon{opacity:0;transform:rotate(90deg) scale(0.5)}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width:520px){
@@ -327,6 +443,7 @@ body{
   .crest-logo{width:52px;height:52px}
   .crest-text .org{font-size:17px}
   .login-title{font-size:22px}
+  .theme-toggle{top:12px;right:12px;width:42px;height:42px;font-size:19px}
 }
 @media (max-width:380px){
   .login-card{padding:28px 20px 24px}
@@ -336,6 +453,12 @@ body{
 </style>
 </head>
 <body>
+
+<!-- Theme Toggle Button -->
+<button class="theme-toggle" id="themeToggle" title="Toggle dark / light mode">
+  <span class="icon-moon">🌙</span>
+  <span class="icon-sun">☀️</span>
+</button>
 
 <!-- Animated background -->
 <div class="bg-mesh"></div>
@@ -413,6 +536,21 @@ body{
     <div class="footer-credit">Designed by Arun Selvaraj · Karur Division</div>
   </div>
 </div>
+
+<!-- ========== Theme Toggle ========== -->
+<script>
+(function(){
+  const html = document.documentElement;
+  const saved = localStorage.getItem('theme');
+  if(saved === 'light') html.classList.add('light');
+
+  document.getElementById('themeToggle').addEventListener('click', function(){
+    html.classList.toggle('light');
+    const isLight = html.classList.contains('light');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  });
+})();
+</script>
 
 <!-- ========== Supabase connector (to fetch app_users) ========== -->
 <script src="/leave-orders/supabase-sync.js"></script>
