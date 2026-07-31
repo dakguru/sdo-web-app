@@ -455,7 +455,9 @@ async function saveOfficesNow(){
       const r=await fetch('/api/offices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.offices)});
       if (r.ok) { const j=await r.json(); if(!j||!j.ok) console.warn('Local save failed'); }
     } catch(err) { console.warn('Local API unavailable'); }
-    try { if(SB.ready) await SB.putDataset('OFFICES', S.offices, 'web'); } catch(e) {}
+    // IR-builder office master uses its own schema — keep it on an IR-namespaced
+    // key so it never clobbers the directory/Android 'OFFICES' dataset.
+    try { if(SB.ready) await SB.putDataset('IR_OFFICES', S.offices, 'web'); } catch(e) {}
     _officesDirty=false;if(btn){btn.disabled=true;btn.textContent='💾 Save working hours';}
     refreshOfficeSave();
     toast('Working hours saved');
@@ -574,7 +576,9 @@ async function saveStaffNow(){
       const r=await fetch('/api/staff',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.staff)});
       if(r.ok) { const j=await r.json(); if(!j||!j.ok) console.warn('Local save failed', j); }
     } catch(err) { console.warn('Local API unavailable', err); }
-    try { if(SB.ready) await SB.putDataset('DS', S.staff, 'web'); } catch(e) {}
+    // IR-builder staff master uses its own schema — keep it on an IR-namespaced
+    // key so it never clobbers the directory/Android 'DS' dataset.
+    try { if(SB.ready) await SB.putDataset('IR_STAFF', S.staff, 'web'); } catch(e) {}
     _staffDirty=false;if(btn){btn.disabled=true;btn.textContent='💾 Save changes';}
     renderStaffRows();toast('Staff master saved');
   }catch(e){toast('Error: '+e.message,true);if(btn){btn.disabled=false;btn.textContent='💾 Save changes';}}
