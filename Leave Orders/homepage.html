@@ -99,30 +99,13 @@ html.light .bg-mesh{
     radial-gradient(ellipse 500px 300px at 75% 60%, rgba(251,113,133,0.04), transparent 60%),
     linear-gradient(180deg, #f0f2f7 0%, #e8ecf4 50%, #f0f2f7 100%);
 }
-/* Stamp Watermarks (APT Style) */
-.bg-mesh::before, .bg-mesh::after {
-  content:'';position:absolute;bottom:-50px;
-  width:500px;height:500px;
-  background-size:contain;
-  background-repeat:no-repeat;
-  background-position:center;
-  mix-blend-mode:luminosity;
-  opacity:0.1;
-  filter:grayscale(100%) contrast(120%);
+.bg-mesh::before{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+  background-size:32px 32px;
 }
-html.light .bg-mesh::before, html.light .bg-mesh::after {
-  mix-blend-mode:multiply;
-  opacity:0.08;
-}
-.bg-mesh::before {
-  left:-80px;
-  background-image:url('/assets/stamp-left.jpg');
-  transform:rotate(-12deg);
-}
-.bg-mesh::after {
-  right:-80px;
-  background-image:url('/assets/stamp-right.jpg');
-  transform:rotate(12deg);
+html.light .bg-mesh::before{
+  background-image:radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0);
 }
 
 /* Floating orbs animation */
