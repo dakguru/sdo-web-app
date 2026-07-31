@@ -505,11 +505,13 @@ async function loadData(){
       const arrCloud = await SB.getDataset('ARR');
       const offCloud = await SB.getDataset('OFFICES');
       
-      if(arrCloud && arrCloud.meta && new Date(arrCloud.meta.updatedAt||0) > new Date(S.meta.updatedAt||0)) {
+      const locArrUp = S.meta && S.meta.updatedAt ? new Date(S.meta.updatedAt).getTime() : 0;
+      if(arrCloud && arrCloud.uploadedAt && arrCloud.uploadedAt > locArrUp) {
         S.all = Array.isArray(arrCloud.data) ? arrCloud.data : [];
-        S.meta = arrCloud.meta;
+        S.meta = { count: arrCloud.count, updatedAt: new Date(arrCloud.uploadedAt).toISOString() };
       }
-      if(offCloud && offCloud.meta && new Date(offCloud.meta.updatedAt||0) > new Date(omMeta.updatedAt||0)) {
+      const locOffUp = omMeta && omMeta.updatedAt ? new Date(omMeta.updatedAt).getTime() : 0;
+      if(offCloud && offCloud.uploadedAt && offCloud.uploadedAt > locOffUp) {
         S.subMap = {};
         for(const o of (offCloud.data||[])) {
           const sd=clean(o.sub_division)||'(Head / Admin)';

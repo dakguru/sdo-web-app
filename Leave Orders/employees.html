@@ -968,12 +968,15 @@ async function saveData(){
       S.employees=employees; S.meta=meta;
       try {
         if(typeof SB !== 'undefined' && SB.ready) {
-          const dsEmps = S.employees.filter(e => !e._type || e._type==='DS');
+          // Only push the dataset types that were actually uploaded in this save,
+          // so uploading (say) DS never wipes OUT/TEL. Filter strictly by _type so
+          // untyped legacy records can't get swept into the wrong dataset.
+          const dsEmps = S.employees.filter(e => e._type==='DS');
           const gsEmps = S.employees.filter(e => e._type==='GDS');
           const outEmps = S.employees.filter(e => e._type==='OUT');
-          await SB.putDataset('DS', dsEmps, 'web');
-          await SB.putDataset('GDS', gsEmps, 'web');
-          await SB.putDataset('OUT', outEmps, 'web');
+          if(S.pending.DS)  await SB.putDataset('DS',  dsEmps,  'web');
+          if(S.pending.GDS) await SB.putDataset('GDS', gsEmps, 'web');
+          if(S.pending.OUT) await SB.putDataset('OUT', outEmps, 'web');
         }
       } catch(e) { console.error('SB Sync error:', e); }
     }

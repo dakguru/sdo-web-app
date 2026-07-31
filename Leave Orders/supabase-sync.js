@@ -74,7 +74,18 @@ const SB = (() => {
   async function getMessages(since) { let q='deleted=eq.false&select=*&order=created_at.asc'; if(since)q+=`&created_at=gt.${since}`; return select('app_messages',q); }
   async function postMessage(msg) { return upsert('app_messages', msg); }
   async function ping() { try { return (await fetch(`${REST}/app_prefs?select=key&limit=1`, { headers: headers() })).ok; } catch { return false; } }
-  async function init() { if (_ready) return true; try { const ok = await ping(); _ready = ok; if(ok) console.log('%c☁ Supabase connected','color:#4ade80;font-weight:bold'); else console.warn('⚠ Supabase unreachable'); return ok; } catch(e) { _ready=false; return false; } }
+  function _updateBadge(connected) {
+    try {
+      if (typeof document === 'undefined') return;
+      document.querySelectorAll('.privacy').forEach(b => {
+        const dot = b.querySelector('.dot');
+        b.textContent = '';
+        if (dot) b.appendChild(dot);
+        b.appendChild(document.createTextNode(connected ? ' Cloud · synced' : ' Offline · local only'));
+      });
+    } catch (e) {}
+  }
+  async function init() { if (_ready) return true; try { const ok = await ping(); _ready = ok; if(ok) console.log('%c☁ Supabase connected','color:#4ade80;font-weight:bold'); else console.warn('⚠ Supabase unreachable'); _updateBadge(ok); return ok; } catch(e) { _ready=false; _updateBadge(false); return false; } }
 
   return { init, ping, get ready(){return _ready}, select, upsert, del, getDataset, putDataset, getAllDatasets, getPhoneEdits, putPhoneEdit, getUsers, getNotes, getFavorites, getActivity, getMessages, postMessage, SUPABASE_URL, REST };
 })();

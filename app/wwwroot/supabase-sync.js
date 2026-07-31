@@ -180,6 +180,17 @@ const SB = (() => {
 
   // ── Init ────────────────────────────────────────────────────
 
+  function _updateBadge(connected) {
+    try {
+      if (typeof document === 'undefined') return;
+      document.querySelectorAll('.privacy').forEach(b => {
+        const dot = b.querySelector('.dot');
+        b.textContent = '';
+        if (dot) b.appendChild(dot);
+        b.appendChild(document.createTextNode(connected ? ' Cloud · synced' : ' Offline · local only'));
+      });
+    } catch (e) {}
+  }
   async function init() {
     if (_ready) return true;
     try {
@@ -187,10 +198,12 @@ const SB = (() => {
       _ready = ok;
       if (ok) console.log('%c☁ Supabase connected', 'color:#4ade80;font-weight:bold');
       else    console.warn('⚠ Supabase unreachable — working offline');
+      _updateBadge(ok);
       return ok;
     } catch (e) {
       console.warn('⚠ Supabase init failed:', e.message);
       _ready = false;
+      _updateBadge(false);
       return false;
     }
   }
