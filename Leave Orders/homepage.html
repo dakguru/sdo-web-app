@@ -360,31 +360,118 @@ html.light .badge-retire{background:rgba(217,119,6,0.1);color:#b45309;border-col
 .accent-retire{background:linear-gradient(90deg,#fbbf24,#fb7185)}
 
 /* ============================================================
-   QUICK STATS BAR
+   QUICK OVERVIEW PANELS
    ============================================================ */
-.stats-bar{
-  display:flex;flex-wrap:wrap;gap:14px;margin-bottom:36px;
+.overview-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:36px;
 }
-.stat-pill{
-  display:flex;align-items:center;gap:10px;
-  padding:12px 18px;
+@media(max-width:768px){.overview-grid{grid-template-columns:1fr}}
+.overview-panel{
   background:var(--glass-bg);
   backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));
   border:1px solid var(--glass-border);
-  border-radius:var(--radius-md);
-  flex:1;min-width:180px;
+  border-radius:var(--radius-xl);
+  padding:24px 22px 20px;
+  position:relative;overflow:hidden;
   transition:all 0.3s;
 }
-.stat-pill:hover{
+.overview-panel::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%);
+  pointer-events:none;
+}
+.overview-panel:hover{
   background:var(--glass-bg-hover);
   border-color:var(--glass-border-hover);
 }
-.stat-dot{
-  width:10px;height:10px;border-radius:50%;flex-shrink:0;
-  box-shadow:0 0 12px currentColor;
+.panel-header{
+  display:flex;align-items:center;gap:12px;margin-bottom:16px;
 }
-.stat-label{font-size:11.5px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px}
-.stat-value{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:18px;font-weight:800;color:var(--text-primary)}
+.panel-icon{
+  width:44px;height:44px;border-radius:14px;
+  display:grid;place-items:center;font-size:22px;flex-shrink:0;
+}
+.panel-icon.icon-bday{background:linear-gradient(135deg,rgba(244,114,182,0.25),rgba(167,139,250,0.25));box-shadow:0 4px 16px rgba(244,114,182,0.15)}
+.panel-icon.icon-retire{background:linear-gradient(135deg,rgba(251,191,36,0.25),rgba(251,113,133,0.25));box-shadow:0 4px 16px rgba(251,191,36,0.15)}
+html.light .panel-icon.icon-bday{background:linear-gradient(135deg,rgba(244,114,182,0.15),rgba(167,139,250,0.15))}
+html.light .panel-icon.icon-retire{background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(251,113,133,0.15))}
+.panel-title-wrap{flex:1;min-width:0}
+.panel-title{
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;
+  font-size:15px;font-weight:700;color:var(--text-primary);
+}
+.panel-subtitle{font-size:11.5px;font-weight:600;color:var(--text-muted);letter-spacing:0.5px;margin-top:1px}
+.panel-count{
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;
+  font-size:22px;font-weight:900;flex-shrink:0;
+  min-width:36px;text-align:center;
+  padding:4px 10px;border-radius:12px;
+}
+.panel-count.count-bday{background:rgba(244,114,182,0.12);color:#f472b6}
+.panel-count.count-retire{background:rgba(251,191,36,0.12);color:#fbbf24}
+html.light .panel-count.count-bday{background:rgba(219,39,119,0.08);color:#be185d}
+html.light .panel-count.count-retire{background:rgba(217,119,6,0.08);color:#b45309}
+
+/* Person list inside panel */
+.person-list{
+  list-style:none;padding:0;margin:0;
+  display:flex;flex-direction:column;gap:8px;
+  max-height:200px;overflow-y:auto;
+}
+.person-list::-webkit-scrollbar{width:4px}
+.person-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
+html.light .person-list::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.08)}
+.person-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;border-radius:12px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.04);
+  transition:background 0.2s;
+}
+.person-item:hover{background:rgba(255,255,255,0.06)}
+html.light .person-item{background:rgba(0,0,0,0.02);border-color:rgba(0,0,0,0.04)}
+html.light .person-item:hover{background:rgba(0,0,0,0.04)}
+.person-avatar{
+  width:32px;height:32px;border-radius:50%;
+  display:grid;place-items:center;
+  font-size:14px;font-weight:700;color:#fff;flex-shrink:0;
+}
+.person-avatar.av-bday{background:linear-gradient(135deg,#f472b6,#a78bfa)}
+.person-avatar.av-retire{background:linear-gradient(135deg,#fbbf24,#fb7185)}
+.person-detail{flex:1;min-width:0}
+.person-name{font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.person-office{font-size:11px;font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.person-tag{
+  font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;flex-shrink:0;
+}
+.tag-ds{background:rgba(96,165,250,0.12);color:#93c5fd}
+.tag-gds{background:rgba(52,211,153,0.12);color:#6ee7b7}
+.tag-out{background:rgba(251,146,60,0.12);color:#fdba74}
+html.light .tag-ds{background:rgba(37,99,235,0.08);color:#1d4ed8}
+html.light .tag-gds{background:rgba(5,150,105,0.08);color:#047857}
+html.light .tag-out{background:rgba(234,88,12,0.08);color:#c2410c}
+
+/* Empty state */
+.panel-empty{
+  text-align:center;padding:16px 8px;
+  font-size:13px;color:var(--text-muted);font-weight:500;
+  line-height:1.6;
+}
+.panel-empty .empty-icon{font-size:28px;display:block;margin-bottom:6px;opacity:0.5}
+
+/* Loading shimmer */
+.panel-loading{
+  display:flex;flex-direction:column;gap:8px;
+}
+.shimmer-row{
+  height:44px;border-radius:12px;
+  background:linear-gradient(90deg,rgba(255,255,255,0.03) 25%,rgba(255,255,255,0.06) 50%,rgba(255,255,255,0.03) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.5s ease-in-out infinite;
+}
+html.light .shimmer-row{background:linear-gradient(90deg,rgba(0,0,0,0.03) 25%,rgba(0,0,0,0.06) 50%,rgba(0,0,0,0.03) 75%);background-size:200% 100%}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* ============================================================
    FOOTER
@@ -648,37 +735,40 @@ html.light .btn-logout:hover{background:rgba(225,29,72,0.18);color:#9f1239}
     <span class="dt-chip"><span class="icon">🕐</span> <span id="current-time"></span></span>
   </div>
 
-  <!-- ====== QUICK STATS ====== -->
+  <!-- ====== QUICK OVERVIEW ====== -->
   <div class="section-title">Quick Overview</div>
-  <div class="stats-bar" id="stats-bar">
-    <div class="stat-pill">
-      <span class="stat-dot" style="color:#818cf8"></span>
-      <div>
-        <div class="stat-label">Modules</div>
-        <div class="stat-value">5</div>
+  <div class="overview-grid">
+
+    <!-- Today's Birthdays -->
+    <div class="overview-panel" id="panelBirthdays">
+      <div class="panel-header">
+        <div class="panel-icon icon-bday">🎂</div>
+        <div class="panel-title-wrap">
+          <div class="panel-title">Today's Birthdays</div>
+          <div class="panel-subtitle" id="bdayDate"></div>
+        </div>
+        <div class="panel-count count-bday" id="bdayCount">—</div>
+      </div>
+      <div id="bdayList">
+        <div class="panel-loading"><div class="shimmer-row"></div><div class="shimmer-row"></div></div>
       </div>
     </div>
-    <div class="stat-pill">
-      <span class="stat-dot" style="color:#34d399"></span>
-      <div>
-        <div class="stat-label">Status</div>
-        <div class="stat-value">Online</div>
+
+    <!-- This Month's Retirements -->
+    <div class="overview-panel" id="panelRetirements">
+      <div class="panel-header">
+        <div class="panel-icon icon-retire">🎉</div>
+        <div class="panel-title-wrap">
+          <div class="panel-title">Retirements & Discharges</div>
+          <div class="panel-subtitle" id="retireMonth"></div>
+        </div>
+        <div class="panel-count count-retire" id="retireCount">—</div>
+      </div>
+      <div id="retireList">
+        <div class="panel-loading"><div class="shimmer-row"></div><div class="shimmer-row"></div></div>
       </div>
     </div>
-    <div class="stat-pill">
-      <span class="stat-dot" style="color:#fbbf24"></span>
-      <div>
-        <div class="stat-label">Division</div>
-        <div class="stat-value">Karur</div>
-      </div>
-    </div>
-    <div class="stat-pill">
-      <span class="stat-dot" style="color:#fb7185"></span>
-      <div>
-        <div class="stat-label">Region</div>
-        <div class="stat-value">Central</div>
-      </div>
-    </div>
+
   </div>
 
   <!-- ====== NAVIGATION CARDS ====== -->
@@ -808,6 +898,119 @@ document.querySelectorAll('.nav-card').forEach(card => {
   const badge = document.querySelector('.privacy') || document.querySelector('[data-cloud-status]');
   if (badge && ok) {
     badge.innerHTML = '<span class="dot" style="background:#4ade80;box-shadow:0 0 8px #4ade80"></span> ☁ Cloud Connected';
+  }
+
+  // ========== Quick Overview: Birthdays & Retirements ==========
+  const now = new Date();
+  const todayD = now.getDate(), todayM = now.getMonth() + 1, todayY = now.getFullYear();
+  const monthNames = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  document.getElementById('bdayDate').textContent = now.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('retireMonth').textContent = monthNames[todayM] + ' ' + todayY;
+
+  function parseDob(dob) {
+    if (!dob) return null;
+    const s = String(dob);
+    // dd-mm-yyyy
+    let m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+    if (m) return { d: parseInt(m[1],10), m: parseInt(m[2],10), y: parseInt(m[3],10) };
+    // yyyy-mm-dd
+    m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return { d: parseInt(m[3],10), m: parseInt(m[2],10), y: parseInt(m[1],10) };
+    return null;
+  }
+
+  function retirementDate(dob, ageLimit) {
+    // Retires on the last day of the birth month + ageLimit years
+    const retY = dob.y + ageLimit;
+    const retM = dob.m; // 1-indexed
+    // Last day of that month
+    const lastDay = new Date(retY, retM, 0).getDate();
+    return { y: retY, m: retM, d: lastDay };
+  }
+
+  function renderList(containerId, countId, people, type) {
+    const container = document.getElementById(containerId);
+    const countEl = document.getElementById(countId);
+    countEl.textContent = people.length;
+
+    if (people.length === 0) {
+      const emptyIcon = type === 'bday' ? '🌿' : '✅';
+      const emptyMsg = type === 'bday' ? 'No birthdays today' : 'No retirements this month';
+      container.innerHTML = '<div class="panel-empty"><span class="empty-icon">' + emptyIcon + '</span>' + emptyMsg + '</div>';
+      return;
+    }
+
+    let html = '<ul class="person-list">';
+    for (const p of people) {
+      const initial = (p.name || '?').charAt(0).toUpperCase();
+      const avClass = type === 'bday' ? 'av-bday' : 'av-retire';
+      const tagClass = p.cat === 'DS' ? 'tag-ds' : p.cat === 'GDS' ? 'tag-gds' : 'tag-out';
+      const extra = p.retireDate ? ' · ' + p.retireDate : '';
+      html += '<li class="person-item">';
+      html += '<div class="person-avatar ' + avClass + '">' + initial + '</div>';
+      html += '<div class="person-detail">';
+      html += '<div class="person-name">' + (p.name || '—') + '</div>';
+      html += '<div class="person-office">' + (p.office || '') + extra + '</div>';
+      html += '</div>';
+      html += '<span class="person-tag ' + tagClass + '">' + p.cat + '</span>';
+      html += '</li>';
+    }
+    html += '</ul>';
+    container.innerHTML = html;
+  }
+
+  if (!ok) {
+    document.getElementById('bdayList').innerHTML = '<div class="panel-empty"><span class="empty-icon">☁️</span>Connect to cloud to see data</div>';
+    document.getElementById('retireList').innerHTML = '<div class="panel-empty"><span class="empty-icon">☁️</span>Connect to cloud to see data</div>';
+    document.getElementById('bdayCount').textContent = '—';
+    document.getElementById('retireCount').textContent = '—';
+  } else {
+    try {
+      const [dsData, gdsData, outData] = await Promise.all([
+        SB.getDataset('DS'), SB.getDataset('GDS'), SB.getDataset('OUT')
+      ]);
+
+      const allPeople = [];
+      if (dsData && dsData.data) dsData.data.forEach(e => allPeople.push({ name: e.Employee_name || e.name, dob: e.Date_of_birth || e.dateOfBirth, office: e.Office_desc || e.officeName || '', cat: 'DS' }));
+      if (gdsData && gdsData.data) gdsData.data.forEach(e => allPeople.push({ name: e.Employee_name || e.name, dob: e.Date_of_birth || e.dateOfBirth, office: e.Office_desc || e.officeName || '', cat: 'GDS' }));
+      if (outData && outData.data) outData.data.forEach(e => {
+        const nm = [e.first_name, e.middle_name, e.last_name].filter(Boolean).join(' ').trim() || e.fullName || e.firstName || '';
+        allPeople.push({ name: nm, dob: e.date_of_birth || e.dateOfBirth, office: e.office_name || e.officeName || '', cat: 'OUT' });
+      });
+
+      // Today's birthdays
+      const birthdays = [];
+      for (const p of allPeople) {
+        const d = parseDob(p.dob);
+        if (d && d.d === todayD && d.m === todayM) {
+          birthdays.push(p);
+        }
+      }
+      birthdays.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+      renderList('bdayList', 'bdayCount', birthdays, 'bday');
+
+      // This month's retirements
+      const retirements = [];
+      for (const p of allPeople) {
+        if (p.cat === 'OUT') continue; // outsource resources don't retire
+        const d = parseDob(p.dob);
+        if (!d) continue;
+        const ageLimit = p.cat === 'GDS' ? 65 : 60;
+        const rd = retirementDate(d, ageLimit);
+        if (rd.y === todayY && rd.m === todayM) {
+          const dd = String(rd.d).padStart(2,'0') + '-' + String(rd.m).padStart(2,'0') + '-' + rd.y;
+          retirements.push({ ...p, retireDate: dd });
+        }
+      }
+      retirements.sort((a,b) => (a.retireDate||'').localeCompare(b.retireDate||''));
+      renderList('retireList', 'retireCount', retirements, 'retire');
+
+    } catch (err) {
+      console.error('[overview] Error loading data:', err);
+      document.getElementById('bdayList').innerHTML = '<div class="panel-empty"><span class="empty-icon">⚠️</span>Failed to load data</div>';
+      document.getElementById('retireList').innerHTML = '<div class="panel-empty"><span class="empty-icon">⚠️</span>Failed to load data</div>';
+    }
   }
 })();
 
