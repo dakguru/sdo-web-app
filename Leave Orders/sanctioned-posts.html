@@ -217,39 +217,58 @@ async function loadData() {
   }
 }
 
+function normalizeStr(s) {
+  if (!s) return '';
+  return s.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
 function buildMapping() {
-  // Only focus on GDS posts
   const gdsPosts = posts.filter(p => p.Class === 'GDS');
   
-  // Create lookup for fast employee matching
-  const empLookup = {};
-  employees.forEach(e => {
-    if (e._type === 'GDS' && e.Post_id) {
-      empLookup[e.Post_id] = e;
-    }
-  });
-  
+  let unmappedEmployees = employees.filter(e => e._type === 'GDS');
   const vacLookup = {};
   vacancies.forEach(v => { vacLookup[v.post_id] = v; });
-  
   const activeArrangements = arrangements.filter(a => a.status === 'Approved');
+
+  // First pass: strict Post_id matching
+  const empLookup = {};
+  unmappedEmployees = unmappedEmployees.filter(e => {
+    if (e.Post_id && gdsPosts.some(p => p.Post == e.Post_id)) {
+      empLookup[e.Post_id] = e;
+      return false; 
+    }
+    return true; 
+  });
 
   mappedData = gdsPosts.map(post => {
     const postId = String(post.Post);
-    const emp = empLookup[postId];
-    const isVacant = !emp;
+    let emp = empLookup[postId];
     
+    const normOffice = normalizeStr(post['Facility Description']);
+    const normPost = normalizeStr(post['Post Text']);
+    
+    // Second pass: fallback match by normalized Office Name + Designation
+    if (!emp) {
+       const fallbackIdx = unmappedEmployees.findIndex(e => 
+         normalizeStr(e.Office_desc) === normOffice && 
+         normalizeStr(e.Post_desc) === normPost
+       );
+       if (fallbackIdx > -1) {
+         emp = unmappedEmployees[fallbackIdx];
+         unmappedEmployees.splice(fallbackIdx, 1);
+       }
+    }
+    
+    const isVacant = !emp;
     let arrangement = null;
     let vacancyInfo = null;
     
     if (isVacant) {
       vacancyInfo = vacLookup[postId] || {};
-      
-      // Try to find matching arrangement
-      // Uses new_designation and office matching
-      arrangement = activeArrangements.find(a => {
-        return (a.new_office_id == post['Office ID'] && a.new_designation == post['Post Text']);
-      });
+      // Match arrangement by normalized office name and post name
+      arrangement = activeArrangements.find(a => 
+        normalizeStr(a.office) === normOffice && normalizeStr(a.post) === normPost
+      );
     }
     
     return {
