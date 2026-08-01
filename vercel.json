@@ -9,6 +9,7 @@
     { "source": "/office-management", "destination": "/Leave Orders/office-management.html" },
     { "source": "/birthdays", "destination": "/Leave Orders/birthdays.html" },
     { "source": "/retirements", "destination": "/Leave Orders/retirements.html" },
+    { "source": "/sanctioned-posts", "destination": "/Leave Orders/sanctioned-posts.html" },
     { "source": "/auth-guard.js", "destination": "/Leave Orders/auth-guard.js" },
     { "source": "/leave-orders/(.*)", "destination": "/Leave Orders/$1" },
     { "source": "/data/(.*)", "destination": "/app/data/$1" },

@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="/leave-orders/auth-guard.js"></script>
+<title>Sanctioned & Working - Karur Sub Division</title>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f172a;--panel:#1e293b;--line:#334155;--text:#f8fafc;--text-muted:#94a3b8;--brand:#8b5cf6;--radius:16px;--shadow-lg:0 10px 15px -3px rgba(0,0,0,.3);--danger:#ef4444;--success:#22c55e;}
+html.light{--bg:#f8fafc;--panel:#ffffff;--line:#e2e8f0;--text:#0f172a;--text-muted:#64748b;--shadow-lg:0 10px 15px -3px rgba(0,0,0,.1);}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;line-height:1.5}
+.appbar{display:flex;align-items:center;gap:16px;padding:12px 24px;background:var(--panel);border-bottom:1px solid var(--line);font-size:13px}
+.appbar .switch{display:flex;gap:4px;margin-left:auto}
+.appbar .pill{padding:6px 14px;border-radius:99px;color:var(--text-muted);text-decoration:none;font-weight:600;transition:.2s}
+.appbar .pill:hover{background:rgba(124,58,237,.1);color:var(--brand)}
+.appbar .pill.active{background:var(--brand);color:#fff}
+
+header{padding:32px 24px 20px;max-width:1400px;margin:0 auto}
+h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;margin:0 0 6px;letter-spacing:-0.5px}
+.sub{color:var(--text-muted);font-size:15px}
+
+main{max-width:1400px;margin:0 auto;padding:0 24px 40px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:24px;margin-bottom:24px;box-shadow:var(--shadow-lg)}
+.card h2{margin:0 0 16px;font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;display:flex;align-items:center;gap:8px}
+
+.toolbar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px}
+select, input{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);font-family:inherit;font-size:14px;outline:none}
+select:focus, input:focus{border-color:var(--brand)}
+.btn{background:var(--brand);color:#fff;border:none;padding:10px 18px;border-radius:10px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:14px;transition:.2s}
+.btn:hover{filter:brightness(1.1)}
+.btn.outline{background:transparent;border:1px solid var(--line);color:var(--text)}
+.btn.outline:hover{background:rgba(255,255,255,.05)}
+.btn.excel{background:#10b981}
+.btn.pdf{background:#ef4444}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--bg);padding:12px 16px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover{background:rgba(255,255,255,.02)}
+html.light tr:hover{background:rgba(0,0,0,.02)}
+
+.badge{display:inline-flex;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.badge.working{background:rgba(34,197,94,.15);color:var(--success)}
+.badge.vacant{background:rgba(239,68,68,.15);color:var(--danger)}
+.badge.arr{background:rgba(245,158,11,.15);color:#f59e0b}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.2s;z-index:999}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:24px;width:100%;max-width:440px;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);transform:translateY(20px);transition:.3s}
+.modal-overlay.show .modal{transform:translateY(0)}
+.modal h3{margin:0 0 16px;font-family:'Plus Jakarta Sans',sans-serif;font-size:20px}
+.modal .form-group{margin-bottom:16px}
+.modal .actions{display:flex;gap:12px;justify-content:flex-end;margin-top:24px}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);color:var(--text);border:1px solid var(--line);padding:12px 20px;border-radius:12px;font-weight:600;box-shadow:var(--shadow-lg);opacity:0;transition:.3s;z-index:1000;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.vacant-btn{background:transparent;border:1px dashed var(--line);color:var(--text-muted);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;transition:.2s}
+.vacant-btn:hover{background:rgba(255,255,255,.05);color:var(--text);border-color:var(--text-muted)}
+
+.empty-state{padding:40px;text-align:center;color:var(--text-muted);font-weight:500}
+</style>
+</head>
+<body>
+<div class="appbar">
+  <a href="/" style="opacity:.85;color:inherit;text-decoration:none;font-weight:700">🏠 Home</a>
+  <span style="opacity:.4">|</span>
+  <span style="opacity:.72">Department of Posts &middot; Karur Sub Division</span>
+  <div class="switch">
+    <a class="pill" href="/leave-orders">Leave Orders</a>
+    <a class="pill" href="/employees">Employee Directory</a>
+    <a class="pill" href="/arrangements">Arrangements</a>
+    <span class="pill active">Sanctioned & Working</span>
+  </div>
+</div>
+
+<header>
+  <h1>Sanctioned & Working (GDS)</h1>
+  <div class="sub">Map sanctioned GDS posts with working staff. Manage vacancies and track temporary arrangements.</div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="toolbar">
+      <div class="field">
+        <label>Filter by Status</label>
+        <select id="filterStatus">
+          <option value="ALL">All Posts</option>
+          <option value="WORKING">Working</option>
+          <option value="VACANT">Vacant</option>
+          <option value="VACANT_ARR">Vacant (with arrangement)</option>
+          <option value="VACANT_NO_ARR">Vacant (no arrangement)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Search Office / Post</label>
+        <input type="text" id="searchQ" placeholder="🔍 Type to search..." style="min-width:240px">
+      </div>
+      <div style="flex:1"></div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:8px">
+          <button class="btn excel" onclick="exportExcel()">⬇ Excel</button>
+          <button class="btn pdf" onclick="exportPDF()">⬇ PDF</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="table-wrap">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th>Office</th>
+            <th>Post Name</th>
+            <th>Post ID</th>
+            <th>Status</th>
+            <th>Mapped Employee / Vacancy Details</th>
+            <th>Temporary Arrangement</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="7" class="empty-state">Loading data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Vacancy Modal -->
+<div class="modal-overlay" id="vacancyModal">
+  <div class="modal">
+    <h3>Update Vacancy Details</h3>
+    <input type="hidden" id="v_postId">
+    
+    <div class="form-group field">
+      <label>Post Name</label>
+      <input type="text" id="v_postName" readonly style="opacity:.7">
+    </div>
+    <div class="form-group field">
+      <label>Vacant From Date</label>
+      <input type="date" id="v_date">
+    </div>
+    <div class="form-group field">
+      <label>Cause of Vacancy</label>
+      <select id="v_cause">
+        <option value="">Select a cause...</option>
+        <option value="Promotion">Promotion</option>
+        <option value="Transfer">Transfer</option>
+        <option value="Retirement">Retirement / Discharge</option>
+        <option value="Resignation">Resignation</option>
+        <option value="Death">Death</option>
+        <option value="Put Off Duty">Put Off Duty</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    
+    <div class="actions">
+      <button class="btn outline" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveVacancy()">Save Details</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let posts = [];
+let employees = [];
+let arrangements = [];
+let vacancies = [];
+let mappedData = [];
+
+async function loadData() {
+  try {
+    const [pRes, eRes, aRes, vRes] = await Promise.all([
+      fetch('/api/posts').then(r=>r.json()),
+      fetch('/api/employees').then(r=>r.json()),
+      fetch('/api/arrangements').then(r=>r.json()),
+      fetch('/api/vacancies').then(r=>r.json())
+    ]);
+    
+    posts = Array.isArray(pRes) ? pRes : (pRes.posts || []);
+    employees = Array.isArray(eRes) ? eRes : (eRes.employees || []);
+    arrangements = Array.isArray(aRes) ? aRes : (aRes.arrangements || []);
+    vacancies = Array.isArray(vRes) ? vRes : [];
+    
+    buildMapping();
+  } catch (e) {
+    showToast('Failed to load data. Ensure server is running.');
+    console.error(e);
+  }
+}
+
+function buildMapping() {
+  // Only focus on GDS posts
+  const gdsPosts = posts.filter(p => p.Class === 'GDS');
+  
+  // Create lookup for fast employee matching
+  const empLookup = {};
+  employees.forEach(e => {
+    if (e._type === 'GDS' && e.Post_id) {
+      empLookup[e.Post_id] = e;
+    }
+  });
+  
+  const vacLookup = {};
+  vacancies.forEach(v => { vacLookup[v.post_id] = v; });
+  
+  const activeArrangements = arrangements.filter(a => a.status === 'Approved');
+
+  mappedData = gdsPosts.map(post => {
+    const postId = String(post.Post);
+    const emp = empLookup[postId];
+    const isVacant = !emp;
+    
+    let arrangement = null;
+    let vacancyInfo = null;
+    
+    if (isVacant) {
+      vacancyInfo = vacLookup[postId] || {};
+      
+      // Try to find matching arrangement
+      // Uses new_designation and office matching
+      arrangement = activeArrangements.find(a => {
+        return (a.new_office_id == post['Office ID'] && a.new_designation == post['Post Text']);
+      });
+    }
+    
+    return {
+      facility: post['Facility Description'],
+      officeId: post['Office ID'],
+      postName: post['Post Text'],
+      postId: postId,
+      isVacant: isVacant,
+      employee: emp,
+      vacancyInfo: vacancyInfo,
+      arrangement: arrangement
+    };
+  });
+  
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.querySelector('#dataTable tbody');
+  const statusFilter = document.getElementById('filterStatus').value;
+  const q = document.getElementById('searchQ').value.toLowerCase();
+  
+  let filtered = mappedData.filter(d => {
+    // Status filter
+    if (statusFilter === 'WORKING' && d.isVacant) return false;
+    if (statusFilter === 'VACANT' && !d.isVacant) return false;
+    if (statusFilter === 'VACANT_ARR' && (!d.isVacant || !d.arrangement)) return false;
+    if (statusFilter === 'VACANT_NO_ARR' && (!d.isVacant || d.arrangement)) return false;
+    
+    // Search filter
+    if (q) {
+      const searchStr = `${d.facility} ${d.postName} ${d.postId} ${d.employee?.Employee_name || ''}`.toLowerCase();
+      if (!searchStr.includes(q)) return false;
+    }
+    return true;
+  });
+  
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No matching posts found.</td></tr>';
+    return;
+  }
+  
+  let html = '';
+  filtered.forEach(d => {
+    const stBadge = d.isVacant ? '<span class="badge vacant">VACANT</span>' : '<span class="badge working">WORKING</span>';
+    
+    let midCol = '';
+    let arrCol = '';
+    let actCol = '';
+    
+    if (!d.isVacant) {
+      midCol = `<div style="font-weight:600">${d.employee.Employee_name}</div>
+                <div style="font-size:11px;color:var(--text-muted)">ID: ${d.employee.Employee_id} &middot; Joined: ${d.employee.Date_of_join || '-'}</div>`;
+      arrCol = '<span style="color:var(--text-muted)">-</span>';
+      actCol = '';
+    } else {
+      const vFrom = d.vacancyInfo?.vacant_from ? formatDate(d.vacancyInfo.vacant_from) : 'Not specified';
+      const vCause = d.vacancyInfo?.cause || 'Not specified';
+      
+      midCol = `<div style="font-size:12px;color:var(--text-muted)">Since: <b style="color:var(--text)">${vFrom}</b></div>
+                <div style="font-size:12px;color:var(--text-muted)">Cause: <b style="color:var(--text)">${vCause}</b></div>`;
+                
+      if (d.arrangement) {
+        arrCol = `<div style="font-weight:600">${d.arrangement.employee_name}</div>
+                  <div style="font-size:11px;color:var(--text-muted)">ID: ${d.arrangement.employee_id} <span class="badge arr" style="margin-left:4px;font-size:9px">ARRANGEMENT</span></div>
+                  <div style="font-size:11px;color:var(--text-muted)">${formatDate(d.arrangement.arrangement_from_date)} to ${formatDate(d.arrangement.revised_arrangement_to_date || d.arrangement.arrangement_to_date)}</div>`;
+      } else {
+        arrCol = '<span style="color:var(--danger);font-size:12px;font-weight:500">No arrangement active</span>';
+      }
+      
+      actCol = `<button class="vacant-btn" onclick="openModal('${d.postId}', '${d.postName.replace(/'/g,"\\'")} - ${d.facility.replace(/'/g,"\\'")}')">Edit Details</button>`;
+    }
+    
+    html += `<tr>
+      <td><div style="font-weight:600">${d.facility}</div><div style="font-size:11px;color:var(--text-muted)">${d.officeId}</div></td>
+      <td><div style="font-weight:600">${d.postName}</div></td>
+      <td style="font-family:monospace;color:var(--text-muted)">${d.postId}</td>
+      <td>${stBadge}</td>
+      <td>${midCol}</td>
+      <td>${arrCol}</td>
+      <td>${actCol}</td>
+    </tr>`;
+  });
+  
+  tbody.innerHTML = html;
+}
+
+document.getElementById('filterStatus').addEventListener('change', renderTable);
+document.getElementById('searchQ').addEventListener('input', renderTable);
+
+function formatDate(dStr) {
+  if (!dStr) return '';
+  const p = dStr.split('-');
+  if (p.length === 3 && p[0].length === 4) return `${p[2]}-${p[1]}-${p[0]}`; // yyyy-mm-dd to dd-mm-yyyy
+  return dStr;
+}
+
+// Modal Logic
+function openModal(postId, postDesc) {
+  const v = vacancies.find(x => x.post_id === postId) || {};
+  document.getElementById('v_postId').value = postId;
+  document.getElementById('v_postName').value = postDesc;
+  document.getElementById('v_date').value = v.vacant_from || '';
+  document.getElementById('v_cause').value = v.cause || '';
+  document.getElementById('vacancyModal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('vacancyModal').classList.remove('show');
+}
+async function saveVacancy() {
+  const postId = document.getElementById('v_postId').value;
+  const vacant_from = document.getElementById('v_date').value;
+  const cause = document.getElementById('v_cause').value;
+  
+  const existingIdx = vacancies.findIndex(x => x.post_id === postId);
+  if (existingIdx > -1) {
+    vacancies[existingIdx].vacant_from = vacant_from;
+    vacancies[existingIdx].cause = cause;
+  } else {
+    vacancies.push({ post_id: postId, vacant_from, cause });
+  }
+  
+  try {
+    const res = await fetch('/api/vacancies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(vacancies)
+    });
+    if (res.ok) {
+      showToast('Vacancy details saved successfully!');
+      closeModal();
+      buildMapping();
+    } else {
+      showToast('Failed to save data.');
+    }
+  } catch (e) {
+    showToast('Network error while saving.');
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Export logic
+async function exportExcel() {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Sanctioned & Working');
+  
+  ws.columns = [
+    { header: 'Office', key: 'office', width: 25 },
+    { header: 'Post Name', key: 'post', width: 25 },
+    { header: 'Post ID', key: 'postId', width: 15 },
+    { header: 'Status', key: 'status', width: 15 },
+    { header: 'Emp/Vacant Name', key: 'empName', width: 25 },
+    { header: 'Emp ID / Vacant Since', key: 'empMeta', width: 20 },
+    { header: 'Arrangement / Cause', key: 'arr', width: 30 }
+  ];
+  
+  ws.getRow(1).font = { bold: true };
+  
+  mappedData.forEach(d => {
+    let empName = '', empMeta = '', arr = '';
+    if (!d.isVacant) {
+      empName = d.employee.Employee_name;
+      empMeta = d.employee.Employee_id;
+      arr = 'Working';
+    } else {
+      empName = 'VACANT';
+      empMeta = d.vacancyInfo?.vacant_from ? formatDate(d.vacancyInfo.vacant_from) : '';
+      arr = `Cause: ${d.vacancyInfo?.cause || 'N/A'}`;
+      if (d.arrangement) {
+        arr += ` | Arr: ${d.arrangement.employee_name} (${d.arrangement.employee_id})`;
+      }
+    }
+    ws.addRow({
+      office: d.facility,
+      post: d.postName,
+      postId: d.postId,
+      status: d.isVacant ? 'Vacant' : 'Working',
+      empName, empMeta, arr
+    });
+  });
+  
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(new Blob([buf]), 'Sanctioned_Working_Report.xlsx');
+}
+
+function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('landscape');
+  
+  doc.setFontSize(14);
+  doc.text("DEPARTMENT OF POSTS", doc.internal.pageSize.width/2, 15, {align: 'center'});
+  doc.setFontSize(12);
+  doc.text("Sanctioned & Working Posts (GDS) - Karur Sub Division", doc.internal.pageSize.width/2, 22, {align: 'center'});
+  
+  const head = [['Office', 'Post', 'Post ID', 'Status', 'Employee / Vacant Info', 'Arrangement Details']];
+  const body = mappedData.map(d => {
+    let col5 = '', col6 = '';
+    if (!d.isVacant) {
+      col5 = `${d.employee.Employee_name}\nID: ${d.employee.Employee_id}`;
+      col6 = '-';
+    } else {
+      col5 = `Since: ${d.vacancyInfo?.vacant_from ? formatDate(d.vacancyInfo.vacant_from) : '-'}\nCause: ${d.vacancyInfo?.cause || '-'}`;
+      if (d.arrangement) {
+        col6 = `${d.arrangement.employee_name} (ID: ${d.arrangement.employee_id})\n${formatDate(d.arrangement.arrangement_from_date)} to ${formatDate(d.arrangement.revised_arrangement_to_date || d.arrangement.arrangement_to_date)}`;
+      } else {
+        col6 = 'No active arrangement';
+      }
+    }
+    return [d.facility, d.postName, d.postId, d.isVacant?'Vacant':'Working', col5, col6];
+  });
+  
+  doc.autoTable({
+    startY: 30,
+    head: head,
+    body: body,
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [60, 60, 60] }
+  });
+  
+  doc.save('Sanctioned_Working_Report.pdf');
+}
+
+loadData();
+</script>
+</body>
+</html>

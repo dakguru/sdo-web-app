@@ -253,6 +253,30 @@ try {
         continue
       }
 
+      # Sanctioned Posts (Static list generated from Excel)
+      if ($path -eq '/api/posts' -and $req.HttpMethod -eq 'GET') {
+        $pf = Join-Path $dataDir 'posts.json'
+        if (Test-Path $pf) { Send-File $ctx $pf 'application/json; charset=utf-8' }
+        else { Send-Text $ctx '[]' 'application/json; charset=utf-8' }
+        continue
+      }
+      
+      # Vacancies (Manually tracked by users)
+      if ($path -eq '/api/vacancies' -and $req.HttpMethod -eq 'GET') {
+        $vf = Join-Path $dataDir 'vacancies.json'
+        if (Test-Path $vf) { Send-File $ctx $vf 'application/json; charset=utf-8' }
+        else { Send-Text $ctx '[]' 'application/json; charset=utf-8' }
+        continue
+      }
+      if ($path -eq '/api/vacancies' -and $req.HttpMethod -eq 'POST') {
+        $body = Read-Body $ctx
+        $vf = Join-Path $dataDir 'vacancies.json'
+        if (Test-Path $vf) { Copy-Item $vf ($vf + '.prev') -Force -ErrorAction SilentlyContinue }
+        [System.IO.File]::WriteAllText($vf, $body, $utf8NoBom)
+        Send-Json $ctx ([ordered]@{ ok = $true; savedAt = (Get-Date).ToString('s'); bytes = $body.Length })
+        continue
+      }
+
       # Office master (sub-division-wise office details + hierarchy).
       if ($path -eq '/api/offices-master' -and $req.HttpMethod -eq 'GET') {
         $of = Join-Path $dataDir 'office_master.json'
