@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <script src="auth-guard.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
 <title>Department of Posts — Office Management, Karur Division</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -319,17 +320,24 @@ function parseOffices(buf){
       sol_id:g(r,'sol_id'), csi_facility_id:g(r,'csi_facility_id'), pli_id:g(r,'pli_id'), gstn:g(r,'gstn_code'), pao_code:g(r,'pao_code'), delivery_office:g(r,'delivery_office_flag'),
       reporting_office_id:intg(r,'reporting_office_id'), head_of_office_id:intg(r,'head_of_the_office') });
   }
-  return {out,subs:subsSet.size};
+  // This app serves only the Karur Sub Division: drop rows for any other
+  // sub-division (Aravakurichi / Kulittalai / Manaparai) even if a whole-division
+  // export was uploaded, then recompute the sub-division count from what remains.
+  const dropped=out.length;
+  const kept=KarurScope.filterOffices(out);
+  const subs=new Set(kept.map(o=>o.sub_division||'(Head / Admin)')).size;
+  return {out:kept, subs, total:dropped, skipped:dropped-kept.length};
 }
 async function handleFile(f){
   try{
     const buf=await f.arrayBuffer();
-    const {out,subs}=parseOffices(buf);
-    if(!out.length){ toast('No offices found — is this the Office Management export?',true); return; }
+    const {out,subs,skipped}=parseOffices(buf);
+    if(!out.length){ toast('No Karur Sub Division offices found — is this the Office Management export?',true); return; }
     S.pending={offices:out,subs,fileName:f.name};
-    $('#pending').innerHTML=`Parsed <b>${out.length}</b> offices (${subs} sub-divisions) from ${f.name}. Click <b>Save</b>.`;
+    const note = skipped ? ` (${skipped} non-Karur offices skipped)` : '';
+    $('#pending').innerHTML=`Parsed <b>${out.length}</b> Karur offices (${subs} sub-divisions)${note} from ${f.name}. Click <b>Save</b>.`;
     $('#saveBtn').disabled=false; $('#discardBtn').style.display='inline-flex';
-    toast(`Parsed ${out.length} offices.`);
+    toast(`Parsed ${out.length} Karur offices${note}.`);
   }catch(e){ toast('Failed to read file: '+e.message,true); }
 }
 async function saveData(){
@@ -388,6 +396,10 @@ async function loadData(){
     }
   } catch(e) { console.warn('Cloud sync failed:', e); }
 
+  // Clamp to the Karur Sub Division and let this master define the live scope
+  // that the other pages (staff, arrangements) filter against.
+  S.offices = KarurScope.filterOffices(S.offices);
+  KarurScope.setFromOffices(S.offices);
   renderAll();
 }
 

@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <script src="/leave-orders/auth-guard.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
 <title>Sanctioned & Working - Karur Sub Division</title>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -200,16 +201,23 @@ async function safeFetchJSON(url, fallbackUrl) {
 
 async function loadData() {
   try {
+    try{ await KarurScope.load(); }catch(e){}
     const pRes = await safeFetchJSON('/api/posts', '/data/posts.json');
     const eRes = await safeFetchJSON('/api/employees', '/data/employees.json');
     const aRes = await safeFetchJSON('/api/arrangements', '/data/arrangements.json');
     const vRes = await safeFetchJSON('/api/vacancies', '/data/vacancies.json');
-    
+
     posts = pRes ? (Array.isArray(pRes) ? pRes : (pRes.posts || [])) : [];
     employees = eRes ? (Array.isArray(eRes) ? eRes : (eRes.employees || [])) : [];
     arrangements = aRes ? (Array.isArray(aRes) ? aRes : (aRes.arrangements || [])) : [];
     vacancies = vRes ? (Array.isArray(vRes) ? vRes : []) : [];
-    
+
+    // This app serves only the Karur Sub Division: clamp every source so posts,
+    // staff and arrangements for other sub-divisions never enter the mapping.
+    posts = KarurScope.filterRecords(posts);
+    employees = employees.filter(e => KarurScope.inScope(e));
+    arrangements = arrangements.filter(a => KarurScope.inScope(a));
+
     buildMapping();
   } catch (e) {
     showToast('Failed to load data.');

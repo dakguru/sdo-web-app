@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <script src="auth-guard.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
 <title>Department of Posts — Temporary Arrangements, Karur Sub Division</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -448,17 +449,22 @@ function parseExport(buf){
     else continue;
     out.push({cat,post:clean(rr['new_designation']),office:clean(rr['new_office_name']),officeId:clean(rr['new_office_id']),subId:clean(rr['employee_id']),subName:clean(rr['employee_name']),from:datePart(rr['arrangement_from_date']),to:datePart(rr['revised_arrangement_to_date'])||datePart(rr['arrangement_to_date']),status:clean(rr['approve_status'])});
   }
-  return {out,gds,ns};
+  // This app serves only the Karur Sub Division: keep arrangements whose office
+  // is in Karur, even when a whole-division export is uploaded.
+  const kept=out.filter(a=>KarurScope.inScope(a));
+  const skipped=out.length-kept.length;
+  return {out:kept, gds:kept.filter(a=>a.cat==='GDS').length, ns:kept.filter(a=>a.cat==='NONSANC').length, skipped};
 }
 async function handleFile(f){
   try{
     const buf=await f.arrayBuffer();
-    const {out,gds,ns}=parseExport(buf);
-    if(!out.length){ toast('No GDS/Non-Sanc outsource arrangements found in this file.',true); return; }
+    const {out,gds,ns,skipped}=parseExport(buf);
+    if(!out.length){ toast('No Karur Sub Division GDS/Non-Sanc arrangements found in this file.',true); return; }
     S.pending={arrangements:out,gds,ns,fileName:f.name};
-    $('#pending').innerHTML=`Parsed <b>${out.length}</b> arrangements (${gds} GDS · ${ns} Non-Sanc) from ${f.name}. Click <b>Save</b> to apply.`;
+    const note = skipped ? ` (${skipped} non-Karur skipped)` : '';
+    $('#pending').innerHTML=`Parsed <b>${out.length}</b> Karur arrangements (${gds} GDS · ${ns} Non-Sanc)${note} from ${f.name}. Click <b>Save</b> to apply.`;
     $('#saveBtn').disabled=false; $('#discardBtn').style.display='inline-flex';
-    toast(`Parsed ${out.length} arrangements.`);
+    toast(`Parsed ${out.length} Karur arrangements${note}.`);
   }catch(e){ toast('Failed to read file: '+e.message,true); }
 }
 async function saveData(){
@@ -494,10 +500,13 @@ function populateSubDivs(){
   sel.value=cur||'ALL';
 }
 async function loadData(){
+  try{ await KarurScope.load(); }catch(e){}
   try{ const d=await (await fetch('/api/arrangements',{cache:'no-store'})).json(); S.all=Array.isArray(d.arrangements)?d.arrangements:[]; S.meta=d.meta||{}; }
   catch(e){ S.all=[]; S.meta={}; }
   let omMeta = {};
-  try{ const om=await (await fetch('/api/offices-master',{cache:'no-store'})).json(); omMeta=om.meta||{}; S.subMap={}; for(const o of (om.offices||[])){ const sd=clean(o.sub_division)||'(Head / Admin)'; S.subMap[clean(o.office_id)]=sd; } }
+  // Only Karur-scope offices feed the sub-division map, so the picker never
+  // lists an empty neighbouring sub-division.
+  try{ const om=await (await fetch('/api/offices-master',{cache:'no-store'})).json(); omMeta=om.meta||{}; S.subMap={}; for(const o of KarurScope.filterOffices(om.offices||[])){ const sd=clean(o.sub_division)||'(Head / Admin)'; S.subMap[clean(o.office_id)]=sd; } }
   catch(e){ S.subMap={}; }
   
   try {
@@ -514,7 +523,7 @@ async function loadData(){
       const locOffUp = omMeta && omMeta.updatedAt ? new Date(omMeta.updatedAt).getTime() : 0;
       if(offCloud && offCloud.uploadedAt && offCloud.uploadedAt > locOffUp) {
         S.subMap = {};
-        for(const o of (offCloud.data||[])) {
+        for(const o of KarurScope.filterOffices(offCloud.data||[])) {
           const sd=clean(o.sub_division)||'(Head / Admin)';
           S.subMap[clean(o.office_id)]=sd;
         }
@@ -522,6 +531,8 @@ async function loadData(){
     }
   } catch(e) { console.warn('Cloud sync failed:', e); }
 
+  // Drop any already-saved arrangement outside the Karur Sub Division.
+  S.all = S.all.filter(a => KarurScope.inScope(a));
   populateSubDivs();
   initDates(); renderAll();
 }

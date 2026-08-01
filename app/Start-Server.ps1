@@ -340,6 +340,27 @@ try {
         continue
       }
 
+      # Remaining Leave Orders top-level pages (mirror of vercel.json rewrites so
+      # the local server matches production routing).
+      if ($path -eq '/login' -or $path -eq '/login/')                     { Send-File $ctx (Join-Path $root 'Leave Orders\login.html') (MimeOf 'index.html'); continue }
+      if ($path -eq '/birthdays' -or $path -eq '/birthdays/')             { Send-File $ctx (Join-Path $root 'Leave Orders\birthdays.html') (MimeOf 'index.html'); continue }
+      if ($path -eq '/retirements' -or $path -eq '/retirements/')         { Send-File $ctx (Join-Path $root 'Leave Orders\retirements.html') (MimeOf 'index.html'); continue }
+      if ($path -eq '/sanctioned-posts' -or $path -eq '/sanctioned-posts/') { Send-File $ctx (Join-Path $root 'Leave Orders\sanctioned-posts.html') (MimeOf 'index.html'); continue }
+
+      # Pages reference auth-guard.js by a root-relative path (e.g. from /employees
+      # the browser requests /auth-guard.js); serve it from the Leave Orders folder.
+      if ($path -eq '/auth-guard.js') { Send-File $ctx (Join-Path $root 'Leave Orders\auth-guard.js') 'application/javascript; charset=utf-8'; continue }
+
+      # Static data snapshots (vercel maps /data/* -> /app/data/*). Used by the
+      # static fallbacks in sanctioned-posts and karur-scope.
+      if ($path -like '/data/*') {
+        $rel = [uri]::UnescapeDataString($path.Substring('/data/'.Length))
+        if ($rel -match '\.\.') { Send-Text $ctx 'Bad request' 'text/plain' 400; continue }
+        $file = Join-Path $dataDir ($rel -replace '/', [IO.Path]::DirectorySeparatorChar)
+        if ((Test-Path $file) -and -not (Get-Item $file).PSIsContainer) { Send-File $ctx $file (MimeOf $file); continue }
+        Send-Text $ctx 'Not found' 'text/plain' 404; continue
+      }
+
       # Leave Orders sub-app — served straight from the original folder so the
       # user's edits to that file flow through without a copy step.
       if ($path -eq '/leave-orders' -or $path -eq '/leave-orders/') {

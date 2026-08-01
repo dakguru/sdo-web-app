@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <script src="auth-guard.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
 <title>Department of Posts — Retirements & Discharges, Karur Sub Division</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -208,13 +209,16 @@ function initials(name){ const p = String(name||'').trim().split(/\s+/); return 
 async function load(){
   try{
     await SB.init();
+    try{ await KarurScope.load(); }catch(e){}
     const [ds, gds] = await Promise.all([SB.getDataset('DS'), SB.getDataset('GDS')]);
+    // This app serves only the Karur Sub Division: skip staff of other sub-divisions.
+    const inK = e => KarurScope.inScope(e);
     const people = [];
-    for(const e of (ds?.data || [])){
+    for(const e of (ds?.data || []).filter(inK)){
       const rd = deptRetire(e.Date_of_birth); if(!rd) continue;
       people.push({ cat:'DS', name:e.Employee_name, id:e.Employee_id, desig:e.Post_desc, office:e.Office_desc, dob:parseDMY(e.Date_of_birth), retire:rd });
     }
-    for(const e of (gds?.data || [])){
+    for(const e of (gds?.data || []).filter(inK)){
       const rd = gdsRetire(e.Date_of_birth); if(!rd) continue;
       people.push({ cat:'GDS', name:e.Employee_name, id:e.Employee_id, desig:e.Post_desc, office:e.Office_desc, dob:parseDMY(e.Date_of_birth), retire:rd });
     }

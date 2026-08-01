@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <script src="auth-guard.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
 <title>Department of Posts — Employee Directory, Karur Sub Division</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -384,7 +385,14 @@ function parseWorkbook(buf){
     }
     return o;
   }).filter(r=> type==='MOBILE' ? clean(r['Name of the offices']) : (clean(r.Employee_id)||clean(r.Employee_name)||clean(r.resource_id)||clean(r.first_name)));
-  return {type,rows:mapped};
+  // This app serves only the Karur Sub Division: drop staff posted to any other
+  // sub-division even when a whole-division payroll is uploaded. The mobile
+  // roster is matched to already-scoped staff, so it is never clamped here.
+  if(type!=='MOBILE'){
+    const kept=mapped.filter(r=>KarurScope.inScope(r));
+    return {type, rows:kept, skipped:mapped.length-kept.length};
+  }
+  return {type,rows:mapped,skipped:0};
 }
 
 /* ============ mobile-roster matching (office + name) ============ */
@@ -842,6 +850,9 @@ function renderAll(){ buildOffices(); renderStats(); renderMeta(); renderOfficeP
 function selectOffice(id){ S.selectedOfficeId=id; S.selectedEmpKey=null; renderOfficeList(); renderContent(); }
 
 async function loadData(){
+  // Refresh the Karur Sub Division scope from the saved Office Master before we
+  // filter staff, so newly-added Karur offices are recognised.
+  try{ await KarurScope.load(); }catch(e){}
   try{
     const r=await fetch('/api/employees',{cache:'no-store'});
     const d=await r.json();
@@ -889,6 +900,9 @@ async function loadData(){
       }
     }
   } catch(e) { console.error('SB Sync error:', e); }
+  // Clamp anything already saved (local or cloud) to the Karur Sub Division so
+  // stale whole-division data never shows here.
+  S.employees = S.employees.filter(e => KarurScope.inScope(e));
   renderAll();
 }
 
@@ -897,7 +911,7 @@ async function handleFiles(fileList){
   for(const f of files){
     try{
       const buf=await f.arrayBuffer();
-      const {type,rows}=parseWorkbook(buf);
+      const {type,rows,skipped}=parseWorkbook(buf);
       if(!type){ toast(`Could not detect DS / GDS / Outsiders / Mobile type in "${f.name}"`,true); continue; }
       if(type==='MOBILE'){
         // Not employee records — match phone numbers to existing staff by office & name.
@@ -917,7 +931,7 @@ async function handleFiles(fileList){
       S.pending[type].rows=[...map.values()];
       S.pending[type].files.push(f.name);
       S.pending[type].count=S.pending[type].rows.length;
-      toast(`Parsed ${rows.length} ${typeTag(type)} staff from ${f.name}`);
+      toast(`Parsed ${rows.length} ${typeTag(type)} staff from ${f.name}`+(skipped?` (${skipped} non-Karur skipped)`:''));
     }catch(err){ toast(`Failed to read ${f.name}: ${err.message}`,true); }
   }
   reflectPending();

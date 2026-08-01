@@ -43,7 +43,9 @@
   // Populate the sub-division picker from the office master (best effort).
   fetch('/api/offices-master',{cache:'no-store'}).then(r=>r.json()).then(d=>{
     const subs=new Set();
-    for(const o of (d.offices||[])) subs.add(cln(o.sub_division)||'(Head / Admin)');
+    // Only the Karur Sub Division is served here, so the picker lists Karur only.
+    const offs = window.KarurScope ? KarurScope.filterOffices(d.offices||[]) : (d.offices||[]);
+    for(const o of offs) subs.add(cln(o.sub_division)||'(Head / Admin)');
     for(const s of [...subs].sort((a,b)=>a.localeCompare(b))){
       const opt=document.createElement('option'); opt.value=s; opt.textContent=s; subSel.append(opt);
     }
@@ -51,14 +53,17 @@
 
   /* ---------- data assembly (always fetched fresh) ---------- */
   async function buildRows(){
+    if(window.KarurScope){ try{ await KarurScope.load(); }catch(e){} }
     const [ed,md,od]=await Promise.all([
       fetch('/api/employees',{cache:'no-store'}).then(r=>r.json()),
       fetch('/api/mobiles',{cache:'no-store'}).then(r=>r.json()),
       fetch('/api/offices-master',{cache:'no-store'}).then(r=>r.json()).catch(()=>({offices:[]})),
     ]);
-    const emps=Array.isArray(ed.employees)?ed.employees:[];
+    // Only Karur Sub Division staff and offices are exported.
+    const emps=(Array.isArray(ed.employees)?ed.employees:[]).filter(e=>window.KarurScope?KarurScope.inScope(e):true);
     const mobiles=(md&&md.map)||{};
-    const master=new Map((od.offices||[]).map(o=>[cln(o.office_id),o]));
+    const masterOffs=window.KarurScope?KarurScope.filterOffices(od.offices||[]):(od.offices||[]);
+    const master=new Map(masterOffs.map(o=>[cln(o.office_id),o]));
     const rows=[];
     for(const e of emps){
       const isOut=e._type==='OUT';

@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <script src="auth-guard.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
 <title>Department of Posts — Staff Birthdays, Karur Sub Division</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -170,11 +171,14 @@ function nextBirthday(p, today){
 async function load(){
   try{
     await SB.init();
+    try{ await KarurScope.load(); }catch(e){}
     const [ds,gds,out] = await Promise.all([SB.getDataset('DS'),SB.getDataset('GDS'),SB.getDataset('OUT')]);
+    // This app serves only the Karur Sub Division: skip staff of other sub-divisions.
+    const inK = e => KarurScope.inScope(e);
     const people=[];
-    for(const e of (ds?.data||[])){ const p=parseDMY(e.Date_of_birth); if(!p) continue; people.push({cat:'DS',name:e.Employee_name,id:e.Employee_id,desig:e.Post_desc,office:e.Office_desc,...p}); }
-    for(const e of (gds?.data||[])){ const p=parseDMY(e.Date_of_birth); if(!p) continue; people.push({cat:'GDS',name:e.Employee_name,id:e.Employee_id,desig:e.Post_desc,office:e.Office_desc,...p}); }
-    for(const e of (out?.data||[])){ const p=parseDMY(e.date_of_birth); if(!p) continue;
+    for(const e of (ds?.data||[]).filter(inK)){ const p=parseDMY(e.Date_of_birth); if(!p) continue; people.push({cat:'DS',name:e.Employee_name,id:e.Employee_id,desig:e.Post_desc,office:e.Office_desc,...p}); }
+    for(const e of (gds?.data||[]).filter(inK)){ const p=parseDMY(e.Date_of_birth); if(!p) continue; people.push({cat:'GDS',name:e.Employee_name,id:e.Employee_id,desig:e.Post_desc,office:e.Office_desc,...p}); }
+    for(const e of (out?.data||[]).filter(inK)){ const p=parseDMY(e.date_of_birth); if(!p) continue;
       const nm=[e.first_name,e.middle_name,e.last_name].filter(Boolean).join(' ').trim();
       people.push({cat:'OUT',name:nm||e.resource_id,id:e.resource_id,desig:'Outsource Resource',office:e.office_name,...p}); }
     state.people=people; render();
