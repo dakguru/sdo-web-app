@@ -929,15 +929,18 @@ async function loadData(){
           Object.assign(S.mobiles, telCloud.data);
         }
         
+        // Overlay individual phone edits (pencil edits + public self-service page).
+        // The table columns are target_type / target_id (not role / emp_id).
         const edits = await SB.getPhoneEdits();
         for (const ed of (edits || [])) {
-          if (ed.role === 'OUTSIDER') {
-            const emp = S.employees.find(e => e._type === 'OUT' && clean(e.resource_id) === ed.emp_id);
+          if (ed.target_type === 'OUTSIDER') {
+            const emp = S.employees.find(e => e._type === 'OUT' && clean(e.resource_id) === clean(ed.target_id));
             if (emp) emp.mobile_no = ed.phone;
-          } else {
-            if (ed.phone) S.mobiles[ed.emp_id] = ed.phone;
-            else delete S.mobiles[ed.emp_id];
+          } else if (ed.target_type === 'EMPLOYEE') {
+            if (ed.phone) S.mobiles[clean(ed.target_id)] = ed.phone;
+            else delete S.mobiles[clean(ed.target_id)];
           }
+          // EMPLOYEE_EMAIL rows (self-service email capture) are ignored here.
         }
       }
     }

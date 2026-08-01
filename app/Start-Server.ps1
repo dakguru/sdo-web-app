@@ -346,6 +346,7 @@ try {
       if ($path -eq '/birthdays' -or $path -eq '/birthdays/')             { Send-File $ctx (Join-Path $root 'Leave Orders\birthdays.html') (MimeOf 'index.html'); continue }
       if ($path -eq '/retirements' -or $path -eq '/retirements/')         { Send-File $ctx (Join-Path $root 'Leave Orders\retirements.html') (MimeOf 'index.html'); continue }
       if ($path -eq '/sanctioned-posts' -or $path -eq '/sanctioned-posts/') { Send-File $ctx (Join-Path $root 'Leave Orders\sanctioned-posts.html') (MimeOf 'index.html'); continue }
+      if ($path -eq '/update-mobile' -or $path -eq '/update-mobile/')       { Send-File $ctx (Join-Path $root 'Leave Orders\update-mobile.html') (MimeOf 'index.html'); continue }
 
       # Pages reference auth-guard.js by a root-relative path (e.g. from /employees
       # the browser requests /auth-guard.js); serve it from the Leave Orders folder.
