@@ -905,9 +905,11 @@ document.querySelectorAll('.nav-card').forEach(card => {
 });
 </script>
 <script src="/leave-orders/supabase-sync.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
 <script>
 (async () => {
   const ok = await SB.init();
+  try { await KarurScope.load(); } catch (e) {}
   const badge = document.querySelector('.privacy') || document.querySelector('[data-cloud-status]');
   if (badge && ok) {
     badge.innerHTML = '<span class="dot" style="background:#4ade80;box-shadow:0 0 8px #4ade80"></span> ☁ Cloud Connected';
@@ -985,9 +987,11 @@ document.querySelectorAll('.nav-card').forEach(card => {
       ]);
 
       const allPeople = [];
-      if (dsData && dsData.data) dsData.data.forEach(e => allPeople.push({ name: e.Employee_name || e.name, dob: e.Date_of_birth || e.dateOfBirth, office: e.Office_desc || e.officeName || '', cat: 'DS' }));
-      if (gdsData && gdsData.data) gdsData.data.forEach(e => allPeople.push({ name: e.Employee_name || e.name, dob: e.Date_of_birth || e.dateOfBirth, office: e.Office_desc || e.officeName || '', cat: 'GDS' }));
-      if (outData && outData.data) outData.data.forEach(e => {
+      // This app serves only the Karur Sub Division: keep only Karur staff.
+      const inK = e => KarurScope.inScope(e);
+      if (dsData && dsData.data) dsData.data.filter(inK).forEach(e => allPeople.push({ name: e.Employee_name || e.name, dob: e.Date_of_birth || e.dateOfBirth, office: e.Office_desc || e.officeName || '', cat: 'DS' }));
+      if (gdsData && gdsData.data) gdsData.data.filter(inK).forEach(e => allPeople.push({ name: e.Employee_name || e.name, dob: e.Date_of_birth || e.dateOfBirth, office: e.Office_desc || e.officeName || '', cat: 'GDS' }));
+      if (outData && outData.data) outData.data.filter(inK).forEach(e => {
         const nm = [e.first_name, e.middle_name, e.last_name].filter(Boolean).join(' ').trim() || e.fullName || e.firstName || '';
         allPeople.push({ name: nm, dob: e.date_of_birth || e.dateOfBirth, office: e.office_name || e.officeName || '', cat: 'OUT' });
       });
