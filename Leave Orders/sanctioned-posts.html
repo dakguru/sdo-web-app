@@ -184,23 +184,35 @@ let arrangements = [];
 let vacancies = [];
 let mappedData = [];
 
+async function safeFetchJSON(url, fallbackUrl) {
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (res.ok) return await res.json();
+  } catch(e) {}
+  if (fallbackUrl) {
+    try {
+      const fRes = await fetch(fallbackUrl, { cache: 'no-store' });
+      if (fRes.ok) return await fRes.json();
+    } catch(e) {}
+  }
+  return null;
+}
+
 async function loadData() {
   try {
-    const [pRes, eRes, aRes, vRes] = await Promise.all([
-      fetch('/api/posts').then(r=>r.json()),
-      fetch('/api/employees').then(r=>r.json()),
-      fetch('/api/arrangements').then(r=>r.json()),
-      fetch('/api/vacancies').then(r=>r.json())
-    ]);
+    const pRes = await safeFetchJSON('/api/posts', '/data/posts.json');
+    const eRes = await safeFetchJSON('/api/employees', '/data/employees.json');
+    const aRes = await safeFetchJSON('/api/arrangements', '/data/arrangements.json');
+    const vRes = await safeFetchJSON('/api/vacancies', '/data/vacancies.json');
     
-    posts = Array.isArray(pRes) ? pRes : (pRes.posts || []);
-    employees = Array.isArray(eRes) ? eRes : (eRes.employees || []);
-    arrangements = Array.isArray(aRes) ? aRes : (aRes.arrangements || []);
-    vacancies = Array.isArray(vRes) ? vRes : [];
+    posts = pRes ? (Array.isArray(pRes) ? pRes : (pRes.posts || [])) : [];
+    employees = eRes ? (Array.isArray(eRes) ? eRes : (eRes.employees || [])) : [];
+    arrangements = aRes ? (Array.isArray(aRes) ? aRes : (aRes.arrangements || [])) : [];
+    vacancies = vRes ? (Array.isArray(vRes) ? vRes : []) : [];
     
     buildMapping();
   } catch (e) {
-    showToast('Failed to load data. Ensure server is running.');
+    showToast('Failed to load data.');
     console.error(e);
   }
 }
