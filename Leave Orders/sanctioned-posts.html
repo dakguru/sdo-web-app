@@ -18,13 +18,38 @@
 html.light{--bg:#f8fafc;--panel:#ffffff;--line:#e2e8f0;--text:#0f172a;--text-muted:#64748b;--shadow-lg:0 10px 15px -3px rgba(0,0,0,.1);}
 *{box-sizing:border-box}
 body{margin:0;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;line-height:1.5}
-.appbar{display:flex;align-items:center;gap:16px;padding:12px 24px;background:var(--panel);border-bottom:1px solid var(--line);font-size:13px}
-.appbar .switch{display:flex;gap:4px;margin-left:auto}
-.appbar .pill{padding:6px 14px;border-radius:99px;color:var(--text-muted);text-decoration:none;font-weight:600;transition:.2s}
-.appbar .pill:hover{background:rgba(124,58,237,.1);color:var(--brand)}
-.appbar .pill.active{background:var(--brand);color:#fff}
+/* ===== App switcher bar (glass) ===== */
+.appbar{position:sticky;top:0;z-index:50;background:linear-gradient(90deg,rgba(9,20,40,.92),rgba(19,43,82,.92));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#fff;padding:8px 22px;display:flex;align-items:center;gap:12px;font:600 12.5px/1.2 'Inter',-apple-system,'Segoe UI',sans-serif;letter-spacing:.2px;border-bottom:1px solid rgba(255,255,255,.08)}
+.appbar .switch{margin-left:auto;display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:11px;backdrop-filter:blur(8px);flex-wrap:wrap}
+.appbar .pill{padding:6px 13px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.82);border-radius:7px;text-decoration:none;transition:background .2s,color .2s,box-shadow .2s}
+.appbar .pill:hover{background:rgba(255,255,255,.12);color:#fff}
+.appbar .pill.active{color:#0b1836;background:#fff;box-shadow:0 3px 10px rgba(0,0,0,.28)}
 
-header{padding:32px 24px 20px;max-width:1400px;margin:0 auto}
+/* ===== Government header (glass, tricolour) ===== */
+header{position:relative;overflow:hidden;color:#fff;padding:0;box-shadow:0 14px 34px rgba(9,20,40,.28)}
+header::before{content:"";position:absolute;inset:0;z-index:0;background:
+  radial-gradient(880px 420px at 6% -60%, rgba(129,140,248,.50), transparent 60%),
+  radial-gradient(760px 420px at 102% -20%, rgba(236,72,153,.34), transparent 55%),
+  radial-gradient(700px 500px at 60% 140%, rgba(13,148,136,.30), transparent 60%),
+  linear-gradient(120deg,#0a1834 0%,#16307a 42%,#4f46e5 78%,#7c3aed 100%)}
+header::after{content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;background:linear-gradient(90deg,#FF9933 0 33.33%,#ffffff 33.33% 66.66%,#138808 66.66% 100%)}
+.hdr-grain{position:absolute;inset:0;z-index:0;opacity:.5;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 0);background-size:22px 22px}
+.header-inner{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:15px 24px 12px}
+.gov-band{display:flex;align-items:center;gap:18px}
+.gov-crest{height:60px;width:60px;flex:0 0 auto;border-radius:15px;background:#fff;padding:5px;object-fit:contain;box-shadow:0 8px 22px rgba(0,0,0,.30),0 0 0 1px rgba(255,255,255,.35),inset 0 0 0 1px rgba(0,0,0,.04)}
+.gov-post{width:auto;max-width:150px;padding:7px 12px}
+.gov-titles{flex:1 1 auto;min-width:0;text-align:center}
+.gov-l1{font:800 11px/1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:3.4px;text-transform:uppercase;background:linear-gradient(90deg,#fde68a,#fcd34d,#fbbf24);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gov-l2{font:800 clamp(19px,2.5vw,26px)/1.1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:.3px;margin-top:4px;background:linear-gradient(180deg,#ffffff 0%,#d7e1ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gov-l3{font:600 12.5px/1.35 'Inter',sans-serif;color:rgba(255,255,255,.80);margin-top:5px}
+.gov-l3 b{color:#fff;font-weight:800;letter-spacing:.2px}
+.gov-underline{width:78px;height:3px;margin:9px auto 0;border-radius:3px;background:linear-gradient(90deg,#FF9933,#fff,#138808);box-shadow:0 0 10px rgba(255,255,255,.25)}
+.header-module{position:relative;z-index:1;max-width:1400px;margin:11px auto 0;padding:12px 24px 16px;border-top:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.header-module .brand{display:flex;align-items:center;gap:13px}
+.header-module .logo{width:46px;height:46px;border-radius:13px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-size:24px;border:1.5px solid rgba(255,255,255,.30);box-shadow:inset 0 1px 0 rgba(255,255,255,.25);color:#fff}
+header h1{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:20px;margin:0;font-weight:800;letter-spacing:.2px;line-height:1.15;color:#fff}
+header .sub{font-size:12.5px;color:rgba(255,255,255,.9);margin:0;margin-top:2px;font-weight:500}
+@media(max-width:640px){.gov-band{gap:11px}.gov-crest{height:46px;width:46px;border-radius:12px}.gov-l1{letter-spacing:2px;font-size:10px}.gov-l3{font-size:11px}.appbar{flex-wrap:wrap}.appbar .switch{margin-left:0;width:100%;overflow-x:auto}}
 h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;margin:0 0 6px;letter-spacing:-0.5px}
 .sub{color:var(--text-muted);font-size:15px}
 
@@ -77,11 +102,11 @@ html.light tr:hover{background:rgba(0,0,0,.02)}
 </head>
 <body>
 <div class="appbar">
-  <a href="/" style="opacity:.85;color:inherit;text-decoration:none;font-weight:700">🏠 Home</a>
-  <span style="opacity:.4">|</span>
-  <span style="opacity:.72">Department of Posts &middot; Karur Sub Division</span>
+  <a href="/" style="opacity:.9;color:#fff;text-decoration:none;font-weight:700">🏠 Home</a>
+  <span style="opacity:.35">|</span>
+  <span style="opacity:.75">Department of Posts &middot; Karur Sub Division</span>
   <div class="switch">
-    <a class="pill" href="/leave-orders">Leave Orders</a>
+    <a class="pill" href="/leave-orders">Sub Divisional Manager</a>
     <a class="pill" href="/employees">Employee Directory</a>
     <a class="pill" href="/arrangements">Arrangements</a>
     <span class="pill active">Sanctioned & Working</span>
@@ -89,8 +114,28 @@ html.light tr:hover{background:rgba(0,0,0,.02)}
 </div>
 
 <header>
-  <h1>Sanctioned & Working (GDS)</h1>
-  <div class="sub">Map sanctioned GDS posts with working staff. Manage vacancies and track temporary arrangements.</div>
+  <div class="hdr-grain"></div>
+  <div class="header-inner">
+    <div class="gov-band">
+      <img class="gov-crest" src="/assets/app-logo.jpg" alt="Government of India — Karur Sub Division" />
+      <div class="gov-titles">
+        <div class="gov-l1">Government of India</div>
+        <div class="gov-l2">Department of Posts</div>
+        <div class="gov-l3">O/o the Asst. Superintendent of Post Offices &middot; <b>Karur Sub Division</b> &middot; Karur &mdash; 639001</div>
+        <div class="gov-underline"></div>
+      </div>
+      <img class="gov-crest gov-post" src="/assets/india-post-logo.png" alt="India Post" />
+    </div>
+  </div>
+  <div class="header-module">
+    <div class="brand">
+      <div class="logo">&#128203;</div>
+      <div>
+        <h1>Sanctioned &amp; Working (GDS)</h1>
+        <div class="sub">Map sanctioned GDS posts with working staff. Manage vacancies and track temporary arrangements.</div>
+      </div>
+    </div>
+  </div>
 </header>
 
 <main>
