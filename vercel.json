@@ -1,7 +1,9 @@
 {
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/login", "destination": "/Leave Orders/login.html" },
     { "source": "/", "destination": "/Leave Orders/homepage.html" },
+    { "source": "/ir-library", "destination": "/Leave Orders/ir-library.html" },
     { "source": "/ir-builder", "destination": "/app/wwwroot/index.html" },
     { "source": "/leave-orders", "destination": "/Leave Orders/index.html" },
     { "source": "/arrangements", "destination": "/Leave Orders/arrangements.html" },

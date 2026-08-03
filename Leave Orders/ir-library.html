@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="/leave-orders/auth-guard.js"></script>
+<title>IR / VR Library — Karur Sub Division</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep:#0a0e1a; --glass-bg:rgba(255,255,255,0.06); --glass-bg-hover:rgba(255,255,255,0.12);
+  --glass-border:rgba(255,255,255,0.12); --glass-border-hover:rgba(255,255,255,0.25);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.25); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.35),0 0 0 1px rgba(255,255,255,0.15);
+  --glass-blur:20px; --text-primary:#f1f5f9; --text-secondary:rgba(241,245,249,0.7); --text-muted:rgba(241,245,249,0.45);
+  --ir:#60a5fa; --ir2:#818cf8; --vr:#fb7185; --vr2:#f472b6;
+  --radius-xl:24px; --radius-lg:18px; --radius-md:14px;
+}
+html.light{
+  --bg-deep:#f0f2f7; --glass-bg:rgba(255,255,255,0.65); --glass-bg-hover:rgba(255,255,255,0.9);
+  --glass-border:rgba(0,0,0,0.08); --glass-border-hover:rgba(0,0,0,0.15);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.08); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.12),0 0 0 1px rgba(0,0,0,0.06);
+  --text-primary:#0f172a; --text-secondary:rgba(15,23,42,0.7); --text-muted:rgba(15,23,42,0.45);
+  --ir:#2563eb; --ir2:#4f46e5; --vr:#e11d48; --vr2:#be185d;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-deep);color:var(--text-primary);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s,color .4s}
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(ellipse 900px 600px at 15% 15%,rgba(96,165,250,0.16),transparent 70%),
+  radial-gradient(ellipse 700px 500px at 85% 20%,rgba(251,113,133,0.12),transparent 65%),
+  radial-gradient(ellipse 600px 400px at 55% 90%,rgba(129,140,248,0.10),transparent 60%),
+  linear-gradient(180deg,#0a0e1a,#111827 55%,#0f1729)}
+html.light .bg-mesh{background:
+  radial-gradient(ellipse 900px 600px at 15% 15%,rgba(37,99,235,0.08),transparent 70%),
+  radial-gradient(ellipse 700px 500px at 85% 20%,rgba(225,29,72,0.06),transparent 65%),
+  linear-gradient(180deg,#f0f2f7,#e8ecf4 55%,#f0f2f7)}
+
+.page-wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:26px 22px 60px}
+
+/* top bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.back-link{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--text-secondary);font-weight:600;font-size:13.5px;
+  padding:9px 15px;border-radius:999px;background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(var(--glass-blur));transition:all .3s}
+.back-link:hover{background:var(--glass-bg-hover);color:var(--text-primary);transform:translateX(-2px)}
+.theme-toggle{width:44px;height:44px;border-radius:50%;border:1px solid var(--glass-border);cursor:pointer;background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));display:grid;place-items:center;font-size:20px;color:var(--text-primary);transition:all .3s}
+.theme-toggle:hover{background:var(--glass-bg-hover);transform:scale(1.08) rotate(12deg)}
+
+/* hero */
+.hero{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);padding:26px 28px;margin-bottom:22px;position:relative;overflow:hidden;backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow)}
+.hero::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--ir),var(--ir2),var(--vr2),var(--vr))}
+.hero-eyebrow{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-muted)}
+.hero-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:800;margin:6px 0 4px;
+  background:linear-gradient(135deg,var(--ir),var(--ir2) 45%,var(--vr2) 80%,var(--vr));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:13.5px;color:var(--text-secondary);line-height:1.6;max-width:640px}
+
+/* stat tiles */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:16px 16px 14px;backdrop-filter:blur(var(--glass-blur));position:relative;overflow:hidden;transition:transform .3s}
+.stat:hover{transform:translateY(-3px)}
+.stat .n{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:900;line-height:1}
+.stat .l{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-top:6px}
+.stat.s-all .n{color:var(--ir2)} .stat.s-ir .n{color:var(--ir)} .stat.s-vr .n{color:var(--vr)}
+.stat.s-off .n{color:#34d399} .stat.s-yr .n{color:#fbbf24}
+
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:20px}
+.search{flex:1;min-width:220px;display:flex;align-items:center;gap:10px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:999px;padding:11px 18px;backdrop-filter:blur(var(--glass-blur))}
+.search input{flex:1;background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:14px}
+.search input::placeholder{color:var(--text-muted)}
+.search .ic{font-size:15px;opacity:.6}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-secondary);font-family:inherit;font-size:12.5px;font-weight:600;
+  padding:9px 15px;border-radius:999px;cursor:pointer;transition:all .25s;backdrop-filter:blur(var(--glass-blur))}
+.chip:hover{background:var(--glass-bg-hover);color:var(--text-primary)}
+.chip.on{color:#fff;border-color:transparent}
+.chip.on[data-k="year"]{background:linear-gradient(135deg,#fbbf24,#fb923c)}
+.chip.on[data-k="type"]{background:linear-gradient(135deg,var(--ir),var(--ir2))}
+.chip.on[data-v="VR"]{background:linear-gradient(135deg,var(--vr2),var(--vr))}
+.chip.on[data-v="ALL"]{background:linear-gradient(135deg,#818cf8,#a78bfa)}
+
+/* gallery */
+.year-head{display:flex;align-items:center;gap:12px;margin:26px 2px 14px;font-family:'Plus Jakarta Sans','Inter',sans-serif}
+.year-head .yb{font-size:13px;font-weight:800;letter-spacing:1px;padding:5px 13px;border-radius:999px;background:linear-gradient(135deg,#fbbf24,#fb923c);color:#1a1205}
+.year-head .yl{flex:1;height:1px;background:linear-gradient(90deg,var(--glass-border),transparent)}
+.year-head .yc{font-size:12px;font-weight:700;color:var(--text-muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.doc{position:relative;display:flex;flex-direction:column;gap:10px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);
+  padding:16px 16px 14px;backdrop-filter:blur(var(--glass-blur));transition:all .3s cubic-bezier(.25,.46,.45,.94);overflow:hidden;animation:pop .4s both}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.doc:hover{background:var(--glass-bg-hover);border-color:var(--glass-border-hover);box-shadow:var(--glass-shadow-hover);transform:translateY(-4px)}
+.doc::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--ir),var(--ir2))}
+.doc.vr::before{background:linear-gradient(180deg,var(--vr2),var(--vr))}
+.doc-top{display:flex;align-items:flex-start;gap:11px}
+.doc-ic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:12px;font-weight:800;letter-spacing:.5px;color:#fff;flex-shrink:0;
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.doc-ic.ir{background:linear-gradient(135deg,var(--ir),var(--ir2))}
+.doc-ic.vr{background:linear-gradient(135deg,var(--vr2),var(--vr))}
+.doc-office{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:700;font-size:14.5px;line-height:1.3;color:var(--text-primary);word-break:break-word}
+.doc-file{font-size:11px;color:var(--text-muted);word-break:break-word;line-height:1.4}
+.doc-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+.tag{font-size:10.5px;font-weight:700;letter-spacing:.4px;padding:4px 9px;border-radius:999px;display:inline-flex;align-items:center;gap:4px}
+.tag.t-ir{background:rgba(96,165,250,.16);color:var(--ir)} .tag.t-vr{background:rgba(251,113,133,.16);color:var(--vr)}
+.tag.t-date{background:rgba(148,163,184,.14);color:var(--text-secondary)}
+.tag.t-size{background:rgba(52,211,153,.14);color:#34d399}
+.dl{margin-top:auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;text-decoration:none;
+  font-weight:700;font-size:12.5px;padding:9px 12px;border-radius:11px;color:#fff;
+  background:linear-gradient(135deg,var(--ir),var(--ir2));transition:all .25s;box-shadow:0 4px 14px rgba(96,165,250,.25)}
+.doc.vr .dl{background:linear-gradient(135deg,var(--vr2),var(--vr));box-shadow:0 4px 14px rgba(251,113,133,.25)}
+.dl:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.empty{grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--text-muted);font-size:14px}
+.empty .ei{font-size:40px;display:block;margin-bottom:10px;opacity:.5}
+
+/* upload */
+.upload-card{margin-top:30px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);padding:24px;backdrop-filter:blur(var(--glass-blur));position:relative;overflow:hidden}
+.upload-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#34d399,#2dd4bf,#60a5fa)}
+.uc-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:700;font-size:16px;display:flex;align-items:center;gap:9px}
+.uc-sub{font-size:12.5px;color:var(--text-muted);margin:5px 0 16px;line-height:1.6}
+.drop{border:2px dashed var(--glass-border);border-radius:var(--radius-lg);padding:26px 18px;text-align:center;cursor:pointer;transition:all .25s;background:rgba(255,255,255,.02)}
+.drop:hover,.drop.drag{border-color:var(--ir);background:rgba(96,165,250,.06)}
+.drop .di{font-size:32px;display:block;margin-bottom:8px}
+.drop .dt{font-weight:600;font-size:13.5px;color:var(--text-secondary)}
+.drop .dh{font-size:11.5px;color:var(--text-muted);margin-top:5px}
+.uc-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px}
+.uc-row label{font-size:12.5px;font-weight:600;color:var(--text-secondary)}
+select,.btn{font-family:inherit}
+select{background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:11px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer}
+.btn{border:none;border-radius:11px;padding:11px 20px;font-weight:700;font-size:13px;cursor:pointer;color:#fff;background:linear-gradient(135deg,#34d399,#2dd4bf);transition:all .25s;box-shadow:0 4px 16px rgba(45,212,191,.25)}
+.btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.file-chip{display:none;align-items:center;gap:9px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);border-radius:11px;padding:9px 14px;font-size:12.5px;font-weight:600;color:var(--ir);margin-top:14px}
+.file-chip .x{cursor:pointer;margin-left:auto;opacity:.7;font-weight:800}
+.file-chip .x:hover{opacity:1}
+.uc-note{margin-top:14px;font-size:11.5px;color:var(--text-muted);line-height:1.6;display:flex;gap:8px;align-items:flex-start}
+.uc-note .i{flex-shrink:0}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;
+  background:#111827;color:#fff;padding:13px 22px;border-radius:12px;font-size:13px;font-weight:600;z-index:200;
+  box-shadow:0 12px 40px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);transition:all .35s;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(52,211,153,.4)} .toast.err{border-color:rgba(251,113,133,.5)}
+
+.footer{text-align:center;padding:34px 20px 8px;color:var(--text-muted);font-size:12px}
+.footer .credit{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:700;margin-top:5px;
+  background:linear-gradient(135deg,#818cf8,#a78bfa,#fb7185);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+
+<div class="page-wrap">
+  <div class="topbar">
+    <a href="/" class="back-link">← Back to Home</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+  </div>
+
+  <div class="hero">
+    <div class="hero-eyebrow">Karur Sub Division · Department of Posts</div>
+    <div class="hero-title">📚 IR / VR Library</div>
+    <div class="hero-sub">Inspection Reports (IR) and Verification Reports (VR) of Branch &amp; Sub Offices — searchable, year-wise, one-click download. Upload a new report and it is saved directly as a file in the project's GitHub repository.</div>
+  </div>
+
+  <div class="stats" id="stats">
+    <div class="stat s-all"><div class="n" id="stAll">—</div><div class="l">Total Reports</div></div>
+    <div class="stat s-ir"><div class="n" id="stIr">—</div><div class="l">Inspection (IR)</div></div>
+    <div class="stat s-vr"><div class="n" id="stVr">—</div><div class="l">Verification (VR)</div></div>
+    <div class="stat s-off"><div class="n" id="stOff">—</div><div class="l">Offices</div></div>
+    <div class="stat s-yr"><div class="n" id="stYr">—</div><div class="l">Years</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search"><span class="ic">🔍</span><input id="q" type="text" placeholder="Search office, report or date…" autocomplete="off"></div>
+    <div class="chips" id="yearChips"></div>
+    <div class="chips" id="typeChips">
+      <button class="chip on" data-k="type" data-v="ALL">All</button>
+      <button class="chip" data-k="type" data-v="IR">IR</button>
+      <button class="chip" data-k="type" data-v="VR">VR</button>
+    </div>
+  </div>
+
+  <div id="gallery"></div>
+
+  <!-- Upload -->
+  <div class="upload-card">
+    <div class="uc-title">⬆️ Upload a new IR / VR report</div>
+    <div class="uc-sub">Stored as a file in GitHub (not the database). Accepted: Word documents (.doc / .docx). It appears in the library after the site redeploys (about a minute).</div>
+    <div class="drop" id="drop" tabindex="0">
+      <span class="di">📄</span>
+      <span class="dt">Drop a report here — or click to browse</span>
+      <span class="dh">Word .doc / .docx · up to 3 MB</span>
+      <input type="file" id="file" accept=".doc,.docx" style="display:none">
+    </div>
+    <div class="file-chip" id="fileChip"><span>📎</span><span id="fileName"></span><span class="x" id="fileClear">✕</span></div>
+    <div class="uc-row">
+      <label for="yearSel">Year</label>
+      <select id="yearSel"><option value="2026">2026</option><option value="2025">2025</option></select>
+      <button class="btn" id="uploadBtn" disabled>Upload to GitHub</button>
+    </div>
+    <div class="uc-note"><span class="i">🔒</span><span>Uploads use a server-side GitHub token configured in Vercel — no credentials are stored in this page. If uploads are not yet enabled, ask the administrator to set the <b>GITHUB_TOKEN</b> environment variable.</span></div>
+  </div>
+
+  <div class="footer">
+    IR / VR Library · Karur Sub Division
+    <div class="credit">Designed by Arun Selvaraj · Karur Division</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// theme
+(function(){const h=document.documentElement;if(localStorage.getItem('theme')==='light')h.classList.add('light');
+  const b=document.getElementById('themeToggle');const paint=()=>b.textContent=h.classList.contains('light')?'☀️':'🌙';paint();
+  b.onclick=()=>{h.classList.toggle('light');localStorage.setItem('theme',h.classList.contains('light')?'light':'dark');paint();};})();
+
+const state={items:[],year:'ALL',type:'ALL',q:''};
+const $=s=>document.querySelector(s);
+const enc=s=>encodeURIComponent(s);
+const fileUrl=it=>`/leave-orders/ir-library/${it.year}/${enc(it.file)}`;
+function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');setTimeout(()=>t.className='toast',3200);}
+
+async function load(){
+  try{
+    const r=await fetch('/leave-orders/ir-library/manifest.json',{cache:'no-store'});
+    const j=await r.json();
+    state.items=(j.items||[]).slice();
+  }catch(e){ state.items=[]; }
+  buildYearChips();
+  renderStats();
+  render();
+}
+
+function buildYearChips(){
+  const years=[...new Set(state.items.map(i=>i.year))].sort((a,b)=>b.localeCompare(a));
+  const wrap=$('#yearChips');
+  wrap.innerHTML='<button class="chip on" data-k="year" data-v="ALL">All years</button>'+
+    years.map(y=>`<button class="chip" data-k="year" data-v="${y}">${y}</button>`).join('');
+}
+
+function renderStats(){
+  const it=state.items;
+  $('#stAll').textContent=it.length;
+  $('#stIr').textContent=it.filter(i=>i.type==='IR').length;
+  $('#stVr').textContent=it.filter(i=>i.type==='VR').length;
+  $('#stOff').textContent=new Set(it.map(i=>i.office)).size;
+  $('#stYr').textContent=new Set(it.map(i=>i.year)).size;
+}
+
+function filtered(){
+  const q=state.q.toLowerCase();
+  return state.items.filter(i=>{
+    if(state.year!=='ALL'&&i.year!==state.year)return false;
+    if(state.type!=='ALL'&&i.type!==state.type)return false;
+    if(q){const hay=(i.office+' '+i.file+' '+i.date+' '+i.type+' '+i.year).toLowerCase();if(!hay.includes(q))return false;}
+    return true;
+  });
+}
+
+function render(){
+  const list=filtered();
+  const g=$('#gallery');
+  if(!list.length){g.innerHTML='<div class="grid"><div class="empty"><span class="ei">🗂️</span>No reports match your search or filters.</div></div>';return;}
+  // group by year
+  const years=[...new Set(list.map(i=>i.year))].sort((a,b)=>b.localeCompare(a));
+  let html='';
+  for(const y of years){
+    const rows=list.filter(i=>i.year===y);
+    html+=`<div class="year-head"><span class="yb">${y}</span><span class="yl"></span><span class="yc">${rows.length} report${rows.length===1?'':'s'}</span></div>`;
+    html+='<div class="grid">';
+    for(const it of rows){
+      const cls=it.type==='VR'?'vr':'ir';
+      html+=`<div class="doc ${cls}">
+        <div class="doc-top">
+          <div class="doc-ic ${cls}">${it.type}</div>
+          <div><div class="doc-office">${escapeHtml(it.office)}</div><div class="doc-file">${escapeHtml(it.file)}</div></div>
+        </div>
+        <div class="doc-meta">
+          <span class="tag t-${cls}">${it.type==='VR'?'Verification':'Inspection'}</span>
+          ${it.date?`<span class="tag t-date">🗓 ${it.date}</span>`:''}
+          <span class="tag t-size">${it.sizeKB} KB</span>
+        </div>
+        <a class="dl" href="${fileUrl(it)}" download="${escapeHtml(it.file)}">⬇ Download</a>
+      </div>`;
+    }
+    html+='</div>';
+  }
+  g.innerHTML=html;
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+// filter events
+document.addEventListener('click',e=>{
+  const chip=e.target.closest('.chip');if(!chip)return;
+  const k=chip.dataset.k,v=chip.dataset.v;
+  chip.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  chip.classList.add('on');
+  if(k==='year')state.year=v; else state.type=v;
+  render();
+});
+let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{state.q=e.target.value.trim();render();},140);});
+
+// ---------- upload ----------
+const drop=$('#drop'),fileInput=$('#file'),fileChip=$('#fileChip'),uploadBtn=$('#uploadBtn');
+let picked=null;
+function setPicked(f){
+  picked=f;
+  if(f){$('#fileName').textContent=f.name+' · '+Math.round(f.size/1024)+' KB';fileChip.style.display='flex';uploadBtn.disabled=false;}
+  else{fileChip.style.display='none';uploadBtn.disabled=true;fileInput.value='';}
+}
+drop.addEventListener('click',()=>fileInput.click());
+drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fileInput.click();}});
+fileInput.addEventListener('change',()=>{if(fileInput.files[0])validatePick(fileInput.files[0]);});
+$('#fileClear').addEventListener('click',()=>setPicked(null));
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)validatePick(f);});
+
+function validatePick(f){
+  if(!/\.(docx?|DOCX?)$/i.test(f.name)){toast('Only Word .doc / .docx files are allowed.','err');return;}
+  if(f.size>3*1024*1024){toast('File is larger than 3 MB — please compress or split it.','err');return;}
+  setPicked(f);
+}
+
+uploadBtn.addEventListener('click',async()=>{
+  if(!picked)return;
+  const year=$('#yearSel').value;
+  uploadBtn.disabled=true;uploadBtn.textContent='Uploading…';
+  try{
+    const b64=await toBase64(picked);
+    const res=await fetch('/api/ir-upload',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({year,filename:picked.name,contentBase64:b64})});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||!data.ok){throw new Error(data.error||('Upload failed ('+res.status+')'));}
+    toast('Uploaded ✓ — appears in the library after redeploy (~1 min).','ok');
+    // optimistic add
+    state.items.unshift(data.item||{file:picked.name,year,type:/\bVR\b/i.test(picked.name)?'VR':'IR',office:picked.name.replace(/\s*-.*$/,''),date:'',sizeKB:Math.round(picked.size/1024)});
+    renderStats();render();
+    setPicked(null);
+  }catch(err){
+    toast(err.message||'Upload failed','err');
+  }finally{
+    uploadBtn.disabled=!picked;uploadBtn.textContent='Upload to GitHub';
+  }
+});
+
+function toBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>{const s=String(r.result);const i=s.indexOf(',');resolve(i>=0?s.slice(i+1):s);};
+    r.onerror=reject;r.readAsDataURL(file);
+  });
+}
+
+load();
+</script>
+</body>
+</html>
