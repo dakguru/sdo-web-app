@@ -142,6 +142,14 @@
   .builtby{text-align:center;font-weight:800;font-size:14px;padding:14px 8px 30px;font-family:"Plus Jakarta Sans","Inter"}
   .search{padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font:600 13.5px/1.2 "Inter";background:#fff;min-width:220px}
   .search:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.14)}
+  /* ===== Data-administration zone (relocated to page bottom) ===== */
+  .zone-divider{display:flex;align-items:center;gap:16px;margin:38px 2px 18px;color:var(--muted)}
+  .zone-divider::before,.zone-divider::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--line) 12%,var(--line) 88%,transparent)}
+  .zone-divider .zt{font:800 11px/1 "Plus Jakarta Sans","Inter",sans-serif;text-transform:uppercase;letter-spacing:1.8px;white-space:nowrap;display:inline-flex;align-items:center;gap:9px;color:var(--ink-2)}
+  .zone-divider .zt .zi{width:22px;height:22px;border-radius:7px;background:var(--grad-brand);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;box-shadow:var(--shadow-sm)}
+  .zone-divider .zt small{font-weight:600;letter-spacing:.3px;text-transform:none;color:var(--muted);font-size:11px}
+  .card.admin{position:relative;overflow:hidden;background:linear-gradient(180deg,#fbfcff 0%,#f6f8fe 100%);border-color:#e6ebf7;box-shadow:var(--shadow-md)}
+  .card.admin::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad-brand);opacity:.85}
 </style>
 <link rel="stylesheet" href="/leave-orders/mobile.css">
 </head>
@@ -186,29 +194,6 @@
 </header>
 
 <main>
-  <!-- Upload -->
-  <div class="card">
-    <h2><span class="num">&#8593;</span> Upload arrangement data</h2>
-    <div class="up-wrap">
-      <div class="drop" id="drop" tabindex="0">
-        <div class="ic">&#128194;</div>
-        <div class="t">Drop the arrangements export here — or click to browse</div>
-        <div class="h">Upload the HRMS arrangements export (.xls/.xlsx). Only <b>GDS Post by Outsrc Resource</b> and <b>Non&#8209;Sanc Post by Outsrc Resource</b> are kept. Re-uploading replaces the data.</div>
-        <input type="file" id="file" accept=".xls,.xlsx" style="display:none" />
-      </div>
-      <div class="up-side">
-        <div class="up-stat"><span class="badge gds">GDS</span><span id="gds-meta" class="muted">—</span></div>
-        <div class="up-stat"><span class="badge ns">N.S.</span><span id="ns-meta" class="muted">—</span></div>
-        <div class="up-stat"><span id="src-meta" class="muted" style="font-size:12px">No data loaded yet.</span></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
-          <button class="btn" id="saveBtn" disabled>&#128190; Save uploaded data</button>
-          <button class="btn ghost tiny" id="discardBtn" style="display:none">Discard</button>
-        </div>
-        <div class="muted" id="pending" style="font-size:12px"></div>
-      </div>
-    </div>
-  </div>
-
   <!-- Report builder -->
   <div class="card">
     <h2><span class="num">&#9881;</span> Generate report</h2>
@@ -251,6 +236,29 @@
       <input class="search" id="viewSearch" placeholder="&#128269;  Filter by office, substitute, post…" autocomplete="off" style="margin-left:auto" />
     </div>
     <div id="viewBody"></div>
+  </div>
+
+  <div class="zone-divider"><span class="zt"><span class="zi">&#8593;</span> Data administration &nbsp;<small>Upload the HRMS arrangements export</small></span></div>
+  <div class="card admin">
+    <h2><span class="num">&#8593;</span> Upload arrangement data</h2>
+    <div class="up-wrap">
+      <div class="drop" id="drop" tabindex="0">
+        <div class="ic">&#128194;</div>
+        <div class="t">Drop the arrangements export here — or click to browse</div>
+        <div class="h">Upload the HRMS arrangements export (.xls/.xlsx). Only <b>GDS Post by Outsrc Resource</b> and <b>Non&#8209;Sanc Post by Outsrc Resource</b> are kept. Re-uploading replaces the data.</div>
+        <input type="file" id="file" accept=".xls,.xlsx" style="display:none" />
+      </div>
+      <div class="up-side">
+        <div class="up-stat"><span class="badge gds">GDS</span><span id="gds-meta" class="muted">—</span></div>
+        <div class="up-stat"><span class="badge ns">N.S.</span><span id="ns-meta" class="muted">—</span></div>
+        <div class="up-stat"><span id="src-meta" class="muted" style="font-size:12px">No data loaded yet.</span></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+          <button class="btn" id="saveBtn" disabled>&#128190; Save uploaded data</button>
+          <button class="btn ghost tiny" id="discardBtn" style="display:none">Discard</button>
+        </div>
+        <div class="muted" id="pending" style="font-size:12px"></div>
+      </div>
+    </div>
   </div>
 
   <div class="builtby">Built by Arun Selvaraj, Karur Division</div>

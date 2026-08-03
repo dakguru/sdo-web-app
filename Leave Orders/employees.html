@@ -187,6 +187,14 @@
   .toast.err{background:#7f1d1d}
   .footer-note{text-align:center;color:var(--muted);font-size:11.5px;padding:20px 8px}
   .builtby{text-align:center;font-weight:800;font-size:14px;padding:6px 8px 30px;font-family:"Plus Jakarta Sans","Inter"}
+  /* ===== Data-administration zone (relocated to page bottom) ===== */
+  .zone-divider{display:flex;align-items:center;gap:16px;margin:38px 2px 18px;color:var(--muted)}
+  .zone-divider::before,.zone-divider::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--line) 12%,var(--line) 88%,transparent)}
+  .zone-divider .zt{font:800 11px/1 "Plus Jakarta Sans","Inter",sans-serif;text-transform:uppercase;letter-spacing:1.8px;white-space:nowrap;display:inline-flex;align-items:center;gap:9px;color:var(--ink-2)}
+  .zone-divider .zt .zi{width:22px;height:22px;border-radius:7px;background:var(--grad-brand);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;box-shadow:var(--shadow-sm)}
+  .zone-divider .zt small{font-weight:600;letter-spacing:.3px;text-transform:none;color:var(--muted);font-size:11px}
+  .card.admin{position:relative;overflow:hidden;background:linear-gradient(180deg,#fbfcff 0%,#f6f8fe 100%);border-color:#e6ebf7;box-shadow:var(--shadow-md)}
+  .card.admin::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad-brand);opacity:.85}
   .link-btn{background:none;border:none;color:var(--indigo);font-weight:700;cursor:pointer;font-size:13px;padding:0;display:inline-flex;align-items:center;gap:5px}
 
   /* Inline mobile-number editor */
@@ -244,34 +252,6 @@
 </header>
 
 <main>
-  <!-- Upload / update -->
-  <div class="card">
-    <h2><span class="num">&#8593;</span> Update monthly data</h2>
-    <div class="up-wrap">
-      <div class="drop" id="drop" tabindex="0">
-        <div class="ic">&#128194;</div>
-        <div class="t">Drop payroll files here — or click to browse</div>
-        <div class="h">Upload <b>DS</b> (Departmental), <b>GS</b> (GDS), <b>Outsiders</b>, or the <b>Mobile Numbers</b> roster (.xls/.xlsx) — drop several at once. Type is auto-detected; new records are added and existing ones updated. The mobile roster is matched to staff by office &amp; name.</div>
-        <input type="file" id="file" accept=".xlsx,.xls" multiple style="display:none" />
-      </div>
-      <div class="up-side">
-        <div class="up-stat"><span class="badge ds">DS</span><span id="ds-meta" class="muted">No departmental data loaded yet.</span></div>
-        <div class="up-stat"><span class="badge gds">GDS</span><span id="gds-meta" class="muted">No GDS data loaded yet.</span></div>
-        <div class="up-stat"><span class="badge out">OUT</span><span id="out-meta" class="muted">No outsiders data loaded yet.</span></div>
-        <div class="up-stat"><span class="badge mob">TEL</span><span id="mob-meta" class="muted">No mobile numbers mapped yet.</span></div>
-        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2);cursor:pointer">
-          <input type="checkbox" id="replaceChk" />
-          Replace whole set for uploaded type(s) — removes staff not in this upload
-        </label>
-        <div class="row-actions">
-          <button class="btn" id="saveBtn" disabled>&#128190; Save &amp; update directory</button>
-          <button class="btn ghost tiny" id="discardBtn" style="display:none">Discard pending upload</button>
-        </div>
-        <div class="muted" id="pending" style="font-size:12px"></div>
-      </div>
-    </div>
-  </div>
-
   <!-- Download staff directory (rendered by /leave-orders/directory-export.js) -->
   <div id="dir-export"></div>
 
@@ -326,6 +306,34 @@
           <div class="big">&#129489;</div>
           <div>Select an outsider on the left to see their full details.</div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="zone-divider"><span class="zt"><span class="zi">&#8593;</span> Data administration &nbsp;<small>Upload the monthly payroll &amp; mobile rosters</small></span></div>
+  <div class="card admin">
+    <h2><span class="num">&#8593;</span> Update monthly data</h2>
+    <div class="up-wrap">
+      <div class="drop" id="drop" tabindex="0">
+        <div class="ic">&#128194;</div>
+        <div class="t">Drop payroll files here — or click to browse</div>
+        <div class="h">Upload <b>DS</b> (Departmental), <b>GS</b> (GDS), <b>Outsiders</b>, or the <b>Mobile Numbers</b> roster (.xls/.xlsx) — drop several at once. Type is auto-detected; new records are added and existing ones updated. The mobile roster is matched to staff by office &amp; name.</div>
+        <input type="file" id="file" accept=".xlsx,.xls" multiple style="display:none" />
+      </div>
+      <div class="up-side">
+        <div class="up-stat"><span class="badge ds">DS</span><span id="ds-meta" class="muted">No departmental data loaded yet.</span></div>
+        <div class="up-stat"><span class="badge gds">GDS</span><span id="gds-meta" class="muted">No GDS data loaded yet.</span></div>
+        <div class="up-stat"><span class="badge out">OUT</span><span id="out-meta" class="muted">No outsiders data loaded yet.</span></div>
+        <div class="up-stat"><span class="badge mob">TEL</span><span id="mob-meta" class="muted">No mobile numbers mapped yet.</span></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2);cursor:pointer">
+          <input type="checkbox" id="replaceChk" />
+          Replace whole set for uploaded type(s) — removes staff not in this upload
+        </label>
+        <div class="row-actions">
+          <button class="btn" id="saveBtn" disabled>&#128190; Save &amp; update directory</button>
+          <button class="btn ghost tiny" id="discardBtn" style="display:none">Discard pending upload</button>
+        </div>
+        <div class="muted" id="pending" style="font-size:12px"></div>
       </div>
     </div>
   </div>
