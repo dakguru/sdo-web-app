@@ -400,15 +400,13 @@ function render(){
     const g=rows[0];
     const kindCls=g.office_kind==='HO'?'ho':'so';
     const notDesp=rows.filter(r=>r.status!=='DESPATCHED');
-    const completed=rows.filter(r=>r.status==='COMPLETED');
     const returnable=notDesp.reduce((a,r)=>a+n(r.total_memos),0);
     const gid=esc(key);
     let actions='';
     if(notDesp.length){
+      const dv=(notDesp.find(c=>c.dispatch_date)||{}).dispatch_date||todayIso();
       actions+=`<button class="btn gold sm gen-btn" data-key="${gid}">📄 Generate cover letter</button>`;
-    }
-    if(completed.length){
-      actions+=`<div class="disp-inline"><span>📮</span><input type="date" class="disp-date" data-key="${gid}" value="${esc(completed.find(c=>c.dispatch_date)?.dispatch_date||'')}"><button class="btn sm dispatch-btn" data-key="${gid}">Mark despatched</button></div>`;
+      actions+=`<div class="disp-inline" title="Mark this office's ${notDesp.length} pending memo${notDesp.length===1?'':'s'} as despatched"><span>📮</span><input type="date" class="disp-date" data-key="${gid}" value="${esc(dv)}"><button class="btn sm dispatch-btn" data-key="${gid}">Mark despatched</button></div>`;
     }
     html+=`<div class="office-group">
       <div class="og-head">
@@ -527,9 +525,9 @@ async function confirmDelete(){
 
 // ---------- dispatch ----------
 async function markDespatched(key,date){
-  const rows=monthEntries().filter(e=>((e.office_id||'')+'|'+e.office_name+'|'+e.office_kind)===key&&e.status==='COMPLETED');
+  const rows=monthEntries().filter(e=>((e.office_id||'')+'|'+e.office_name+'|'+e.office_kind)===key&&e.status!=='DESPATCHED');
   if(!date){toast('Pick the despatch date first.','err');return;}
-  if(!rows.length){toast('No completed entries to despatch — generate the cover letter first.','err');return;}
+  if(!rows.length){toast('Nothing left to despatch for this office.','err');return;}
   if(state.busy)return;state.busy=true;
   try{
     for(const r of rows)await SB.upsert('app_hmvm',{id:r.id,dispatch_date:date,status:'DESPATCHED',updated_at_ms:Date.now()});
