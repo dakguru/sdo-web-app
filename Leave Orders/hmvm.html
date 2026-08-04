@@ -104,6 +104,13 @@ html.light .bg-mesh{background:
 .og-total{font-size:12px;font-weight:700;color:var(--text-secondary);background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.25);padding:6px 12px;border-radius:999px}
 .disp-inline{display:flex;align-items:center;gap:6px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:10px;padding:5px 8px}
 .disp-inline input{background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:12.5px;font-weight:600}
+.rdisp{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.rdisp-date{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:8px;padding:5px 8px;color:var(--text-primary);font-family:inherit;font-size:12px;font-weight:600;outline:none}
+.rdisp-date:focus{border-color:var(--em)}
+.rdisp-btn{padding:6px 10px;font-size:11.5px}
+.disp-done{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.undo-btn{width:26px;height:26px;font-size:12px}
+.undo-btn:hover{border-color:var(--gold);color:var(--gold)}
 
 .tbl-wrap{overflow-x:auto}
 table.reg{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
@@ -404,9 +411,8 @@ function render(){
     const gid=esc(key);
     let actions='';
     if(notDesp.length){
-      const dv=(notDesp.find(c=>c.dispatch_date)||{}).dispatch_date||todayIso();
       actions+=`<button class="btn gold sm gen-btn" data-key="${gid}">📄 Generate cover letter</button>`;
-      actions+=`<div class="disp-inline" title="Mark this office's ${notDesp.length} pending memo${notDesp.length===1?'':'s'} as despatched"><span>📮</span><input type="date" class="disp-date" data-key="${gid}" value="${esc(dv)}"><button class="btn sm dispatch-btn" data-key="${gid}">Mark despatched</button></div>`;
+      if(notDesp.length>1)actions+=`<div class="disp-inline" title="Despatch all ${notDesp.length} pending memos on one date"><span>📮</span><input type="date" class="disp-date" data-key="${gid}" value="${esc(todayIso())}"><button class="btn sm dispatch-btn" data-key="${gid}">Despatch all</button></div>`;
     }
     html+=`<div class="office-group">
       <div class="og-head">
@@ -433,7 +439,9 @@ function render(){
         <td class="mono">${n(e.memo_from)} – ${n(e.memo_to)}</td>
         <td class="mono">${n(e.total_memos)}</td>
         <td><span class="status ${st}">${esc(e.status||'PENDING')}</span></td>
-        <td class="mono">${e.dispatch_date?esc(fmtDmy(e.dispatch_date)):'—'}</td>
+        <td>${e.status==='DESPATCHED'
+          ? `<span class="disp-done"><span class="mono">${esc(fmtDmy(e.dispatch_date))}</span><button class="icon-btn undo-btn" data-id="${esc(e.id)}" title="Undo despatch">↺</button></span>`
+          : `<span class="rdisp"><input type="date" class="rdisp-date" data-id="${esc(e.id)}" value="${esc(e.dispatch_date||todayIso())}"><button class="btn sm rdisp-btn" data-id="${esc(e.id)}">✓ Despatch</button></span>`}</td>
         <td><div class="row-actions">
           <button class="icon-btn edit" data-edit="${esc(e.id)}" title="Edit">✎</button>
           <button class="icon-btn del" data-del="${esc(e.id)}" title="Delete">🗑</button>
@@ -524,6 +532,26 @@ async function confirmDelete(){
 }
 
 // ---------- dispatch ----------
+async function despatchEntry(id,date){
+  if(!date){toast('Pick the despatch date.','err');return;}
+  if(state.busy)return;state.busy=true;
+  try{
+    await SB.upsert('app_hmvm',{id,dispatch_date:date,status:'DESPATCHED',updated_at_ms:Date.now()});
+    await reloadEntries();
+    toast(`Despatched ✓ on ${fmtDmy(date)}.`,'ok');
+  }catch(e){toast('Update failed: '+(e.message||''),'err');}
+  finally{state.busy=false;}
+}
+async function undispatchEntry(id){
+  if(state.busy)return;state.busy=true;
+  try{
+    const e=state.entries.find(x=>x.id===id);
+    await SB.upsert('app_hmvm',{id,dispatch_date:null,status:e&&e.letter_date?'COMPLETED':'PENDING',updated_at_ms:Date.now()});
+    await reloadEntries();
+    toast('Despatch undone.','ok');
+  }catch(e){toast('Update failed: '+(e.message||''),'err');}
+  finally{state.busy=false;}
+}
 async function markDespatched(key,date){
   const rows=monthEntries().filter(e=>((e.office_id||'')+'|'+e.office_name+'|'+e.office_kind)===key&&e.status!=='DESPATCHED');
   if(!date){toast('Pick the despatch date first.','err');return;}
@@ -726,6 +754,8 @@ document.addEventListener('click',e=>{
   const de=e.target.closest('[data-del]');if(de){openDelete(de.dataset.del);return;}
   const gb=e.target.closest('.gen-btn');if(gb){gb.disabled=true;gb.textContent='Generating…';generateLetter(gb.dataset.key).finally(()=>{gb.disabled=false;gb.textContent='📄 Generate cover letter';});return;}
   const db=e.target.closest('.dispatch-btn');if(db){const di=db.closest('.disp-inline');markDespatched(db.dataset.key,di?di.querySelector('.disp-date').value:'');return;}
+  const rb=e.target.closest('.rdisp-btn');if(rb){const w=rb.closest('.rdisp');despatchEntry(rb.dataset.id,w?w.querySelector('.rdisp-date').value:'');return;}
+  const ub=e.target.closest('.undo-btn');if(ub){undispatchEntry(ub.dataset.id);return;}
 });
 [['entryOverlay',closeEntry],['delOverlay',closeDelete],['seedOverlay',closeSeed]].forEach(([id,fn])=>{
   const o=document.getElementById(id);o.addEventListener('click',e=>{if(e.target===o)fn();});
