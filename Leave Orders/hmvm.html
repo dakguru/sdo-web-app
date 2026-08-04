@@ -540,18 +540,35 @@ async function markDespatched(key,date){
 }
 
 // ---------- cover letter (docx) ----------
-let _docxLoad;
-function loadDocx(){
-  if(window.docx)return Promise.resolve(window.docx);
-  if(_docxLoad)return _docxLoad;
-  _docxLoad=new Promise((res,rej)=>{const s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js';
-    s.onload=()=>window.docx?res(window.docx):rej(new Error('generator failed to load'));
-    s.onerror=()=>rej(new Error('Could not load the Word generator (check your connection).'));
+// The draft is produced from the real Office template (Leave Orders/hmvm/cover-template.docx,
+// a one-letter copy of the official file) so font, size, spacing, alignment, borders — every
+// formatting attribute — are byte-identical to the sample. We load it with JSZip, swap the
+// text inside the actual Word nodes (cloning the ref paragraph and table row per entry), and
+// re-zip. Nothing about the layout is re-created from scratch.
+const WNS='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const TEMPLATE_URL='/leave-orders/hmvm/cover-template.docx';
+let _zipLoad;
+function loadJSZip(){
+  if(window.JSZip)return Promise.resolve(window.JSZip);
+  if(_zipLoad)return _zipLoad;
+  _zipLoad=new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    s.onload=()=>window.JSZip?res(window.JSZip):rej(new Error('document engine failed to load'));
+    s.onerror=()=>rej(new Error('Could not load the document engine (check your connection).'));
     document.head.appendChild(s);});
-  return _docxLoad;
+  return _zipLoad;
 }
 function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+function xEsc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function wts(el){return Array.from(el.getElementsByTagNameNS(WNS,'t'));}
+function paraText(el){return wts(el).map(t=>t.textContent).join('');}
+function setFirstText(el,text){const ts=wts(el);if(ts.length){ts[0].textContent=text;for(let i=1;i<ts.length;i++)ts[i].textContent='';}}
+function runXml(text,o){o=o||{};const rpr=(o.bold||o.underline)?`<w:rPr>${o.bold?'<w:b/><w:bCs/>':''}${o.underline?'<w:u w:val="single"/>':''}</w:rPr>`:'';
+  return `<w:r>${rpr}${o.tab?'<w:tab/>':''}${text!=null?`<w:t xml:space="preserve">${xEsc(text)}</w:t>`:''}</w:r>`;}
+function importRuns(doc,xmlStr){
+  const d=new DOMParser().parseFromString(`<w:x xmlns:w="${WNS}">${xmlStr}</w:x>`,'application/xml');
+  return Array.from(d.documentElement.childNodes).map(nd=>doc.importNode(nd,true));
+}
 
 async function generateLetter(key){
   const rows=monthEntries().filter(e=>((e.office_id||'')+'|'+e.office_name+'|'+e.office_kind)===key&&e.status!=='DESPATCHED')
@@ -559,81 +576,102 @@ async function generateLetter(key){
   if(!rows.length){toast('Nothing to include for this office.','err');return;}
   const g=rows[0];
   const dateStr=fmtDmy(todayIso());
+  const office=g.office_name;
   const sal=g.salutation||salutationFor(g.office_kind);
-  const town=g.town||g.office_name.replace(/\s*(HO|SO|BO|H\.O|S\.O|B\.O)\.?$/i,'').trim();
+  const town=g.town||office.replace(/\s*(HO|SO|BO|H\.O|S\.O|B\.O)\.?$/i,'').trim();
   const kindWord=g.office_kind==='HO'?'H.O':g.office_kind==='BO'?'B.O':'S.O';
   const pin=g.pincode||'';
   const grand=rows.reduce((a,r)=>a+n(r.total_memos),0);
-  let docx;
-  try{docx=await loadDocx();}catch(e){toast(e.message,'err');return;}
-  const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,AlignmentType,BorderStyle,HeadingLevel}=docx;
-  const FONT='Nirmala UI';
-  const run=(t,o={})=>new TextRun(Object.assign({text:t,font:FONT},o));
-  const P=(children,o={})=>new Paragraph(Object.assign({children:Array.isArray(children)?children:[run(children)]},o));
-  const center={alignment:AlignmentType.CENTER}, just={alignment:AlignmentType.JUSTIFIED};
-  const B={style:BorderStyle.SINGLE,size:4,color:'444444'};
-  const cell=(children,opt={})=>new TableCell(Object.assign({children:Array.isArray(children)?children:[children],margins:{top:40,bottom:40,left:90,right:90},borders:{top:B,bottom:B,left:B,right:B}},opt));
-  const hCell=t=>cell(P([run(t,{bold:true})],center),{shading:{fill:'E8F5E9'}});
 
-  const head=[
-    P([run('भारतीय डाक विभाग / DEPARTMENT OF POSTS',{bold:true})],center),
-    P([run('सहायक डाकघर अधीक्षक का कार्यालय / Office of the Assistant Supdt. of Post Offices,',{bold:true})],center),
-    P([run('करूर उप-मंडल / Karur Sub Division, करूर / Karur – 639001.',{bold:true})],center),
-    P('//By Entry.,//'),
-    P('To'),
-    P(`${sal},`),
-    P(`${town} ${kindWord},`),
-    P(`${town}${pin?' – '+pin:''}`),
-    P(''),
-    P(`${LETTER_NO} dated at Karur 639001 the ${dateStr}`),
-    P(''),
-    P([run('Sub:',{bold:true}),run(`  Verification of High Value Withdrawal Memos – ${g.office_name} – reg.`)]),
-  ];
-  // Ref list
-  rows.forEach((r,i)=>{
-    const item=`${g.office_name} letter ${r.reference}`.replace(/\.?$/,'.');
-    head.push(P(i===0?[run('Ref:',{bold:true}),run(`   1. ${item}`)]:[run(`        ${i+1}. ${item}`)]));
-  });
-  head.push(P('---***---',center));
-  head.push(P('Please refer to the letters cited above. The High Value Withdrawal Memos received from your office for the periods noted below have been verified through the Mail Overseer and are found to be in order:',just));
+  let JSZip;
+  try{JSZip=await loadJSZip();}catch(e){toast(e.message,'err');return;}
+  let zip,doc;
+  try{
+    const resp=await fetch(TEMPLATE_URL,{cache:'no-store'});
+    if(!resp.ok)throw new Error('template '+resp.status);
+    zip=await JSZip.loadAsync(await resp.arrayBuffer());
+    const xml=await zip.file('word/document.xml').async('string');
+    doc=new DOMParser().parseFromString(xml,'application/xml');
+    if(doc.getElementsByTagName('parsererror').length)throw new Error('template parse error');
+  }catch(e){toast('Could not load the letter template: '+(e.message||''),'err');return;}
 
-  const tableRows=[new TableRow({tableHeader:true,children:[hCell('Reference'),hCell('Period of Memos'),hCell('Memo Nos.'),hCell('Total No. of Memos')]})];
-  for(const r of rows){
-    tableRows.push(new TableRow({children:[
-      cell(P(r.reference)),
-      cell(P(`${fmtDmy(r.period_from)} to ${fmtDmy(r.period_to)}`,center)),
-      cell(P(`${n(r.memo_from)} – ${n(r.memo_to)}`,center)),
-      cell(P(String(n(r.total_memos)),center)),
-    ]}));
+  const body=doc.getElementsByTagNameNS(WNS,'body')[0];
+  const blocks=Array.from(body.children).filter(el=>el.localName==='p'||el.localName==='tbl');
+  const findP=pred=>blocks.find(el=>el.localName==='p'&&pred(paraText(el)));
+
+  // To → salutation / office line / pin line (three paragraphs after "To")
+  const toIdx=blocks.findIndex(el=>el.localName==='p'&&paraText(el).trim()==='To');
+  if(toIdx>=0&&blocks[toIdx+3]){
+    setFirstText(blocks[toIdx+1],sal);
+    setFirstText(blocks[toIdx+2],`${town} ${kindWord},`);
+    setFirstText(blocks[toIdx+3],pin?`${town} – ${pin}`:town);
   }
-  const table=new Table({width:{size:100,type:WidthType.PERCENTAGE},columnWidths:[3800,2500,1700,1500],rows:tableRows});
-
-  const tail=[
-    P(''),
-    P(`The High Value Withdrawal Memos, ${grand} in total, are returned herewith duly verified.`,just),
-    P(''),
-    P([run('Encl:',{bold:true}),run(`  High Value Withdrawal Memos – ${grand} Nos. – returned.`)]),
-    P(''),P(''),
-    P([run('सहायक डाक अधीक्षक / Asst. Supdt. of Post Offices',{bold:true})]),
-    P('करूर उप मंडल / Karur Sub Division'),
-    P('करूर – 639001 / Karur – 639001'),
-  ];
-
-  const doc=new Document({
-    styles:{default:{document:{run:{font:FONT,size:22}}}},
-    sections:[{properties:{page:{margin:{top:900,bottom:900,left:1100,right:1100}}},children:[...head,table,...tail]}]
+  // letter no line (underlined) — keeps its underline via the first run's rPr
+  const letterP=findP(t=>t.includes('ASP/HMVM'));
+  if(letterP)setFirstText(letterP,`${LETTER_NO} dated at Karur 639001 the ${dateStr}`);
+  // subject — keep bold "Sub:" + tab, swap the office name
+  const subjP=findP(t=>t.includes('Verification of High Value'));
+  if(subjP)wts(subjP).forEach(t=>{
+    if(t.textContent.includes('Verification'))t.textContent=`Verification of High Value Withdrawal Memos – ${office} – reg.`;
+    else if(t.textContent.trim()!=='Sub:')t.textContent='';
   });
+  // closing total
+  const closeP=findP(t=>t.includes('in total'));
+  if(closeP)setFirstText(closeP,`The High Value Withdrawal Memos, ${grand} in total, are returned herewith duly verified.`);
+  // Encl total (only the italic body run, keep bold-italic "Encl:")
+  const enclP=findP(t=>t.includes('Encl'));
+  if(enclP){for(const t of wts(enclP)){if(/Withdrawal|Nos\.|returned/.test(t.textContent)){t.textContent=`High Value Withdrawal Memos – ${grand} Nos. – returned.`;break;}}}
+
+  // Ref list — clone the first ref paragraph's formatting, one line per entry
+  const refPs=blocks.filter(el=>el.localName==='p'&&/letter\s+No/i.test(paraText(el)));
+  if(refPs.length){
+    const donor=refPs[0], parent=donor.parentNode;
+    const pPr=Array.from(donor.children).find(c=>c.localName==='pPr');
+    rows.forEach((r,i)=>{
+      const item=`${office} letter ${r.reference}`.replace(/\.?$/,'.');
+      const runs=i===0
+        ? runXml('Ref:',{bold:true})+runXml(null,{bold:true,tab:true})+runXml(`${i+1}. ${item}`)
+        : runXml(`${i+1}. ${item}`,{tab:true});
+      const p=doc.createElementNS(WNS,'w:p');
+      if(pPr)p.appendChild(pPr.cloneNode(true));
+      importRuns(doc,runs).forEach(nd=>p.appendChild(nd));
+      parent.insertBefore(p,donor);
+    });
+    refPs.forEach(rp=>rp.parentNode&&rp.parentNode.removeChild(rp));
+  }
+
+  // Table — clone the first data row's formatting, one row per entry
+  const tbl=blocks.find(el=>el.localName==='tbl');
+  if(tbl){
+    const trs=Array.from(tbl.children).filter(c=>c.localName==='tr');
+    const donor=trs[1];
+    if(donor){
+      rows.forEach(r=>{
+        const tr=donor.cloneNode(true);
+        const tcs=Array.from(tr.children).filter(c=>c.localName==='tc');
+        setFirstText(tcs[0],r.reference);
+        setFirstText(tcs[1],`${fmtDmy(r.period_from)} to ${fmtDmy(r.period_to)}`);
+        setFirstText(tcs[2],`${n(r.memo_from)} – ${n(r.memo_to)}`);
+        setFirstText(tcs[3],String(n(r.total_memos)));
+        tbl.insertBefore(tr,donor);
+      });
+      trs.slice(1).forEach(tr=>tr.parentNode&&tr.parentNode.removeChild(tr));
+    }
+  }
 
   let blob;
-  try{blob=await Packer.toBlob(doc);}catch(e){toast('Could not build the document: '+(e.message||''),'err');return;}
-  dl(blob,`HVWM ${g.office_name} ${dateStr}.docx`);
+  try{
+    zip.file('word/document.xml',new XMLSerializer().serializeToString(doc));
+    blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+  }catch(e){toast('Could not build the document: '+(e.message||''),'err');return;}
+  dl(blob,`HVWM ${office} ${dateStr}.docx`);
 
   // mark included entries COMPLETED
   try{
     for(const r of rows)if(r.status!=='COMPLETED')await SB.upsert('app_hmvm',{id:r.id,status:'COMPLETED',letter_no:LETTER_NO,letter_date:todayIso(),updated_at_ms:Date.now()});
     await reloadEntries();
   }catch(e){/* draft already downloaded */}
-  toast(`Cover letter generated ✓ — ${g.office_name}, ${grand} memos. Set the despatch date once posted.`,'ok');
+  toast(`Cover letter generated ✓ — ${office}, ${grand} memos. Set the despatch date once posted.`,'ok');
 }
 
 // ---------- seed ----------
