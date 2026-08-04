@@ -5,12 +5,31 @@
 //
 // Required env: GITHUB_TOKEN  (a fine-grained PAT with "Contents: Read and write"
 //                              on the repo below)
+//               IR_ADMIN_KEY  (shared admin secret; without it all uploads are refused)
 // Optional env: GITHUB_REPO   (default "dakguru/sdo-web-app")
 //               GITHUB_BRANCH (default "main")
+
+const crypto = require('crypto');
 
 const API = 'https://api.github.com';
 const DIR = 'Leave Orders/ir-library';
 const MAX_BYTES = 3 * 1024 * 1024; // 3 MB (Vercel request body limit is ~4.5 MB)
+
+// Admin gate. Uploading requires the shared secret IR_ADMIN_KEY, set in the Vercel
+// project environment — only administrators know it. The client sends it in the
+// `x-admin-key` header; we compare in constant time (via SHA-256 digests, so the
+// length is never leaked). Fail CLOSED: if the key isn't configured, refuse uploads.
+// Returns null when authorised, or { status, error } to reject.
+function requireAdmin(req) {
+  const configured = process.env.IR_ADMIN_KEY;
+  if (!configured) return { status: 503, error: 'Admin key not configured — set IR_ADMIN_KEY in the Vercel project environment.' };
+  const provided = req.headers['x-admin-key'] || '';
+  if (!provided) return { status: 401, error: 'Admin authorization required — enter the admin key to upload reports.' };
+  const a = crypto.createHash('sha256').update(String(provided)).digest();
+  const b = crypto.createHash('sha256').update(String(configured)).digest();
+  if (!crypto.timingSafeEqual(a, b)) return { status: 401, error: 'Invalid admin key.' };
+  return null;
+}
 
 function gh(token) {
   return {
@@ -71,6 +90,9 @@ async function ghPut(url, headers, body) {
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ ok: false, error: 'POST only' }); return; }
+
+  const denied = requireAdmin(req);
+  if (denied) { res.status(denied.status).json({ ok: false, error: denied.error }); return; }
 
   const token = process.env.GITHUB_TOKEN;
   const repo = process.env.GITHUB_REPO || 'dakguru/sdo-web-app';

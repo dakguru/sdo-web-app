@@ -112,6 +112,47 @@ html.light .bg-mesh{background:
 .empty{grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--text-muted);font-size:14px}
 .empty .ei{font-size:40px;display:block;margin-bottom:10px;opacity:.5}
 
+/* per-card actions */
+.doc-actions{position:absolute;top:10px;right:10px;display:flex;gap:6px;opacity:0;transform:translateY(-3px);transition:all .25s;z-index:2}
+.doc:hover .doc-actions,.doc:focus-within .doc-actions{opacity:1;transform:none}
+@media(hover:none){.doc-actions{opacity:1;transform:none}}
+.icon-btn{width:30px;height:30px;border-radius:9px;border:1px solid var(--glass-border);background:var(--glass-bg-hover);backdrop-filter:blur(var(--glass-blur));
+  cursor:pointer;display:grid;place-items:center;font-size:13px;line-height:1;color:var(--text-secondary);transition:all .2s}
+.icon-btn:hover{transform:translateY(-1px);color:var(--text-primary)}
+.icon-btn.edit:hover{border-color:var(--ir);color:var(--ir);background:rgba(96,165,250,.15)}
+.icon-btn.del:hover{border-color:var(--vr);color:var(--vr);background:rgba(251,113,133,.15)}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;
+  background:rgba(4,7,15,.6);backdrop-filter:blur(6px)}
+.modal-overlay.show{display:flex;animation:fade .2s both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{width:min(460px,100%);background:var(--bg-deep);border:1px solid var(--glass-border-hover);border-radius:var(--radius-xl);
+  padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.5);animation:rise .25s both}
+html.light .modal{background:#fff}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.modal-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:18px;display:flex;align-items:center;gap:9px;margin-bottom:16px}
+.modal-title.danger{color:var(--vr)}
+.field{margin-bottom:14px;display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--text-muted)}
+.field label .opt{text-transform:none;letter-spacing:0;font-weight:600;color:var(--text-muted);opacity:.8}
+.field input[type=text],.field select{width:100%;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-primary);
+  border-radius:11px;padding:11px 14px;font-family:inherit;font-size:13.5px;font-weight:600;outline:none;transition:border-color .2s}
+.field input[type=text]:focus,.field select:focus{border-color:var(--ir)}
+.replace-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pick-name{font-size:12.5px;color:var(--text-secondary);font-weight:600;word-break:break-word;flex:1;min-width:120px}
+.edit-preview{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:11px 14px;margin:4px 0 6px;
+  font-size:12px;color:var(--text-secondary);line-height:1.7;display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.edit-preview .pk{font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;font-size:10.5px}
+.del-msg{font-size:13.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:20px}
+.del-msg b{color:var(--text-primary)}
+.del-msg .warn{display:block;margin-top:10px;font-size:12px;color:var(--vr);font-weight:600}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+.btn-ghost{border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-secondary);font-family:inherit;font-weight:700;
+  font-size:13px;padding:11px 18px;border-radius:11px;cursor:pointer;transition:all .2s}
+.btn-ghost:hover{background:var(--glass-bg-hover);color:var(--text-primary)}
+.btn-danger{background:linear-gradient(135deg,var(--vr2),var(--vr));box-shadow:0 4px 16px rgba(251,113,133,.28)}
+
 /* upload */
 .upload-card{margin-top:30px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);padding:24px;backdrop-filter:blur(var(--glass-blur));position:relative;overflow:hidden}
 .upload-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#34d399,#2dd4bf,#60a5fa)}
@@ -198,12 +239,68 @@ select{background:var(--glass-bg);border:1px solid var(--glass-border);color:var
       <select id="yearSel"><option value="2026">2026</option><option value="2025">2025</option></select>
       <button class="btn" id="uploadBtn" disabled>Upload to GitHub</button>
     </div>
-    <div class="uc-note"><span class="i">🔒</span><span>Uploads use a server-side GitHub token configured in Vercel — no credentials are stored in this page. If uploads are not yet enabled, ask the administrator to set the <b>GITHUB_TOKEN</b> environment variable.</span></div>
+    <div class="uc-note"><span class="i">🔒</span><span>Uploading, editing and deleting are restricted to administrators and require the <b>admin key</b> (entered once, stored on this device). Changes are committed with a server-side GitHub token configured in Vercel — no GitHub credentials are stored in this page. Admins: set <b>GITHUB_TOKEN</b> and <b>IR_ADMIN_KEY</b> in the Vercel environment to enable these actions.</span></div>
   </div>
 
   <div class="footer">
     IR / VR Library · Karur Sub Division
     <div class="credit">Designed by Arun Selvaraj · Karur Division</div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="editOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <div class="modal-title" id="editTitle">✎ Edit report</div>
+    <div class="field">
+      <label for="editName">File name</label>
+      <input type="text" id="editName" spellcheck="false" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="editYear">Year</label>
+      <select id="editYear"><option value="2026">2026</option><option value="2025">2025</option></select>
+    </div>
+    <div class="field">
+      <label>Replace file <span class="opt">— optional, keeps the current one if left</span></label>
+      <div class="replace-row">
+        <button type="button" class="btn-ghost" id="editPickBtn">📄 Choose .doc / .docx…</button>
+        <span class="pick-name" id="editPickName">Keeping current file</span>
+        <input type="file" id="editFile" accept=".doc,.docx" hidden>
+      </div>
+    </div>
+    <div class="edit-preview" id="editPreview"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="editCancel">Cancel</button>
+      <button class="btn" id="editSave">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin key unlock modal -->
+<div class="modal-overlay" id="keyOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="keyTitle">
+    <div class="modal-title" id="keyTitle">🔑 Admin authorization</div>
+    <div class="del-msg">Uploading, editing and deleting reports is restricted to administrators. Enter the admin key to continue — it is stored on this device only and sent securely with each change.</div>
+    <div class="field">
+      <label for="keyInput">Admin key</label>
+      <input type="password" id="keyInput" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="keyCancel">Cancel</button>
+      <button class="btn" id="keySave">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm modal -->
+<div class="modal-overlay" id="delOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+    <div class="modal-title danger" id="delTitle">🗑 Delete report</div>
+    <div class="del-msg" id="delMsg"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="delCancel">Cancel</button>
+      <button class="btn btn-danger" id="delConfirm">Delete permanently</button>
+    </div>
   </div>
 </div>
 
@@ -220,6 +317,36 @@ const $=s=>document.querySelector(s);
 const enc=s=>encodeURIComponent(s);
 const fileUrl=it=>`/leave-orders/ir-library/${it.year}/${enc(it.file)}`;
 function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');setTimeout(()=>t.className='toast',3200);}
+
+// Only administrators can upload / edit / delete. The client hides those controls for
+// everyone else (UX); the server enforces the real gate via the admin key below.
+const IS_ADMIN=!!(window.AuthSession&&AuthSession.isAdmin());
+
+// ---------- admin key (shared secret, stored on this device only) ----------
+const KEY_LS='sdo_ir_admin_key';
+function getStoredKey(){try{return localStorage.getItem(KEY_LS)||'';}catch{return'';}}
+function clearAdminKey(){try{localStorage.removeItem(KEY_LS);}catch{}}
+let keyResolver=null;
+// Returns the stored key, or opens the unlock modal and resolves with the entered key
+// (null if the user cancels).
+function ensureAdminKey(){
+  const k=getStoredKey();
+  if(k)return Promise.resolve(k);
+  $('#keyInput').value='';
+  $('#keyOverlay').classList.add('show');
+  setTimeout(()=>$('#keyInput').focus(),40);
+  return new Promise(res=>{keyResolver=res;});
+}
+function closeKey(val){$('#keyOverlay').classList.remove('show');const r=keyResolver;keyResolver=null;if(r)r(val);}
+// POST with the admin key attached; on 401 the stored key is cleared so the next
+// attempt re-prompts. Throws '__CANCELLED__' if the user dismisses the key prompt.
+async function adminPost(url,payload){
+  const key=await ensureAdminKey();
+  if(!key)throw new Error('__CANCELLED__');
+  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-admin-key':key},body:JSON.stringify(payload)});
+  if(res.status===401)clearAdminKey();
+  return res;
+}
 
 async function load(){
   try{
@@ -271,7 +398,13 @@ function render(){
     html+='<div class="grid">';
     for(const it of rows){
       const cls=it.type==='VR'?'vr':'ir';
+      const fa=escapeHtml(it.file),ya=escapeHtml(it.year);
+      const actions=IS_ADMIN?`<div class="doc-actions">
+          <button class="icon-btn edit" data-act="edit" data-file="${fa}" data-year="${ya}" title="Edit / rename / replace">✎</button>
+          <button class="icon-btn del" data-act="delete" data-file="${fa}" data-year="${ya}" title="Delete report">🗑</button>
+        </div>`:'';
       html+=`<div class="doc ${cls}">
+        ${actions}
         <div class="doc-top">
           <div class="doc-ic ${cls}">${it.type}</div>
           <div><div class="doc-office">${escapeHtml(it.office)}</div><div class="doc-file">${escapeHtml(it.file)}</div></div>
@@ -330,8 +463,7 @@ uploadBtn.addEventListener('click',async()=>{
   uploadBtn.disabled=true;uploadBtn.textContent='Uploading…';
   try{
     const b64=await toBase64(picked);
-    const res=await fetch('/api/ir-upload',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({year,filename:picked.name,contentBase64:b64})});
+    const res=await adminPost('/api/ir-upload',{year,filename:picked.name,contentBase64:b64});
     const data=await res.json().catch(()=>({}));
     if(!res.ok||!data.ok){throw new Error(data.error||('Upload failed ('+res.status+')'));}
     toast('Uploaded ✓ — appears in the library after redeploy (~1 min).','ok');
@@ -340,7 +472,7 @@ uploadBtn.addEventListener('click',async()=>{
     renderStats();render();
     setPicked(null);
   }catch(err){
-    toast(err.message||'Upload failed','err');
+    if(err.message!=='__CANCELLED__')toast(err.message||'Upload failed','err');
   }finally{
     uploadBtn.disabled=!picked;uploadBtn.textContent='Upload to GitHub';
   }
@@ -353,6 +485,128 @@ function toBase64(file){
     r.onerror=reject;r.readAsDataURL(file);
   });
 }
+
+// ---------- edit / delete ----------
+// Mirror of the server-side (and manifest) filename parsing, for the live preview.
+function parseMeta(file){
+  const base=String(file).replace(/\.[^.]+$/,'');
+  const type=/\bVR\b/i.test(base)?'VR':'IR';
+  let office=base;const m=base.match(/^(.*?)\s*[-–]\s/);if(m)office=m[1];
+  office=office.replace(/^(IR|VR)\s+of\s+/i,'').replace(/\bFINAL\s+REPORT\b/i,'')
+    .replace(/\s*[-–]\s*(IR|VR)\b.*$/i,'').replace(/\s{2,}/g,' ').trim()||base;
+  let date='';const d=base.match(/(\d{1,2})[.\-_](\d{1,2})[.\-_](\d{2,4})/);
+  if(d){let dd=+d[1],mo=+d[2],yy=+d[3];if(yy<100)yy+=2000;
+    if(mo>=1&&mo<=12&&dd>=1&&dd<=31)date=String(dd).padStart(2,'0')+'.'+String(mo).padStart(2,'0')+'.'+yy;}
+  return {type,office,date};
+}
+
+const editOverlay=$('#editOverlay'),delOverlay=$('#delOverlay');
+let editTarget=null,replaceFile=null,delTarget=null,busy=false;
+
+function refreshEditPreview(){
+  const name=$('#editName').value.trim();
+  const p=parseMeta(name);
+  $('#editPreview').innerHTML=
+    `<span class="pk">Office</span> ${escapeHtml(p.office||'—')}`+
+    `<span class="pk">Type</span> ${p.type}`+
+    `<span class="pk">Date</span> ${p.date||'—'}`;
+}
+function setReplaceFile(f){
+  replaceFile=f||null;
+  $('#editPickName').textContent=f?(f.name+' · '+Math.round(f.size/1024)+' KB'):'Keeping current file';
+}
+function openEdit(year,file){
+  editTarget={year,file};setReplaceFile(null);
+  $('#editName').value=file;
+  $('#editYear').value=/^20\d\d$/.test(year)?year:'2026';
+  refreshEditPreview();
+  editOverlay.classList.add('show');setTimeout(()=>$('#editName').focus(),40);
+}
+function closeEdit(){editOverlay.classList.remove('show');editTarget=null;setReplaceFile(null);$('#editFile').value='';}
+function openDelete(year,file){
+  delTarget={year,file};
+  $('#delMsg').innerHTML=`Remove <b>${escapeHtml(file)}</b> (${escapeHtml(year)}) from the library?`+
+    `<span class="warn">⚠ This deletes the file from the GitHub repository and cannot be undone.</span>`;
+  delOverlay.classList.add('show');
+}
+function closeDelete(){delOverlay.classList.remove('show');delTarget=null;}
+
+// open from card buttons
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.icon-btn');if(!b)return;
+  e.preventDefault();
+  const year=b.dataset.year,file=b.dataset.file;
+  if(b.dataset.act==='edit')openEdit(year,file);
+  else if(b.dataset.act==='delete')openDelete(year,file);
+});
+$('#editName').addEventListener('input',refreshEditPreview);
+$('#editPickBtn').addEventListener('click',()=>$('#editFile').click());
+$('#editFile').addEventListener('change',()=>{
+  const f=$('#editFile').files[0];if(!f)return;
+  if(!/\.(docx?)$/i.test(f.name)){toast('Only Word .doc / .docx files are allowed.','err');$('#editFile').value='';return;}
+  if(f.size>3*1024*1024){toast('File is larger than 3 MB.','err');$('#editFile').value='';return;}
+  setReplaceFile(f);
+});
+// admin-key modal
+$('#keySave').addEventListener('click',()=>{
+  const v=$('#keyInput').value.trim();
+  if(!v){toast('Please enter the admin key.','err');return;}
+  try{localStorage.setItem(KEY_LS,v);}catch{}
+  closeKey(v);
+});
+$('#keyCancel').addEventListener('click',()=>closeKey(null));
+$('#keyInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#keySave').click();}});
+$('#keyOverlay').addEventListener('click',e=>{if(e.target===$('#keyOverlay'))closeKey(null);});
+
+$('#editCancel').addEventListener('click',closeEdit);
+$('#delCancel').addEventListener('click',closeDelete);
+[editOverlay,delOverlay].forEach(o=>o.addEventListener('click',e=>{if(e.target===o){o.classList.remove('show');editTarget=delTarget=null;}}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeEdit();closeDelete();if($('#keyOverlay').classList.contains('show'))closeKey(null);}});
+
+// hide upload controls for non-administrators (server enforces the real gate)
+if(!IS_ADMIN){const uc=document.querySelector('.upload-card');if(uc)uc.style.display='none';}
+
+$('#editSave').addEventListener('click',async()=>{
+  if(!editTarget||busy)return;
+  const newFilename=$('#editName').value.trim();
+  const newYear=$('#editYear').value;
+  if(!/\.(docx?)$/i.test(newFilename)){toast('File name must end in .doc or .docx.','err');return;}
+  const unchanged=newFilename===editTarget.file&&newYear===editTarget.year;
+  if(unchanged&&!replaceFile){toast('Nothing changed — rename it, change the year, or replace the file.','err');return;}
+  busy=true;const btn=$('#editSave');btn.disabled=true;btn.textContent='Saving…';
+  try{
+    const payload={action:'edit',year:editTarget.year,filename:editTarget.file,newYear,newFilename};
+    if(replaceFile)payload.contentBase64=await toBase64(replaceFile);
+    const res=await adminPost('/api/ir-manage',payload);
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||!data.ok)throw new Error(data.error||('Save failed ('+res.status+')'));
+    // optimistic update
+    const old=editTarget;
+    state.items=state.items.filter(x=>!(x.file===old.file&&String(x.year)===String(old.year))
+      &&!(data.item&&x.file===data.item.file&&String(x.year)===String(data.item.year)));
+    if(data.item)state.items.unshift(data.item);
+    buildYearChips();renderStats();render();
+    closeEdit();
+    toast('Saved ✓ — the change goes live after redeploy (~1 min).','ok');
+  }catch(err){if(err.message!=='__CANCELLED__')toast(err.message||'Save failed','err');}
+  finally{busy=false;btn.disabled=false;btn.textContent='Save changes';}
+});
+
+$('#delConfirm').addEventListener('click',async()=>{
+  if(!delTarget||busy)return;
+  busy=true;const btn=$('#delConfirm');btn.disabled=true;btn.textContent='Deleting…';
+  try{
+    const res=await adminPost('/api/ir-manage',{action:'delete',year:delTarget.year,filename:delTarget.file});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||!data.ok)throw new Error(data.error||('Delete failed ('+res.status+')'));
+    const t=delTarget;
+    state.items=state.items.filter(x=>!(x.file===t.file&&String(x.year)===String(t.year)));
+    buildYearChips();renderStats();render();
+    closeDelete();
+    toast('Deleted ✓ — removed from the library after redeploy (~1 min).','ok');
+  }catch(err){if(err.message!=='__CANCELLED__')toast(err.message||'Delete failed','err');}
+  finally{busy=false;btn.disabled=false;btn.textContent='Delete permanently';}
+});
 
 load();
 </script>
