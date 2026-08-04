@@ -24,10 +24,10 @@ function requireAdmin(req) {
   const configured = process.env.IR_ADMIN_KEY;
   if (!configured) return { status: 503, error: 'Admin key not configured — set IR_ADMIN_KEY in the Vercel project environment.' };
   const provided = req.headers['x-admin-key'] || '';
-  if (!provided) return { status: 401, error: 'Admin authorization required — enter the admin key to upload reports.' };
+  if (!provided) return { status: 401, error: 'Manage key required — enter the manage key to continue.' };
   const a = crypto.createHash('sha256').update(String(provided)).digest();
   const b = crypto.createHash('sha256').update(String(configured)).digest();
-  if (!crypto.timingSafeEqual(a, b)) return { status: 401, error: 'Invalid admin key.' };
+  if (!crypto.timingSafeEqual(a, b)) return { status: 401, error: 'Invalid manage key.' };
   return null;
 }
 

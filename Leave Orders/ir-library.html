@@ -239,7 +239,7 @@ select{background:var(--glass-bg);border:1px solid var(--glass-border);color:var
       <select id="yearSel"><option value="2026">2026</option><option value="2025">2025</option></select>
       <button class="btn" id="uploadBtn" disabled>Upload to GitHub</button>
     </div>
-    <div class="uc-note"><span class="i">🔒</span><span>Uploading, editing and deleting are restricted to administrators and require the <b>admin key</b> (entered once, stored on this device). Changes are committed with a server-side GitHub token configured in Vercel — no GitHub credentials are stored in this page. Admins: set <b>GITHUB_TOKEN</b> and <b>IR_ADMIN_KEY</b> in the Vercel environment to enable these actions.</span></div>
+    <div class="uc-note"><span class="i">🔒</span><span>Uploading, editing and deleting require the shared <b>manage key</b> (entered once, stored on this device). Changes are committed with a server-side GitHub token configured in Vercel — no GitHub credentials are stored in this page. To enable these actions, set <b>GITHUB_TOKEN</b> and <b>IR_ADMIN_KEY</b> in the Vercel environment and share the key with staff who should manage reports.</span></div>
   </div>
 
   <div class="footer">
@@ -279,8 +279,8 @@ select{background:var(--glass-bg);border:1px solid var(--glass-border);color:var
 <!-- Admin key unlock modal -->
 <div class="modal-overlay" id="keyOverlay">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="keyTitle">
-    <div class="modal-title" id="keyTitle">🔑 Admin authorization</div>
-    <div class="del-msg">Uploading, editing and deleting reports is restricted to administrators. Enter the admin key to continue — it is stored on this device only and sent securely with each change.</div>
+    <div class="modal-title" id="keyTitle">🔑 Manage access</div>
+    <div class="del-msg">Uploading, editing and deleting reports needs the shared <b>manage key</b>. Enter it once to continue — it is stored on this device only and sent securely with each change.</div>
     <div class="field">
       <label for="keyInput">Admin key</label>
       <input type="password" id="keyInput" autocomplete="off" spellcheck="false">
@@ -318,9 +318,11 @@ const enc=s=>encodeURIComponent(s);
 const fileUrl=it=>`/leave-orders/ir-library/${it.year}/${enc(it.file)}`;
 function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');setTimeout(()=>t.className='toast',3200);}
 
-// Only administrators can upload / edit / delete. The client hides those controls for
-// everyone else (UX); the server enforces the real gate via the admin key below.
-const IS_ADMIN=!!(window.AuthSession&&AuthSession.isAdmin());
+// Upload / edit / delete controls are shown to every logged-in user (the whole page is
+// already behind the login gate). The server still enforces the real gate: no change is
+// committed without the shared manage key (IR_ADMIN_KEY) sent below, so the public API
+// endpoint can't be abused by anyone who simply knows its URL.
+const CAN_MANAGE=true;
 
 // ---------- admin key (shared secret, stored on this device only) ----------
 const KEY_LS='sdo_ir_admin_key';
@@ -399,7 +401,7 @@ function render(){
     for(const it of rows){
       const cls=it.type==='VR'?'vr':'ir';
       const fa=escapeHtml(it.file),ya=escapeHtml(it.year);
-      const actions=IS_ADMIN?`<div class="doc-actions">
+      const actions=CAN_MANAGE?`<div class="doc-actions">
           <button class="icon-btn edit" data-act="edit" data-file="${fa}" data-year="${ya}" title="Edit / rename / replace">✎</button>
           <button class="icon-btn del" data-act="delete" data-file="${fa}" data-year="${ya}" title="Delete report">🗑</button>
         </div>`:'';
@@ -550,7 +552,7 @@ $('#editFile').addEventListener('change',()=>{
 // admin-key modal
 $('#keySave').addEventListener('click',()=>{
   const v=$('#keyInput').value.trim();
-  if(!v){toast('Please enter the admin key.','err');return;}
+  if(!v){toast('Please enter the manage key.','err');return;}
   try{localStorage.setItem(KEY_LS,v);}catch{}
   closeKey(v);
 });
@@ -563,8 +565,9 @@ $('#delCancel').addEventListener('click',closeDelete);
 [editOverlay,delOverlay].forEach(o=>o.addEventListener('click',e=>{if(e.target===o){o.classList.remove('show');editTarget=delTarget=null;}}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeEdit();closeDelete();if($('#keyOverlay').classList.contains('show'))closeKey(null);}});
 
-// hide upload controls for non-administrators (server enforces the real gate)
-if(!IS_ADMIN){const uc=document.querySelector('.upload-card');if(uc)uc.style.display='none';}
+// CAN_MANAGE toggles the upload card's visibility (currently on for all logged-in users;
+// flip the const above to gate it again). The server manage key is the real enforcement.
+if(!CAN_MANAGE){const uc=document.querySelector('.upload-card');if(uc)uc.style.display='none';}
 
 $('#editSave').addEventListener('click',async()=>{
   if(!editTarget||busy)return;
