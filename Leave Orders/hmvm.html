@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="/leave-orders/auth-guard.js"></script>
+<script src="supabase-sync.js"></script>
+<title>High Value Memos — Karur Sub Division</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep:#0a0e1a; --glass-bg:rgba(255,255,255,0.06); --glass-bg-hover:rgba(255,255,255,0.12);
+  --glass-border:rgba(255,255,255,0.12); --glass-border-hover:rgba(255,255,255,0.25);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.25); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.35),0 0 0 1px rgba(255,255,255,0.15);
+  --glass-blur:20px; --text-primary:#f1f5f9; --text-secondary:rgba(241,245,249,0.7); --text-muted:rgba(241,245,249,0.45);
+  --em:#34d399; --em2:#10b981; --gold:#fbbf24; --gold2:#f59e0b; --blue:#60a5fa; --rose:#fb7185; --violet:#a78bfa;
+  --radius-xl:24px; --radius-lg:18px; --radius-md:14px;
+}
+html.light{
+  --bg-deep:#f0f2f7; --glass-bg:rgba(255,255,255,0.72); --glass-bg-hover:rgba(255,255,255,0.95);
+  --glass-border:rgba(0,0,0,0.08); --glass-border-hover:rgba(0,0,0,0.15);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.08); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.12),0 0 0 1px rgba(0,0,0,0.06);
+  --text-primary:#0f172a; --text-secondary:rgba(15,23,42,0.7); --text-muted:rgba(15,23,42,0.45);
+  --em:#059669; --em2:#047857; --gold:#d97706; --gold2:#b45309; --blue:#2563eb; --rose:#e11d48; --violet:#7c3aed;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-deep);color:var(--text-primary);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s,color .4s}
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(16,185,129,0.16),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(251,191,36,0.13),transparent 65%),
+  radial-gradient(ellipse 600px 420px at 55% 92%,rgba(96,165,250,0.10),transparent 60%),
+  linear-gradient(180deg,#0a0e1a,#111827 55%,#0f1729)}
+html.light .bg-mesh{background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(5,150,105,0.09),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(217,119,6,0.07),transparent 65%),
+  linear-gradient(180deg,#f0f2f7,#e8ecf4 55%,#f0f2f7)}
+
+.page-wrap{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:26px 22px 70px}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.back-link{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--text-secondary);font-weight:600;font-size:13.5px;
+  padding:9px 15px;border-radius:999px;background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(var(--glass-blur));transition:all .3s}
+.back-link:hover{background:var(--glass-bg-hover);color:var(--text-primary);transform:translateX(-2px)}
+.theme-toggle{width:44px;height:44px;border-radius:50%;border:1px solid var(--glass-border);cursor:pointer;background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));display:grid;place-items:center;font-size:20px;color:var(--text-primary);transition:all .3s}
+.theme-toggle:hover{background:var(--glass-bg-hover);transform:scale(1.08) rotate(12deg)}
+
+.hero{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden;backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow)}
+.hero::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--em2),var(--em),var(--gold))}
+.hero-eyebrow{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-muted)}
+.hero-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:800;margin:6px 0 4px;
+  background:linear-gradient(135deg,var(--em),var(--em2) 45%,var(--gold) 90%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:13.5px;color:var(--text-secondary);line-height:1.6;max-width:720px}
+
+/* balance tiles */
+.balance{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}
+@media(max-width:900px){.balance{grid-template-columns:repeat(2,1fr)}}
+.bt{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:16px 16px 14px;backdrop-filter:blur(var(--glass-blur));position:relative;overflow:hidden;transition:transform .3s}
+.bt:hover{transform:translateY(-3px)}
+.bt::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;opacity:.9}
+.bt.b-open::before{background:linear-gradient(180deg,var(--blue),#38bdf8)}
+.bt.b-recv::before{background:linear-gradient(180deg,var(--em),var(--em2))}
+.bt.b-total::before{background:linear-gradient(180deg,var(--violet),#c084fc)}
+.bt.b-disp::before{background:linear-gradient(180deg,var(--gold),var(--gold2))}
+.bt.b-close::before{background:linear-gradient(180deg,var(--rose),#f472b6)}
+.bt .n{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:30px;font-weight:900;line-height:1}
+.bt.b-open .n{color:var(--blue)} .bt.b-recv .n{color:var(--em)} .bt.b-total .n{color:var(--violet)} .bt.b-disp .n{color:var(--gold)} .bt.b-close .n{color:var(--rose)}
+.bt .l{font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-top:8px}
+.bt .h{font-size:10.5px;color:var(--text-muted);margin-top:3px;line-height:1.4}
+.balance-note{font-size:11.5px;color:var(--text-muted);margin-bottom:22px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.balance-note b{color:var(--text-secondary)}
+
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:18px}
+.field-inline{display:flex;align-items:center;gap:8px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:999px;padding:8px 14px;backdrop-filter:blur(var(--glass-blur))}
+.field-inline label{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px}
+.field-inline input{background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:13.5px;font-weight:600}
+.search{flex:1;min-width:200px;display:flex;align-items:center;gap:10px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:999px;padding:10px 18px;backdrop-filter:blur(var(--glass-blur))}
+.search input{flex:1;background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:14px}
+.search input::placeholder{color:var(--text-muted)}
+.btn{border:none;border-radius:12px;padding:11px 18px;font-weight:700;font-size:13px;cursor:pointer;color:#fff;font-family:inherit;
+  background:linear-gradient(135deg,var(--em2),var(--em));transition:all .25s;box-shadow:0 4px 16px rgba(16,185,129,.28);display:inline-flex;align-items:center;gap:8px}
+.btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:var(--glass-bg);color:var(--text-secondary);border:1px solid var(--glass-border);box-shadow:none;backdrop-filter:blur(var(--glass-blur))}
+.btn.ghost:hover{background:var(--glass-bg-hover);color:var(--text-primary)}
+.btn.gold{background:linear-gradient(135deg,var(--gold2),var(--gold));box-shadow:0 4px 16px rgba(251,191,36,.28)}
+.btn.blue{background:linear-gradient(135deg,#3b82f6,var(--blue));box-shadow:0 4px 16px rgba(96,165,250,.28)}
+.btn.sm{padding:8px 13px;font-size:12px;border-radius:10px}
+.btn.danger{background:linear-gradient(135deg,#f43f5e,var(--rose));box-shadow:0 4px 16px rgba(251,113,133,.28)}
+
+/* office groups / register */
+.office-group{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);margin-bottom:16px;backdrop-filter:blur(var(--glass-blur));overflow:hidden;box-shadow:var(--glass-shadow);animation:pop .35s both}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.og-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:15px 18px;border-bottom:1px solid var(--glass-border);background:rgba(255,255,255,.02)}
+.og-badge{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;font-family:'Plus Jakarta Sans','Inter',sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.og-badge.ho{background:linear-gradient(135deg,var(--blue),var(--violet))}
+.og-badge.so{background:linear-gradient(135deg,var(--em),var(--em2))}
+.og-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:16px;line-height:1.2}
+.og-sub{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+.og-spacer{flex:1}
+.og-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.og-total{font-size:12px;font-weight:700;color:var(--text-secondary);background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.25);padding:6px 12px;border-radius:999px}
+.disp-inline{display:flex;align-items:center;gap:6px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:10px;padding:5px 8px}
+.disp-inline input{background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:12.5px;font-weight:600}
+
+.tbl-wrap{overflow-x:auto}
+table.reg{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
+table.reg th{text-align:left;font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;border-bottom:1px solid var(--glass-border);white-space:nowrap}
+table.reg td{padding:11px 14px;border-bottom:1px solid var(--glass-border);color:var(--text-secondary);vertical-align:middle}
+table.reg tr:last-child td{border-bottom:none}
+table.reg tr:hover td{background:rgba(255,255,255,.03)}
+.mono{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text-primary)}
+.ref-cell{max-width:230px;color:var(--text-primary);font-weight:600}
+.status{font-size:10.5px;font-weight:800;letter-spacing:.3px;padding:4px 9px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.status.pending{background:rgba(251,191,36,.16);color:var(--gold)}
+.status.completed{background:rgba(96,165,250,.16);color:var(--blue)}
+.status.despatched{background:rgba(52,211,153,.16);color:var(--em)}
+.row-actions{display:flex;gap:6px;justify-content:flex-end}
+.icon-btn{width:30px;height:30px;border-radius:9px;border:1px solid var(--glass-border);background:var(--glass-bg-hover);cursor:pointer;display:grid;place-items:center;font-size:13px;color:var(--text-secondary);transition:all .2s}
+.icon-btn:hover{transform:translateY(-1px);color:var(--text-primary)}
+.icon-btn.edit:hover{border-color:var(--blue);color:var(--blue)}
+.icon-btn.del:hover{border-color:var(--rose);color:var(--rose)}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:14px;background:var(--glass-bg);border:1px dashed var(--glass-border);border-radius:var(--radius-lg)}
+.empty .ei{font-size:44px;display:block;margin-bottom:12px;opacity:.5}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,7,15,.62);backdrop-filter:blur(6px)}
+.modal-overlay.show{display:flex;animation:fade .2s both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{width:min(560px,100%);max-height:92vh;overflow-y:auto;background:var(--bg-deep);border:1px solid var(--glass-border-hover);border-radius:var(--radius-xl);padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.5);animation:rise .25s both}
+html.light .modal{background:#fff}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.modal-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:19px;display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.modal-title.danger{color:var(--rose)}
+.modal-desc{font-size:12.5px;color:var(--text-muted);margin-bottom:18px;line-height:1.5}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+.field{margin-bottom:13px;display:flex;flex-direction:column;gap:6px}
+.field label{font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--text-muted)}
+.field label .req{color:var(--rose)}
+.field input,.field select{width:100%;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:11px;padding:11px 13px;font-family:inherit;font-size:13.5px;font-weight:600;outline:none;transition:border-color .2s}
+.field input:focus,.field select:focus{border-color:var(--em)}
+.field input[readonly]{opacity:.75;cursor:not-allowed}
+.total-badge{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:900;font-size:22px;color:var(--em)}
+.addr-preview{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:11px 14px;margin:2px 0 8px;font-size:12px;color:var(--text-secondary);line-height:1.65}
+.addr-preview .pk{font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;font-size:10px;display:block;margin-bottom:3px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+.del-msg{font-size:13.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:20px}
+.del-msg b{color:var(--text-primary)}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#111827;color:#fff;padding:13px 22px;border-radius:12px;font-size:13px;font-weight:600;z-index:400;box-shadow:0 12px 40px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);transition:all .35s;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(52,211,153,.4)} .toast.err{border-color:rgba(251,113,133,.5)}
+
+.footer{text-align:center;padding:34px 20px 8px;color:var(--text-muted);font-size:12px}
+.footer .credit{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:700;margin-top:5px;background:linear-gradient(135deg,var(--em),var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+
+@media print{
+  .bg-mesh,.topbar,.toolbar,.og-actions,.row-actions,.balance-note,.footer,.theme-toggle{display:none!important}
+  body{background:#fff;color:#000}
+  .page-wrap{max-width:none}
+  .office-group,.bt{box-shadow:none;border:1px solid #ccc}
+}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+
+<div class="page-wrap">
+  <div class="topbar">
+    <a href="/" class="back-link">← Back to Home</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+  </div>
+
+  <div class="hero">
+    <div class="hero-eyebrow">Karur Sub Division · Department of Posts</div>
+    <div class="hero-title">💰 High Value Memos</div>
+    <div class="hero-sub">Register High Value Withdrawal Memos office-wise — total memos are auto-calculated from the memo number range. Opening &amp; closing balances are computed month-wise, and a verification cover letter (Word draft) can be generated per office with the current date and the office's own table of entries.</div>
+  </div>
+
+  <!-- Balance summary -->
+  <div class="balance" id="balance">
+    <div class="bt b-open"><div class="n" id="bOpen">—</div><div class="l" style="color:var(--blue)">Opening Balance</div><div class="h">Memos pending</div></div>
+    <div class="bt b-recv"><div class="n" id="bRecv">—</div><div class="l" style="color:var(--em)">Received</div><div class="h">Received this month</div></div>
+    <div class="bt b-total"><div class="n" id="bTotal">—</div><div class="l" style="color:var(--violet)">Total Memos</div><div class="h">Opening + Received</div></div>
+    <div class="bt b-disp"><div class="n" id="bDisp">—</div><div class="l" style="color:var(--gold)">Despatched</div><div class="h">Despatched this month</div></div>
+    <div class="bt b-close"><div class="n" id="bClose">—</div><div class="l" style="color:var(--rose)">Closing Balance</div><div class="h">Total − Despatched</div></div>
+  </div>
+  <div class="balance-note">
+    <span>🗓 Showing <b id="monthLabel">—</b>.</span>
+    <span>Opening carries forward from the previous month automatically.</span>
+    <a href="#" id="seedLink" style="color:var(--em);font-weight:700;text-decoration:none">⚙ Set opening balance seed</a>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="field-inline"><label for="monthPick">Month</label><input type="month" id="monthPick"></div>
+    <div class="search"><span>🔍</span><input id="q" type="text" placeholder="Search office, reference…" autocomplete="off"></div>
+    <button class="btn" id="addBtn">＋ Add memo entry</button>
+    <button class="btn blue sm" id="printBtn">🖨 Print report</button>
+    <button class="btn ghost sm" id="csvBtn">⬇ CSV</button>
+  </div>
+
+  <div id="register"></div>
+
+  <div class="footer">
+    High Value Memos · Karur Sub Division
+    <div class="credit">Designed by Arun Selvaraj · Karur Division</div>
+  </div>
+</div>
+
+<!-- Entry add/edit modal -->
+<div class="modal-overlay" id="entryOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title" id="entryTitle">＋ Add memo entry</div>
+    <div class="modal-desc">Total memos are filled in automatically from the memo number range.</div>
+    <div class="field">
+      <label>Office / Addressee <span class="req">*</span></label>
+      <input type="text" id="fOffice" list="officeList" placeholder="e.g. Karur HO" autocomplete="off">
+      <datalist id="officeList"></datalist>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Office type</label><select id="fKind"><option value="HO">HO — Head Office</option><option value="SO">SO — Sub Office</option></select></div>
+      <div class="field"><label>Date of receipt <span class="req">*</span></label><input type="date" id="fReceipt"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Town (for address)</label><input type="text" id="fTown" placeholder="e.g. Karur"></div>
+      <div class="field"><label>PIN code</label><input type="text" id="fPin" placeholder="e.g. 639001" inputmode="numeric"></div>
+    </div>
+    <div class="field">
+      <label>Reference (office letter no. &amp; date) <span class="req">*</span></label>
+      <input type="text" id="fRef" placeholder="e.g. No.175/SOSB/HWVM dated 22.06.2026">
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Period of memos — from</label><input type="date" id="fFrom"></div>
+      <div class="field"><label>Period of memos — to</label><input type="date" id="fTo"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Memo No. from <span class="req">*</span></label><input type="number" id="fMemoFrom" inputmode="numeric" min="0"></div>
+      <div class="field"><label>Memo No. to <span class="req">*</span></label><input type="number" id="fMemoTo" inputmode="numeric" min="0"></div>
+    </div>
+    <div class="field">
+      <label>Total memos (auto)</label>
+      <div class="total-badge" id="fTotal">0</div>
+    </div>
+    <div class="addr-preview" id="addrPreview"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="entryCancel">Cancel</button>
+      <button class="btn" id="entrySave">Save entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm -->
+<div class="modal-overlay" id="delOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title danger">🗑 Delete entry</div>
+    <div class="del-msg" id="delMsg"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="delCancel">Cancel</button>
+      <button class="btn danger" id="delConfirm">Delete permanently</button>
+    </div>
+  </div>
+</div>
+
+<!-- Opening balance seed -->
+<div class="modal-overlay" id="seedOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title">⚙ Opening balance seed</div>
+    <div class="modal-desc">A one-time starting balance for the very first month you track. From then on, each month's opening balance carries forward automatically (previous closing balance). Received &amp; despatched are counted by their actual dates.</div>
+    <div class="grid2">
+      <div class="field"><label>Pending memos before the system</label><input type="number" id="sVal" min="0" placeholder="0"></div>
+      <div class="field"><label>As of the start of</label><input type="month" id="sAsof"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="seedCancel">Cancel</button>
+      <button class="btn" id="seedSave">Save seed</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// theme
+(function(){const h=document.documentElement;if(localStorage.getItem('theme')==='light')h.classList.add('light');
+  const b=document.getElementById('themeToggle');const paint=()=>b.textContent=h.classList.contains('light')?'☀️':'🌙';paint();
+  b.onclick=()=>{h.classList.toggle('light');localStorage.setItem('theme',h.classList.contains('light')?'light':'dark');paint();};})();
+
+const $=s=>document.querySelector(s);
+const LETTER_NO='No. ASP/HMVM/dlgs';
+const state={entries:[],offices:[],seed:{seed_balance:0,seed_asof:null},month:'',q:'',editId:null,delId:null,busy:false};
+const who=()=>{try{const u=window.AuthSession&&AuthSession.user();return u?(u.displayName||u.username):'web';}catch{return 'web';}};
+
+function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');clearTimeout(toast._t);toast._t=setTimeout(()=>t.className='toast',3600);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function n(v){const x=parseInt(v,10);return isNaN(x)?0:x;}
+// date helpers (stored ISO yyyy-mm-dd)
+function fmtDmy(iso){const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?`${m[3]}.${m[2]}.${m[1]}`:'';}
+function todayIso(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function monthOf(iso){const m=String(iso||'').match(/^(\d{4})-(\d{2})/);return m?`${m[1]}-${m[2]}`:'';}
+function monthName(ym){const m=String(ym||'').match(/^(\d{4})-(\d{2})$/);if(!m)return ym||'';
+  const names=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${names[+m[2]-1]} ${m[1]}`;}
+
+// ---------- load ----------
+async function load(){
+  try{await SB.init();}catch{}
+  // offices for the datalist
+  try{const off=await SB.getDataset('OFFICES');
+    if(off&&Array.isArray(off.data)){
+      state.offices=off.data.filter(o=>o&&o.office_name).map(o=>{
+        const type=String(o.office_type||'').toUpperCase();
+        const kind=type.startsWith('H')?'HO':type.startsWith('B')?'BO':'SO';
+        const town=String(o.office_name).replace(/\s*(H\.?\s*O|S\.?\s*O|B\.?\s*O|HO|SO|BO)\.?\s*$/i,'').trim();
+        return {id:String(o.office_id||''),name:String(o.office_name).trim(),kind,town,pin:String(o.pincode||'').trim()};
+      });
+    }
+  }catch(e){/* offices optional */}
+  buildOfficeList();
+  // seed config
+  try{const c=await SB.select('app_hmvm_config','select=seed_balance,seed_asof&limit=1');
+    if(c&&c[0])state.seed={seed_balance:n(c[0].seed_balance),seed_asof:c[0].seed_asof||null};}catch(e){/* table may not exist yet */}
+  await reloadEntries();
+  // land on the latest month that has data if the current month is empty
+  if(state.entries.length && !monthEntries().length){
+    const months=[...new Set(state.entries.map(e=>monthOf(e.date_of_receipt)).filter(Boolean))].sort();
+    if(months.length){state.month=months[months.length-1];$('#monthPick').value=state.month;render();}
+  }
+}
+async function reloadEntries(){
+  try{
+    const rows=await SB.select('app_hmvm','select=*&order=date_of_receipt.asc,memo_from.asc');
+    state.entries=Array.isArray(rows)?rows:[];
+    render();
+  }catch(e){
+    $('#register').innerHTML=`<div class="empty"><span class="ei">🛠️</span><b>Storage not set up yet.</b><br><br>
+      Run <b>android-app/supabase/migration_v11_hmvm.sql</b> in the Supabase SQL editor to create the <b>app_hmvm</b> table,
+      then reload this page.<br><span style="font-size:11.5px;opacity:.7">(${esc(e.message||'table missing')})</span></div>`;
+    renderBalance();
+  }
+}
+function buildOfficeList(){
+  const seen=new Set();const opts=[];
+  for(const o of state.offices){if(seen.has(o.name.toLowerCase()))continue;seen.add(o.name.toLowerCase());opts.push(`<option value="${esc(o.name)}">`);}
+  $('#officeList').innerHTML=opts.join('');
+}
+
+// ---------- balance math ----------
+function sumReceivedInMonth(ym){return state.entries.filter(e=>monthOf(e.date_of_receipt)===ym).reduce((a,e)=>a+n(e.total_memos),0);}
+function sumDespatchedInMonth(ym){return state.entries.filter(e=>e.dispatch_date&&monthOf(e.dispatch_date)===ym).reduce((a,e)=>a+n(e.total_memos),0);}
+function monthStart(ym){return ym+'-01';}
+function openingBalance(ym){
+  const seedAsof=state.seed.seed_asof?monthOf(state.seed.seed_asof):null;
+  const start=monthStart(ym);
+  let bal=(seedAsof&&ym>=seedAsof)?n(state.seed.seed_balance):0;
+  const lo=seedAsof?monthStart(seedAsof):'0000-00';
+  for(const e of state.entries){
+    if(e.date_of_receipt&&e.date_of_receipt>=lo&&e.date_of_receipt<start)bal+=n(e.total_memos);
+    if(e.dispatch_date&&e.dispatch_date>=lo&&e.dispatch_date<start)bal-=n(e.total_memos);
+  }
+  return bal;
+}
+function renderBalance(){
+  const ym=state.month;
+  const opening=openingBalance(ym), recv=sumReceivedInMonth(ym), disp=sumDespatchedInMonth(ym);
+  const total=opening+recv, closing=total-disp;
+  $('#bOpen').textContent=opening; $('#bRecv').textContent=recv; $('#bTotal').textContent=total;
+  $('#bDisp').textContent=disp; $('#bClose').textContent=closing;
+  $('#monthLabel').textContent=monthName(ym);
+}
+
+// ---------- register (grouped by office, for the month) ----------
+function monthEntries(){
+  const q=state.q.toLowerCase();
+  return state.entries.filter(e=>{
+    if(monthOf(e.date_of_receipt)!==state.month)return false;
+    if(q){const hay=(e.office_name+' '+e.reference+' '+(e.town||'')).toLowerCase();if(!hay.includes(q))return false;}
+    return true;
+  });
+}
+function render(){
+  renderBalance();
+  const list=monthEntries();
+  const reg=$('#register');
+  if(!list.length){
+    reg.innerHTML=`<div class="empty"><span class="ei">🗂️</span>No memo entries for <b>${esc(monthName(state.month))}</b>.<br><br>
+      <button class="btn" onclick="document.getElementById('addBtn').click()">＋ Add the first entry</button></div>`;
+    return;
+  }
+  // group by office (id+name+kind)
+  const groups={};
+  for(const e of list){const key=(e.office_id||'')+'|'+e.office_name+'|'+e.office_kind;(groups[key]=groups[key]||[]).push(e);}
+  let html='';
+  Object.keys(groups).sort((a,b)=>a.split('|')[1].localeCompare(b.split('|')[1])).forEach(key=>{
+    const rows=groups[key].slice().sort((a,b)=>String(a.date_of_receipt).localeCompare(b.date_of_receipt)||n(a.memo_from)-n(b.memo_from));
+    const g=rows[0];
+    const kindCls=g.office_kind==='HO'?'ho':'so';
+    const notDesp=rows.filter(r=>r.status!=='DESPATCHED');
+    const completed=rows.filter(r=>r.status==='COMPLETED');
+    const returnable=notDesp.reduce((a,r)=>a+n(r.total_memos),0);
+    const gid=esc(key);
+    let actions='';
+    if(notDesp.length){
+      actions+=`<button class="btn gold sm gen-btn" data-key="${gid}">📄 Generate cover letter</button>`;
+    }
+    if(completed.length){
+      actions+=`<div class="disp-inline"><span>📮</span><input type="date" class="disp-date" data-key="${gid}" value="${esc(completed.find(c=>c.dispatch_date)?.dispatch_date||'')}"><button class="btn sm dispatch-btn" data-key="${gid}">Mark despatched</button></div>`;
+    }
+    html+=`<div class="office-group">
+      <div class="og-head">
+        <div class="og-badge ${kindCls}">${esc(g.office_kind)}</div>
+        <div>
+          <div class="og-title">${esc(g.office_name)}</div>
+          <div class="og-sub">${rows.length} ${rows.length===1?'entry':'entries'} · ${g.town?esc(g.town)+' ':''}${g.pincode?'– '+esc(g.pincode):''}</div>
+        </div>
+        <div class="og-spacer"></div>
+        <div class="og-actions">
+          ${returnable?`<span class="og-total">${returnable} memos returnable</span>`:''}
+          ${actions}
+        </div>
+      </div>
+      <div class="tbl-wrap"><table class="reg">
+        <thead><tr><th>Receipt</th><th>Reference</th><th>Period of memos</th><th>Memo Nos.</th><th>Total</th><th>Status</th><th>Despatched</th><th></th></tr></thead>
+        <tbody>`;
+    for(const e of rows){
+      const st=(e.status||'PENDING').toLowerCase();
+      html+=`<tr>
+        <td class="mono">${esc(fmtDmy(e.date_of_receipt))}</td>
+        <td class="ref-cell">${esc(e.reference)}</td>
+        <td>${e.period_from||e.period_to?esc(fmtDmy(e.period_from)+' to '+fmtDmy(e.period_to)):'—'}</td>
+        <td class="mono">${n(e.memo_from)} – ${n(e.memo_to)}</td>
+        <td class="mono">${n(e.total_memos)}</td>
+        <td><span class="status ${st}">${esc(e.status||'PENDING')}</span></td>
+        <td class="mono">${e.dispatch_date?esc(fmtDmy(e.dispatch_date)):'—'}</td>
+        <td><div class="row-actions">
+          <button class="icon-btn edit" data-edit="${esc(e.id)}" title="Edit">✎</button>
+          <button class="icon-btn del" data-del="${esc(e.id)}" title="Delete">🗑</button>
+        </div></td>
+      </tr>`;
+    }
+    html+=`</tbody></table></div></div>`;
+  });
+  reg.innerHTML=html;
+}
+
+// ---------- entry modal ----------
+function computeTotal(){const f=n($('#fMemoFrom').value),t=n($('#fMemoTo').value);const tot=t>=f&&($('#fMemoTo').value!==''&&$('#fMemoFrom').value!=='')?t-f+1:0;$('#fTotal').textContent=tot;return tot;}
+function salutationFor(kind){return kind==='HO'?'The Postmaster':kind==='BO'?'The Branch Postmaster':'The SPM';}
+function refreshAddr(){
+  const kind=$('#fKind').value,town=$('#fTown').value.trim(),pin=$('#fPin').value.trim(),name=$('#fOffice').value.trim();
+  const sal=salutationFor(kind),line=`${town} ${kind==='HO'?'H.O':kind==='BO'?'B.O':'S.O'},`;
+  $('#addrPreview').innerHTML=`<span class="pk">Cover letter will be addressed to</span>To<br>${esc(sal)},<br>${esc(town?line:name)}<br>${esc(town||name)}${pin?' – '+esc(pin):''}`;
+}
+function prefillFromOffice(){
+  const name=$('#fOffice').value.trim().toLowerCase();
+  const o=state.offices.find(x=>x.name.toLowerCase()===name);
+  if(o){$('#fKind').value=o.kind==='HO'?'HO':'SO';$('#fTown').value=o.town;$('#fPin').value=o.pin;}
+  refreshAddr();
+}
+function openEntry(entry){
+  state.editId=entry?entry.id:null;
+  $('#entryTitle').textContent=entry?'✎ Edit memo entry':'＋ Add memo entry';
+  $('#fOffice').value=entry?entry.office_name:'';
+  $('#fKind').value=entry?(entry.office_kind||'HO'):'HO';
+  $('#fReceipt').value=entry?entry.date_of_receipt||'':todayIso();
+  $('#fTown').value=entry?entry.town||'':'';
+  $('#fPin').value=entry?entry.pincode||'':'';
+  $('#fRef').value=entry?entry.reference||'':'';
+  $('#fFrom').value=entry?entry.period_from||'':'';
+  $('#fTo').value=entry?entry.period_to||'':'';
+  $('#fMemoFrom').value=entry?n(entry.memo_from):'';
+  $('#fMemoTo').value=entry?n(entry.memo_to):'';
+  computeTotal();refreshAddr();
+  $('#entryOverlay').classList.add('show');
+  setTimeout(()=>$('#fOffice').focus(),40);
+}
+function closeEntry(){$('#entryOverlay').classList.remove('show');state.editId=null;}
+
+async function saveEntry(){
+  if(state.busy)return;
+  const office=$('#fOffice').value.trim();
+  const receipt=$('#fReceipt').value;
+  const ref=$('#fRef').value.trim();
+  const mf=$('#fMemoFrom').value, mt=$('#fMemoTo').value;
+  if(!office){toast('Enter the office / addressee.','err');return;}
+  if(!receipt){toast('Enter the date of receipt.','err');return;}
+  if(!ref){toast('Enter the reference.','err');return;}
+  if(mf===''||mt===''){toast('Enter the memo number range.','err');return;}
+  if(n(mt)<n(mf)){toast('Memo No. "to" must be ≥ "from".','err');return;}
+  const wasEdit=!!state.editId;
+  const kind=$('#fKind').value;
+  const row={
+    office_id:(state.offices.find(o=>o.name.toLowerCase()===office.toLowerCase())||{}).id||office,
+    office_name:office, office_kind:kind, town:$('#fTown').value.trim(), pincode:$('#fPin').value.trim(),
+    salutation:salutationFor(kind), date_of_receipt:receipt, reference:ref,
+    period_from:$('#fFrom').value||null, period_to:$('#fTo').value||null,
+    memo_from:n(mf), memo_to:n(mt), total_memos:n(mt)-n(mf)+1,
+    updated_at_ms:Date.now()
+  };
+  if(state.editId)row.id=state.editId; else {row.status='PENDING';row.created_by=who();row.created_at_ms=Date.now();row.letter_no=LETTER_NO;}
+  state.busy=true;const btn=$('#entrySave');btn.disabled=true;btn.textContent='Saving…';
+  try{
+    await SB.upsert('app_hmvm',row);
+    await reloadEntries();
+    closeEntry();
+    toast(wasEdit?'Entry updated ✓':'Entry added ✓','ok');
+  }catch(e){toast('Save failed: '+(e.message||''),'err');}
+  finally{state.busy=false;btn.disabled=false;btn.textContent='Save entry';}
+}
+
+// ---------- delete ----------
+function openDelete(id){const e=state.entries.find(x=>x.id===id);if(!e)return;state.delId=id;
+  $('#delMsg').innerHTML=`Delete the entry <b>${esc(e.office_name)}</b> — ${esc(e.reference)} (${n(e.total_memos)} memos)?<br>This cannot be undone.`;
+  $('#delOverlay').classList.add('show');}
+function closeDelete(){$('#delOverlay').classList.remove('show');state.delId=null;}
+async function confirmDelete(){
+  if(!state.delId||state.busy)return;
+  state.busy=true;const btn=$('#delConfirm');btn.disabled=true;btn.textContent='Deleting…';
+  try{await SB.del('app_hmvm',`id=eq.${encodeURIComponent(state.delId)}`);await reloadEntries();closeDelete();toast('Entry deleted ✓','ok');}
+  catch(e){toast('Delete failed: '+(e.message||''),'err');}
+  finally{state.busy=false;btn.disabled=false;btn.textContent='Delete permanently';}
+}
+
+// ---------- dispatch ----------
+async function markDespatched(key,date){
+  const rows=monthEntries().filter(e=>((e.office_id||'')+'|'+e.office_name+'|'+e.office_kind)===key&&e.status==='COMPLETED');
+  if(!date){toast('Pick the despatch date first.','err');return;}
+  if(!rows.length){toast('No completed entries to despatch — generate the cover letter first.','err');return;}
+  if(state.busy)return;state.busy=true;
+  try{
+    for(const r of rows)await SB.upsert('app_hmvm',{id:r.id,dispatch_date:date,status:'DESPATCHED',updated_at_ms:Date.now()});
+    await reloadEntries();
+    toast(`Despatched ✓ — ${rows.length} ${rows.length===1?'entry':'entries'} on ${fmtDmy(date)}.`,'ok');
+  }catch(e){toast('Update failed: '+(e.message||''),'err');}
+  finally{state.busy=false;}
+}
+
+// ---------- cover letter (docx) ----------
+let _docxLoad;
+function loadDocx(){
+  if(window.docx)return Promise.resolve(window.docx);
+  if(_docxLoad)return _docxLoad;
+  _docxLoad=new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js';
+    s.onload=()=>window.docx?res(window.docx):rej(new Error('generator failed to load'));
+    s.onerror=()=>rej(new Error('Could not load the Word generator (check your connection).'));
+    document.head.appendChild(s);});
+  return _docxLoad;
+}
+function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+
+async function generateLetter(key){
+  const rows=monthEntries().filter(e=>((e.office_id||'')+'|'+e.office_name+'|'+e.office_kind)===key&&e.status!=='DESPATCHED')
+    .sort((a,b)=>String(a.date_of_receipt).localeCompare(b.date_of_receipt)||n(a.memo_from)-n(b.memo_from));
+  if(!rows.length){toast('Nothing to include for this office.','err');return;}
+  const g=rows[0];
+  const dateStr=fmtDmy(todayIso());
+  const sal=g.salutation||salutationFor(g.office_kind);
+  const town=g.town||g.office_name.replace(/\s*(HO|SO|BO|H\.O|S\.O|B\.O)\.?$/i,'').trim();
+  const kindWord=g.office_kind==='HO'?'H.O':g.office_kind==='BO'?'B.O':'S.O';
+  const pin=g.pincode||'';
+  const grand=rows.reduce((a,r)=>a+n(r.total_memos),0);
+  let docx;
+  try{docx=await loadDocx();}catch(e){toast(e.message,'err');return;}
+  const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,AlignmentType,BorderStyle,HeadingLevel}=docx;
+  const FONT='Nirmala UI';
+  const run=(t,o={})=>new TextRun(Object.assign({text:t,font:FONT},o));
+  const P=(children,o={})=>new Paragraph(Object.assign({children:Array.isArray(children)?children:[run(children)]},o));
+  const center={alignment:AlignmentType.CENTER}, just={alignment:AlignmentType.JUSTIFIED};
+  const B={style:BorderStyle.SINGLE,size:4,color:'444444'};
+  const cell=(children,opt={})=>new TableCell(Object.assign({children:Array.isArray(children)?children:[children],margins:{top:40,bottom:40,left:90,right:90},borders:{top:B,bottom:B,left:B,right:B}},opt));
+  const hCell=t=>cell(P([run(t,{bold:true})],center),{shading:{fill:'E8F5E9'}});
+
+  const head=[
+    P([run('भारतीय डाक विभाग / DEPARTMENT OF POSTS',{bold:true})],center),
+    P([run('सहायक डाकघर अधीक्षक का कार्यालय / Office of the Assistant Supdt. of Post Offices,',{bold:true})],center),
+    P([run('करूर उप-मंडल / Karur Sub Division, करूर / Karur – 639001.',{bold:true})],center),
+    P('//By Entry.,//'),
+    P('To'),
+    P(`${sal},`),
+    P(`${town} ${kindWord},`),
+    P(`${town}${pin?' – '+pin:''}`),
+    P(''),
+    P(`${LETTER_NO} dated at Karur 639001 the ${dateStr}`),
+    P(''),
+    P([run('Sub:',{bold:true}),run(`  Verification of High Value Withdrawal Memos – ${g.office_name} – reg.`)]),
+  ];
+  // Ref list
+  rows.forEach((r,i)=>{
+    const item=`${g.office_name} letter ${r.reference}`.replace(/\.?$/,'.');
+    head.push(P(i===0?[run('Ref:',{bold:true}),run(`   1. ${item}`)]:[run(`        ${i+1}. ${item}`)]));
+  });
+  head.push(P('---***---',center));
+  head.push(P('Please refer to the letters cited above. The High Value Withdrawal Memos received from your office for the periods noted below have been verified through the Mail Overseer and are found to be in order:',just));
+
+  const tableRows=[new TableRow({tableHeader:true,children:[hCell('Reference'),hCell('Period of Memos'),hCell('Memo Nos.'),hCell('Total No. of Memos')]})];
+  for(const r of rows){
+    tableRows.push(new TableRow({children:[
+      cell(P(r.reference)),
+      cell(P(`${fmtDmy(r.period_from)} to ${fmtDmy(r.period_to)}`,center)),
+      cell(P(`${n(r.memo_from)} – ${n(r.memo_to)}`,center)),
+      cell(P(String(n(r.total_memos)),center)),
+    ]}));
+  }
+  const table=new Table({width:{size:100,type:WidthType.PERCENTAGE},columnWidths:[3800,2500,1700,1500],rows:tableRows});
+
+  const tail=[
+    P(''),
+    P(`The High Value Withdrawal Memos, ${grand} in total, are returned herewith duly verified.`,just),
+    P(''),
+    P([run('Encl:',{bold:true}),run(`  High Value Withdrawal Memos – ${grand} Nos. – returned.`)]),
+    P(''),P(''),
+    P([run('सहायक डाक अधीक्षक / Asst. Supdt. of Post Offices',{bold:true})]),
+    P('करूर उप मंडल / Karur Sub Division'),
+    P('करूर – 639001 / Karur – 639001'),
+  ];
+
+  const doc=new Document({
+    styles:{default:{document:{run:{font:FONT,size:22}}}},
+    sections:[{properties:{page:{margin:{top:900,bottom:900,left:1100,right:1100}}},children:[...head,table,...tail]}]
+  });
+
+  let blob;
+  try{blob=await Packer.toBlob(doc);}catch(e){toast('Could not build the document: '+(e.message||''),'err');return;}
+  dl(blob,`HVWM ${g.office_name} ${dateStr}.docx`);
+
+  // mark included entries COMPLETED
+  try{
+    for(const r of rows)if(r.status!=='COMPLETED')await SB.upsert('app_hmvm',{id:r.id,status:'COMPLETED',letter_no:LETTER_NO,letter_date:todayIso(),updated_at_ms:Date.now()});
+    await reloadEntries();
+  }catch(e){/* draft already downloaded */}
+  toast(`Cover letter generated ✓ — ${g.office_name}, ${grand} memos. Set the despatch date once posted.`,'ok');
+}
+
+// ---------- seed ----------
+function openSeed(){$('#sVal').value=state.seed.seed_balance||'';$('#sAsof').value=state.seed.seed_asof?monthOf(state.seed.seed_asof):'';$('#seedOverlay').classList.add('show');}
+function closeSeed(){$('#seedOverlay').classList.remove('show');}
+async function saveSeed(){
+  const val=n($('#sVal').value), asofM=$('#sAsof').value;
+  const asof=asofM?asofM+'-01':null;
+  if(state.busy)return;state.busy=true;const btn=$('#seedSave');btn.disabled=true;btn.textContent='Saving…';
+  try{await SB.upsert('app_hmvm_config',{id:1,seed_balance:val,seed_asof:asof,updated_at_ms:Date.now()});
+    state.seed={seed_balance:val,seed_asof:asof};renderBalance();closeSeed();toast('Opening balance seed saved ✓','ok');}
+  catch(e){toast('Save failed: '+(e.message||''),'err');}
+  finally{state.busy=false;btn.disabled=false;btn.textContent='Save seed';}
+}
+
+// ---------- report export ----------
+function exportCsv(){
+  const rows=monthEntries().slice().sort((a,b)=>a.office_name.localeCompare(b.office_name)||String(a.date_of_receipt).localeCompare(b.date_of_receipt));
+  const head=['Sl.No','Date of Receipt','Office','Reference','Period From','Period To','Memo No from','Memo No to','Total Memos','Status','Despatched'];
+  const lines=[head.join(',')];
+  rows.forEach((e,i)=>{
+    const c=[i+1,fmtDmy(e.date_of_receipt),e.office_name,e.reference,fmtDmy(e.period_from),fmtDmy(e.period_to),n(e.memo_from),n(e.memo_to),n(e.total_memos),e.status,fmtDmy(e.dispatch_date)]
+      .map(v=>{v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;});
+    lines.push(c.join(','));
+  });
+  const ob=openingBalance(state.month),rc=sumReceivedInMonth(state.month),dp=sumDespatchedInMonth(state.month);
+  lines.push('');lines.push(`Opening Balance,${ob}`);lines.push(`Received,${rc}`);lines.push(`Total,${ob+rc}`);lines.push(`Despatched,${dp}`);lines.push(`Closing Balance,${ob+rc-dp}`);
+  dl(new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'}),`HVWM Register ${monthName(state.month)}.csv`);
+}
+
+// ---------- events ----------
+$('#monthPick').addEventListener('change',e=>{state.month=e.target.value;render();});
+let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{state.q=e.target.value.trim();render();},130);});
+$('#addBtn').addEventListener('click',()=>openEntry(null));
+$('#printBtn').addEventListener('click',()=>window.print());
+$('#csvBtn').addEventListener('click',exportCsv);
+$('#seedLink').addEventListener('click',e=>{e.preventDefault();openSeed();});
+
+$('#fMemoFrom').addEventListener('input',computeTotal);
+$('#fMemoTo').addEventListener('input',computeTotal);
+$('#fOffice').addEventListener('change',prefillFromOffice);
+$('#fOffice').addEventListener('blur',prefillFromOffice);
+['fKind','fTown','fPin'].forEach(id=>$('#'+id).addEventListener('input',refreshAddr));
+$('#fKind').addEventListener('change',refreshAddr);
+$('#entryCancel').addEventListener('click',closeEntry);
+$('#entrySave').addEventListener('click',saveEntry);
+$('#delCancel').addEventListener('click',closeDelete);
+$('#delConfirm').addEventListener('click',confirmDelete);
+$('#seedCancel').addEventListener('click',closeSeed);
+$('#seedSave').addEventListener('click',saveSeed);
+
+document.addEventListener('click',e=>{
+  const ed=e.target.closest('[data-edit]');if(ed){const en=state.entries.find(x=>x.id===ed.dataset.edit);if(en)openEntry(en);return;}
+  const de=e.target.closest('[data-del]');if(de){openDelete(de.dataset.del);return;}
+  const gb=e.target.closest('.gen-btn');if(gb){gb.disabled=true;gb.textContent='Generating…';generateLetter(gb.dataset.key).finally(()=>{gb.disabled=false;gb.textContent='📄 Generate cover letter';});return;}
+  const db=e.target.closest('.dispatch-btn');if(db){const di=db.closest('.disp-inline');markDespatched(db.dataset.key,di?di.querySelector('.disp-date').value:'');return;}
+});
+[['entryOverlay',closeEntry],['delOverlay',closeDelete],['seedOverlay',closeSeed]].forEach(([id,fn])=>{
+  const o=document.getElementById(id);o.addEventListener('click',e=>{if(e.target===o)fn();});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeEntry();closeDelete();closeSeed();}});
+
+// init month = current
+state.month=monthOf(todayIso());
+$('#monthPick').value=state.month;
+load();
+</script>
+</body>
+</html>
