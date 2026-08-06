@@ -207,7 +207,9 @@ html.light .modal{background:#fff}
     <div class="field-inline"><label for="monthPick">Month</label><input type="month" id="monthPick"></div>
     <div class="search"><span>🔍</span><input id="q" type="text" placeholder="Search office, reference…" autocomplete="off"></div>
     <button class="btn" id="addBtn">＋ Add memo entry</button>
-    <button class="btn blue sm" id="printBtn">🖨 Print report</button>
+    <button class="btn gold sm" id="rcptPdfBtn">🧾 Receipt Report PDF</button>
+    <button class="btn blue sm" id="pendPdfBtn">⏰ Pendency Report PDF</button>
+    <button class="btn ghost sm" id="printBtn">🖨 Print</button>
     <button class="btn ghost sm" id="csvBtn">⬇ CSV</button>
   </div>
 
@@ -299,7 +301,8 @@ html.light .modal{background:#fff}
 
 const $=s=>document.querySelector(s);
 const LETTER_NO='No. ASP/HMVM/dlgs';
-const state={entries:[],offices:[],seed:{seed_balance:0,seed_asof:null},month:'',q:'',editId:null,delId:null,busy:false};
+const HVWM_OFFICES_URL='/leave-orders/hmvm/hvwm-offices.json';
+const state={entries:[],offices:[],hvwmOffices:[],seed:{seed_balance:0,seed_asof:null},month:'',q:'',editId:null,delId:null,busy:false};
 const who=()=>{try{const u=window.AuthSession&&AuthSession.user();return u?(u.displayName||u.username):'web';}catch{return 'web';}};
 
 function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');clearTimeout(toast._t);toast._t=setTimeout(()=>t.className='toast',3600);}
@@ -327,6 +330,19 @@ async function load(){
       });
     }
   }catch(e){/* offices optional */}
+  // Authoritative HVWM offices master (bundled JSON, isolated to this module) —
+  // drives correct addressing (salutation) and the pendency report.
+  try{
+    const r=await fetch(HVWM_OFFICES_URL,{cache:'no-store'});
+    if(r.ok){const arr=await r.json();if(Array.isArray(arr))state.hvwmOffices=arr;}
+  }catch(e){/* master optional */}
+  const townOf=nm=>String(nm).replace(/\s*(H\.?\s*O|S\.?\s*O|B\.?\s*O|HO|SO|BO)\.?\s*$/i,'').trim();
+  for(const o of state.hvwmOffices){
+    const kind=String(o.type||'').toUpperCase().startsWith('H')?'HO':'SO';
+    const ex=state.offices.find(x=>x.name.toLowerCase()===o.name.toLowerCase());
+    if(ex){ex.addressedTo=o.addressedTo; if(!ex.pin)ex.pin=o.pin;}
+    else state.offices.push({id:o.pin||o.name,name:o.name,kind,town:townOf(o.name),pin:o.pin||'',addressedTo:o.addressedTo});
+  }
   buildOfficeList();
   // seed config
   try{const c=await SB.select('app_hmvm_config','select=seed_balance,seed_asof&limit=1');
@@ -455,10 +471,11 @@ function render(){
 
 // ---------- entry modal ----------
 function computeTotal(){const f=n($('#fMemoFrom').value),t=n($('#fMemoTo').value);const tot=t>=f&&($('#fMemoTo').value!==''&&$('#fMemoFrom').value!=='')?t-f+1:0;$('#fTotal').textContent=tot;return tot;}
-function salutationFor(kind){return kind==='HO'?'The Postmaster':kind==='BO'?'The Branch Postmaster':'The SPM';}
+function salutationFor(kind){return kind==='HO'?'The Postmaster':kind==='BO'?'The Branch Postmaster':'The Sub Postmaster';}
+function addressedToFor(name,kind){const o=state.hvwmOffices.find(x=>x.name.toLowerCase()===String(name||'').trim().toLowerCase());return (o&&o.addressedTo)?o.addressedTo:salutationFor(kind);}
 function refreshAddr(){
   const kind=$('#fKind').value,town=$('#fTown').value.trim(),pin=$('#fPin').value.trim(),name=$('#fOffice').value.trim();
-  const sal=salutationFor(kind),line=`${town} ${kind==='HO'?'H.O':kind==='BO'?'B.O':'S.O'},`;
+  const sal=addressedToFor(name,kind),line=`${town} ${kind==='HO'?'H.O':kind==='BO'?'B.O':'S.O'},`;
   $('#addrPreview').innerHTML=`<span class="pk">Cover letter will be addressed to</span>To<br>${esc(sal)},<br>${esc(town?line:name)}<br>${esc(town||name)}${pin?' – '+esc(pin):''}`;
 }
 function prefillFromOffice(){
@@ -502,7 +519,7 @@ async function saveEntry(){
   const row={
     office_id:(state.offices.find(o=>o.name.toLowerCase()===office.toLowerCase())||{}).id||office,
     office_name:office, office_kind:kind, town:$('#fTown').value.trim(), pincode:$('#fPin').value.trim(),
-    salutation:salutationFor(kind), date_of_receipt:receipt, reference:ref,
+    salutation:addressedToFor(office,kind), date_of_receipt:receipt, reference:ref,
     period_from:$('#fFrom').value||null, period_to:$('#fTo').value||null,
     memo_from:n(mf), memo_to:n(mt), total_memos:n(mt)-n(mf)+1,
     updated_at_ms:Date.now()
@@ -603,7 +620,7 @@ async function generateLetter(key){
   const g=rows[0];
   const dateStr=fmtDmy(todayIso());
   const office=g.office_name;
-  const sal=g.salutation||salutationFor(g.office_kind);
+  const sal=addressedToFor(g.office_name,g.office_kind)||g.salutation||salutationFor(g.office_kind);
   const town=g.town||office.replace(/\s*(HO|SO|BO|H\.O|S\.O|B\.O)\.?$/i,'').trim();
   const kindWord=g.office_kind==='HO'?'H.O':g.office_kind==='BO'?'B.O':'S.O';
   const pin=g.pincode||'';
@@ -728,12 +745,119 @@ function exportCsv(){
   dl(new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'}),`HVWM Register ${monthName(state.month)}.csv`);
 }
 
+// ---------- PDF reports (clean & colourful, via jsPDF + autotable) ----------
+const PDF_URLS=['https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js'];
+let _pdfP;
+function loadScriptOnce(src){return new Promise((res,rej)=>{if([...document.scripts].some(s=>s.src===src))return res();
+  const s=document.createElement('script');s.src=src;s.onload=()=>res();
+  s.onerror=()=>rej(new Error('Could not load the PDF engine (check your connection).'));document.head.appendChild(s);});}
+async function loadPdf(){if(_pdfP)return _pdfP;_pdfP=(async()=>{for(const u of PDF_URLS)await loadScriptOnce(u);})();return _pdfP;}
+const CLR={green:[16,109,74],saffron:[255,153,51],white:[255,255,255],ind:[19,136,8]};
+function isoFromMs(ms){return new Date(ms).toISOString().slice(0,10);}
+function pdfHeader(doc,title){
+  const W=doc.internal.pageSize.getWidth();
+  doc.setFillColor(...CLR.green);doc.rect(0,0,W,58,'F');
+  const t=W/3;doc.setFillColor(...CLR.saffron);doc.rect(0,58,t,4,'F');doc.setFillColor(...CLR.white);doc.rect(t,58,t,4,'F');doc.setFillColor(...CLR.ind);doc.rect(2*t,58,t,4,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text(title,32,26);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('Department of Posts  ·  Karur Sub Division',32,42);
+  doc.setFontSize(8.5);doc.text('High Value Withdrawal Memos',W-32,26,{align:'right'});
+  doc.text('Generated: '+new Date().toLocaleString('en-IN'),W-32,42,{align:'right'});
+}
+function pdfFooter(doc){
+  const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight();
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(150);
+  doc.text('O/o the Assistant Superintendent of Post Offices, Karur Sub Division',32,H-14);
+  doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber,W-32,H-14,{align:'right'});
+}
+async function receiptReportPdf(){
+  if(!state.entries.length){toast('No memo entries to report yet.','err');return;}
+  await loadPdf();const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  const rows=state.entries.slice().sort((a,b)=>String(a.date_of_receipt).localeCompare(b.date_of_receipt)||String(a.office_name).localeCompare(b.office_name));
+  const totRecv=rows.reduce((s,e)=>s+n(e.total_memos),0);
+  const totDesp=rows.filter(e=>e.status==='DESPATCHED').reduce((s,e)=>s+n(e.total_memos),0);
+  const pend=totRecv-totDesp;
+  const body=rows.map((e,i)=>[i+1,fmtDmy(e.date_of_receipt),e.office_name,e.reference,
+    (e.period_from||e.period_to)?fmtDmy(e.period_from)+' – '+fmtDmy(e.period_to):'—',
+    n(e.memo_from)+' – '+n(e.memo_to),n(e.total_memos),(e.status||'PENDING'),e.dispatch_date?fmtDmy(e.dispatch_date):'—']);
+  doc.autoTable({
+    head:[['Sl','Receipt','Office','Reference','Period of Memos','Memo Nos.','Total','Status','Despatched']],
+    body, startY:84, margin:{top:80,left:28,right:28},
+    styles:{font:'helvetica',fontSize:8.5,cellPadding:4,overflow:'linebreak',lineColor:[224,232,228],lineWidth:.5},
+    headStyles:{fillColor:CLR.green,textColor:255,fontStyle:'bold',halign:'center',fontSize:8.8},
+    alternateRowStyles:{fillColor:[241,248,244]},
+    columnStyles:{0:{halign:'center',cellWidth:24},1:{cellWidth:56},5:{halign:'center'},6:{halign:'center',cellWidth:38,fontStyle:'bold'},7:{halign:'center',cellWidth:70},8:{cellWidth:62}},
+    didParseCell:d=>{if(d.section==='body'&&d.column.index===7){const s=String(d.cell.raw).toUpperCase();d.cell.styles.fontStyle='bold';
+      if(s==='PENDING'){d.cell.styles.textColor=[176,120,8];d.cell.styles.fillColor=[255,247,224];}
+      else if(s==='COMPLETED'){d.cell.styles.textColor=[37,80,180];d.cell.styles.fillColor=[224,235,255];}
+      else if(s==='DESPATCHED'){d.cell.styles.textColor=[16,120,80];d.cell.styles.fillColor=[220,246,233];}}},
+    didDrawPage:()=>{pdfHeader(doc,'Date-wise Receipt Report');pdfFooter(doc);
+      doc.setFont('helvetica','bold');doc.setFontSize(8.6);doc.setTextColor(60);
+      doc.text(`Entries: ${rows.length}     Received: ${totRecv}     Despatched: ${totDesp}     Pending: ${pend}`,28,76);}
+  });
+  doc.save('HVWM Receipt Report '+todayIso()+'.pdf');
+  toast('Receipt report PDF downloaded ✓','ok');
+}
+async function pendencyReportPdf(){
+  if(!state.hvwmOffices.length){toast('Offices master not loaded yet — try again in a moment.','err');return;}
+  await loadPdf();const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
+  const now=Date.now();
+  const norm=s=>String(s||'').toUpperCase().replace(/[.\s]/g,'').replace(/(HO|SO|BO)$/,'');
+  const last={};
+  for(const e of state.entries){if(!e.date_of_receipt)continue;const k=norm(e.office_name);const t=Date.parse(e.date_of_receipt);if(!isNaN(t)&&(!last[k]||t>last[k]))last[k]=t;}
+  const tiers=[
+    {key:'six',label:'Not received for 6+ months (or never)',short:'6+ MONTHS / NEVER',color:[201,42,42]},
+    {key:'three',label:'Not received for 3 – 6 months',short:'3 – 6 MONTHS',color:[230,119,0]},
+    {key:'one',label:'Not received for 1 – 3 months',short:'1 – 3 MONTHS',color:[196,150,0]},
+    {key:'ok',label:'Up to date — No pending (received within a month)',short:'NO PENDING',color:[16,120,80]}
+  ];
+  const bucket={six:[],three:[],one:[],ok:[]};
+  for(const o of state.hvwmOffices){const k=norm(o.name);const t=last[k];const days=t?Math.floor((now-t)/86400000):Infinity;
+    let b= days>=180?'six':days>=90?'three':days>=30?'one':'ok';bucket[b].push({...o,last:t,days});}
+  const monthsTxt=d=>d===Infinity?'Never received':(()=>{const m=Math.round(d/30.4);return m<=0?'This month':m+' month'+(m===1?'':'s')+' ago';})();
+  const W=doc.internal.pageSize.getWidth();
+  const drawFrame=()=>{pdfHeader(doc,'Pendency Report — HVWM not received');pdfFooter(doc);};
+  drawFrame();
+  // summary tiles
+  let y=78;const gap=10,tw=(W-64-3*gap)/4;
+  tiers.forEach((tr,i)=>{const x=32+i*(tw+gap);doc.setFillColor(...tr.color);doc.roundedRect(x,y,tw,46,6,6,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(19);doc.text(String(bucket[tr.key].length),x+tw/2,y+24,{align:'center'});
+    doc.setFont('helvetica','normal');doc.setFontSize(6.6);doc.text(tr.short,x+tw/2,y+38,{align:'center'});});
+  y+=46+18;
+  for(const tr of tiers){
+    const list=bucket[tr.key].slice().sort((a,b)=>(b.days===Infinity?1e9:b.days)-(a.days===Infinity?1e9:a.days));
+    if(y>doc.internal.pageSize.getHeight()-96){doc.addPage();drawFrame();y=78;}
+    doc.setFillColor(...tr.color);doc.roundedRect(32,y,W-64,20,4,4,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text(tr.label+'   ('+list.length+')',40,y+14);
+    y+=26;
+    if(!list.length){doc.setTextColor(130);doc.setFont('helvetica','italic');doc.setFontSize(9);doc.text('— None —',40,y+2);y+=20;continue;}
+    doc.autoTable({
+      head:[['Sl','Office','Type','PIN','Last received','Gap']],
+      body:list.map((o,i)=>[i+1,o.name,o.type,o.pin,o.last?fmtDmy(isoFromMs(o.last)):'—',monthsTxt(o.days)]),
+      startY:y, margin:{top:70,left:32,right:32},
+      styles:{font:'helvetica',fontSize:8.8,cellPadding:4,lineColor:[228,228,228],lineWidth:.5},
+      headStyles:{fillColor:[64,64,64],textColor:255,fontStyle:'bold',fontSize:8.5},
+      alternateRowStyles:{fillColor:[246,246,246]},
+      columnStyles:{0:{halign:'center',cellWidth:24},2:{halign:'center',cellWidth:42},3:{halign:'center',cellWidth:52},4:{halign:'center',cellWidth:84},5:{cellWidth:96}},
+      didDrawPage:()=>{drawFrame();}
+    });
+    y=doc.lastAutoTable.finalY+18;
+  }
+  doc.save('HVWM Pendency Report '+todayIso()+'.pdf');
+  toast('Pendency report PDF downloaded ✓','ok');
+}
+function runPdf(btn,fn){const old=btn.textContent;btn.disabled=true;btn.textContent='⏳ Building…';
+  Promise.resolve().then(fn).catch(e=>toast('Could not build the PDF: '+(e.message||''),'err')).finally(()=>{btn.disabled=false;btn.textContent=old;});}
+
 // ---------- events ----------
 $('#monthPick').addEventListener('change',e=>{state.month=e.target.value;render();});
 let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{state.q=e.target.value.trim();render();},130);});
 $('#addBtn').addEventListener('click',()=>openEntry(null));
 $('#printBtn').addEventListener('click',()=>window.print());
 $('#csvBtn').addEventListener('click',exportCsv);
+$('#rcptPdfBtn').addEventListener('click',e=>runPdf(e.currentTarget,receiptReportPdf));
+$('#pendPdfBtn').addEventListener('click',e=>runPdf(e.currentTarget,pendencyReportPdf));
 $('#seedLink').addEventListener('click',e=>{e.preventDefault();openSeed();});
 
 $('#fMemoFrom').addEventListener('input',computeTotal);
