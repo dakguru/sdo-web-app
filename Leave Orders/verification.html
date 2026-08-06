@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="/leave-orders/auth-guard.js"></script>
+<title>Verification Drafts — Karur Sub Division</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep:#0a0e1a; --glass-bg:rgba(255,255,255,0.06); --glass-bg-hover:rgba(255,255,255,0.12);
+  --glass-border:rgba(255,255,255,0.12); --glass-border-hover:rgba(255,255,255,0.25);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.25); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.35),0 0 0 1px rgba(255,255,255,0.15);
+  --glass-blur:20px; --text-primary:#f1f5f9; --text-secondary:rgba(241,245,249,0.7); --text-muted:rgba(241,245,249,0.45);
+  --indigo:#818cf8; --violet:#a78bfa; --cyan:#22d3ee; --blue:#60a5fa; --em:#34d399; --gold:#fbbf24; --rose:#fb7185;
+  --radius-xl:24px; --radius-lg:18px; --radius-md:14px;
+}
+html.light{
+  --bg-deep:#f0f2f7; --glass-bg:rgba(255,255,255,0.72); --glass-bg-hover:rgba(255,255,255,0.95);
+  --glass-border:rgba(0,0,0,0.08); --glass-border-hover:rgba(0,0,0,0.15);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.08); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.12),0 0 0 1px rgba(0,0,0,0.06);
+  --text-primary:#0f172a; --text-secondary:rgba(15,23,42,0.7); --text-muted:rgba(15,23,42,0.45);
+  --indigo:#4f46e5; --violet:#7c3aed; --cyan:#0891b2; --blue:#2563eb; --em:#059669; --gold:#d97706; --rose:#e11d48;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-deep);color:var(--text-primary);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s,color .4s}
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(129,140,248,0.16),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(34,211,238,0.12),transparent 65%),
+  radial-gradient(ellipse 600px 420px at 55% 92%,rgba(167,139,250,0.10),transparent 60%),
+  linear-gradient(180deg,#0a0e1a,#111827 55%,#0f1729)}
+html.light .bg-mesh{background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(79,70,229,0.09),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(8,145,178,0.07),transparent 65%),
+  linear-gradient(180deg,#f0f2f7,#e8ecf4 55%,#f0f2f7)}
+
+.page-wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:26px 22px 70px}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.back-link{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--text-secondary);font-weight:600;font-size:13.5px;
+  padding:9px 15px;border-radius:999px;background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(var(--glass-blur));transition:all .3s}
+.back-link:hover{background:var(--glass-bg-hover);color:var(--text-primary);transform:translateX(-2px)}
+.theme-toggle{width:44px;height:44px;border-radius:50%;border:1px solid var(--glass-border);cursor:pointer;background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));display:grid;place-items:center;font-size:20px;color:var(--text-primary);transition:all .3s}
+.theme-toggle:hover{background:var(--glass-bg-hover);transform:scale(1.08) rotate(12deg)}
+
+.hero{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden;backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow)}
+.hero::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--indigo),var(--violet),var(--cyan))}
+.hero-eyebrow{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-muted)}
+.hero-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:800;margin:6px 0 4px;
+  background:linear-gradient(135deg,var(--indigo),var(--violet) 50%,var(--cyan) 95%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:13.5px;color:var(--text-secondary);line-height:1.6;max-width:760px}
+
+/* card */
+.card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow);margin-bottom:18px;overflow:hidden}
+.card-head{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--glass-border);background:rgba(255,255,255,.02)}
+.card-head .num{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;background:linear-gradient(135deg,var(--indigo),var(--violet))}
+.card-head h2{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:16px;font-weight:800}
+.card-head .hint{font-size:11.5px;color:var(--text-muted);margin-top:1px}
+.card-body{padding:20px}
+
+/* GDS search combobox */
+.combo{position:relative}
+.combo-input{display:flex;align-items:center;gap:10px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:14px;padding:13px 16px;transition:border-color .2s}
+.combo-input:focus-within{border-color:var(--indigo)}
+.combo-input input{flex:1;background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:15px;font-weight:600}
+.combo-input input::placeholder{color:var(--text-muted);font-weight:500}
+.combo-count{font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap}
+.combo-list{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;max-height:340px;overflow-y:auto;background:var(--bg-deep);border:1px solid var(--glass-border-hover);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.5);display:none}
+html.light .combo-list{background:#fff}
+.combo-list.show{display:block}
+.combo-item{padding:11px 16px;cursor:pointer;border-bottom:1px solid var(--glass-border);transition:background .15s}
+.combo-item:last-child{border-bottom:none}
+.combo-item:hover,.combo-item.active{background:var(--glass-bg-hover)}
+.combo-item .nm{font-size:13.5px;font-weight:700;color:var(--text-primary)}
+.combo-item .meta{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+.combo-empty{padding:16px;text-align:center;color:var(--text-muted);font-size:13px}
+
+/* selected candidate panel */
+.sel-panel{display:none;margin-top:16px;background:linear-gradient(135deg,rgba(129,140,248,.10),rgba(34,211,238,.06));border:1px solid rgba(129,140,248,.28);border-radius:14px;padding:16px 18px}
+.sel-panel.show{display:block;animation:pop .3s both}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.sel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:720px){.sel-grid{grid-template-columns:1fr 1fr}}
+.sel-cell .k{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted)}
+.sel-cell .v{font-size:14px;font-weight:700;color:var(--text-primary);margin-top:3px;line-height:1.35}
+.sel-cell .v.acc{color:var(--indigo)}
+
+/* tabs */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tab{padding:11px 18px;border-radius:12px;border:1px solid var(--glass-border);background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));cursor:pointer;font-family:inherit;font-weight:700;font-size:13px;color:var(--text-secondary);display:inline-flex;align-items:center;gap:8px;transition:all .25s}
+.tab:hover{background:var(--glass-bg-hover);color:var(--text-primary)}
+.tab.active{color:#fff;border-color:transparent;background:linear-gradient(135deg,var(--indigo),var(--violet));box-shadow:0 4px 16px rgba(129,140,248,.3)}
+.tab .badge{font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;background:rgba(255,255,255,.18);padding:2px 7px;border-radius:999px}
+
+.panel{display:none}
+.panel.show{display:block;animation:pop .3s both}
+
+/* fields */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:620px){.grid2,.grid3{grid-template-columns:1fr}}
+.field{margin-bottom:14px;display:flex;flex-direction:column;gap:6px}
+.field label{font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--text-muted)}
+.field label .req{color:var(--rose)}
+.field input{width:100%;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:11px;padding:11px 13px;font-family:inherit;font-size:13.5px;font-weight:600;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--indigo)}
+.field .fh{font-size:10.5px;color:var(--text-muted);font-weight:600;letter-spacing:0}
+
+.addr-preview{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:13px 16px;margin:4px 0 16px;font-size:13px;color:var(--text-secondary);line-height:1.7;font-family:'Inter',serif}
+.addr-preview .pk{font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-size:10px;display:block;margin-bottom:6px}
+.addr-preview b{color:var(--text-primary);font-weight:700}
+
+.subhead{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin:6px 0 12px;display:flex;align-items:center;gap:8px}
+.subhead::before{content:'';width:16px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--indigo),var(--cyan))}
+
+.actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
+.btn{border:none;border-radius:12px;padding:12px 20px;font-weight:700;font-size:13.5px;cursor:pointer;color:#fff;font-family:inherit;
+  background:linear-gradient(135deg,var(--indigo),var(--violet));transition:all .25s;box-shadow:0 4px 16px rgba(129,140,248,.3);display:inline-flex;align-items:center;gap:8px}
+.btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:var(--glass-bg);color:var(--text-secondary);border:1px solid var(--glass-border);box-shadow:none}
+.btn.ghost:hover{background:var(--glass-bg-hover);color:var(--text-primary)}
+
+.locked{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:14px;line-height:1.7}
+.locked .ei{font-size:40px;display:block;margin-bottom:10px;opacity:.6}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#111827;color:#fff;padding:13px 22px;border-radius:12px;font-size:13px;font-weight:600;z-index:400;box-shadow:0 12px 40px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);transition:all .35s;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(52,211,153,.4)} .toast.err{border-color:rgba(251,113,133,.5)}
+
+.footer{text-align:center;padding:34px 20px 8px;color:var(--text-muted);font-size:12px}
+.footer .credit{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:700;margin-top:5px;background:linear-gradient(135deg,var(--indigo),var(--cyan));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+
+<div class="page-wrap">
+  <div class="topbar">
+    <a href="/" class="back-link">← Back to Home</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+  </div>
+
+  <div class="hero">
+    <div class="hero-eyebrow">Karur Sub Division · Department of Posts</div>
+    <div class="hero-title">🛡️ Verification Drafts</div>
+    <div class="hero-sub">Generate ready-to-sign Word drafts for verification of a GDS candidate — <b>Character &amp; Antecedents</b> (to the District Collector), <b>Community Certificate</b> (to the Tahsildar) and <b>Disability Certificate</b>. Pick the candidate from the Karur Division GDS list, fill the few particulars, and download a <b>.docx</b> that keeps the exact font, size, spacing &amp; alignment of the office templates.</div>
+  </div>
+
+  <!-- Step 1: pick GDS -->
+  <div class="card">
+    <div class="card-head">
+      <div class="num">1</div>
+      <div><h2>Select the GDS candidate</h2><div class="hint">Search by name, designation or office · <span id="totalCount">—</span> in Karur Division</div></div>
+    </div>
+    <div class="card-body">
+      <div class="combo" id="combo">
+        <div class="combo-input">
+          <span>🔍</span>
+          <input type="text" id="gdsSearch" placeholder="Type a name, designation or office…" autocomplete="off">
+          <span class="combo-count" id="comboCount"></span>
+        </div>
+        <div class="combo-list" id="comboList"></div>
+      </div>
+
+      <div class="sel-panel" id="selPanel">
+        <div class="sel-grid">
+          <div class="sel-cell"><div class="k">Name</div><div class="v acc" id="selName">—</div></div>
+          <div class="sel-cell"><div class="k">Designation</div><div class="v" id="selDesig">—</div></div>
+          <div class="sel-cell"><div class="k">Office</div><div class="v" id="selOffice">—</div></div>
+          <div class="sel-cell"><div class="k">Gender</div><div class="v" id="selGender">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: letters -->
+  <div class="card">
+    <div class="card-head">
+      <div class="num">2</div>
+      <div><h2>Generate a verification draft</h2><div class="hint">Fill the particulars for the letter you need, then download the Word draft</div></div>
+    </div>
+    <div class="card-body">
+      <div id="lockedNote" class="locked"><span class="ei">👆</span>Select a GDS candidate above to begin.</div>
+
+      <div id="letterArea" style="display:none">
+        <div class="tabs">
+          <button class="tab active" data-tab="ca">📋 Character &amp; Antecedents</button>
+          <button class="tab" data-tab="comm">🏛️ Community Certificate</button>
+          <button class="tab" data-tab="dis">♿ Disability Certificate <span class="badge">if available</span></button>
+        </div>
+
+        <!-- ===== Character & Antecedents ===== -->
+        <div class="panel show" id="panel-ca">
+          <div class="subhead">Address — to the District Collector</div>
+          <div class="grid3">
+            <div class="field"><label>District <span class="req">*</span></label><input type="text" id="caDist" placeholder="e.g. Karur"></div>
+            <div class="field"><label>PIN code <span class="req">*</span></label><input type="text" id="caPin" placeholder="e.g. 639007" inputmode="numeric"></div>
+            <div class="field"><label>File No. <span class="req">*</span></label><input type="text" id="caFile" placeholder="e.g. B2/223/ABPM/C&amp;A Vfn"></div>
+          </div>
+          <div class="addr-preview" id="caAddr"></div>
+          <div class="actions">
+            <button class="btn" id="genCA">📄 Generate C&amp;A draft</button>
+          </div>
+        </div>
+
+        <!-- ===== Community Certificate ===== -->
+        <div class="panel" id="panel-comm">
+          <div class="subhead">Address — to the Tahsildar</div>
+          <div class="grid3">
+            <div class="field"><label>Taluk <span class="req">*</span></label><input type="text" id="cmTaluk" placeholder="e.g. Karur"></div>
+            <div class="field"><label>PIN code <span class="req">*</span></label><input type="text" id="cmPin" placeholder="e.g. 639001" inputmode="numeric"></div>
+            <div class="field"><label>File No. <span class="req">*</span></label><input type="text" id="cmFile" placeholder="e.g. B2/306/Com. Vfn dlgs"></div>
+          </div>
+          <div class="addr-preview" id="cmAddr"></div>
+          <div class="subhead">Certificate details (table)</div>
+          <div class="field"><label>Address of the candidate <span class="req">*</span></label><input type="text" id="cmCandAddr" placeholder="e.g. 34 A/B Thanthoni Bazaar Street, Tirumanilaiyur Post, Karur 639003."></div>
+          <div class="grid3">
+            <div class="field"><label>Community <span class="req">*</span></label><input type="text" id="cmComm" placeholder="e.g. SC"></div>
+            <div class="field"><label>Certificate No. <span class="req">*</span></label><input type="text" id="cmCertNo" placeholder="e.g. 5033156"></div>
+            <div class="field"><label>Certificate date <span class="req">*</span></label><input type="text" id="cmCertDate" placeholder="e.g. 13.11.2009"></div>
+          </div>
+          <div class="field"><label>Authority which issued</label><input type="text" id="cmAuth" placeholder="Auto — Tahsildar, &lt;Taluk&gt;."><span class="fh">Auto-filled from the Taluk above. Editable.</span></div>
+          <div class="actions">
+            <button class="btn" id="genComm">📄 Generate Community draft</button>
+          </div>
+        </div>
+
+        <!-- ===== Disability Certificate ===== -->
+        <div class="panel" id="panel-dis">
+          <div class="subhead">Address — to the District Collector</div>
+          <div class="grid3">
+            <div class="field"><label>District <span class="req">*</span></label><input type="text" id="dsDist" placeholder="e.g. Karur"></div>
+            <div class="field"><label>PIN code <span class="req">*</span></label><input type="text" id="dsPin" placeholder="e.g. 639007" inputmode="numeric"></div>
+            <div class="field"><label>File No. <span class="req">*</span></label><input type="text" id="dsFile" placeholder="e.g. B2/Aravakurichi SO/DS/MG dlgs"></div>
+          </div>
+          <div class="addr-preview" id="dsAddr"></div>
+          <div class="subhead">Candidate &amp; certificate details</div>
+          <div class="field"><label>Address of the candidate <span class="req">*</span></label><input type="text" id="dsCandAddr" placeholder="e.g. 8/35, Kalingapatti, Tennilai, Karur 621301."></div>
+          <div class="grid2">
+            <div class="field"><label>Disability Pass Book No.</label><input type="text" id="dsPB" placeholder="e.g. TN-KARUR-HI-25220"></div>
+            <div class="field"><label>Pass Book — Date of Issue</label><input type="text" id="dsPBdoi" placeholder="e.g. 04.10.2023"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label>Disability ID Card No.</label><input type="text" id="dsID" placeholder="e.g. TN1240419960145082"></div>
+            <div class="field"><label>ID Card — Date of Issue</label><input type="text" id="dsIDdoi" placeholder="e.g. 11.10.2023"></div>
+          </div>
+          <div class="actions">
+            <button class="btn" id="genDis">📄 Generate Disability draft</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Verification Drafts · Karur Sub Division
+    <div class="credit">Designed by Arun Selvaraj · Karur Division</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- theme ----------
+(function(){const h=document.documentElement;if(localStorage.getItem('theme')==='light')h.classList.add('light');
+  const b=document.getElementById('themeToggle');const paint=()=>b.textContent=h.classList.contains('light')?'☀️':'🌙';paint();
+  b.onclick=()=>{h.classList.toggle('light');localStorage.setItem('theme',h.classList.contains('light')?'light':'dark');paint();};})();
+
+const $=s=>document.querySelector(s);
+const GDS_URL='/leave-orders/verification/gds-data.json';
+const TPL_MAIN='/leave-orders/verification/verification-letter.docx';
+const TPL_DIS='/leave-orders/verification/disability-template.docx';
+const WNS='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const XMLNS='http://www.w3.org/XML/1998/namespace';
+
+const state={gds:[],selected:null,filtered:[],activeIdx:-1};
+
+function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');clearTimeout(toast._t);toast._t=setTimeout(()=>t.className='toast',3800);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function clean(s){return String(s==null?'':s).replace(/\s+/g,' ').trim();}
+function todayDmy(){const d=new Date();return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;}
+function possPronoun(g){return /^f/i.test(String(g||''))?'her':'his';}
+function stripNo(s){return clean(s).replace(/^no\.?\s*/i,'').trim();}
+
+// ---------- load GDS ----------
+async function load(){
+  try{
+    const r=await fetch(GDS_URL,{cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    state.gds=(Array.isArray(data)?data:[]).map(x=>({
+      id:String(x.id||''),name:clean(x.name),gender:clean(x.gender),desig:clean(x.desig),office:clean(x.office)
+    })).filter(x=>x.name).sort((a,b)=>a.name.localeCompare(b.name));
+  }catch(e){
+    toast('Could not load the GDS list: '+(e.message||''),'err');
+    state.gds=[];
+  }
+  $('#totalCount').textContent=state.gds.length+' GDS';
+}
+
+// ---------- combobox ----------
+function runSearch(q){
+  q=clean(q).toLowerCase();
+  const words=q.split(' ').filter(Boolean);
+  let list;
+  if(!words.length){ list=state.gds.slice(0,60); }
+  else{
+    list=state.gds.filter(g=>{
+      const hay=(g.name+' '+g.desig+' '+g.office).toLowerCase();
+      return words.every(w=>hay.includes(w));
+    }).slice(0,80);
+  }
+  state.filtered=list;state.activeIdx=-1;
+  renderList();
+}
+function renderList(){
+  const box=$('#comboList');
+  const list=state.filtered;
+  $('#comboCount').textContent=list.length?(list.length>=80?'80+':list.length)+' match'+(list.length===1?'':'es'):'';
+  if(!list.length){ box.innerHTML='<div class="combo-empty">No matching GDS found.</div>'; box.classList.add('show'); return; }
+  box.innerHTML=list.map((g,i)=>`<div class="combo-item${i===state.activeIdx?' active':''}" data-i="${i}">
+      <div class="nm">${esc(g.name)}</div>
+      <div class="meta">${esc(g.desig)} · ${esc(g.office)}</div>
+    </div>`).join('');
+  box.classList.add('show');
+}
+function hideList(){ $('#comboList').classList.remove('show'); }
+function pick(i){
+  const g=state.filtered[i];if(!g)return;
+  state.selected=g;
+  $('#gdsSearch').value=g.name;
+  hideList();
+  $('#selName').textContent=g.name;
+  $('#selDesig').textContent=g.desig||'—';
+  $('#selOffice').textContent=g.office||'—';
+  $('#selGender').textContent=g.gender||'—';
+  $('#selPanel').classList.add('show');
+  $('#lockedNote').style.display='none';
+  $('#letterArea').style.display='block';
+}
+
+$('#gdsSearch').addEventListener('focus',e=>runSearch(e.target.value));
+$('#gdsSearch').addEventListener('input',e=>runSearch(e.target.value));
+$('#gdsSearch').addEventListener('keydown',e=>{
+  const n=state.filtered.length;if(!n)return;
+  if(e.key==='ArrowDown'){e.preventDefault();state.activeIdx=(state.activeIdx+1)%n;renderList();scrollActive();}
+  else if(e.key==='ArrowUp'){e.preventDefault();state.activeIdx=(state.activeIdx-1+n)%n;renderList();scrollActive();}
+  else if(e.key==='Enter'){e.preventDefault();if(state.activeIdx>=0)pick(state.activeIdx);else if(n===1)pick(0);}
+  else if(e.key==='Escape'){hideList();}
+});
+function scrollActive(){const el=$('#comboList').querySelector('.combo-item.active');if(el)el.scrollIntoView({block:'nearest'});}
+$('#comboList').addEventListener('mousedown',e=>{const it=e.target.closest('.combo-item');if(it)pick(+it.dataset.i);});
+document.addEventListener('click',e=>{if(!e.target.closest('#combo'))hideList();});
+
+// ---------- tabs ----------
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('show'));
+  t.classList.add('active');
+  $('#panel-'+({ca:'ca',comm:'comm',dis:'dis'}[t.dataset.tab])).classList.add('show');
+}));
+
+// ---------- address previews ----------
+function upd(){
+  const cd=clean($('#caDist').value),cp=clean($('#caPin').value);
+  $('#caAddr').innerHTML=`<span class="pk">Letter will be addressed to</span>To,<br>The District Collector,<br><b>${esc(cd||'&lt;District&gt;')}</b> District,<br><b>${esc(cp||'&lt;PIN&gt;')}</b>.`;
+  const tk=clean($('#cmTaluk').value),pp=clean($('#cmPin').value);
+  $('#cmAddr').innerHTML=`<span class="pk">Letter will be addressed to</span>To,<br>The Tahsildar,<br><b>${esc(tk||'&lt;Taluk&gt;')}</b> Taluk,<br><b>${esc(pp||'&lt;PIN&gt;')}</b>.`;
+  const dd=clean($('#dsDist').value),dp=clean($('#dsPin').value);
+  $('#dsAddr').innerHTML=`<span class="pk">Letter will be addressed to</span>To,<br>The District Collector,<br><b>${esc(dd||'&lt;District&gt;')}</b> District,<br><b>${esc(dp||'&lt;PIN&gt;')}</b>.`;
+  if(!$('#cmAuth').value.trim()||$('#cmAuth').dataset.auto==='1'){
+    $('#cmAuth').value=tk?`Tahsildar, ${tk}.`:''; $('#cmAuth').dataset.auto='1';
+  }
+}
+['caDist','caPin','cmTaluk','cmPin','dsDist','dsPin'].forEach(id=>$('#'+id).addEventListener('input',upd));
+$('#cmAuth').addEventListener('input',()=>{$('#cmAuth').dataset.auto='';});
+upd();
+
+// ======================================================================
+//  DOCX ENGINE — clones the real Word nodes from the office templates so
+//  every formatting attribute (font, size, spacing, alignment, borders,
+//  the bilingual letterhead) is byte-identical to the sample. We only
+//  swap the text inside existing runs / rebuild a run's siblings when a
+//  line mixes bold + normal. Nothing is re-created from scratch.
+// ======================================================================
+let _zip;
+function loadJSZip(){
+  if(window.JSZip)return Promise.resolve(window.JSZip);
+  if(_zip)return _zip;
+  _zip=new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    s.onload=()=>window.JSZip?res(window.JSZip):rej(new Error('document engine failed to load'));
+    s.onerror=()=>rej(new Error('Could not load the document engine (check your connection).'));
+    document.head.appendChild(s);});
+  return _zip;
+}
+function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+function wts(el){return Array.from(el.getElementsByTagNameNS(WNS,'t'));}
+function paraText(el){return wts(el).map(t=>t.textContent).join('');}
+function blocks(body){return Array.from(body.children).filter(el=>el.localName==='p'||el.localName==='tbl');}
+// set whole paragraph (or cell) text into its first <w:t>, blank the rest — keeps first run's rPr
+function setText(el,text){const ts=wts(el);if(!ts.length)return;ts[0].textContent=text;for(let i=1;i<ts.length;i++)ts[i].textContent='';}
+function tblRows(tbl){return Array.from(tbl.children).filter(c=>c.localName==='tr');}
+function trCells(tr){return Array.from(tr.children).filter(c=>c.localName==='tc');}
+function setCell(tc,text){const p=tc.getElementsByTagNameNS(WNS,'p')[0];if(p)setText(p,text);}
+// pick an existing run's rPr (bold or normal) from a paragraph, to clone for new runs
+function donorRPr(p,bold){
+  for(const r of Array.from(p.getElementsByTagNameNS(WNS,'r'))){
+    const rpr=r.getElementsByTagNameNS(WNS,'rPr')[0];
+    const hasB=!!(rpr&&Array.from(rpr.children).some(c=>c.localName==='b'));
+    if(!!bold===hasB)return rpr||null;
+  }
+  return null;
+}
+function makeRun(doc,rPr,text){
+  const r=doc.createElementNS(WNS,'w:r');
+  if(rPr)r.appendChild(rPr.cloneNode(true));
+  const t=doc.createElementNS(WNS,'w:t');
+  t.setAttributeNS(XMLNS,'xml:space','preserve');
+  t.textContent=text;
+  r.appendChild(t);
+  return r;
+}
+// rebuild a paragraph's runs from [{t,bold}] segments, preserving font via donor rPrs
+function rebuildPara(doc,p,segs){
+  const dn=donorRPr(p,false),db=donorRPr(p,true);
+  Array.from(p.getElementsByTagNameNS(WNS,'r')).forEach(r=>r.parentNode.removeChild(r));
+  segs.forEach(s=>p.appendChild(makeRun(doc,s.bold?(db||dn):dn,s.t)));
+}
+async function openTemplate(url){
+  const JSZip=await loadJSZip();
+  const resp=await fetch(url,{cache:'no-store'});
+  if(!resp.ok)throw new Error('template '+resp.status);
+  const zip=await JSZip.loadAsync(await resp.arrayBuffer());
+  const xml=await zip.file('word/document.xml').async('string');
+  const doc=new DOMParser().parseFromString(xml,'application/xml');
+  if(doc.getElementsByTagName('parsererror').length)throw new Error('template parse error');
+  return {zip,doc,body:doc.getElementsByTagNameNS(WNS,'body')[0]};
+}
+async function saveDoc(zip,doc,name){
+  zip.file('word/document.xml',new XMLSerializer().serializeToString(doc));
+  const blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+  dl(blob,name);
+}
+// the main template holds two letters (C&A on page 1, Community on page 2). Split on the
+// 2nd bilingual "DEPARTMENT OF POSTS" letterhead so each draft carries only its own page.
+function splitBoundary(all){
+  const heads=all.map((el,i)=>({i,p:el.localName==='p'&&/DEPARTMENT OF POSTS/i.test(paraText(el))})).filter(o=>o.p).map(o=>o.i);
+  return heads.length>=2?heads[1]:31;
+}
+function findP(list,re){return list.find(el=>el.localName==='p'&&re.test(paraText(el)));}
+
+// ---------- generators ----------
+function needSel(){if(!state.selected){toast('Select a GDS candidate first.','err');return false;}return true;}
+
+async function genCA(){
+  if(!needSel())return;
+  const dist=clean($('#caDist').value),pin=clean($('#caPin').value),file=stripNo($('#caFile').value);
+  if(!dist||!pin){toast('Enter the District and PIN code.','err');return;}
+  if(!file){toast('Enter the File No.','err');return;}
+  const g=state.selected,date=todayDmy();
+  const {zip,doc,body}=await openTemplate(TPL_MAIN);
+  const all=blocks(body),bnd=splitBoundary(all);
+  all.forEach((el,i)=>{if(i>=bnd)el.parentNode.removeChild(el);});   // keep page 1 only
+  const page=blocks(body);
+  const toIdx=page.findIndex(el=>el.localName==='p'&&paraText(el).trim()==='To');
+  if(toIdx>=0){setText(page[toIdx+2],`${dist} District,`);setText(page[toIdx+3],`${pin}.`);}
+  const fp=findP(page,/dated at/i); if(fp)setText(fp,`No. ${file}  dated at Karur 639001 the ${date}.`);
+  const bp=findP(page,/prescribed for the GDS/i);
+  if(bp)rebuildPara(doc,bp,[
+    {t:'I am directed to say that Record check/ detailed verification has been prescribed for the GDS ',bold:false},
+    {t:g.desig,bold:true},{t:' of ',bold:false},{t:g.office,bold:true},
+    {t:' in Karur Division ',bold:false},{t:g.name,bold:true},
+    {t:', whose particulars are furnished in the enclosed Attestation form (in triplicate).',bold:false}
+  ]);
+  await saveDoc(zip,doc,`C&A Verification - ${g.name}.docx`);
+  toast('Character & Antecedents draft generated ✓','ok');
+}
+
+async function genComm(){
+  if(!needSel())return;
+  const taluk=clean($('#cmTaluk').value),pin=clean($('#cmPin').value),file=stripNo($('#cmFile').value);
+  const addr=clean($('#cmCandAddr').value),comm=clean($('#cmComm').value),certNo=clean($('#cmCertNo').value),certDt=clean($('#cmCertDate').value);
+  const auth=clean($('#cmAuth').value)||`Tahsildar, ${taluk}.`;
+  if(!taluk||!pin){toast('Enter the Taluk and PIN code.','err');return;}
+  if(!file){toast('Enter the File No.','err');return;}
+  if(!addr){toast('Enter the candidate address.','err');return;}
+  if(!comm||!certNo||!certDt){toast('Enter Community, Certificate No. and Date.','err');return;}
+  const g=state.selected,date=todayDmy();
+  const {zip,doc,body}=await openTemplate(TPL_MAIN);
+  const all=blocks(body),bnd=splitBoundary(all);
+  all.forEach((el,i)=>{if(i<bnd)el.parentNode.removeChild(el);});     // keep page 2 only
+  const page=blocks(body);
+  const toIdx=page.findIndex(el=>el.localName==='p'&&paraText(el).trim()==='To');
+  if(toIdx>=0){setText(page[toIdx+2],`  ${taluk} Taluk,`);setText(page[toIdx+3],`  ${pin}.`);}
+  const fp=findP(page,/dated at/i); if(fp)setText(fp,`No. ${file}  dated at Karur 639001   the ${date}.`);
+  const p46=findP(page,/selected for the post of/i);
+  if(p46)setText(p46,`            A kind reference is invited to the subject cited above. The below mentioned candidate has been selected for the post of ${g.desig} in Karur Division.`);
+  const p48=findP(page,/in support of/i);
+  if(p48)setText(p48,`            The candidate has submitted the following community certificate in support of ${possPronoun(g.gender)} claim as ${comm}. A copy of the Community Certificate is attached herewith. Details are furnished below.`);
+  const tbl=page.find(el=>el.localName==='tbl');
+  if(tbl){const rows=tblRows(tbl),r1=rows[1];if(r1){const c=trCells(r1);
+    setCell(c[0],'1');setCell(c[1],`${g.name}, ${addr}`);setCell(c[2],comm);setCell(c[3],`${certNo}/ ${certDt}`);setCell(c[4],auth);}}
+  await saveDoc(zip,doc,`Community Verification - ${g.name}.docx`);
+  toast('Community Certificate draft generated ✓','ok');
+}
+
+async function genDis(){
+  if(!needSel())return;
+  const dist=clean($('#dsDist').value),pin=clean($('#dsPin').value),file=stripNo($('#dsFile').value);
+  const addr=clean($('#dsCandAddr').value);
+  const pb=clean($('#dsPB').value),pbdoi=clean($('#dsPBdoi').value),idc=clean($('#dsID').value),iddoi=clean($('#dsIDdoi').value);
+  if(!dist||!pin){toast('Enter the District and PIN code.','err');return;}
+  if(!file){toast('Enter the File No.','err');return;}
+  if(!addr){toast('Enter the candidate address.','err');return;}
+  const g=state.selected,date=todayDmy();
+  const {zip,doc,body}=await openTemplate(TPL_DIS);
+  const page=blocks(body);
+  const toIdx=page.findIndex(el=>el.localName==='p'&&paraText(el).trim()==='To');
+  if(toIdx>=0){setText(page[toIdx+2],`${dist} District,`);setText(page[toIdx+3],`${pin}.`);}
+  const fp=findP(page,/dated at/i); if(fp)setText(fp,`No. ${file}  dated at Karur 639001 the ${date}.`);
+  const p16=findP(page,/candidate selected for the post of/i);
+  if(p16)setText(p16,`            This is regarding verification of genuineness of Disability Certificate/Pass Book and ID Card of the under mentioned candidate selected for the post of ${g.desig} in Karur Postal Division.`);
+  const p18=findP(page,/Photocopies of/i);
+  if(p18){
+    const hasPB=pb||pbdoi, hasID=idc||iddoi;
+    if(hasPB||hasID){
+      rebuildPara(doc,p18,[
+        {t:'        Photocopies of Unique Disability Pass Book no. ',bold:false},
+        {t:pb||'—',bold:true},
+        {t:` (DoI:${pbdoi||'—'}) and Disability ID Card No. `,bold:false},
+        {t:idc||'—',bold:true},
+        {t:` (DoI:${iddoi||'—'}) are forwarded herewith for further necessary action.`,bold:false}
+      ]);
+    }
+  }
+  const tbl=page.find(el=>el.localName==='tbl');
+  if(tbl){const rows=tblRows(tbl),r1=rows[1];if(r1){const c=trCells(r1);setCell(c[0],'1');setCell(c[1],`${g.name}, ${addr}`);}}
+  await saveDoc(zip,doc,`Disability Verification - ${g.name}.docx`);
+  toast('Disability Certificate draft generated ✓','ok');
+}
+
+function wrap(btn,fn,label){
+  btn.addEventListener('click',async()=>{
+    btn.disabled=true;const old=btn.innerHTML;btn.innerHTML='⏳ Generating…';
+    try{await fn();}catch(e){toast('Could not build the document: '+(e.message||''),'err');}
+    finally{btn.disabled=false;btn.innerHTML=old;}
+  });
+}
+wrap($('#genCA'),genCA);
+wrap($('#genComm'),genComm);
+wrap($('#genDis'),genDis);
+
+load();
+</script>
+</body>
+</html>
