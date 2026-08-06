@@ -62,20 +62,31 @@ html.light .bg-mesh{background:
 
 /* GDS search combobox */
 .combo{position:relative}
-.combo-input{display:flex;align-items:center;gap:10px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:14px;padding:13px 16px;transition:border-color .2s}
-.combo-input:focus-within{border-color:var(--indigo)}
-.combo-input input{flex:1;background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:15px;font-weight:600}
+.combo-input{display:flex;align-items:center;gap:10px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:14px;padding:13px 16px;transition:border-color .2s,box-shadow .2s}
+.combo-input:focus-within{border-color:var(--indigo);box-shadow:0 0 0 3px rgba(129,140,248,.18)}
+.combo-input .mag{font-size:16px;opacity:.8}
+.combo-input input{flex:1;background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:15px;font-weight:600;min-width:0}
 .combo-input input::placeholder{color:var(--text-muted);font-weight:500}
 .combo-count{font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap}
-.combo-list{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;max-height:340px;overflow-y:auto;background:var(--bg-deep);border:1px solid var(--glass-border-hover);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.5);display:none}
-html.light .combo-list{background:#fff}
-.combo-list.show{display:block}
-.combo-item{padding:11px 16px;cursor:pointer;border-bottom:1px solid var(--glass-border);transition:background .15s}
+.combo-clear{border:none;background:var(--glass-bg-hover);color:var(--text-muted);width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:13px;line-height:1;display:none;place-items:center;flex-shrink:0;transition:all .2s}
+.combo-clear:hover{color:var(--text-primary);background:var(--glass-border-hover)}
+.combo-clear.show{display:grid}
+/* results list lives in normal flow (never clipped / never hidden behind cards) */
+.combo-list{margin-top:10px;max-height:52vh;overflow-y:auto;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:14px;display:none;-webkit-overflow-scrolling:touch}
+.combo-list.show{display:block;animation:pop .2s both}
+.combo-list::-webkit-scrollbar{width:8px}
+.combo-list::-webkit-scrollbar-thumb{background:var(--glass-border-hover);border-radius:8px}
+.combo-hint{padding:9px 16px;font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--glass-border);position:sticky;top:0;background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));z-index:1}
+.combo-item{display:flex;align-items:center;gap:12px;padding:11px 16px;cursor:pointer;border-bottom:1px solid var(--glass-border);transition:background .15s}
 .combo-item:last-child{border-bottom:none}
 .combo-item:hover,.combo-item.active{background:var(--glass-bg-hover)}
-.combo-item .nm{font-size:13.5px;font-weight:700;color:var(--text-primary)}
-.combo-item .meta{font-size:11.5px;color:var(--text-muted);margin-top:2px}
-.combo-empty{padding:16px;text-align:center;color:var(--text-muted);font-size:13px}
+.combo-item .av{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:grid;place-items:center;font-weight:800;font-size:14px;color:#fff;background:linear-gradient(135deg,var(--indigo),var(--violet))}
+.combo-item .txt{min-width:0;flex:1}
+.combo-item .nm{font-size:14px;font-weight:700;color:var(--text-primary)}
+.combo-item .meta{font-size:11.5px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.combo-item .go{font-size:12px;color:var(--text-muted);opacity:0;transition:opacity .15s}
+.combo-item:hover .go,.combo-item.active .go{opacity:1}
+.combo-empty{padding:22px 16px;text-align:center;color:var(--text-muted);font-size:13px}
 
 /* selected candidate panel */
 .sel-panel{display:none;margin-top:16px;background:linear-gradient(135deg,rgba(129,140,248,.10),rgba(34,211,238,.06));border:1px solid rgba(129,140,248,.28);border-radius:14px;padding:16px 18px}
@@ -158,11 +169,12 @@ html.light .combo-list{background:#fff}
     <div class="card-body">
       <div class="combo" id="combo">
         <div class="combo-input">
-          <span>🔍</span>
-          <input type="text" id="gdsSearch" placeholder="Type a name, designation or office…" autocomplete="off">
+          <span class="mag">🔍</span>
+          <input type="text" id="gdsSearch" placeholder="Type a name, designation or office…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="comboList">
           <span class="combo-count" id="comboCount"></span>
+          <button type="button" class="combo-clear" id="comboClear" title="Clear">✕</button>
         </div>
-        <div class="combo-list" id="comboList"></div>
+        <div class="combo-list" id="comboList" role="listbox"></div>
       </div>
 
       <div class="sel-panel" id="selPanel">
@@ -276,7 +288,7 @@ const TPL_DIS='/leave-orders/verification/disability-template.docx';
 const WNS='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const XMLNS='http://www.w3.org/XML/1998/namespace';
 
-const state={gds:[],selected:null,filtered:[],activeIdx:-1};
+const state={gds:[],selected:null,filtered:[],activeIdx:-1,total:0};
 
 function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');clearTimeout(toast._t);toast._t=setTimeout(()=>t.className='toast',3800);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -302,36 +314,49 @@ async function load(){
 }
 
 // ---------- combobox ----------
+const CAP=100;
 function runSearch(q){
   q=clean(q).toLowerCase();
   const words=q.split(' ').filter(Boolean);
-  let list;
-  if(!words.length){ list=state.gds.slice(0,60); }
+  let all;
+  if(!words.length){ all=state.gds; }
   else{
-    list=state.gds.filter(g=>{
+    all=state.gds.filter(g=>{
       const hay=(g.name+' '+g.desig+' '+g.office).toLowerCase();
       return words.every(w=>hay.includes(w));
-    }).slice(0,80);
+    });
   }
-  state.filtered=list;state.activeIdx=-1;
+  state.total=all.length;
+  state.filtered=all.slice(0,CAP);
+  state.activeIdx=-1;
+  state.isQuery=words.length>0;
   renderList();
 }
 function renderList(){
+  const isQuery=state.isQuery;
   const box=$('#comboList');
   const list=state.filtered;
-  $('#comboCount').textContent=list.length?(list.length>=80?'80+':list.length)+' match'+(list.length===1?'':'es'):'';
-  if(!list.length){ box.innerHTML='<div class="combo-empty">No matching GDS found.</div>'; box.classList.add('show'); return; }
-  box.innerHTML=list.map((g,i)=>`<div class="combo-item${i===state.activeIdx?' active':''}" data-i="${i}">
-      <div class="nm">${esc(g.name)}</div>
-      <div class="meta">${esc(g.desig)} · ${esc(g.office)}</div>
+  const cnt=$('#comboCount');
+  const cap=state.total>CAP;
+  cnt.textContent = list.length ? (isQuery ? (cap?CAP+'+':list.length)+' found' : state.gds.length+' total') : 'none';
+  if(!list.length){ box.innerHTML='<div class="combo-empty">🔍 No GDS matches that search.<br>Try a different name, designation or office.</div>'; box.classList.add('show'); $('#gdsSearch').setAttribute('aria-expanded','true'); return; }
+  const hint = isQuery
+    ? (cap?`Showing first ${CAP} of ${state.total} — keep typing to narrow`:`${state.total} match${state.total===1?'':'es'} · click or press Enter`)
+    : `All ${state.gds.length} GDS — start typing to filter`;
+  box.innerHTML='<div class="combo-hint">'+esc(hint)+'</div>'+list.map((g,i)=>`<div class="combo-item${i===state.activeIdx?' active':''}" data-i="${i}" role="option">
+      <div class="av">${esc((g.name[0]||'?').toUpperCase())}</div>
+      <div class="txt"><div class="nm">${esc(g.name)}</div><div class="meta">${esc(g.desig)} · ${esc(g.office)}</div></div>
+      <div class="go">Select →</div>
     </div>`).join('');
   box.classList.add('show');
+  $('#gdsSearch').setAttribute('aria-expanded','true');
 }
-function hideList(){ $('#comboList').classList.remove('show'); }
+function hideList(){ $('#comboList').classList.remove('show'); $('#gdsSearch').setAttribute('aria-expanded','false'); }
 function pick(i){
   const g=state.filtered[i];if(!g)return;
   state.selected=g;
   $('#gdsSearch').value=g.name;
+  $('#comboClear').classList.add('show');
   hideList();
   $('#selName').textContent=g.name;
   $('#selDesig').textContent=g.desig||'—';
@@ -340,10 +365,26 @@ function pick(i){
   $('#selPanel').classList.add('show');
   $('#lockedNote').style.display='none';
   $('#letterArea').style.display='block';
+  // guide the user to the next step
+  setTimeout(()=>{
+    $('#letterArea').scrollIntoView({behavior:'smooth',block:'nearest'});
+    const first=document.querySelector('.panel.show input');
+    if(first)first.focus({preventScroll:true});
+  },120);
 }
-
+function clearSel(){
+  state.selected=null;state.activeIdx=-1;
+  $('#gdsSearch').value='';
+  $('#comboClear').classList.remove('show');
+  $('#selPanel').classList.remove('show');
+  $('#lockedNote').style.display='';
+  $('#letterArea').style.display='none';
+  $('#gdsSearch').focus();
+  runSearch('');
+}
+$('#comboClear').addEventListener('click',clearSel);
 $('#gdsSearch').addEventListener('focus',e=>runSearch(e.target.value));
-$('#gdsSearch').addEventListener('input',e=>runSearch(e.target.value));
+$('#gdsSearch').addEventListener('input',e=>{$('#comboClear').classList.toggle('show',!!e.target.value);runSearch(e.target.value);});
 $('#gdsSearch').addEventListener('keydown',e=>{
   const n=state.filtered.length;if(!n)return;
   if(e.key==='ArrowDown'){e.preventDefault();state.activeIdx=(state.activeIdx+1)%n;renderList();scrollActive();}
