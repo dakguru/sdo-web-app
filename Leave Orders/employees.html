@@ -208,6 +208,79 @@
   .mob-edit-btn[disabled]{opacity:.5;cursor:default}
   .mob-input{width:128px;padding:5px 9px;border:1.5px solid #c7d2fe;border-radius:8px;font:600 13px/1.2 "Inter",sans-serif;color:var(--ink)}
   .mob-input:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.14)}
+
+  /* ===== Lifecycle status badges ===== */
+  .life-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;letter-spacing:.2px;white-space:nowrap}
+  .life-badge::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor}
+  .life-badge.active{background:#dcfce7;color:#15803d}
+  .life-badge.pending{background:#ffedd5;color:#c2410c}
+  .life-badge.exited{background:#fee2e2;color:#b91c1c}
+  .life-badge.sm{font-size:10px;padding:2px 8px}
+  .origin-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#eef2ff;color:#4338ca;letter-spacing:.2px}
+  .origin-pill.manual{background:#fae8ff;color:#a21caf}
+
+  /* ===== Dashboard stat variants ===== */
+  .stat.warnv{border-color:#fed7aa;background:linear-gradient(180deg,#fff,#fff7ed)}
+  .stat.warnv .v{color:#c2410c}
+  .stat.badv{border-color:#fecaca;background:linear-gradient(180deg,#fff,#fef2f2)}
+  .stat.badv .v{color:#b91c1c}
+  .stat.goodv .v{color:#15803d}
+  .stat.click{cursor:pointer;transition:.12s}
+  .stat.click:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+
+  /* ===== Pending-exit banner in detail ===== */
+  .exit-banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 15px;border-radius:12px;margin-bottom:14px;font-size:13px;font-weight:600}
+  .exit-banner.pending{background:linear-gradient(120deg,#fff7ed,#ffedd5);border:1px solid #fdba74;color:#9a3412}
+  .exit-banner.exited{background:linear-gradient(120deg,#fef2f2,#fee2e2);border:1px solid #fca5a5;color:#991b1b}
+  .exit-banner .eb-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+  /* ===== Timeline ===== */
+  .timeline{position:relative;margin:2px 0 0 6px;padding-left:20px}
+  .timeline::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:linear-gradient(180deg,#c7d2fe,#e9d5ff)}
+  .tl-item{position:relative;padding:0 0 14px 4px}
+  .tl-item:last-child{padding-bottom:2px}
+  .tl-item::before{content:"";position:absolute;left:-19px;top:3px;width:11px;height:11px;border-radius:50%;background:#fff;border:2.5px solid #7c3aed;box-shadow:0 0 0 3px #ede9fe}
+  .tl-item.join::before{border-color:#059669;box-shadow:0 0 0 3px #d1fae5}
+  .tl-item.exit::before{border-color:#e11d48;box-shadow:0 0 0 3px #ffe4e6}
+  .tl-item.add::before{border-color:#4f46e5;box-shadow:0 0 0 3px #e0e7ff}
+  .tl-date{font-size:11px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+  .tl-event{font-size:13.5px;font-weight:700;color:var(--ink-2);margin-top:1px}
+  .tl-detail{font-size:12px;color:var(--muted);margin-top:1px}
+
+  /* ===== Modal ===== */
+  .modal-back{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;z-index:200;padding:34px 14px;overflow:auto}
+  .modal-back.show{display:flex}
+  .modal{background:var(--card);border-radius:18px;box-shadow:var(--shadow-lg);width:100%;max-width:640px;overflow:hidden;animation:pop .16s ease}
+  @keyframes pop{from{transform:translateY(8px) scale(.98);opacity:0}to{transform:none;opacity:1}}
+  .modal .mhead{padding:16px 20px;background:var(--grad-brand);color:#fff;display:flex;align-items:center;gap:10px}
+  .modal .mhead .mt{font-family:"Plus Jakarta Sans","Inter";font-weight:800;font-size:16px}
+  .modal .mhead .ms{font-size:12px;opacity:.9}
+  .modal .mhead .x{margin-left:auto;cursor:pointer;font-size:20px;line-height:1;opacity:.85;background:none;border:none;color:#fff;padding:2px 6px;border-radius:8px}
+  .modal .mhead .x:hover{background:rgba(255,255,255,.18)}
+  .modal .mbody{padding:18px 20px;max-height:66vh;overflow:auto}
+  .modal .mfoot{padding:13px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;background:#fafbff}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+  .fgrid .full{grid-column:1/-1}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .field label .req{color:var(--rose)}
+  .field input,.field select,.field textarea{padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font:500 13.5px/1.3 "Inter",sans-serif;background:#fff;color:var(--ink);width:100%}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.14)}
+  .field.ro input{background:#f1f5f9;color:var(--ink-2)}
+  @media(max-width:560px){ .fgrid{grid-template-columns:1fr} }
+
+  /* ===== Reports card ===== */
+  .rep-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .rep{border:1px solid var(--line);border-radius:13px;padding:13px 15px;background:linear-gradient(180deg,#fff,#f8faff);display:flex;flex-direction:column;gap:9px}
+  .rep .rt{font-family:"Plus Jakarta Sans","Inter";font-weight:800;font-size:13.5px;display:flex;align-items:center;gap:7px}
+  .rep .rd{font-size:11.5px;color:var(--muted);flex:1}
+  .rep .ra{display:flex;gap:7px}
+  .month-inp{padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font:600 13px/1 "Inter",sans-serif;color:var(--ink);background:#fff}
+
+  /* ===== Upload history ===== */
+  .hist-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+  .hist-tbl th{text-align:left;background:#f8fafc;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding:8px 11px;border-bottom:1px solid var(--line)}
+  .hist-tbl td{padding:8px 11px;border-bottom:1px solid #f1f5f9;font-variant-numeric:tabular-nums}
 </style>
 <link rel="stylesheet" href="/leave-orders/mobile.css">
 </head>
@@ -258,9 +331,12 @@
   <div class="stats" id="stats"></div>
 
   <!-- View switch: office-wise staff vs. outsiders -->
-  <div class="viewtabs" id="viewtabs">
-    <button data-v="offices" class="on">&#127970; By Office</button>
-    <button data-v="outsiders">&#129489; Outsiders <span id="vt-out-count" class="vt-count"></span></button>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    <div class="viewtabs" id="viewtabs" style="margin:0">
+      <button data-v="offices" class="on">&#127970; By Office</button>
+      <button data-v="outsiders">&#129489; Outsiders <span id="vt-out-count" class="vt-count"></span></button>
+    </div>
+    <button class="btn" id="addEmpBtn" style="margin-left:auto">&#10133; Add Employee</button>
   </div>
 
   <!-- Office-wise browse (DS + GDS) -->
@@ -275,6 +351,12 @@
             <button data-t="ALL" class="on">All</button>
             <button data-t="DS">Departmental</button>
             <button data-t="GDS">GDS</button>
+          </div>
+          <div class="seg" id="statusSeg">
+            <button data-s="ALL" class="on">All status</button>
+            <button data-s="Active">Active</button>
+            <button data-s="Pending Exit Verification">Pending exit</button>
+            <button data-s="Exited">Exited</button>
           </div>
         </div>
         <div class="olist" id="olist"></div>
@@ -310,6 +392,39 @@
     </div>
   </div>
 
+  <!-- Employee lifecycle & HR reports -->
+  <div class="card" id="reports-card">
+    <h2><span class="num">&#128202;</span> Employee reports</h2>
+    <div class="rep-grid">
+      <div class="rep">
+        <div class="rt">&#127881; Newly Joined Employees</div>
+        <div class="rd">Only staff classified <b>Newly Recruited</b>. Excludes transfers, missing-adds &amp; historical entries.</div>
+        <div class="ra"><button class="btn tiny" data-rep="newjoin" data-fmt="xlsx">Excel</button><button class="btn tiny ghost" data-rep="newjoin" data-fmt="pdf">PDF</button></div>
+      </div>
+      <div class="rep">
+        <div class="rt">&#128203; Directory Additions</div>
+        <div class="rd">Every employee added to the directory — recruits, transfers, missing-adds &amp; historical entries.</div>
+        <div class="ra"><button class="btn tiny" data-rep="additions" data-fmt="xlsx">Excel</button><button class="btn tiny ghost" data-rep="additions" data-fmt="pdf">PDF</button></div>
+      </div>
+      <div class="rep">
+        <div class="rt">&#128682; Employee Exit Register</div>
+        <div class="rd">All exited staff with reason, exit date, length of service &amp; remarks.</div>
+        <div class="ra"><button class="btn tiny" data-rep="exitreg" data-fmt="xlsx">Excel</button><button class="btn tiny ghost" data-rep="exitreg" data-fmt="pdf">PDF</button></div>
+      </div>
+      <div class="rep">
+        <div class="rt">&#128200; Employee Exit Summary</div>
+        <div class="rd">Exits grouped by reason category (retirement, resignation, death…).</div>
+        <div class="ra"><button class="btn tiny" data-rep="exitsum" data-fmt="xlsx">Excel</button><button class="btn tiny ghost" data-rep="exitsum" data-fmt="pdf">PDF</button></div>
+      </div>
+      <div class="rep">
+        <div class="rt">&#128197; Monthly Directory Changes</div>
+        <div class="rd">All directory activity for a chosen month.</div>
+        <div class="ra"><input type="month" id="repMonth" class="month-inp" style="flex:1;min-width:0"><button class="btn tiny" data-rep="monthly" data-fmt="xlsx">Excel</button><button class="btn tiny ghost" data-rep="monthly" data-fmt="pdf">PDF</button></div>
+      </div>
+    </div>
+    <div id="audit-wrap" style="margin-top:16px"></div>
+  </div>
+
   <div class="zone-divider"><span class="zt"><span class="zi">&#8593;</span> Data administration &nbsp;<small>Upload the monthly payroll &amp; mobile rosters</small></span></div>
   <div class="card admin">
     <h2><span class="num">&#8593;</span> Update monthly data</h2>
@@ -317,7 +432,7 @@
       <div class="drop" id="drop" tabindex="0">
         <div class="ic">&#128194;</div>
         <div class="t">Drop payroll files here — or click to browse</div>
-        <div class="h">Upload <b>DS</b> (Departmental), <b>GS</b> (GDS), <b>Outsiders</b>, or the <b>Mobile Numbers</b> roster (.xls/.xlsx) — drop several at once. Type is auto-detected; new records are added and existing ones updated. The mobile roster is matched to staff by office &amp; name.</div>
+        <div class="h">Upload <b>DS</b> (Departmental), <b>GS</b> (GDS), <b>Outsiders</b>, or the <b>Mobile Numbers</b> roster (.xls/.xlsx) — drop several at once. Type is auto-detected. <b>Smart Synchronization:</b> existing staff are updated, new IDs are added as <em>Newly Recruited</em>, and anyone missing from the payroll is flagged <em>Pending Exit Verification</em> — records are never deleted.</div>
         <input type="file" id="file" accept=".xlsx,.xls" multiple style="display:none" />
       </div>
       <div class="up-side">
@@ -325,9 +440,9 @@
         <div class="up-stat"><span class="badge gds">GDS</span><span id="gds-meta" class="muted">No GDS data loaded yet.</span></div>
         <div class="up-stat"><span class="badge out">OUT</span><span id="out-meta" class="muted">No outsiders data loaded yet.</span></div>
         <div class="up-stat"><span class="badge mob">TEL</span><span id="mob-meta" class="muted">No mobile numbers mapped yet.</span></div>
-        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2);cursor:pointer">
-          <input type="checkbox" id="replaceChk" />
-          Replace whole set for uploaded type(s) — removes staff not in this upload
+        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2)">
+          <span style="font-weight:700">Payroll month</span>
+          <input type="month" id="payMonth" class="month-inp" style="flex:1" />
         </label>
         <div class="row-actions">
           <button class="btn" id="saveBtn" disabled>&#128190; Save &amp; update directory</button>
@@ -342,6 +457,7 @@
   <div class="builtby">Built by Arun Selvaraj, Karur Division</div>
 </main>
 
+<div class="modal-back" id="modalRoot"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -355,13 +471,49 @@ const S = {
   offices: [],            // [{id,name,staff:[],ds,gds}]  (DS/GDS only)
   view: 'offices',        // 'offices' | 'outsiders'
   typeFilter: 'ALL',
+  statusFilter: 'ALL',    // 'ALL' | 'Active' | 'Pending Exit Verification' | 'Exited'
   officeFilter: '',
   outFilter: '',
   selectedOfficeId: null,
   selectedEmpKey: null,
   selectedOutKey: null,
+  uploadHistory: [],      // audit trail of payroll uploads (mirrored to Supabase 'EMPAUDIT')
+  payrollMonth: '',       // 'YYYY-MM' chosen for the pending upload
 };
 const TYPES = ['DS','GDS','OUT'];
+
+/* ================= employee-lifecycle model ================= */
+const LIFECYCLE_TYPES = ['DS','GDS'];   // outsiders are not lifecycle-tracked
+const ST = { ACTIVE:'Active', PENDING:'Pending Exit Verification', EXITED:'Exited' };
+const ORIGIN = { PAYROLL:'Payroll Upload', MANUAL:'Manual Entry' };
+// Addition types. NEW_RECRUIT is the only one that reaches the joining reports/stats.
+const ADD_TYPE = {
+  NEW_RECRUIT:'Newly Recruited',
+  TRANSFER_OFFICE:'Transfer From Another Office',
+  TRANSFER_SUBDIV:'Transfer From Another Sub Division',
+  MISSING:'Missing Employee Added',
+  HISTORICAL:'Historical Entry',
+};
+const ADD_TYPE_LIST = [ADD_TYPE.NEW_RECRUIT,ADD_TYPE.TRANSFER_OFFICE,ADD_TYPE.TRANSFER_SUBDIV,ADD_TYPE.MISSING,ADD_TYPE.HISTORICAL];
+// Exit reasons differ for Departmental vs GDS staff.
+const EXIT_REASONS = {
+  DS:['Voluntary Retirement','Superannuation','Resignation','Technical Resignation','Death while in Service','Invalid Retirement','Compulsory Retirement','Removal from Service','Dismissal','Termination During Probation'],
+  GDS:['Resignation','Superannuation','Death','Discharge','Removal','Dismissal','Termination','Medical Invalidity','Appointment to Departmental Post','Appointment to Other Government Service'],
+};
+// Buckets for the Exit Summary report (maps a raw reason to a group).
+function exitGroup(reason){
+  const r = clean(reason).toLowerCase();
+  if(/death/.test(r)) return 'Death';
+  if(/superannuation|retirement/.test(r)) return 'Retirement';
+  if(/resignation/.test(r)) return 'Resignation';
+  if(/removal/.test(r)) return 'Removal';
+  if(/dismissal/.test(r)) return 'Dismissal';
+  if(/medical|invalid/.test(r)) return 'Medical Invalidity';
+  if(/departmental post/.test(r)) return 'Appointment to Departmental Post';
+  if(/other government/.test(r)) return 'Appointment to Other Government Service';
+  if(/discharge|termination/.test(r)) return 'Discharge / Termination';
+  return 'Other';
+}
 const $ = s => document.querySelector(s);
 const el = (t,a,...k)=>{const e=document.createElement(t);if(a)for(const p in a){if(p==='class')e.className=a[p];else if(p==='html')e.innerHTML=a[p];else if(p.startsWith('on'))e.addEventListener(p.slice(2),a[p]);else if(a[p]!=null)e.setAttribute(p,a[p]);}for(const c of k){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(c));}return e;};
 
@@ -403,6 +555,49 @@ function normDateStr(v){
   const s=clean(v); const m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   return m ? `${m[3]}-${m[2]}-${m[1]}` : s;
 }
+
+/* ================= lifecycle helpers ================= */
+const nowISO = () => new Date().toISOString();
+function monthNow(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function todayDMY(){ return fmtDate(new Date()); }
+// Human month label: '2026-07' -> 'July 2026'
+function monthLabel(ym){ const m=clean(ym).match(/^(\d{4})-(\d{2})$/); if(!m) return clean(ym); const names=['January','February','March','April','May','June','July','August','September','October','November','December']; return (names[+m[2]-1]||m[2])+' '+m[1]; }
+// Logged-in user's name for "Added by" / audit trail.
+function currentUser(){ try{ const u=window.AuthSession&&AuthSession.user(); return u ? (u.displayName||u.username) : 'web'; }catch(_){ return 'web'; } }
+// Lifecycle helpers only apply to DS/GDS records.
+function isLifecycle(e){ return e && (e._type==='DS'||e._type==='GDS'); }
+function statusOf(e){ return isLifecycle(e) ? (clean(e._status)||ST.ACTIVE) : ''; }
+function statusKind(s){ return s===ST.EXITED?'exited':s===ST.PENDING?'pending':'active'; }
+function lifeBadge(e,small){ if(!isLifecycle(e)) return el('span',{class:'muted'},'—'); const s=statusOf(e); return el('span',{class:'life-badge '+statusKind(s)+(small?' sm':'')}, s); }
+// Parse a dd-mm-yyyy (or yyyy-mm-dd) string to a Date, else null.
+function parseAnyDate(v){ const s=clean(v); let m=s.match(/^(\d{2})-(\d{2})-(\d{4})$/); if(m) return new Date(+m[3],+m[2]-1,+m[1]); m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return new Date(+m[1],+m[2]-1,+m[3]); return null; }
+// "Length of service" between join and exit dates -> e.g. "12 yr 3 mo".
+function lengthOfService(joinV, exitV){
+  const a=parseAnyDate(joinV), b=parseAnyDate(exitV)||new Date();
+  if(!a) return '—';
+  let months=(b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth());
+  if(b.getDate()<a.getDate()) months--;
+  if(months<0) return '—';
+  const y=Math.floor(months/12), mo=months%12;
+  return (y?y+' yr ':'')+(mo||!y?mo+' mo':'').trim() || '0 mo';
+}
+// Append a timeline event to a record (deduped by date+event).
+function pushTimeline(e,event,detail,dateDMY){
+  if(!Array.isArray(e._timeline)) e._timeline=[];
+  const date=dateDMY||todayDMY();
+  if(e._timeline.some(t=>t.event===event && t.date===date && (t.detail||'')===(detail||''))) return;
+  e._timeline.push({date,event,detail:detail||''});
+}
+// Sort timeline chronologically for display.
+function sortedTimeline(e){
+  return (Array.isArray(e._timeline)?e._timeline.slice():[]).sort((x,y)=>{
+    const dx=parseAnyDate(x.date), dy=parseAnyDate(y.date);
+    return (dx?dx.getTime():0)-(dy?dy.getTime():0);
+  });
+}
+// Was a record added to the directory within the given 'YYYY-MM'? (uses _directoryAddedDate ISO)
+function addedInMonth(e,ym){ const d=clean(e._directoryAddedDate); return d.slice(0,7)===ym; }
+function exitedInMonth(e,ym){ const d=parseAnyDate(e._exitDate); if(!d) return false; return (d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))===ym; }
 
 /* ================= parsing (client-side, SheetJS) ================= */
 function detectType(headers){
@@ -590,28 +785,55 @@ function filteredOffices(){
     if(S.typeFilter==='DS' && !o.ds) return false;
     if(S.typeFilter==='GDS' && !o.gds) return false;
     if(q && !o.name.toLowerCase().includes(q) && !o.id.toLowerCase().includes(q)) return false;
+    if(S.statusFilter!=='ALL' && !officeStaff(o).length) return false;
     return true;
   });
 }
 function officeStaff(o){
-  if(S.typeFilter==='ALL') return o.staff;
-  return o.staff.filter(e=>e._type===S.typeFilter);
+  let staff = S.typeFilter==='ALL' ? o.staff : o.staff.filter(e=>e._type===S.typeFilter);
+  if(S.statusFilter!=='ALL') staff = staff.filter(e=>statusOf(e)===S.statusFilter);
+  return staff;
 }
 
 /* ================= rendering ================= */
 function renderStats(){
+  const life = lifeEmployees();
   const ds = S.employees.filter(e=>e._type==='DS').length;
   const gds = S.employees.filter(e=>e._type==='GDS').length;
   const out = S.employees.filter(e=>e._type==='OUT').length;
+  const active = life.filter(e=>statusOf(e)===ST.ACTIVE).length;
+  const pending = life.filter(e=>statusOf(e)===ST.PENDING).length;
+  const exited = life.filter(e=>statusOf(e)===ST.EXITED).length;
+  const ym = monthNow();
+  const newRecruit = life.filter(e=>e._additionType===ADD_TYPE.NEW_RECRUIT && addedInMonth(e,ym)).length;
+  const addedDir = life.filter(e=>addedInMonth(e,ym)).length;
+  // [label, value, cssClass, clickStatusFilter?]
   const items = [
-    ['Total staff', ds+gds],
-    ['Offices', S.offices.length],
-    ['Departmental', ds],
-    ['GDS', gds],
-    ['Outsiders', out],
+    ['Total staff', ds+gds, '', null],
+    ['Active', active, 'goodv', 'Active'],
+    ['Pending exit', pending, 'warnv', 'Pending Exit Verification'],
+    ['Exited', exited, 'badv', 'Exited'],
+    ['New recruits · this month', newRecruit, '', null],
+    ['Added to directory · this month', addedDir, '', null],
+    ['Departmental', ds, '', null],
+    ['GDS', gds, '', null],
+    ['Outsiders', out, '', null],
   ];
   $('#stats').innerHTML='';
-  for(const [k,v] of items) $('#stats').append(el('div',{class:'stat'},el('div',{class:'k'},k),el('div',{class:'v'},String(v))));
+  for(const [k,v,cls,sf] of items){
+    const node=el('div',{class:'stat'+(cls?' '+cls:'')+(sf?' click':'')},el('div',{class:'k'},k),el('div',{class:'v'},String(v)));
+    if(sf) node.addEventListener('click',()=>jumpToStatus(sf));
+    $('#stats').append(node);
+  }
+}
+// Clicking a dashboard tile jumps to the office view filtered by that status.
+function jumpToStatus(sf){
+  S.view='offices'; S.statusFilter=sf; S.typeFilter='ALL';
+  S.selectedOfficeId=null; S.selectedEmpKey=null;
+  document.querySelectorAll('#statusSeg button').forEach(x=>x.classList.toggle('on', x.dataset.s===sf));
+  document.querySelectorAll('#typeSeg button').forEach(x=>x.classList.toggle('on', x.dataset.t==='ALL'));
+  applyView(); renderOfficePick(); renderOfficeList(); renderContent();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function renderMeta(){
@@ -710,7 +932,7 @@ function renderOfficeStaff(c){
       el('td',null,clean(e.Post_desc)),
       el('td',null,mobileEditor(e)),
       el('td',null,el('span',{class:'type-badge '+e._type},typeTag(e._type))),
-      el('td',null,el('span',{class:'status-chip '+statusClass(e.Status)},clean(e.Status)||'—')),
+      el('td',null,lifeBadge(e,true)),
       el('td',{style:'font-weight:700;font-variant-numeric:tabular-nums'},inr(e.Net_payable))));
   }
   tbl.append(tb); c.append(tbl);
@@ -758,6 +980,46 @@ function renderStaffDetail(c){
       el('span',{class:'tag'}, clean(emp.Status)||'—')];
       if(mob) tags.push(el('span',{class:'tag'}, '📱 '+mob));
       return el('div',{class:'tags'}, ...tags); })()));
+
+  // Lifecycle banner + actions (DS/GDS only)
+  if(isLifecycle(emp)){
+    const st=statusOf(emp);
+    if(st===ST.PENDING){
+      wrap.append(el('div',{class:'exit-banner pending'},
+        el('span',null,'⚠️ Absent from the latest payroll — pending exit verification. Confirm whether this employee has exited service.'),
+        el('div',{class:'eb-actions'},
+          el('button',{class:'btn tiny',style:'background:linear-gradient(135deg,#e11d48,#f97316)',onclick:()=>openExitModal(emp)},'🚪 Mark Exit'),
+          el('button',{class:'btn tiny ghost',onclick:()=>markStillActive(emp)},'Still Active'))));
+    } else if(st===ST.EXITED){
+      wrap.append(el('div',{class:'exit-banner exited'},
+        el('span',{html:`🚪 <b>Exited</b> — ${clean(emp._exitReason)||'reason not recorded'} on ${clean(emp._exitDate)||'—'}. Length of service: ${lengthOfService(emp._joinedDeptDate,emp._exitDate)}.`}),
+        el('div',{class:'eb-actions'}, el('button',{class:'btn tiny ghost',onclick:()=>markStillActive(emp)},'Reinstate'))));
+    }
+  }
+
+  // Directory status & lifecycle
+  if(isLifecycle(emp)){
+    const s0=el('div',{class:'sect'},el('div',{class:'st'},'Directory Status'));
+    const g0=el('div',{class:'grid'});
+    g0.append(el('div',{class:'kv'},el('div',{class:'k'},'Status'),el('div',{class:'v'},lifeBadge(emp))));
+    g0.append(kv('Origin', emp._origin));
+    g0.append(kv('Addition type', emp._additionType));
+    g0.append(kv('Added to directory', (clean(emp._directoryAddedDate)||'').slice(0,10)));
+    g0.append(kv('Added by', emp._addedBy||'—'));
+    g0.append(kv('Joined department', emp._joinedDeptDate));
+    g0.append(kv('Last payroll month', monthLabel(emp._lastPayrollMonth)));
+    if(statusOf(emp)===ST.EXITED){
+      g0.append(kv('Exit reason', emp._exitReason));
+      g0.append(kv('Exit date', emp._exitDate));
+      g0.append(kv('Length of service', lengthOfService(emp._joinedDeptDate,emp._exitDate)));
+      if(clean(emp._exitRemarks)) g0.append(kv('Exit remarks', emp._exitRemarks));
+    }
+    s0.append(g0);
+    if(statusOf(emp)===ST.ACTIVE){
+      s0.append(el('div',{style:'margin-top:10px'}, el('button',{class:'btn tiny ghost',onclick:()=>openExitModal(emp)},'🚪 Mark Exit')));
+    }
+    wrap.append(s0);
+  }
 
   // Service & personal
   const s1=el('div',{class:'sect'},el('div',{class:'st'},'Service & Personal'));
@@ -818,6 +1080,25 @@ function renderStaffDetail(c){
   tgl.addEventListener('click',()=>{showAll=!showAll;tgl.textContent=showAll?'Show only applicable fields':'Show all pay fields (incl. nil)';renderBreakdown();});
   renderBreakdown();
   wrap.append(breakdown);
+
+  // Service timeline (DS/GDS)
+  if(isLifecycle(emp)){
+    const tl=sortedTimeline(emp);
+    const sT=el('div',{class:'sect'},el('div',{class:'st'},'Service Timeline'));
+    if(!tl.length){ sT.append(el('div',{class:'muted',style:'font-size:12.5px'},'No timeline events recorded yet.')); }
+    else{
+      const box=el('div',{class:'timeline'});
+      for(const ev of tl){
+        const kind=/join|re-activated|confirmed active/i.test(ev.event)?'join':/exit|pending/i.test(ev.event)?'exit':/added|transfer/i.test(ev.event)?'add':'';
+        box.append(el('div',{class:'tl-item'+(kind?' '+kind:'')},
+          el('div',{class:'tl-date'},clean(ev.date)),
+          el('div',{class:'tl-event'},clean(ev.event)),
+          clean(ev.detail)?el('div',{class:'tl-detail'},clean(ev.detail)):null));
+      }
+      sT.append(box);
+    }
+    wrap.append(sT);
+  }
 
   c.append(wrap);
 }
@@ -894,7 +1175,7 @@ function applyView(){
   document.querySelectorAll('#viewtabs button').forEach(b=>b.classList.toggle('on', b.dataset.v===S.view));
 }
 
-function renderAll(){ buildOffices(); renderStats(); renderMeta(); renderOfficePick(); renderOfficeList(); renderContent(); renderOutsiders(); renderOutContent(); applyView(); }
+function renderAll(){ buildOffices(); renderStats(); renderMeta(); renderOfficePick(); renderOfficeList(); renderContent(); renderOutsiders(); renderOutContent(); renderAudit(); applyView(); }
 
 /* ================= actions ================= */
 function selectOffice(id){ S.selectedOfficeId=id; S.selectedEmpKey=null; renderOfficeList(); renderContent(); }
@@ -950,13 +1231,43 @@ async function loadData(){
           }
           // EMPLOYEE_EMAIL rows (self-service email capture) are ignored here.
         }
+        // Upload/audit history — cross-device via the generic dataset store.
+        try{
+          const auditCloud = await SB.getDataset('EMPAUDIT');
+          if(auditCloud && Array.isArray(auditCloud.data)) S.uploadHistory = auditCloud.data;
+        }catch(_){}
       }
     }
   } catch(e) { console.error('SB Sync error:', e); }
   // Clamp anything already saved (local or cloud) to the Karur Sub Division so
   // stale whole-division data never shows here.
   S.employees = S.employees.filter(e => KarurScope.inScope(e));
+  // Local audit fallback (offline) — union with anything already loaded from cloud.
+  if(!S.uploadHistory.length && Array.isArray(S.meta.uploadHistory)) S.uploadHistory = S.meta.uploadHistory;
+  migrateLifecycle();
   renderAll();
+}
+
+// Backfill lifecycle fields onto pre-existing DS/GDS records the first time they
+// are seen. Existing staff are Historical Entries — NEVER "Newly Recruited" — so
+// they never wrongly appear in the joining reports/statistics.
+function migrateLifecycle(){
+  const seeded = clean(S.meta.updatedAt) || nowISO();
+  for(const e of S.employees){
+    if(!isLifecycle(e)) continue;
+    if(clean(e._status)) continue;               // already lifecycle-tracked
+    e._status = ST.ACTIVE;
+    e._origin = ORIGIN.PAYROLL;
+    e._additionType = ADD_TYPE.HISTORICAL;
+    e._directoryAddedDate = e._directoryAddedDate || seeded;
+    e._joinedDeptDate = e._joinedDeptDate || clean(e.Date_of_join);
+    e._lastPayrollMonth = e._lastPayrollMonth || (S.meta.gs&&S.meta.gs.uploadedAt||'').slice(0,7) || '';
+    e._addedBy = e._addedBy || '';
+    e._createdDate = e._createdDate || seeded;
+    e._updatedDate = e._updatedDate || seeded;
+    e._timeline = Array.isArray(e._timeline) ? e._timeline : [];
+    if(clean(e._joinedDeptDate)) pushTimeline(e,'Joined Department','', e._joinedDeptDate);
+  }
 }
 
 async function handleFiles(fileList){
@@ -995,40 +1306,97 @@ function reflectPending(){
   for(const t of TYPES){ if(S.pending[t]) parts.push(`${lbl[t]}: ${S.pending[t].count} (${S.pending[t].files.join(' + ')})`); }
   if(S.pending.MOBILE) parts.push(`Mobiles: ${S.pending.MOBILE.matched} matched (${S.pending.MOBILE.files.join(' + ')})`);
   const has=parts.length>0;
-  const replace = $('#replaceChk') && $('#replaceChk').checked;
-  $('#pending').innerHTML = has ? 'Pending — '+parts.join(' · ')+`. On save: <b>${replace?'replace the whole set for the uploaded type(s)':'add new staff &amp; update existing'}</b>.` : '';
+  const hasLife = LIFECYCLE_TYPES.some(t=>S.pending[t]);
+  $('#pending').innerHTML = has ? 'Pending — '+parts.join(' · ')+(hasLife?`. On save: <b>Smart Sync</b> — update existing, add new recruits, flag missing as Pending Exit.`:'.') : '';
   $('#saveBtn').disabled = !has;
   $('#discardBtn').style.display = has?'inline-flex':'none';
 }
+// Merge incoming payroll columns onto an existing record WITHOUT clobbering the
+// lifecycle (`_`-prefixed) fields, then record any office/designation change.
+function mergePayrollRow(existing, row, month){
+  const beforeOffice=clean(existing.Office_id), beforeOfficeName=clean(existing.Office_desc), beforeDesig=clean(existing.Post_desc);
+  for(const k in row){ if(k==='_type'||k.charAt(0)==='_') continue; existing[k]=row[k]; }
+  const afterOffice=clean(existing.Office_id), afterOfficeName=clean(existing.Office_desc), afterDesig=clean(existing.Post_desc);
+  if(afterOffice && afterOffice!==beforeOffice) pushTimeline(existing,'Office Changed', (beforeOfficeName||'—')+' → '+(afterOfficeName||'—'));
+  if(afterDesig && afterDesig!==beforeDesig) pushTimeline(existing,'Designation Changed', (beforeDesig||'—')+' → '+(afterDesig||'—'));
+  existing._lastPayrollMonth=month;
+  existing._updatedDate=nowISO();
+}
+
 async function saveData(){
   const hasEmp = TYPES.some(t=>S.pending[t]);
   const hasMob = !!S.pending.MOBILE;
   if(!hasEmp && !hasMob){ return; }
-  const replace = $('#replaceChk') && $('#replaceChk').checked;
+  const hasLife = LIFECYCLE_TYPES.some(t=>S.pending[t]);
+  const month = clean($('#payMonth') && $('#payMonth').value) || monthNow();
+  const t0 = Date.now();
   const now=new Date().toISOString();
   $('#saveBtn').disabled=true; $('#saveBtn').textContent='Saving…';
+  // Per-type sync tallies feed the Upload Summary + audit trail.
+  const summary={ month, files:[], updated:0, added:0, pendingExit:0, returned:0, duplicates:0, invalid:0, byType:{} };
   try{
     if(hasEmp){
-      // Default = merge/upsert by id (add new, update existing, keep the rest).
-      // Replace mode wipes all records of an uploaded type first.
       let employees = S.employees.slice();
+      const byKey = new Map(); employees.forEach((e,i)=>byKey.set(e._type+':'+idOf(e), i));
       for(const type of TYPES){
         const p = S.pending[type]; if(!p) continue;
-        if(replace){
-          employees = employees.filter(e=>e._type!==type).concat(p.rows);
-        } else {
-          const idx = new Map(); employees.forEach((e,i)=>idx.set(e._type+':'+idOf(e), i));
-          for(const r of p.rows){
-            const k = type+':'+idOf(r);
-            if(idx.has(k)) employees[idx.get(k)] = r;
-            else { idx.set(k, employees.length); employees.push(r); }
+        summary.files.push(...p.files);
+        // OUTSIDERS: plain upsert, no lifecycle tracking.
+        if(type==='OUT'){
+          for(const r of p.rows){ const k='OUT:'+idOf(r); if(byKey.has(k)) employees[byKey.get(k)]=r; else { byKey.set(k, employees.length); employees.push(r); } }
+          continue;
+        }
+        // DS / GDS: Smart Synchronization.
+        const tally={updated:0,added:0,pendingExit:0,returned:0,invalid:0};
+        const uploadedIds=new Set();
+        for(const r of p.rows){
+          const id=idOf(r);
+          if(!id){ tally.invalid++; summary.invalid++; continue; }
+          uploadedIds.add(id);
+          const k=type+':'+id;
+          if(byKey.has(k)){
+            const ex=employees[byKey.get(k)];
+            const wasPending=statusOf(ex)===ST.PENDING, wasExited=statusOf(ex)===ST.EXITED;
+            mergePayrollRow(ex,r,month);
+            ex._status=ST.ACTIVE;
+            if(wasExited){ ex._exitReason='';ex._exitDate='';ex._exitRemarks='';ex._exitDocument=''; pushTimeline(ex,'Re-activated','Reappeared in '+monthLabel(month)+' payroll'); }
+            else if(wasPending){ tally.returned++; summary.returned++; pushTimeline(ex,'Confirmed Active','Present in '+monthLabel(month)+' payroll'); }
+            tally.updated++;
+          } else {
+            // Completely new Employee ID -> newly recruited.
+            const rec=Object.assign({},r);
+            rec._status=ST.ACTIVE; rec._origin=ORIGIN.PAYROLL; rec._additionType=ADD_TYPE.NEW_RECRUIT;
+            rec._joinedDeptDate=clean(r.Date_of_join); rec._directoryAddedDate=now; rec._lastPayrollMonth=month;
+            rec._addedBy=currentUser(); rec._createdDate=now; rec._updatedDate=now; rec._timeline=[];
+            if(clean(rec._joinedDeptDate)) pushTimeline(rec,'Joined Department','',rec._joinedDeptDate);
+            pushTimeline(rec,'Added to Directory','Newly recruited · '+monthLabel(month));
+            byKey.set(k, employees.length); employees.push(rec);
+            tally.added++;
           }
         }
+        // Anyone of this type NOT in the upload and still Active -> Pending Exit.
+        for(const e of employees){
+          if(e._type!==type) continue;
+          if(uploadedIds.has(idOf(e))) continue;
+          if(statusOf(e)===ST.ACTIVE){
+            e._status=ST.PENDING; e._updatedDate=nowISO();
+            pushTimeline(e,'Marked Pending Exit','Absent from '+monthLabel(month)+' payroll');
+            tally.pendingExit++; summary.pendingExit++;
+          }
+        }
+        summary.updated+=tally.updated; summary.added+=tally.added;
+        summary.byType[type]=tally;
       }
       const meta=Object.assign({},S.meta);
       const metaKey={DS:'ds',GDS:'gs',OUT:'out'};
-      for(const type of TYPES){ if(S.pending[type]) meta[metaKey[type]]={fileName:S.pending[type].files.join(' + '),count:employees.filter(e=>e._type===type).length,uploadedAt:now}; }
+      for(const type of TYPES){ if(S.pending[type]) meta[metaKey[type]]={fileName:S.pending[type].files.join(' + '),count:employees.filter(e=>e._type===type).length,uploadedAt:now,payrollMonth:month}; }
       meta.updatedAt=now;
+      // Append the audit entry.
+      const audit={ at:now, uploadedBy:currentUser(), payrollMonth:month, fileName:summary.files.join(' + '),
+        updated:summary.updated, added:summary.added, pendingExit:summary.pendingExit, returned:summary.returned,
+        durationMs:Date.now()-t0 };
+      S.uploadHistory=[audit, ...(S.uploadHistory||[])].slice(0,200);
+      meta.uploadHistory=S.uploadHistory;
       try {
         const r=await fetch('/api/employees',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({meta,employees})});
         if(r.ok) { const d=await r.json(); if(!d.ok) console.warn(d.error||'save failed'); }
@@ -1045,6 +1413,7 @@ async function saveData(){
           if(S.pending.DS)  await SB.putDataset('DS',  dsEmps,  'web');
           if(S.pending.GDS) await SB.putDataset('GDS', gsEmps, 'web');
           if(S.pending.OUT) await SB.putDataset('OUT', outEmps, 'web');
+          await SB.putDataset('EMPAUDIT', S.uploadHistory, 'web');
         }
       } catch(e) { console.error('SB Sync error:', e); }
     }
@@ -1065,9 +1434,345 @@ async function saveData(){
     reflectPending(); renderAll();
     announceUpdate();
     toast('Saved.');
+    if(hasLife) showUploadSummary(summary);
   }catch(err){ toast('Save failed: '+err.message,true); }
   $('#saveBtn').textContent='💾 Save & update directory';
   reflectPending();
+}
+
+/* ================= modal infrastructure ================= */
+function closeModal(){ const r=$('#modalRoot'); r.classList.remove('show'); r.innerHTML=''; }
+// Build & show a modal. `build(body)` fills the scrollable body; `foot` is an
+// array of button nodes for the footer.
+function openModal({title,subtitle,icon,build,foot}){
+  const root=$('#modalRoot'); root.innerHTML='';
+  const body=el('div',{class:'mbody'});
+  const modal=el('div',{class:'modal',onclick:ev=>ev.stopPropagation()},
+    el('div',{class:'mhead'},
+      el('span',{style:'font-size:20px'},icon||'📋'),
+      el('div',null, el('div',{class:'mt'},title), subtitle?el('div',{class:'ms'},subtitle):null),
+      el('button',{class:'x',title:'Close',onclick:closeModal},'✕')),
+    body,
+    foot&&foot.length?el('div',{class:'mfoot'}, ...foot):null);
+  build(body);
+  root.append(modal);
+  root.classList.add('show');
+  return {body, close:closeModal};
+}
+$('#modalRoot').addEventListener('click',closeModal);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('#modalRoot').classList.contains('show')) closeModal(); });
+// Small form-field factory.
+function field(label,control,opts){
+  opts=opts||{};
+  return el('div',{class:'field'+(opts.ro?' ro':'')+(opts.full?' full':'')},
+    el('label',{html:label+(opts.req?' <span class="req">*</span>':'')}), control);
+}
+function inputEl(id,attrs){ return el('input',Object.assign({id,autocomplete:'off'},attrs||{})); }
+function selectEl(id,options,val){ const s=el('select',{id}); for(const o of options){ const ov=typeof o==='string'?o:o.v, ol=typeof o==='string'?o:o.l; s.append(el('option',{value:ov, ...(ov===val?{selected:''}:{})},ol)); } if(val!=null) s.value=val; return s; }
+
+/* ================= persistence (manual add / exit) ================= */
+// Persist S.employees (+ optionally audit) after a manual lifecycle change.
+async function persistEmployees(pushTypes){
+  const now=nowISO();
+  const meta=Object.assign({},S.meta,{updatedAt:now});
+  meta.uploadHistory=S.uploadHistory;
+  try{
+    const r=await fetch('/api/employees',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({meta,employees:S.employees})});
+    if(r.ok){ const d=await r.json(); if(!d.ok) console.warn(d.error||'save failed'); }
+  }catch(err){ console.warn('Local API unavailable'); }
+  S.meta=meta;
+  try{
+    if(typeof SB!=='undefined' && SB.ready){
+      for(const t of (pushTypes||['DS','GDS'])){
+        await SB.putDataset(t, S.employees.filter(e=>e._type===t), 'web');
+      }
+    }
+  }catch(e){ console.error('SB Sync error:', e); }
+  announceUpdate();
+}
+
+/* ================= upload summary ================= */
+function showUploadSummary(sm){
+  openModal({ title:'Upload summary', subtitle:monthLabel(sm.month), icon:'✅',
+    build(body){
+      const rows=[
+        ['Payroll month', monthLabel(sm.month)],
+        ['Existing employees updated', sm.updated],
+        ['New employee IDs added', sm.added],
+        ['Returned from pending exit', sm.returned],
+        ['Employees flagged Pending Exit', sm.pendingExit],
+        ['Duplicate rows skipped', sm.duplicates],
+        ['Invalid records (no ID)', sm.invalid],
+        ['Files', sm.files.join(' + ')||'—'],
+      ];
+      const t=el('table',{class:'hist-tbl'});
+      const tb=el('tbody');
+      for(const [k,v] of rows) tb.append(el('tr',null, el('td',{style:'font-weight:600;color:var(--muted)'},k), el('td',{style:'font-weight:700'},String(v))));
+      t.append(tb); body.append(t);
+      if(sm.pendingExit) body.append(el('div',{class:'muted',style:'margin-top:12px;font-size:12.5px'},
+        `${sm.pendingExit} staff are now Pending Exit Verification. Open them from the “Pending exit” status filter to record the reason for exit.`));
+    },
+    foot:[ el('button',{class:'btn',onclick:closeModal},'Done') ] });
+}
+
+/* ================= manual: Add Employee ================= */
+function openAddEmployee(){
+  const offOptions=[{v:'',l:'— Select office —'}, ...S.offices.map(o=>({v:o.id,l:o.name+' ('+o.id+')'}))];
+  let ctl={};
+  openModal({ title:'Add employee', subtitle:'Manual entry — not counted as a new recruit unless chosen', icon:'➕',
+    build(body){
+      const g=el('div',{class:'fgrid'});
+      ctl.type=selectEl('ae_type',[{v:'DS',l:'Departmental'},{v:'GDS',l:'GDS'}],'DS');
+      ctl.addType=selectEl('ae_addtype', ADD_TYPE_LIST, ADD_TYPE.TRANSFER_OFFICE);
+      ctl.id=inputEl('ae_id',{placeholder:'e.g. 50123456'});
+      ctl.name=inputEl('ae_name',{placeholder:'Full name (as in payroll)'});
+      ctl.office=selectEl('ae_office',offOptions,'');
+      ctl.desig=inputEl('ae_desig',{placeholder:'Designation'});
+      ctl.gender=selectEl('ae_gender',[{v:'',l:'—'},{v:'Male',l:'Male'},{v:'Female',l:'Female'},{v:'Transgender',l:'Transgender'}],'');
+      ctl.dob=inputEl('ae_dob',{type:'text',placeholder:'dd-mm-yyyy'});
+      ctl.doj=inputEl('ae_doj',{type:'text',placeholder:'dd-mm-yyyy'});
+      ctl.level=inputEl('ae_level',{placeholder:'Level / GDS category'});
+      ctl.pan=inputEl('ae_pan',{placeholder:'PAN'});
+      ctl.bank=inputEl('ae_bank',{placeholder:'Account no.'});
+      ctl.ifsc=inputEl('ae_ifsc',{placeholder:'IFSC'});
+      ctl.mobile=inputEl('ae_mobile',{type:'tel',placeholder:'10-digit mobile'});
+      ctl.remarks=inputEl('ae_remarks',{placeholder:'Reason / notes (optional)'});
+      g.append(
+        field('Staff type',ctl.type,{req:1}),
+        field('Addition type',ctl.addType,{req:1}),
+        field('Employee ID',ctl.id,{req:1}),
+        field('Employee name',ctl.name,{req:1}),
+        field('Office',ctl.office,{req:1,full:1}),
+        field('Designation',ctl.desig),
+        field('Gender',ctl.gender),
+        field('Date of birth',ctl.dob),
+        field('Date of joining Dept.',ctl.doj),
+        field('Level',ctl.level),
+        field('PAN',ctl.pan),
+        field('Bank account no.',ctl.bank),
+        field('IFSC',ctl.ifsc),
+        field('Mobile',ctl.mobile),
+        field('Remarks',ctl.remarks,{full:1}));
+      body.append(g);
+      body.append(el('div',{class:'muted',style:'margin-top:10px;font-size:12px'},
+        'Only “Newly Recruited” additions appear in the Newly Joined report and joining statistics. Transfers and historical entries are recorded as directory additions only.'));
+    },
+    foot:[
+      el('button',{class:'btn ghost',onclick:closeModal},'Cancel'),
+      el('button',{class:'btn',onclick:()=>submitAddEmployee(ctl)},'💾 Add to directory'),
+    ]});
+}
+async function submitAddEmployee(ctl){
+  const type=ctl.type.value, id=clean(ctl.id.value), name=clean(ctl.name.value), officeId=ctl.office.value;
+  if(!id){ toast('Employee ID is required.',true); ctl.id.focus(); return; }
+  if(!name){ toast('Employee name is required.',true); ctl.name.focus(); return; }
+  if(!officeId){ toast('Please select an office.',true); ctl.office.focus(); return; }
+  if(S.employees.some(e=>e._type===type && idOf(e)===id)){ toast('An employee with that ID already exists in '+type+'.',true); return; }
+  const office=S.offices.find(o=>o.id===officeId);
+  const now=nowISO(), addType=ctl.addType.value;
+  const rec={ _type:type,
+    Employee_id:id, Employee_name:name, Office_id:officeId, Office_desc:office?office.name:'',
+    Post_desc:clean(ctl.desig.value), Gender:clean(ctl.gender.value), Date_of_birth:clean(ctl.dob.value),
+    Date_of_join:clean(ctl.doj.value), Level:clean(ctl.level.value), Pancard_number:clean(ctl.pan.value),
+    Bank_acc_no:clean(ctl.bank.value), IFSC_code:clean(ctl.ifsc.value), Status:'',
+    _status:ST.ACTIVE, _origin:ORIGIN.MANUAL, _additionType:addType,
+    _joinedDeptDate:clean(ctl.doj.value), _directoryAddedDate:now, _lastPayrollMonth:'',
+    _addedBy:currentUser(), _createdDate:now, _updatedDate:now, _timeline:[],
+    _addRemarks:clean(ctl.remarks.value) };
+  if(clean(rec._joinedDeptDate)) pushTimeline(rec,'Joined Department','',rec._joinedDeptDate);
+  if(addType===ADD_TYPE.TRANSFER_OFFICE||addType===ADD_TYPE.TRANSFER_SUBDIV) pushTimeline(rec,'Transfer In', addType);
+  pushTimeline(rec,'Added to Directory', addType+(clean(rec._addRemarks)?' · '+rec._addRemarks:''));
+  S.employees.push(rec);
+  const phone=normPhone(ctl.mobile.value);
+  try{
+    if(phone.length===10) await persistMobile(rec, phone);
+    await persistEmployees([type]);
+    closeModal();
+    S.selectedOfficeId=officeId; S.selectedEmpKey=empKey(rec);
+    renderAll(); applyView();
+    toast('Employee added to directory.');
+  }catch(err){ toast('Save failed: '+err.message,true); }
+}
+
+/* ================= manual: Exit workflow ================= */
+function openExitModal(emp){
+  let ctl={};
+  const reasons=EXIT_REASONS[emp._type]||EXIT_REASONS.GDS;
+  openModal({ title:'Record employee exit', subtitle:clean(emp.Employee_name)+' · '+clean(emp.Employee_id), icon:'🚪',
+    build(body){
+      const g=el('div',{class:'fgrid'});
+      const ro=(lbl,val)=>field(lbl, inputEl('',{value:clean(val)||'—',readonly:''}), {ro:1});
+      ctl.reason=selectEl('ex_reason',[{v:'',l:'— Select reason —'}, ...reasons],'');
+      ctl.date=inputEl('ex_date',{type:'text',placeholder:'dd-mm-yyyy',value:todayDMY()});
+      ctl.remarks=el('textarea',{id:'ex_remarks',rows:'2',placeholder:'Remarks (optional)'});
+      ctl.doc=inputEl('ex_doc',{type:'file',accept:'.pdf,.jpg,.jpeg,.png,.doc,.docx'});
+      g.append(
+        ro('Employee name',emp.Employee_name), ro('Employee ID',emp.Employee_id),
+        ro('Office',emp.Office_desc), ro('Designation',emp.Post_desc),
+        ro('Employee type', emp._type==='DS'?'Departmental':'GDS'), ro('Last payroll month', monthLabel(emp._lastPayrollMonth)),
+        field('Exit reason',ctl.reason,{req:1}), field('Exit date',ctl.date,{req:1}),
+        field('Remarks',ctl.remarks,{full:1}),
+        field('Supporting document (optional)',ctl.doc,{full:1}));
+      body.append(g);
+    },
+    foot:[
+      el('button',{class:'btn ghost',onclick:closeModal},'Cancel'),
+      el('button',{class:'btn',style:'background:linear-gradient(135deg,#e11d48,#f97316)',onclick:()=>submitExit(emp,ctl)},'🚪 Record exit'),
+    ]});
+}
+async function submitExit(emp,ctl){
+  const reason=clean(ctl.reason.value), date=clean(ctl.date.value);
+  if(!reason){ toast('Please choose an exit reason.',true); return; }
+  if(!parseAnyDate(date)){ toast('Enter a valid exit date (dd-mm-yyyy).',true); return; }
+  let docInfo='';
+  const f=ctl.doc.files&&ctl.doc.files[0];
+  if(f){
+    docInfo=f.name;
+    if(f.size<=400*1024){ try{ docInfo=await new Promise((res,rej)=>{ const rd=new FileReader(); rd.onload=()=>res(JSON.stringify({name:f.name,data:rd.result})); rd.onerror=rej; rd.readAsDataURL(f); }); }catch(_){ docInfo=f.name; } }
+    else toast('Document over 400 KB — stored by name only.');
+  }
+  emp._status=ST.EXITED; emp._exitReason=reason; emp._exitDate=date; emp._exitRemarks=clean(ctl.remarks.value);
+  emp._exitDocument=docInfo; emp._updatedDate=nowISO();
+  pushTimeline(emp,'Exit Recorded', reason, date);
+  try{
+    await persistEmployees([emp._type]);
+    closeModal(); renderAll();
+    toast('Exit recorded — record preserved in history.');
+  }catch(err){ toast('Save failed: '+err.message,true); }
+}
+async function markStillActive(emp){
+  emp._status=ST.ACTIVE; emp._updatedDate=nowISO();
+  pushTimeline(emp,'Confirmed Active','Marked still-active by '+currentUser());
+  try{ await persistEmployees([emp._type]); renderAll(); toast('Marked as active.'); }
+  catch(err){ toast('Save failed: '+err.message,true); }
+}
+
+/* ================= reports ================= */
+// Lazy jsPDF loader (reuses the copy directory-export.js may have loaded).
+let _pdfLoad=null;
+function _loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('Could not load '+src)); document.head.appendChild(s); }); }
+function ensurePdf(){
+  if(window.jspdf&&window.jspdf.jsPDF&&window.jspdf.jsPDF.API.autoTable) return Promise.resolve();
+  if(!_pdfLoad) _pdfLoad=_loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js')
+    .then(()=>_loadScript('https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js'))
+    .catch(e=>{ _pdfLoad=null; throw e; });
+  return _pdfLoad;
+}
+const repTypeLabel=e=>e._type==='DS'?'Departmental':'GDS';
+const _todayISO=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
+function repFileName(base){ return ('Karur_'+base+'_'+_todayISO()).replace(/[^A-Za-z0-9._-]+/g,'-'); }
+function lifeEmployees(){ return S.employees.filter(isLifecycle); }
+// Report definitions: { title, headers, rows(), fileBase }
+function reportData(kind){
+  const L=lifeEmployees();
+  const officeName=e=>clean(e.Office_desc);
+  if(kind==='newjoin'){
+    const rows=L.filter(e=>e._additionType===ADD_TYPE.NEW_RECRUIT)
+      .sort((a,b)=>clean(b._directoryAddedDate).localeCompare(clean(a._directoryAddedDate)))
+      .map(e=>[clean(e.Employee_name),clean(e.Employee_id),officeName(e),clean(e.Post_desc),repTypeLabel(e),clean(e._joinedDeptDate)||'—',monthLabel(e._lastPayrollMonth)||'—']);
+    return {title:'Newly Joined Employees', headers:['Name','Employee ID','Office','Designation','Type','Joined Dept','Payroll Month'], rows, fileBase:'Newly-Joined'};
+  }
+  if(kind==='additions'){
+    const rows=L.filter(e=>clean(e._directoryAddedDate))
+      .sort((a,b)=>clean(b._directoryAddedDate).localeCompare(clean(a._directoryAddedDate)))
+      .map(e=>[clean(e.Employee_name),clean(e.Employee_id),officeName(e),(clean(e._directoryAddedDate).slice(0,10)),clean(e._addedBy)||'—',clean(e._additionType)||'—']);
+    return {title:'Directory Additions', headers:['Name','Employee ID','Office','Added Date','Added By','Addition Type'], rows, fileBase:'Directory-Additions'};
+  }
+  if(kind==='exitreg'){
+    const rows=L.filter(e=>statusOf(e)===ST.EXITED)
+      .sort((a,b)=>{ const da=parseAnyDate(a._exitDate),db=parseAnyDate(b._exitDate); return (db?db.getTime():0)-(da?da.getTime():0); })
+      .map(e=>[clean(e.Employee_id),clean(e.Employee_name),officeName(e),clean(e.Post_desc),repTypeLabel(e),clean(e._exitReason)||'—',clean(e._exitDate)||'—',lengthOfService(e._joinedDeptDate,e._exitDate),clean(e._exitRemarks)]);
+    return {title:'Employee Exit Register', headers:['Employee ID','Name','Office','Designation','Type','Exit Reason','Exit Date','Length of Service','Remarks'], rows, fileBase:'Exit-Register'};
+  }
+  if(kind==='exitsum'){
+    const groups={};
+    for(const e of L){ if(statusOf(e)!==ST.EXITED) continue; const g=exitGroup(e._exitReason); groups[g]=(groups[g]||0)+1; }
+    const total=Object.values(groups).reduce((a,b)=>a+b,0);
+    const rows=Object.keys(groups).sort((a,b)=>groups[b]-groups[a]).map(g=>[g,String(groups[g])]);
+    rows.push(['Total', String(total)]);
+    return {title:'Employee Exit Summary', headers:['Exit Category','Count'], rows, fileBase:'Exit-Summary'};
+  }
+  if(kind==='monthly'){
+    const ym=clean($('#repMonth')&&$('#repMonth').value)||monthNow();
+    const inMonth=[
+      ['Payroll updated employees', S.uploadHistory.filter(h=>h.payrollMonth===ym).reduce((n,h)=>n+(h.updated||0),0)],
+      ['Newly recruited employees', L.filter(e=>e._additionType===ADD_TYPE.NEW_RECRUIT && addedInMonth(e,ym)).length],
+      ['Employees added manually', L.filter(e=>e._origin===ORIGIN.MANUAL && addedInMonth(e,ym)).length],
+      ['Transfer-in employees', L.filter(e=>(e._additionType===ADD_TYPE.TRANSFER_OFFICE||e._additionType===ADD_TYPE.TRANSFER_SUBDIV) && addedInMonth(e,ym)).length],
+      ['Missing employees added', L.filter(e=>e._additionType===ADD_TYPE.MISSING && addedInMonth(e,ym)).length],
+      ['Employees flagged Pending Exit', S.uploadHistory.filter(h=>h.payrollMonth===ym).reduce((n,h)=>n+(h.pendingExit||0),0)],
+      ['Employees confirmed exited', L.filter(e=>statusOf(e)===ST.EXITED && exitedInMonth(e,ym)).length],
+    ];
+    return {title:'Monthly Directory Changes — '+monthLabel(ym), headers:['Change type','Count'], rows:inMonth.map(([k,v])=>[k,String(v)]), fileBase:'Monthly-Changes_'+ym};
+  }
+}
+function downloadReportExcel(rep){
+  const wb=XLSX.utils.book_new();
+  const aoa=[rep.headers, ...rep.rows];
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=rep.headers.map((h,i)=>({wch: i===0?26:Math.max(12,Math.min(30,h.length+6))}));
+  XLSX.utils.book_append_sheet(wb,ws, rep.title.slice(0,31).replace(/[\\\/?*\[\]:]/g,' '));
+  XLSX.writeFile(wb, repFileName(rep.fileBase)+'.xlsx');
+}
+async function downloadReportPdf(rep){
+  await ensurePdf();
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:rep.headers.length>5?'landscape':'portrait',unit:'pt',format:'a4'});
+  const pageW=doc.internal.pageSize.getWidth(), pageH=doc.internal.pageSize.getHeight();
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(31,56,100);
+  doc.text('Department of Posts — Karur Sub Division',pageW/2,40,{align:'center'});
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(79,70,229);
+  doc.text(rep.title,pageW/2,58,{align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,100,116);
+  doc.text(rep.rows.length+' record(s) · generated '+_todayISO(),pageW/2,73,{align:'center'});
+  doc.autoTable({
+    startY:86, head:[rep.headers], body:rep.rows,
+    styles:{font:'helvetica',fontSize:8,cellPadding:3.5,overflow:'linebreak',textColor:[30,41,59]},
+    headStyles:{fillColor:[31,56,100],textColor:255,fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[243,246,252]}, margin:{left:24,right:24,top:86,bottom:30},
+  });
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){ doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(120,130,145);
+    doc.text('Page '+i+' of '+n,pageW-24,pageH-14,{align:'right'});
+    doc.text('Generated from the Employee Directory',24,pageH-14); }
+  doc.save(repFileName(rep.fileBase)+'.pdf');
+}
+async function runReport(kind,fmt,btn){
+  const old=btn.innerHTML; btn.disabled=true; btn.textContent='…';
+  try{
+    const rep=reportData(kind);
+    if(!rep.rows.length){ toast('No records for this report yet.',true); return; }
+    if(fmt==='xlsx') downloadReportExcel(rep); else await downloadReportPdf(rep);
+    toast(rep.title+' — '+rep.rows.length+' record(s) downloaded.');
+  }catch(e){ toast('Report failed: '+e.message,true); }
+  finally{ btn.disabled=false; btn.innerHTML=old; }
+}
+
+/* ================= audit trail view ================= */
+function renderAudit(){
+  const host=$('#audit-wrap'); if(!host) return; host.innerHTML='';
+  const h=S.uploadHistory||[];
+  const head=el('div',{style:'display:flex;align-items:center;gap:8px;margin-bottom:8px'},
+    el('div',{style:'font-family:"Plus Jakarta Sans","Inter";font-weight:800;font-size:13px'},'Upload history'),
+    el('span',{class:'muted',style:'font-size:12px'}, h.length?`(${h.length} upload${h.length>1?'s':''})`:'(no uploads yet)'));
+  host.append(head);
+  if(!h.length){ host.append(el('div',{class:'muted',style:'font-size:12.5px'},'Payroll upload activity will be logged here.')); return; }
+  const wrap=el('div',{style:'overflow-x:auto'});
+  const t=el('table',{class:'hist-tbl'});
+  t.append(el('thead',null,el('tr',null,...['Date','By','Payroll Month','Files','Updated','Added','Pending Exit','Duration'].map(x=>el('th',null,x)))));
+  const tb=el('tbody');
+  for(const a of h.slice(0,25)){
+    tb.append(el('tr',null,
+      el('td',null,(clean(a.at)||'').slice(0,16).replace('T',' ')),
+      el('td',null,clean(a.uploadedBy)||'—'),
+      el('td',null,monthLabel(a.payrollMonth)||'—'),
+      el('td',{style:'max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'},clean(a.fileName)||'—'),
+      el('td',null,String(a.updated||0)),
+      el('td',null,String(a.added||0)),
+      el('td',null,String(a.pendingExit||0)),
+      el('td',null,((a.durationMs||0)/1000).toFixed(1)+'s')));
+  }
+  t.append(tb); wrap.append(t); host.append(wrap);
 }
 
 /* ================= wire up ================= */
@@ -1080,7 +1785,7 @@ fileInput.addEventListener('change',()=>{ if(fileInput.files.length) handleFiles
 drop.addEventListener('drop',e=>{ const fs=e.dataTransfer.files; if(fs&&fs.length) handleFiles(fs); });
 $('#saveBtn').addEventListener('click',saveData);
 $('#discardBtn').addEventListener('click',()=>{S.pending={};reflectPending();toast('Pending upload discarded.');});
-$('#replaceChk').addEventListener('change',reflectPending);
+if($('#payMonth')) $('#payMonth').value = monthNow();
 
 $('#officeSearch').addEventListener('input',e=>{S.officeFilter=e.target.value;renderOfficeList();});
 $('#officePick').addEventListener('change',e=>{ if(e.target.value){ selectOffice(e.target.value); const o=S.offices.find(x=>x.id===e.target.value); if(o){$('#officeSearch').value=o.name;S.officeFilter=o.name;renderOfficeList();} } });
@@ -1090,8 +1795,18 @@ document.querySelectorAll('#typeSeg button').forEach(b=>b.addEventListener('clic
   renderOfficePick(); renderOfficeList(); renderContent();
 }));
 
+document.querySelectorAll('#statusSeg button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#statusSeg button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); S.statusFilter=b.dataset.s; S.selectedEmpKey=null;
+  renderOfficePick(); renderOfficeList(); renderContent();
+}));
+
 document.querySelectorAll('#viewtabs button').forEach(b=>b.addEventListener('click',()=>{ S.view=b.dataset.v; applyView(); }));
 $('#outSearch').addEventListener('input',e=>{S.outFilter=e.target.value;renderOutsiders();});
+
+$('#addEmpBtn').addEventListener('click',openAddEmployee);
+if($('#repMonth')) $('#repMonth').value = monthNow();
+document.querySelectorAll('#reports-card button[data-rep]').forEach(b=>b.addEventListener('click',()=>runReport(b.dataset.rep,b.dataset.fmt,b)));
 
 loadData();
 </script>
