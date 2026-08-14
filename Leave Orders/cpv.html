@@ -572,11 +572,20 @@ function extractReport(rows){
 function guessScheme(raw){
   const s=' '+String(raw||'').toUpperCase()+' ';
   if(/SUKANYA|\bSSA\b/.test(s))return 'SSA';
-  if(/RECURRING|\bRD\b/.test(s))return 'RD';
+  if(/RECURRING|RDIP|\bRD\b/.test(s))return 'RD';
   if(/SR\.?\s*CIT|SENIOR\s*CIT|\bSCSS\b/.test(s))return 'SCSS';
   if(/MONTHLY\s*INCOME|\bMIS\b/.test(s))return 'MIS';
   if(/PROVIDENT|\bPPF\b/.test(s))return 'PPF';
-  if(/TIME\s*DEPOSIT|\bTD\b|\bTDA?\b/.test(s)){const m=s.match(/([1235])\s*Y/);return m?('TD'+m[1]):'TD1';}
+  // Time / Term Deposit — code is TDIP1/2/3/5 and the description spells the year
+  // ("TERM DEPOSIT FOR FIVE YEAR"). Map the term to TD1/TD2/TD3/TD5.
+  if(/TERM\s*DEPOSIT|TIME\s*DEPOSIT|TDIP|\bTD\b|\bTDA\b/.test(s)){
+    let m=s.match(/TDIP\s*([1235])/); if(m)return 'TD'+m[1];
+    if(/\bONE\s+YEAR|\b1\s*YE?A?R?\b/.test(s))return 'TD1';
+    if(/\bTWO\s+YEAR|\b2\s*YE?A?R?\b/.test(s))return 'TD2';
+    if(/\bTHREE\s+YEAR|\b3\s*YE?A?R?\b/.test(s))return 'TD3';
+    if(/\bFIVE\s+YEAR|\b5\s*YE?A?R?\b/.test(s))return 'TD5';
+    m=s.match(/([1235])\s*Y/); return m?('TD'+m[1]):'TD1';
+  }
   if(/SAVING|\bSB[A-Z]*\b/.test(s))return 'SB';
   return 'SB';
 }
