@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="/leave-orders/auth-guard.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
+<script src="/xlsx-lite.js"></script>
+<title>Address Labels — Karur Sub Division</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep:#0a0e1a; --glass-bg:rgba(255,255,255,0.06); --glass-bg-hover:rgba(255,255,255,0.12);
+  --glass-border:rgba(255,255,255,0.12); --glass-border-hover:rgba(255,255,255,0.25);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.25); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.35),0 0 0 1px rgba(255,255,255,0.15);
+  --glass-blur:20px; --text-primary:#f1f5f9; --text-secondary:rgba(241,245,249,0.7); --text-muted:rgba(241,245,249,0.45);
+  /* Postal indigo / violet accent set */
+  --teal:#818cf8; --teal2:#6366f1; --cyan:#a78bfa; --blue:#60a5fa; --indigo:#818cf8; --violet:#a78bfa;
+  --em:#34d399; --gold:#fbbf24; --gold2:#f59e0b; --rose:#fb7185; --orange:#fb923c; --pink:#f472b6;
+  --radius-xl:24px; --radius-lg:18px; --radius-md:14px;
+}
+html.light{
+  --bg-deep:#f0f2f7; --glass-bg:rgba(255,255,255,0.72); --glass-bg-hover:rgba(255,255,255,0.95);
+  --glass-border:rgba(0,0,0,0.08); --glass-border-hover:rgba(0,0,0,0.15);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.08); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.12),0 0 0 1px rgba(0,0,0,0.06);
+  --text-primary:#0f172a; --text-secondary:rgba(15,23,42,0.7); --text-muted:rgba(15,23,42,0.45);
+  --teal:#6366f1; --teal2:#4f46e5; --cyan:#7c3aed; --blue:#2563eb; --indigo:#4f46e5; --violet:#7c3aed;
+  --em:#059669; --gold:#d97706; --gold2:#b45309; --rose:#e11d48; --orange:#ea580c; --pink:#db2777;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-deep);color:var(--text-primary);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s,color .4s}
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(129,140,248,0.16),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(167,139,250,0.13),transparent 65%),
+  radial-gradient(ellipse 600px 420px at 55% 92%,rgba(244,114,182,0.09),transparent 60%),
+  linear-gradient(180deg,#0a0e1a,#111827 55%,#0f1729)}
+html.light .bg-mesh{background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(99,102,241,0.08),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(124,58,237,0.06),transparent 65%),
+  linear-gradient(180deg,#f0f2f7,#e8ecf4 55%,#f0f2f7)}
+
+.page-wrap{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:26px 22px 70px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.back-link{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--text-secondary);font-weight:600;font-size:13.5px;
+  padding:9px 15px;border-radius:999px;background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(var(--glass-blur));transition:all .3s;cursor:pointer}
+.back-link:hover{background:var(--glass-bg-hover);color:var(--text-primary);transform:translateX(-2px)}
+.theme-toggle{width:44px;height:44px;border-radius:50%;border:1px solid var(--glass-border);cursor:pointer;background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));display:grid;place-items:center;font-size:20px;color:var(--text-primary);transition:all .3s}
+.theme-toggle:hover{background:var(--glass-bg-hover);transform:scale(1.08) rotate(12deg)}
+
+.hero{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden;backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow)}
+.hero::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal2),var(--teal),var(--cyan),var(--pink))}
+.hero-eyebrow{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-muted)}
+.hero-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:800;margin:6px 0 4px;
+  background:linear-gradient(135deg,var(--teal),var(--cyan) 55%,var(--pink) 95%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:13.5px;color:var(--text-secondary);line-height:1.6;max-width:880px}
+.hero-specs{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.spec{font-size:10.5px;font-weight:700;letter-spacing:.3px;color:var(--text-secondary);background:rgba(129,140,248,.12);border:1px solid rgba(129,140,248,.22);padding:5px 11px;border-radius:999px}
+.spec b{color:var(--teal)}
+
+/* layout grid */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media(max-width:1000px){.cols{grid-template-columns:1fr}}
+
+.card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow);overflow:hidden;margin-bottom:20px}
+.card-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--glass-border);background:rgba(255,255,255,.02)}
+.card-head .ci{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:19px;color:#fff;background:linear-gradient(135deg,var(--teal),var(--cyan));flex-shrink:0;box-shadow:0 4px 14px rgba(99,102,241,.28)}
+.card-head .ct{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:15.5px;line-height:1.2}
+.card-head .cs{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+.card-body{padding:18px}
+
+/* tabs */
+.tabs{display:flex;gap:6px;padding:6px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:14px;margin-bottom:16px;backdrop-filter:blur(var(--glass-blur))}
+.tab{flex:1;border:none;background:none;color:var(--text-secondary);font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:700;font-size:12.5px;padding:10px 8px;border-radius:10px;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:6px}
+.tab:hover{color:var(--text-primary)}
+.tab.active{background:linear-gradient(135deg,var(--teal2),var(--teal));color:#fff;box-shadow:0 4px 14px rgba(99,102,241,.32)}
+.tabpanel{display:none;animation:pop .3s both}
+.tabpanel.active{display:block}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* upload drop */
+.drop{border:2px dashed var(--glass-border);border-radius:var(--radius-md);padding:24px;text-align:center;background:rgba(255,255,255,.02);transition:all .25s;cursor:pointer}
+.drop.drag{border-color:var(--teal);background:rgba(129,140,248,.08)}
+.drop .di{font-size:34px;display:block;margin-bottom:8px;opacity:.85}
+.drop b{color:var(--text-primary)}
+.drop small{display:block;color:var(--text-muted);font-size:11.5px;margin-top:6px}
+.tmpl-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center;justify-content:center}
+.hint{font-size:11.5px;color:var(--text-muted);line-height:1.6;margin-top:12px}
+.hint code{background:rgba(129,140,248,.14);color:var(--teal);padding:1px 6px;border-radius:5px;font-size:11px;font-weight:700}
+
+/* form fields */
+.field{margin-bottom:13px;display:flex;flex-direction:column;gap:6px}
+.field label{font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--text-muted)}
+.field input,.field select,.field textarea{width:100%;background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:11px;padding:11px 13px;font-family:inherit;font-size:13.5px;font-weight:600;outline:none;transition:border-color .2s;resize:vertical}
+html.light .field input,html.light .field select,html.light .field textarea{background:#fff}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal)}
+.field textarea{min-height:66px;line-height:1.5}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+
+.btn{border:none;border-radius:12px;padding:11px 18px;font-weight:700;font-size:13px;cursor:pointer;color:#fff;font-family:inherit;
+  background:linear-gradient(135deg,var(--teal2),var(--teal));transition:all .25s;box-shadow:0 4px 16px rgba(99,102,241,.3);display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:var(--glass-bg);color:var(--text-secondary);border:1px solid var(--glass-border);box-shadow:none;backdrop-filter:blur(var(--glass-blur))}
+.btn.ghost:hover:not(:disabled){background:var(--glass-bg-hover);color:var(--text-primary)}
+.btn.gold{background:linear-gradient(135deg,var(--gold2),var(--gold));box-shadow:0 4px 16px rgba(251,191,36,.28)}
+.btn.pink{background:linear-gradient(135deg,#ec4899,var(--pink));box-shadow:0 4px 16px rgba(244,114,182,.28)}
+.btn.blue{background:linear-gradient(135deg,#3b82f6,var(--blue));box-shadow:0 4px 16px rgba(96,165,250,.28)}
+.btn.danger{background:linear-gradient(135deg,#f43f5e,var(--rose));box-shadow:0 4px 16px rgba(251,113,133,.28)}
+.btn.sm{padding:8px 13px;font-size:12px;border-radius:10px}
+.btn.block{width:100%}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+
+/* office book */
+.ob-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+.search{flex:1;min-width:180px;display:flex;align-items:center;gap:9px;background:var(--bg-deep);border:1px solid var(--glass-border);border-radius:999px;padding:9px 15px}
+html.light .search{background:#fff}
+.search input{flex:1;background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:13.5px;font-weight:600}
+.search input::placeholder{color:var(--text-muted)}
+.oblist{max-height:340px;overflow-y:auto;border:1px solid var(--glass-border);border-radius:var(--radius-md);background:rgba(255,255,255,.02)}
+.obrow{display:flex;align-items:center;gap:11px;padding:10px 13px;border-bottom:1px solid var(--glass-border);cursor:pointer;transition:background .15s}
+.obrow:last-child{border-bottom:none}
+.obrow:hover{background:rgba(129,140,248,.07)}
+.obrow input{width:17px;height:17px;accent-color:var(--teal);cursor:pointer;flex-shrink:0}
+.obrow .obn{font-weight:700;font-size:13px;color:var(--text-primary);line-height:1.25}
+.obrow .obm{font-size:11px;color:var(--text-muted);margin-top:1px}
+.obtype{font-size:9.5px;font-weight:800;letter-spacing:.4px;padding:2px 7px;border-radius:6px;flex-shrink:0}
+.obtype.so{background:rgba(129,140,248,.18);color:var(--teal)}
+.obtype.bo{background:rgba(52,211,153,.18);color:var(--em)}
+.obtype.ho{background:rgba(251,191,36,.18);color:var(--gold)}
+.obtype.other{background:rgba(244,114,182,.18);color:var(--pink)}
+.ob-foot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.ob-count{font-size:12px;color:var(--text-muted);font-weight:600}
+.ob-count b{color:var(--teal)}
+.miniselect{display:flex;flex-direction:column;gap:5px}
+.miniselect label{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted)}
+.miniselect select{background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:10px;padding:8px 11px;font-family:inherit;font-size:12.5px;font-weight:600;outline:none}
+html.light .miniselect select{background:#fff}
+
+/* queue */
+.q-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.st{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:14px 16px;position:relative;overflow:hidden}
+.st::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px}
+.st.a::before{background:linear-gradient(180deg,var(--teal),var(--teal2))}
+.st.b::before{background:linear-gradient(180deg,var(--violet),var(--pink))}
+.st.c::before{background:linear-gradient(180deg,var(--gold),var(--gold2))}
+.st .n{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:900;line-height:1}
+.st.a .n{color:var(--teal)} .st.b .n{color:var(--violet)} .st.c .n{color:var(--gold)}
+.st .l{font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-top:7px;color:var(--text-secondary)}
+
+.qlist{display:flex;flex-direction:column;gap:9px;max-height:520px;overflow-y:auto;padding-right:4px}
+.qitem{display:flex;gap:11px;align-items:flex-start;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:11px 12px;transition:all .2s}
+.qitem:hover{border-color:var(--glass-border-hover);background:var(--glass-bg-hover)}
+.qidx{width:26px;height:26px;flex-shrink:0;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:11.5px;background:rgba(129,140,248,.15);color:var(--teal)}
+.qbody{flex:1;min-width:0}
+.qname{font-weight:800;font-size:13.5px;color:var(--text-primary);line-height:1.3}
+.qdesig{font-size:11px;color:var(--teal);font-weight:700}
+.qaddr{font-size:11.5px;color:var(--text-secondary);line-height:1.4;margin-top:2px;white-space:pre-line;word-break:break-word}
+.qmeta{font-size:11px;color:var(--text-muted);margin-top:3px;font-weight:600}
+.qmeta b{color:var(--text-secondary)}
+.qtools{display:flex;flex-direction:column;gap:5px;flex-shrink:0}
+.qt{width:28px;height:28px;border:none;border-radius:8px;cursor:pointer;font-size:12px;display:grid;place-items:center;transition:all .18s;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-secondary)}
+.qt:hover{background:var(--glass-bg-hover);color:var(--text-primary)}
+.qt.del:hover{background:rgba(251,113,133,.2);color:var(--rose);border-color:rgba(251,113,133,.3)}
+.qsrc{font-size:9px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:1px 6px;border-radius:5px;margin-left:6px;vertical-align:middle}
+.qsrc.office{background:rgba(129,140,248,.16);color:var(--teal)}
+.qsrc.upload{background:rgba(52,211,153,.16);color:var(--em)}
+.qsrc.manual{background:rgba(244,114,182,.16);color:var(--pink)}
+
+.empty{text-align:center;padding:44px 20px;color:var(--text-muted);font-size:13.5px;background:rgba(255,255,255,.02);border:1px dashed var(--glass-border);border-radius:var(--radius-md)}
+.empty .ei{font-size:40px;display:block;margin-bottom:12px;opacity:.5}
+
+/* calibration */
+.calgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.calgrid .field{margin-bottom:0}
+.chk{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;padding:4px 0}
+.chk input{width:17px;height:17px;accent-color:var(--teal);cursor:pointer}
+.divider{height:1px;background:var(--glass-border);margin:16px 0}
+/* reuse a part-used sheet — visual cell picker */
+.reuse-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.cellgrid{display:grid;grid-template-columns:repeat(3,44px);grid-auto-rows:33px;gap:5px;flex-shrink:0}
+.cellbtn{border:1px solid var(--glass-border);border-radius:7px;background:var(--glass-bg);color:var(--text-secondary);font-weight:800;font-size:11.5px;cursor:pointer;display:grid;place-items:center;transition:all .15s;position:relative;overflow:hidden}
+.cellbtn:hover{border-color:var(--teal);color:var(--text-primary);transform:translateY(-1px)}
+.cellbtn.used{color:var(--rose);border-color:rgba(251,113,133,.45);background:repeating-linear-gradient(135deg,rgba(251,113,133,.14) 0 5px,rgba(251,113,133,.05) 5px 10px)}
+.cellbtn.used::after{content:'✕';position:absolute;font-size:14px;opacity:.55}
+.cellbtn.used span{opacity:.35}
+.reuse-side{flex:1;min-width:150px;display:flex;flex-direction:column;gap:9px;align-items:flex-start}
+.reuse-info{font-size:12px;color:var(--text-secondary);font-weight:600;line-height:1.5}
+.reuse-info b{color:var(--teal)}
+.sub-title{font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-muted);margin:4px 0 10px;display:flex;align-items:center;gap:8px}
+.sub-title::before{content:'';width:3px;height:13px;border-radius:3px;background:linear-gradient(180deg,var(--teal),var(--cyan))}
+
+/* preview */
+.preview-wrap{overflow:auto;background:repeating-conic-gradient(rgba(128,128,128,.05) 0% 25%,transparent 0% 50%) 0/22px 22px;border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:18px;display:flex;flex-direction:column;align-items:center;gap:20px;max-height:760px}
+.sheet{position:relative;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.35);flex-shrink:0}
+.lbl{position:absolute;overflow:hidden;display:flex;flex-direction:column;justify-content:center;color:#080808;line-height:1.24}
+.lbl.guide{outline:1px dashed rgba(99,102,241,.5)}
+.lbl.skipcell{background:repeating-linear-gradient(135deg,rgba(120,120,120,.12) 0 6px,transparent 6px 12px);outline:1px dashed rgba(150,150,150,.55)}
+.lbl{font-weight:700}
+.lbl .l-to{font-weight:700}
+.lbl .l-desig{font-weight:800}
+.lbl .l-name{font-weight:800}
+.lbl .l-addr{font-weight:800}
+.lbl .l-pin{font-weight:800}
+.lbl .l-mob{font-weight:700}
+.lbl .l-ref{opacity:.6;border-bottom:.5px solid rgba(0,0,0,.25);padding-bottom:2px;margin-bottom:2px}
+.sheet-tag{font-size:11px;font-weight:700;color:var(--text-muted);text-align:center}
+.pv-empty{color:var(--text-muted);font-size:13px;text-align:center;padding:40px}
+
+.footer{text-align:center;padding:34px 20px 8px;color:var(--text-muted);font-size:12px}
+.footer .credit{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:700;margin-top:5px;background:linear-gradient(135deg,var(--teal),var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,7,15,.62);backdrop-filter:blur(6px)}
+.modal-overlay.show{display:flex;animation:fade .2s both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{width:min(560px,100%);max-height:92vh;overflow-y:auto;background:var(--bg-deep);border:1px solid var(--glass-border-hover);border-radius:var(--radius-xl);padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.5);animation:rise .25s both}
+html.light .modal{background:#fff}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.modal-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:18px;display:flex;align-items:center;gap:9px;margin-bottom:16px}
+.modal-title.danger{color:var(--rose)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+.del-msg{font-size:13.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:20px}
+.del-msg b{color:var(--text-primary)}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#111827;color:#fff;padding:13px 22px;border-radius:12px;font-size:13px;font-weight:600;z-index:400;box-shadow:0 12px 40px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);transition:all .35s;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(52,211,153,.4)} .toast.err{border-color:rgba(251,113,133,.5)}
+.hidden{display:none!important}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+
+<div class="page-wrap">
+  <div class="topbar">
+    <a href="/" class="back-link">← Back to Home</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+  </div>
+
+  <div class="hero">
+    <div class="hero-eyebrow">Karur Sub Division · Department of Posts</div>
+    <div class="hero-title">🏷️ Address Label Generator</div>
+    <div class="hero-sub">Build a print-ready PDF for <b>precut address label sheets</b> (3 columns × 6 rows = 18 labels).
+      Add recipients from the <b>Karur Sub Division office address book</b>, upload a filled Excel template, or type them in —
+      then download a perfectly aligned, beautiful PDF ready to feed into your printer.</div>
+    <div class="hero-specs">
+      <span class="spec">Sheet <b>21.1 × 29.8 cm</b></span>
+      <span class="spec">Grid <b>3 × 6 = 18</b></span>
+      <span class="spec">Label <b>6.5 × 4.8 cm</b></span>
+      <span class="spec">Column gap <b>0.3 cm</b></span>
+      <span class="spec">Side gap <b>0.7 cm</b></span>
+    </div>
+  </div>
+
+  <div class="cols">
+    <!-- ============ LEFT: INPUTS ============ -->
+    <div>
+      <div class="card">
+        <div class="card-head">
+          <div class="ci">➕</div>
+          <div><div class="ct">Add recipients</div><div class="cs">Pick offices, upload the template, or add one by hand</div></div>
+        </div>
+        <div class="card-body">
+          <div class="tabs">
+            <button class="tab active" data-tab="office">📇 Office book</button>
+            <button class="tab" data-tab="upload">📤 Upload Excel</button>
+            <button class="tab" data-tab="manual">✏️ Manual</button>
+          </div>
+
+          <!-- OFFICE BOOK -->
+          <div class="tabpanel active" id="tab-office">
+            <div class="ob-controls">
+              <div class="search"><span>🔍</span><input id="obSearch" type="text" placeholder="Search office name / pincode…" autocomplete="off"></div>
+              <div class="miniselect">
+                <label>Addressee</label>
+                <select id="obDesig">
+                  <option value="auto">Auto (by office type)</option>
+                  <option value="The Sub Post Master">The Sub Post Master</option>
+                  <option value="The Branch Postmaster">The Branch Postmaster</option>
+                  <option value="The Postmaster">The Postmaster</option>
+                  <option value="">None (office name only)</option>
+                </select>
+              </div>
+            </div>
+            <div class="oblist" id="obList"><div class="empty" style="border:none"><span class="spin" style="border-color:rgba(129,140,248,.35);border-top-color:var(--teal)"></span> Loading Karur Sub Division offices…</div></div>
+            <div class="ob-foot">
+              <button class="btn ghost sm" id="obSelectAll">☑ Select all shown</button>
+              <button class="btn ghost sm" id="obClearSel">✕ Clear</button>
+              <div style="flex:1"></div>
+              <span class="ob-count" id="obCount">—</span>
+              <button class="btn sm" id="obAdd">➕ Add selected</button>
+            </div>
+          </div>
+
+          <!-- UPLOAD -->
+          <div class="tabpanel" id="tab-upload">
+            <div class="drop" id="drop">
+              <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,text/csv" style="display:none">
+              <span class="di">📥</span>
+              <b>Drop the filled template here, or click to choose</b>
+              <small>Excel / CSV with columns: Sl. No · Name · Address · Pincode · Mobile No. (optional)</small>
+            </div>
+            <div class="tmpl-row">
+              <button class="btn ghost sm" id="dlTemplate">⬇ Download blank template</button>
+            </div>
+            <div class="hint">Fill one row per recipient. The <code>Name</code> column can hold a person, a firm or an office; <code>Address</code> may contain commas or line-breaks — both are handled. <code>Pincode</code> is emphasised on the label; <code>Mobile</code> is optional.</div>
+          </div>
+
+          <!-- MANUAL -->
+          <div class="tabpanel" id="tab-manual">
+            <div class="field">
+              <label>Designation / salutation line <span style="text-transform:none;font-weight:600;color:var(--text-muted)">(optional — e.g. The Sub Post Master)</span></label>
+              <input type="text" id="mDesig" placeholder="The Sub Post Master">
+            </div>
+            <div class="field">
+              <label>Name / office</label>
+              <input type="text" id="mName" placeholder="Thiru. R. Kumar / Vennamalai S.O">
+            </div>
+            <div class="field">
+              <label>Address</label>
+              <textarea id="mAddr" placeholder="Door / street, area, town&#10;Taluk, District"></textarea>
+            </div>
+            <div class="grid2">
+              <div class="field"><label>Pincode</label><input type="text" id="mPin" inputmode="numeric" placeholder="639 001"></div>
+              <div class="field"><label>Mobile (optional)</label><input type="text" id="mMob" inputmode="numeric" placeholder="9xxxxxxxxx"></div>
+            </div>
+            <button class="btn block" id="mAdd">➕ Add to queue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CALIBRATION -->
+      <div class="card">
+        <div class="card-head">
+          <div class="ci" style="background:linear-gradient(135deg,var(--gold2),var(--gold))">⚙️</div>
+          <div><div class="ct">Layout & calibration</div><div class="cs">Defaults match your precut sheet — tweak only if needed</div></div>
+        </div>
+        <div class="card-body">
+          <div class="sub-title">Label content</div>
+          <label class="chk"><input type="checkbox" id="cShowTo" checked> Print “To,” line above each recipient</label>
+          <label class="chk"><input type="checkbox" id="cGuides"> Draw label borders (for a test alignment print)</label>
+          <div class="field" style="margin-top:12px">
+            <label>Reference text (optional — printed small at the top of every label)</label>
+            <input type="text" id="cRef" placeholder="e.g. Ref. No. ASP/KRR/Estt/2026">
+          </div>
+
+          <div class="divider"></div>
+          <div class="sub-title">Print run</div>
+          <div class="calgrid">
+            <div class="field"><label>Copies per recipient</label><input type="number" id="cCopies" value="1" min="1" max="50"></div>
+          </div>
+
+          <div class="sub-title" style="margin-top:16px">Reuse a part-used sheet</div>
+          <div class="hint" style="margin-bottom:2px">Click the labels already peeled off the <b>first sheet</b> — printing skips them and lands the first recipient on the next free label. Marks apply to sheet 1 only; later sheets print full.</div>
+          <div class="reuse-row">
+            <div class="cellgrid" id="cellGrid" aria-label="First-sheet label grid"></div>
+            <div class="reuse-side">
+              <div class="reuse-info" id="reuseInfo"></div>
+              <button class="btn ghost sm" id="cellReset">↺ All labels free</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="sub-title">Sheet geometry (mm)</div>
+          <div class="calgrid">
+            <div class="field"><label>Sheet width</label><input type="number" id="gPageW" value="211" step="0.1"></div>
+            <div class="field"><label>Sheet height</label><input type="number" id="gPageH" value="298" step="0.1"></div>
+            <div class="field"><label>Label width</label><input type="number" id="gLblW" value="65" step="0.1"></div>
+            <div class="field"><label>Label height</label><input type="number" id="gLblH" value="48" step="0.1"></div>
+            <div class="field"><label>Column gap</label><input type="number" id="gColGap" value="3" step="0.1"></div>
+            <div class="field"><label>Row gap</label><input type="number" id="gRowGap" value="0" step="0.1"></div>
+            <div class="field"><label>Nudge → right (X)</label><input type="number" id="gOffX" value="0" step="0.5"></div>
+            <div class="field"><label>Nudge ↓ down (Y)</label><input type="number" id="gOffY" value="0" step="0.5"></div>
+          </div>
+          <div class="btn-row" style="margin-top:14px">
+            <button class="btn ghost sm" id="gReset">↺ Reset to defaults</button>
+            <div style="flex:1"></div>
+            <span class="ob-count" id="gridInfo"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ RIGHT: QUEUE + PREVIEW ============ -->
+    <div>
+      <div class="card">
+        <div class="card-head">
+          <div class="ci" style="background:linear-gradient(135deg,var(--violet),var(--pink))">📋</div>
+          <div style="flex:1"><div class="ct">Label queue</div><div class="cs" id="queueSub">No recipients yet</div></div>
+          <button class="btn ghost sm" id="qClear">🗑 Clear</button>
+        </div>
+        <div class="card-body">
+          <div class="q-summary">
+            <div class="st a"><div class="n" id="sRec">0</div><div class="l">Recipients</div></div>
+            <div class="st b"><div class="n" id="sLbl">0</div><div class="l">Labels (with copies)</div></div>
+            <div class="st c"><div class="n" id="sSheet">0</div><div class="l">Sheets needed</div></div>
+          </div>
+          <div class="btn-row" style="margin-bottom:16px">
+            <button class="btn block" id="genPdf" style="flex:1" disabled>📄 Generate print-ready PDF</button>
+          </div>
+          <div class="btn-row" style="margin-bottom:16px">
+            <button class="btn ghost sm" id="qSave">💾 Save list</button>
+            <button class="btn ghost sm" id="qLoad">📂 Load saved</button>
+            <div style="flex:1"></div>
+            <button class="btn ghost sm" id="qSort">↕ Sort A–Z</button>
+          </div>
+          <div id="qlist"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="ci" style="background:linear-gradient(135deg,var(--blue),var(--cyan))">👁️</div>
+          <div style="flex:1"><div class="ct">Live sheet preview</div><div class="cs" id="pvSub">True-to-scale — exactly what prints</div></div>
+          <button class="btn ghost sm" id="pvRefresh">↻</button>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="preview-wrap" id="preview"><div class="pv-empty">Add recipients to see the sheet preview.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Address Label Generator · Karur Sub Division · Department of Posts
+    <div class="credit">Designed by Arun Selvaraj · Karur Division</div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="editOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title">✏️ Edit label</div>
+    <div class="field"><label>Designation / salutation (optional)</label><input type="text" id="eDesig"></div>
+    <div class="field"><label>Name / office</label><input type="text" id="eName"></div>
+    <div class="field"><label>Address</label><textarea id="eAddr"></textarea></div>
+    <div class="grid2">
+      <div class="field"><label>Pincode</label><input type="text" id="ePin"></div>
+      <div class="field"><label>Mobile (optional)</label><input type="text" id="eMob"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="eCancel">Cancel</button>
+      <button class="btn" id="eSave">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Clear confirm -->
+<div class="modal-overlay" id="clrOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title danger">🗑 Clear the queue</div>
+    <div class="del-msg" id="clrMsg">Remove all recipients from the queue? This cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="clrCancel">Cancel</button>
+      <button class="btn danger" id="clrConfirm">Clear all</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── theme ──
+(function(){const h=document.documentElement;if(localStorage.getItem('theme')==='light')h.classList.add('light');
+  const b=document.getElementById('themeToggle');const paint=()=>b.textContent=h.classList.contains('light')?'☀️':'🌙';paint();
+  b.onclick=()=>{h.classList.toggle('light');localStorage.setItem('theme',h.classList.contains('light')?'light':'dark');paint();renderPreview();};})();
+
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');clearTimeout(toast._t);toast._t=setTimeout(()=>t.className='toast',3800);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+const cclean=v=>String(v==null?'':v).trim();
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function fmtPin(raw){const d=cclean(raw).replace(/\D/g,'');if(d.length===6)return d.slice(0,3)+' '+d.slice(3);return cclean(raw);}
+
+const LS_KEY='sdo_addr_labels_queue';
+const state={queue:[],offices:[],obFilter:'',obSelected:new Set(),editId:null,skip:new Set()};
+
+// ── default geometry (mm) — from the measured precut sheet ──
+const DEF={pageW:211,pageH:298,lblW:65,lblH:48,colGap:3,rowGap:0,offX:0,offY:0};
+const COLS=3, ROWS=6, PER=COLS*ROWS;
+
+// ─────────────────────────────────────────────────────────────
+//  Tabs
+// ─────────────────────────────────────────────────────────────
+$$('.tab').forEach(t=>t.addEventListener('click',()=>{
+  $$('.tab').forEach(x=>x.classList.remove('active'));
+  $$('.tabpanel').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  $('#tab-'+t.dataset.tab).classList.add('active');
+}));
+
+// ─────────────────────────────────────────────────────────────
+//  Office address book (Karur Sub Division)
+// ─────────────────────────────────────────────────────────────
+function officeDesigAuto(name,type){
+  const n=(name||'').toLowerCase(), t=(type||'').toLowerCase();
+  if(/\bh\.?o\b|head\s*office/.test(n)||t==='ho')return 'The Postmaster';
+  if(/\bb\.?o\b/.test(n)||/^b/.test(t)&&t!=='bo/so')return 'The Branch Postmaster';
+  if(/\bs\.?o\b|sub\s*office/.test(n)||t==='so')return 'The Sub Post Master';
+  return 'The Sub Post Master';
+}
+function composeOfficeAddress(o){
+  const parts=[];
+  [o.address1,o.address2,o.address3].forEach(a=>{a=cclean(a);if(a&&!parts.some(p=>p.toLowerCase()===a.toLowerCase()))parts.push(a);});
+  let addr=parts.join(', ');
+  // District only (no Taluk line) — added just when it is not already in the address.
+  const dist=toTitle(cclean(o.city||o.district));
+  if(dist && !addr.toLowerCase().includes(dist.toLowerCase()))addr+=(addr?'\n':'')+dist+' District';
+  return addr.trim();
+}
+function toTitle(s){return cclean(s).toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());}
+function typeClass(name,type){
+  const n=(name||'').toLowerCase(),t=(type||'').toLowerCase();
+  if(/\bh\.?o\b/.test(n)||t==='ho')return 'ho';
+  if(/\bb\.?o\b/.test(n)||/^bp?o$/.test(t))return 'bo';
+  if(/\bs\.?o\b/.test(n)||t==='so')return 'so';
+  return 'other';
+}
+function typeLabel(cls){return cls==='ho'?'H.O':cls==='bo'?'B.O':cls==='so'?'S.O':'PO';}
+
+async function loadOffices(){
+  const box=$('#obList');
+  let offs=null;
+  const urls=['/api/offices-master','/data/office_master.json'];
+  for(const u of urls){
+    try{const res=await fetch(u,{cache:'no-store'});if(!res.ok)continue;const j=await res.json();offs=j.offices||j||[];if(offs.length)break;}
+    catch(e){/* next */}
+  }
+  if(!offs||!offs.length){box.innerHTML='<div class="empty" style="border:none">⚠️ Could not load the office master. You can still add recipients via Upload or Manual.</div>';return;}
+  // Clamp to Karur Sub Division scope — this app must NEVER show other sub-divisions.
+  if(window.KarurScope){
+    try{ await KarurScope.load(); }catch(e){}
+    offs=KarurScope.filterOffices(offs);
+  }else{
+    // Defensive inline fallback mirroring karur-scope.js's office-master rule.
+    offs=offs.filter(o=>{
+      const sd=cclean(o.sub_division!=null?o.sub_division:o.sub_division_name);
+      if(/karur/i.test(sd))return true;
+      if(sd===''||sd==='(Head / Admin)'){const dv=cclean(o.division!=null?o.division:o.division_name);return dv===''||/karur/i.test(dv);}
+      return false;
+    });
+  }
+  const seen=new Set();
+  state.offices=offs.map(o=>{
+    const name=cclean(o.office_name), type=cclean(o.office_type);
+    const cls=typeClass(name,type);
+    return {
+      id:cclean(o.office_id)||name, name, type, cls,
+      pincode:cclean(o.pincode), address:composeOfficeAddress(o),
+      desigAuto:officeDesigAuto(name,type)
+    };
+  }).filter(o=>{ if(!o.name)return false; const k=o.id+'|'+o.name; if(seen.has(k))return false; seen.add(k); return true; })
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  renderOfficeList();
+}
+function renderOfficeList(){
+  const q=state.obFilter.toLowerCase();
+  const list=state.offices.filter(o=>!q||(o.name+' '+o.pincode+' '+o.address).toLowerCase().includes(q));
+  const box=$('#obList');
+  if(!list.length){box.innerHTML='<div class="empty" style="border:none">No offices match your search.</div>';}
+  else{
+    box.innerHTML=list.map(o=>{
+      const on=state.obSelected.has(o.id);
+      return `<label class="obrow"><input type="checkbox" data-oid="${esc(o.id)}" ${on?'checked':''}>
+        <div style="flex:1;min-width:0">
+          <div class="obn">${esc(o.name)}</div>
+          <div class="obm">${o.pincode?'PIN '+esc(fmtPin(o.pincode)):'—'}${o.address?' · '+esc(o.address.replace(/\n/g,', ')):''}</div>
+        </div>
+        <span class="obtype ${o.cls}">${typeLabel(o.cls)}</span></label>`;
+    }).join('');
+  }
+  $('#obCount').innerHTML=`<b>${state.obSelected.size}</b> selected · ${list.length} shown`;
+}
+$('#obSearch').addEventListener('input',e=>{state.obFilter=e.target.value.trim();renderOfficeList();});
+$('#obList').addEventListener('change',e=>{
+  const cb=e.target.closest('input[data-oid]');if(!cb)return;
+  if(cb.checked)state.obSelected.add(cb.dataset.oid);else state.obSelected.delete(cb.dataset.oid);
+  $('#obCount').innerHTML=`<b>${state.obSelected.size}</b> selected · ${$$('#obList .obrow').length} shown`;
+});
+$('#obSelectAll').addEventListener('click',()=>{
+  const q=state.obFilter.toLowerCase();
+  state.offices.filter(o=>!q||(o.name+' '+o.pincode+' '+o.address).toLowerCase().includes(q)).forEach(o=>state.obSelected.add(o.id));
+  renderOfficeList();
+});
+$('#obClearSel').addEventListener('click',()=>{state.obSelected.clear();renderOfficeList();});
+$('#obAdd').addEventListener('click',()=>{
+  if(!state.obSelected.size){toast('Select one or more offices first.','err');return;}
+  const mode=$('#obDesig').value;
+  let n=0;
+  state.offices.forEach(o=>{
+    if(!state.obSelected.has(o.id))return;
+    const desig=mode==='auto'?o.desigAuto:mode;
+    state.queue.push({id:uid(),src:'office',desig,name:o.name,address:o.address,pincode:o.pincode,mobile:''});
+    n++;
+  });
+  state.obSelected.clear();renderOfficeList();
+  syncQueue();toast(`Added ${n} office label${n===1?'':'s'} to the queue.`,'ok');
+});
+
+// ─────────────────────────────────────────────────────────────
+//  Upload template
+// ─────────────────────────────────────────────────────────────
+function parseCSV(text){
+  text=text.replace(/^﻿/,'');const rows=[];let row=[],cell='',i=0,inQ=false;const n=text.length;
+  while(i<n){const c=text[i];
+    if(inQ){if(c==='"'){if(text[i+1]==='"'){cell+='"';i+=2;continue;}inQ=false;i++;continue;}cell+=c;i++;continue;}
+    if(c==='"'){inQ=true;i++;continue;}
+    if(c===','){row.push(cell);cell='';i++;continue;}
+    if(c==='\r'){i++;continue;}
+    if(c==='\n'){row.push(cell);rows.push(row);row=[];cell='';i++;continue;}
+    cell+=c;i++;}
+  row.push(cell);rows.push(row);return rows;
+}
+async function readRows(file){
+  const name=(file.name||'').toLowerCase();
+  if(name.endsWith('.xlsx')||name.endsWith('.xls')){
+    if(!window.XLSXLite)throw new Error('Excel engine unavailable — save as CSV and retry.');
+    return await XLSXLite.parse(await file.arrayBuffer());
+  }
+  return parseCSV(await file.text());
+}
+function findCol(header,res){for(let i=0;i<header.length;i++){const h=cclean(header[i]).toLowerCase();if(res.some(re=>re.test(h)))return i;}return -1;}
+async function handleUpload(file){
+  if(!file)return;
+  toast('Reading '+file.name+'…');
+  let rows;
+  try{rows=await readRows(file);}catch(e){toast('Could not read file: '+(e.message||''),'err');return;}
+  // Find header row (one that mentions Name & Address).
+  let h=-1;
+  for(let r=0;r<Math.min(rows.length,15);r++){
+    const low=rows[r].map(c=>cclean(c).toLowerCase());
+    if(low.some(c=>/^name$|customer|addressee/.test(c))&&low.some(c=>/address/.test(c))){h=r;break;}
+  }
+  if(h<0)h=0;
+  const header=rows[h];
+  const cName=findCol(header,[/^name$/,/customer/,/addressee/,/^name/]);
+  const cAddr=findCol(header,[/address/]);
+  const cPin =findCol(header,[/pin\s*code|pincode|^pin$/]);
+  const cMob =findCol(header,[/mobile|phone|contact/]);
+  if(cName<0&&cAddr<0){toast('Could not find Name / Address columns. Use the blank template.','err');return;}
+  let added=0;
+  for(let r=h+1;r<rows.length;r++){
+    const row=rows[r];
+    const name=cName>=0?cclean(row[cName]):'';
+    const addr=cAddr>=0?cclean(row[cAddr]).replace(/\s*\|\s*|\s*;\s*/g,'\n'):'';
+    const pin =cPin>=0?cclean(row[cPin]):'';
+    const mob =cMob>=0?cclean(row[cMob]):'';
+    if(!name&&!addr&&!pin)continue;
+    state.queue.push({id:uid(),src:'upload',desig:'',name,address:addr,pincode:pin,mobile:mob});
+    added++;
+  }
+  if(!added){toast('No recipient rows found in the file.','err');return;}
+  syncQueue();toast(`Imported ${added} recipient${added===1?'':'s'} from ${file.name}.`,'ok');
+  $$('.tab').forEach(x=>x.classList.remove('active'));$$('.tabpanel').forEach(x=>x.classList.remove('active'));
+}
+const drop=$('#drop'),fileInput=$('#fileInput');
+drop.addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',e=>{const f=e.target.files[0];fileInput.value='';handleUpload(f);});
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();if(ev==='dragleave'&&e.target!==drop)return;drop.classList.remove('drag');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)handleUpload(f);});
+
+function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+$('#dlTemplate').addEventListener('click',()=>{
+  if(!window.XLSXLite){toast('Excel engine unavailable.','err');return;}
+  const bytes=XLSXLite.build(['Sl. No','Name','Address','Pincode','Mobile No. (optional)'],
+    [['1','','','',''],['2','','','','']]);
+  dl(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Address Label Template.xlsx');
+  toast('Blank template downloaded ✓','ok');
+});
+
+// ─────────────────────────────────────────────────────────────
+//  Manual add
+// ─────────────────────────────────────────────────────────────
+$('#mAdd').addEventListener('click',()=>{
+  const name=cclean($('#mName').value), addr=cclean($('#mAddr').value), pin=cclean($('#mPin').value);
+  if(!name&&!addr){toast('Enter at least a name or an address.','err');return;}
+  state.queue.push({id:uid(),src:'manual',desig:cclean($('#mDesig').value),name,address:addr,pincode:pin,mobile:cclean($('#mMob').value)});
+  ['mDesig','mName','mAddr','mPin','mMob'].forEach(id=>$('#'+id).value='');
+  syncQueue();toast('Added to queue ✓','ok');$('#mName').focus();
+});
+
+// ─────────────────────────────────────────────────────────────
+//  Queue
+// ─────────────────────────────────────────────────────────────
+function copies(){return Math.max(1,Math.min(50,parseInt($('#cCopies').value)||1));}
+function totalLabels(){return state.queue.length*copies();}
+// Assign every label to a (sheet,cell). On the FIRST sheet, cells the user marked
+// as already-used (state.skip) are left empty; later sheets fill completely.
+function placements(){
+  const labels=expandedLabels();
+  const out=[]; let sheet=0, cell=0, li=0, guard=0;
+  while(li<labels.length && guard++<200000){
+    if(sheet===0 && state.skip.has(cell)){ cell++; if(cell>=PER){cell=0;sheet++;} continue; }
+    out.push({sheet,cell,label:labels[li]}); li++;
+    cell++; if(cell>=PER){cell=0;sheet++;}
+  }
+  return out;
+}
+function sheetsNeeded(){const p=placements();return p.length?p[p.length-1].sheet+1:0;}
+
+function syncQueue(){
+  renderQueue();renderPreview();persistSoft();
+  const rec=state.queue.length, lbl=totalLabels(), sh=sheetsNeeded();
+  $('#sRec').textContent=rec;$('#sLbl').textContent=lbl;$('#sSheet').textContent=sh;
+  $('#genPdf').disabled=!rec;
+  $('#queueSub').textContent=rec?`${rec} recipient${rec===1?'':'s'} · ${lbl} label${lbl===1?'':'s'} · ${sh} sheet${sh===1?'':'s'}`:'No recipients yet';
+}
+function renderQueue(){
+  const box=$('#qlist');
+  if(!state.queue.length){box.innerHTML='<div class="empty"><span class="ei">📭</span>No recipients yet.<br>Add offices, upload the template, or type one in.</div>';return;}
+  box.innerHTML='<div class="qlist">'+state.queue.map((r,i)=>`
+    <div class="qitem" data-id="${r.id}">
+      <div class="qidx">${i+1}</div>
+      <div class="qbody">
+        <div class="qname">${esc(r.name||'(no name)')}<span class="qsrc ${r.src}">${r.src}</span></div>
+        ${r.desig?`<div class="qdesig">${esc(r.desig)}</div>`:''}
+        ${r.address?`<div class="qaddr">${esc(r.address)}</div>`:''}
+        <div class="qmeta">${r.pincode?`PIN <b>${esc(fmtPin(r.pincode))}</b>`:'<span style="color:var(--rose)">no pincode</span>'}${r.mobile?` · 📱 ${esc(r.mobile)}`:''}</div>
+      </div>
+      <div class="qtools">
+        <button class="qt" data-up="${r.id}" title="Move up">▲</button>
+        <button class="qt" data-edit="${r.id}" title="Edit">✎</button>
+        <button class="qt del" data-del="${r.id}" title="Remove">🗑</button>
+      </div>
+    </div>`).join('')+'</div>';
+}
+$('#qlist').addEventListener('click',e=>{
+  const up=e.target.closest('[data-up]');if(up){const i=state.queue.findIndex(x=>x.id===up.dataset.up);if(i>0){[state.queue[i-1],state.queue[i]]=[state.queue[i],state.queue[i-1]];syncQueue();}return;}
+  const ed=e.target.closest('[data-edit]');if(ed){openEdit(ed.dataset.edit);return;}
+  const del=e.target.closest('[data-del]');if(del){state.queue=state.queue.filter(x=>x.id!==del.dataset.del);syncQueue();return;}
+});
+$('#qSort').addEventListener('click',()=>{state.queue.sort((a,b)=>(a.name||'').localeCompare(b.name||''));syncQueue();toast('Sorted A–Z','ok');});
+$('#qClear').addEventListener('click',()=>{if(!state.queue.length){toast('Queue already empty.');return;}$('#clrOverlay').classList.add('show');});
+$('#clrCancel').addEventListener('click',()=>$('#clrOverlay').classList.remove('show'));
+$('#clrConfirm').addEventListener('click',()=>{state.queue=[];$('#clrOverlay').classList.remove('show');syncQueue();toast('Queue cleared.','ok');});
+
+// edit modal
+function openEdit(id){const r=state.queue.find(x=>x.id===id);if(!r)return;state.editId=id;
+  $('#eDesig').value=r.desig||'';$('#eName').value=r.name||'';$('#eAddr').value=r.address||'';$('#ePin').value=r.pincode||'';$('#eMob').value=r.mobile||'';
+  $('#editOverlay').classList.add('show');}
+$('#eCancel').addEventListener('click',()=>$('#editOverlay').classList.remove('show'));
+$('#eSave').addEventListener('click',()=>{const r=state.queue.find(x=>x.id===state.editId);if(!r)return;
+  r.desig=cclean($('#eDesig').value);r.name=cclean($('#eName').value);r.address=cclean($('#eAddr').value);r.pincode=cclean($('#ePin').value);r.mobile=cclean($('#eMob').value);
+  $('#editOverlay').classList.remove('show');syncQueue();toast('Label updated ✓','ok');});
+
+// save / load (localStorage)
+function persistSoft(){try{localStorage.setItem(LS_KEY+'_auto',JSON.stringify(state.queue));}catch(e){}}
+$('#qSave').addEventListener('click',()=>{
+  if(!state.queue.length){toast('Nothing to save.','err');return;}
+  try{localStorage.setItem(LS_KEY,JSON.stringify(state.queue));toast(`Saved ${state.queue.length} recipients ✓`,'ok');}
+  catch(e){toast('Could not save.','err');}
+});
+$('#qLoad').addEventListener('click',()=>{
+  let raw=localStorage.getItem(LS_KEY)||localStorage.getItem(LS_KEY+'_auto');
+  if(!raw){toast('No saved list found.','err');return;}
+  try{const arr=JSON.parse(raw);if(!Array.isArray(arr)||!arr.length){toast('Saved list is empty.','err');return;}
+    state.queue=arr.map(r=>({id:uid(),src:r.src||'manual',desig:r.desig||'',name:r.name||'',address:r.address||'',pincode:r.pincode||'',mobile:r.mobile||''}));
+    syncQueue();toast(`Loaded ${state.queue.length} recipients ✓`,'ok');}
+  catch(e){toast('Could not load saved list.','err');}
+});
+
+// ─────────────────────────────────────────────────────────────
+//  Geometry
+// ─────────────────────────────────────────────────────────────
+function geom(){
+  const g={
+    pageW:+$('#gPageW').value||DEF.pageW, pageH:+$('#gPageH').value||DEF.pageH,
+    lblW:+$('#gLblW').value||DEF.lblW, lblH:+$('#gLblH').value||DEF.lblH,
+    colGap:parseFloat($('#gColGap').value)||0, rowGap:parseFloat($('#gRowGap').value)||0,
+    offX:parseFloat($('#gOffX').value)||0, offY:parseFloat($('#gOffY').value)||0
+  };
+  g.gridW=COLS*g.lblW+(COLS-1)*g.colGap;
+  g.gridH=ROWS*g.lblH+(ROWS-1)*g.rowGap;
+  g.marginX=(g.pageW-g.gridW)/2;
+  g.marginY=(g.pageH-g.gridH)/2;
+  return g;
+}
+function cellXY(g,index){ // index 0..17 within a sheet
+  const c=index%COLS, r=Math.floor(index/COLS);
+  return {x:g.marginX+c*(g.lblW+g.colGap)+g.offX, y:g.marginY+r*(g.lblH+g.rowGap)+g.offY};
+}
+function updateGridInfo(){
+  const g=geom();
+  $('#gridInfo').innerHTML=`side margin <b>${g.marginX.toFixed(1)}</b> · top margin <b>${g.marginY.toFixed(1)}</b> mm`;
+}
+['gPageW','gPageH','gLblW','gLblH','gColGap','gRowGap','gOffX','gOffY'].forEach(id=>$('#'+id).addEventListener('input',()=>{updateGridInfo();renderPreview();}));
+['cShowTo','cGuides','cRef'].forEach(id=>$('#'+id).addEventListener('input',renderPreview));
+$('#cCopies').addEventListener('input',syncQueue);
+
+// ── reuse a part-used sheet: 3×6 cell picker (first sheet only) ──
+function renderCellGrid(){
+  const g=$('#cellGrid');
+  g.innerHTML=Array.from({length:PER},(_,i)=>{
+    const used=state.skip.has(i);
+    return `<button type="button" class="cellbtn${used?' used':''}" data-cell="${i}" title="Label ${i+1}${used?' — already used (skipped)':' — free'}"><span>${i+1}</span></button>`;
+  }).join('');
+  const used=state.skip.size, free=PER-used;
+  $('#reuseInfo').innerHTML=used
+    ? `<b>${used}</b> label${used===1?'':'s'} marked used — the first sheet prints on the remaining <b>${free}</b>.`
+    : `All <b>18</b> labels free — full first sheet.`;
+}
+$('#cellGrid').addEventListener('click',e=>{const b=e.target.closest('[data-cell]');if(!b)return;
+  const i=+b.dataset.cell;if(state.skip.has(i))state.skip.delete(i);else state.skip.add(i);
+  renderCellGrid();syncQueue();});
+$('#cellReset').addEventListener('click',()=>{state.skip.clear();renderCellGrid();syncQueue();});
+$('#gReset').addEventListener('click',()=>{
+  $('#gPageW').value=DEF.pageW;$('#gPageH').value=DEF.pageH;$('#gLblW').value=DEF.lblW;$('#gLblH').value=DEF.lblH;
+  $('#gColGap').value=DEF.colGap;$('#gRowGap').value=DEF.rowGap;$('#gOffX').value=DEF.offX;$('#gOffY').value=DEF.offY;
+  updateGridInfo();renderPreview();toast('Geometry reset to sheet defaults.','ok');
+});
+
+// ─────────────────────────────────────────────────────────────
+//  Build the expanded label list (with copies & start offset)
+// ─────────────────────────────────────────────────────────────
+function expandedLabels(){
+  const out=[];const c=copies();
+  state.queue.forEach(r=>{for(let k=0;k<c;k++)out.push(r);});
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Live preview (true-to-scale HTML)
+// ─────────────────────────────────────────────────────────────
+const PXMM=3.3; // px per mm on screen
+function renderPreview(){
+  updateGridInfo();
+  const box=$('#preview');
+  const places=placements();
+  if(!places.length){box.innerHTML='<div class="pv-empty">Add recipients to see the sheet preview.</div>';$('#pvSub').textContent='True-to-scale — exactly what prints';return;}
+  const g=geom();
+  const showTo=$('#cShowTo').checked, guides=$('#cGuides').checked, reference=cclean($('#cRef').value);
+  const sheets=sheetsNeeded();
+  const bySheet={};places.forEach(pl=>{(bySheet[pl.sheet]=bySheet[pl.sheet]||[]).push(pl);});
+  let html='';
+  for(let s=0;s<sheets;s++){
+    html+=`<div class="sheet-block"><div class="sheet" style="width:${g.pageW*PXMM}px;height:${g.pageH*PXMM}px">`;
+    // faintly mark the used (skipped) cells on the first sheet
+    if(s===0&&state.skip.size)state.skip.forEach(ci=>{const p=cellXY(g,ci);
+      html+=`<div class="lbl skipcell" style="left:${p.x*PXMM}px;top:${p.y*PXMM}px;width:${g.lblW*PXMM}px;height:${g.lblH*PXMM}px"></div>`;});
+    (bySheet[s]||[]).forEach(pl=>{const p=cellXY(g,pl.cell);html+=labelHTML(pl.label,p,g,{showTo,guides,reference});});
+    html+=`</div><div class="sheet-tag">Sheet ${s+1} of ${sheets}${s===0&&state.skip.size?` · ${state.skip.size} used cell${state.skip.size===1?'':'s'} skipped`:''}</div></div>`;
+  }
+  box.innerHTML=html;
+  $('#pvSub').textContent=`${places.length} label${places.length===1?'':'s'} across ${sheets} sheet${sheets===1?'':'s'} · true-to-scale`;
+}
+function labelHTML(r,p,g,opt){
+  const pad=3.6;
+  const innerW=(g.lblW-2*pad)*PXMM;
+  const style=`left:${p.x*PXMM}px;top:${p.y*PXMM}px;width:${g.lblW*PXMM}px;height:${g.lblH*PXMM}px;padding:${pad*PXMM}px`;
+  const F=0.352778*PXMM; // px per pt at preview scale (true-to-print)
+  const fs=pt=>(pt*F).toFixed(1)+'px';
+  let inner='';
+  if(opt.reference)inner+=`<div class="l-ref" style="font-size:${fs(7.5)}">${esc(opt.reference)}</div>`;
+  if(opt.showTo)inner+=`<div class="l-to" style="font-size:${fs(9.5)}">To,</div>`;
+  if(r.desig)inner+=`<div class="l-desig" style="font-size:${fs(11)}">${esc(r.desig)}</div>`;
+  if(r.name)inner+=`<div class="l-name" style="font-size:${fs(12.5)}">${esc(r.name)}</div>`;
+  if(r.address)inner+=`<div class="l-addr" style="font-size:${fs(10.5)}">${esc(r.address)}</div>`;
+  if(r.pincode)inner+=`<div class="l-pin" style="font-size:${fs(11.5)}">PIN: ${esc(fmtPin(r.pincode))}</div>`;
+  if(r.mobile)inner+=`<div class="l-mob" style="font-size:${fs(9.5)}">Mobile: ${esc(r.mobile)}</div>`;
+  return `<div class="lbl${opt.guides?' guide':''}" style="${style}"><div style="width:${innerW}px">${inner}</div></div>`;
+}
+$('#pvRefresh').addEventListener('click',renderPreview);
+
+// ─────────────────────────────────────────────────────────────
+//  PDF generation (jsPDF, unit mm)
+// ─────────────────────────────────────────────────────────────
+const PDF_URLS=['https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'];
+let _pdfP;
+function loadScriptOnce(src){return new Promise((res,rej)=>{if([...document.scripts].some(s=>s.src===src))return res();
+  const s=document.createElement('script');s.src=src;s.onload=()=>res();s.onerror=()=>rej(new Error('Could not load the PDF engine (check your connection).'));document.head.appendChild(s);});}
+async function loadPdf(){if(_pdfP)return _pdfP;_pdfP=(async()=>{for(const u of PDF_URLS)await loadScriptOnce(u);})();return _pdfP;}
+
+const PT_MM=0.352778; // 1pt in mm
+function drawLabel(doc,r,p,g,opt){
+  const pad=3.6, innerW=g.lblW-2*pad, innerH=g.lblH-2*pad;
+  // Build segments {text, size(pt), bold, isBlock}
+  const segs=[];
+  const INK=[8,8,8]; // very dark, near-black — for every content line
+  if(opt.reference)segs.push({text:opt.reference,size:7.5,bold:true,color:[85,85,85],rule:true});
+  if(opt.showTo)segs.push({text:'To,',size:9.5,bold:true,color:INK});
+  if(r.desig)segs.push({text:r.desig,size:11,bold:true,color:INK});
+  if(r.name)segs.push({text:r.name,size:12.5,bold:true,color:INK});
+  if(r.address){String(r.address).split(/\r?\n/).forEach(ln=>{if(cclean(ln))segs.push({text:ln,size:10.5,bold:true,color:INK});});}
+  if(r.pincode)segs.push({text:'PIN: '+fmtPin(r.pincode),size:11.5,bold:true,color:INK});
+  if(r.mobile)segs.push({text:'Mobile: '+r.mobile,size:9.5,bold:true,color:INK});
+
+  // Wrap + measure; shrink font uniformly until the block fits the label height.
+  let scale=1;
+  for(let attempt=0;attempt<10;attempt++){
+    const lines=[];let total=0;
+    for(const sg of segs){
+      const size=sg.size*scale;
+      doc.setFont('helvetica',sg.bold?'bold':'normal');
+      doc.setFontSize(size);
+      const wrapped=doc.splitTextToSize(sg.text,innerW);
+      wrapped.forEach(w=>{const lh=size*PT_MM*1.16;lines.push({t:w,size,bold:sg.bold,color:sg.color,rule:sg.rule,lh});total+=lh;});
+      if(sg.rule)total+=1.1;
+    }
+    if(total<=innerH||scale<=0.6){ drawLines(doc,lines,p,pad,innerW,innerH,total); return; }
+    scale*=0.92;
+  }
+}
+function drawLines(doc,lines,p,pad,innerW,innerH,total){
+  let y=p.y+pad+Math.max(0,innerH-total)/2; // vertically center the block
+  const x=p.x+pad;
+  for(const L of lines){
+    doc.setFont('helvetica',L.bold?'bold':'normal');
+    doc.setFontSize(L.size);
+    const c=L.color||[20,20,20];doc.setTextColor(c[0],c[1],c[2]);
+    y+=L.lh;
+    doc.text(L.t,x,y-L.lh*0.28);
+    if(L.rule){doc.setDrawColor(150);doc.setLineWidth(0.15);doc.line(x,y+0.6,x+innerW,y+0.6);y+=1.1;}
+  }
+}
+async function generatePdf(btn){
+  const labels=expandedLabels();
+  if(!labels.length){toast('Add recipients first.','err');return;}
+  const old=btn.innerHTML;btn.disabled=true;btn.innerHTML='<span class="spin"></span> Building…';
+  try{
+    await loadPdf();const {jsPDF}=window.jspdf;
+    const g=geom();
+    const doc=new jsPDF({orientation:g.pageH>=g.pageW?'portrait':'landscape',unit:'mm',format:[g.pageW,g.pageH]});
+    const opt={showTo:$('#cShowTo').checked,guides:$('#cGuides').checked,reference:cclean($('#cRef').value)};
+    const orient=g.pageH>=g.pageW?'portrait':'landscape';
+    const places=placements();
+    let curSheet=0;
+    places.forEach(pl=>{
+      while(pl.sheet>curSheet){doc.addPage([g.pageW,g.pageH],orient);curSheet++;}
+      const p=cellXY(g,pl.cell);
+      if(opt.guides){doc.setDrawColor(150,160,210);doc.setLineWidth(0.2);doc.setLineDashPattern([1,1],0);doc.rect(p.x,p.y,g.lblW,g.lblH);doc.setLineDashPattern([],0);}
+      drawLabel(doc,pl.label,p,g,opt);
+    });
+    const stamp=new Date().toISOString().slice(0,10);
+    doc.save(`Address Labels (${labels.length}) ${stamp}.pdf`);
+    toast(`PDF ready — ${labels.length} labels on ${sheetsNeeded()} sheet(s) ✓`,'ok');
+  }catch(e){toast('Could not build PDF: '+(e.message||''),'err');}
+  finally{btn.disabled=false;btn.innerHTML=old;}
+}
+$('#genPdf').addEventListener('click',e=>generatePdf(e.currentTarget));
+
+// keyboard
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#editOverlay').classList.remove('show');$('#clrOverlay').classList.remove('show');}});
+[['editOverlay'],['clrOverlay']].forEach(([id])=>{const o=document.getElementById(id);o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');});});
+
+// ── init ──
+(function(){
+  // restore soft-persisted queue
+  try{const raw=localStorage.getItem(LS_KEY+'_auto');if(raw){const arr=JSON.parse(raw);if(Array.isArray(arr))state.queue=arr;}}catch(e){}
+  updateGridInfo();renderCellGrid();syncQueue();loadOffices();
+})();
+</script>
+</body>
+</html>
