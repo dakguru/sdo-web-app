@@ -260,6 +260,20 @@
   .modal .mbody{padding:18px 20px;max-height:66vh;overflow:auto}
   .modal .mfoot{padding:13px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;background:#fafbff}
   .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+  /* ===== Post-upload reconciliation ===== */
+  .modal.wide{max-width:940px}
+  .recon-sec{margin-bottom:20px}
+  .recon-h{font:800 13px/1.2 "Plus Jakarta Sans","Inter",sans-serif;display:flex;align-items:center;gap:9px;margin:2px 0 6px}
+  .recon-h .cnt{font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px}
+  .recon-h.join .cnt{background:#dcfce7;color:#166534}
+  .recon-h.leave .cnt{background:#ffe4e6;color:#9f1239}
+  .recon-note{font-size:12px;color:var(--muted);margin:0 0 10px}
+  .recon-row{display:grid;grid-template-columns:1.6fr 1.4fr .95fr;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+  .recon-row .who .nm{font-weight:700;font-size:13px;color:var(--ink)}
+  .recon-row .who .sub{font-size:11px;color:var(--muted);margin-top:1px}
+  .recon-row select,.recon-row input{width:100%;padding:8px 9px;border:1px solid var(--line);border-radius:8px;font:600 12.5px/1.2 "Inter",sans-serif;background:#fff;color:var(--ink)}
+  .recon-row input.bad{border-color:var(--rose)}
+  @media(max-width:640px){ .recon-row{grid-template-columns:1fr;gap:6px} }
   .fgrid .full{grid-column:1/-1}
   .field{display:flex;flex-direction:column;gap:4px}
   .field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
@@ -500,9 +514,22 @@ const EXIT_REASONS = {
   DS:['Voluntary Retirement','Superannuation','Resignation','Technical Resignation','Death while in Service','Invalid Retirement','Compulsory Retirement','Removal from Service','Dismissal','Termination During Probation'],
   GDS:['Resignation','Superannuation','Death','Discharge','Removal','Dismissal','Termination','Medical Invalidity','Appointment to Departmental Post','Appointment to Other Government Service'],
 };
+// A staff member missing from the new payroll may be a service-exit (above) OR a
+// transfer out (still in service, moved away). Both remove them from this directory.
+const TRANSFER_OUT = ['Transferred Out — Another Office','Transferred Out — Another Sub Division'];
+function leaverReasons(type){ return (EXIT_REASONS[type]||EXIT_REASONS.GDS).concat(TRANSFER_OUT); }
+// Reason a person is NEW in the payroll → the addition type it maps to.
+const JOIN_REASONS = [
+  {v:ADD_TYPE.NEW_RECRUIT,     l:'New Joining (fresh recruit)'},
+  {v:ADD_TYPE.TRANSFER_OFFICE, l:'Transfer In — from another office'},
+  {v:ADD_TYPE.TRANSFER_SUBDIV, l:'Transfer In — from another sub division'},
+  {v:ADD_TYPE.MISSING,         l:'Missing employee added (correction)'},
+  {v:ADD_TYPE.HISTORICAL,      l:'Historical entry (not a new join)'},
+];
 // Buckets for the Exit Summary report (maps a raw reason to a group).
 function exitGroup(reason){
   const r = clean(reason).toLowerCase();
+  if(/transferred out|transfer out/.test(r)) return 'Transfer Out';
   if(/death/.test(r)) return 'Death';
   if(/superannuation|retirement/.test(r)) return 'Retirement';
   if(/resignation/.test(r)) return 'Resignation';
@@ -1334,6 +1361,9 @@ async function saveData(){
   $('#saveBtn').disabled=true; $('#saveBtn').textContent='Saving…';
   // Per-type sync tallies feed the Upload Summary + audit trail.
   const summary={ month, files:[], updated:0, added:0, pendingExit:0, returned:0, duplicates:0, invalid:0, byType:{} };
+  // Records to reconcile after the sync: new joiners (classify join reason) and
+  // the staff now missing from the payroll (classify exit / transfer-out reason).
+  const reconJoiners=[], reconLeavers=[];
   try{
     if(hasEmp){
       let employees = S.employees.slice();
@@ -1371,6 +1401,7 @@ async function saveData(){
             if(clean(rec._joinedDeptDate)) pushTimeline(rec,'Joined Department','',rec._joinedDeptDate);
             pushTimeline(rec,'Added to Directory','Newly recruited · '+monthLabel(month));
             byKey.set(k, employees.length); employees.push(rec);
+            reconJoiners.push(rec);
             tally.added++;
           }
         }
@@ -1381,6 +1412,7 @@ async function saveData(){
           if(statusOf(e)===ST.ACTIVE){
             e._status=ST.PENDING; e._updatedDate=nowISO();
             pushTimeline(e,'Marked Pending Exit','Absent from '+monthLabel(month)+' payroll');
+            reconLeavers.push(e);
             tally.pendingExit++; summary.pendingExit++;
           }
         }
@@ -1434,7 +1466,7 @@ async function saveData(){
     reflectPending(); renderAll();
     announceUpdate();
     toast('Saved.');
-    if(hasLife) showUploadSummary(summary);
+    if(hasLife) showReconcile(summary, reconJoiners, reconLeavers);
   }catch(err){ toast('Save failed: '+err.message,true); }
   $('#saveBtn').textContent='💾 Save & update directory';
   reflectPending();
@@ -1444,10 +1476,10 @@ async function saveData(){
 function closeModal(){ const r=$('#modalRoot'); r.classList.remove('show'); r.innerHTML=''; }
 // Build & show a modal. `build(body)` fills the scrollable body; `foot` is an
 // array of button nodes for the footer.
-function openModal({title,subtitle,icon,build,foot}){
+function openModal({title,subtitle,icon,build,foot,wide}){
   const root=$('#modalRoot'); root.innerHTML='';
   const body=el('div',{class:'mbody'});
-  const modal=el('div',{class:'modal',onclick:ev=>ev.stopPropagation()},
+  const modal=el('div',{class:'modal'+(wide?' wide':''),onclick:ev=>ev.stopPropagation()},
     el('div',{class:'mhead'},
       el('span',{style:'font-size:20px'},icon||'📋'),
       el('div',null, el('div',{class:'mt'},title), subtitle?el('div',{class:'ms'},subtitle):null),
@@ -1513,6 +1545,87 @@ function showUploadSummary(sm){
         `${sm.pendingExit} staff are now Pending Exit Verification. Open them from the “Pending exit” status filter to record the reason for exit.`));
     },
     foot:[ el('button',{class:'btn',onclick:closeModal},'Done') ] });
+}
+
+/* ============ post-upload reconciliation (joiners & leavers) ============ */
+// After Smart Sync, walk the operator through the two change sets: staff NEW in
+// this payroll (pick the join reason) and staff MISSING from it (pick the exit /
+// transfer-out reason). Each carries an effective date; the reports update to match.
+function showReconcile(sm, joiners, leavers){
+  if(!joiners.length && !leavers.length){ showUploadSummary(sm); return; }
+  const rows=[];                       // {emp, kind, reason<select>, date<input>}
+  const whoCell=e=>el('div',{class:'who'},
+    el('div',{class:'nm'}, clean(e.Employee_name)||idOf(e)),
+    el('div',{class:'sub'}, [clean(e.Employee_id), clean(e.Office_desc)].filter(Boolean).join(' · ')||'—'));
+
+  function joinSection(){
+    const sec=el('div',{class:'recon-sec'});
+    sec.append(el('div',{class:'recon-h join'},'🟢 New in this payroll',el('span',{class:'cnt'},String(joiners.length))));
+    sec.append(el('div',{class:'recon-note'},'These Employee IDs were not in the directory before. Confirm how each one joined — only “New Joining” counts in the Newly Joined report.'));
+    for(const e of joiners){
+      const reason=selectEl(undefined, JOIN_REASONS, ADD_TYPE.NEW_RECRUIT);
+      const date=inputEl(undefined,{type:'text',placeholder:'dd-mm-yyyy',value:normDateStr(e._joinedDeptDate)||todayDMY()});
+      rows.push({emp:e,kind:'join',reason,date});
+      sec.append(el('div',{class:'recon-row'}, whoCell(e), reason, date));
+    }
+    return sec;
+  }
+  function leaveSection(){
+    const sec=el('div',{class:'recon-sec'});
+    sec.append(el('div',{class:'recon-h leave'},'🔴 Missing from this payroll',el('span',{class:'cnt'},String(leavers.length))));
+    sec.append(el('div',{class:'recon-note'},'These staff are absent from the new payroll. Record the exit / transfer-out reason and its effective date, or leave as “Keep pending” to decide later.'));
+    for(const e of leavers){
+      const opts=[{v:'',l:'— Keep pending (decide later) —'}, ...leaverReasons(e._type).map(r=>({v:r,l:r}))];
+      const reason=selectEl(undefined, opts, '');
+      const date=inputEl(undefined,{type:'text',placeholder:'dd-mm-yyyy',value:todayDMY()});
+      rows.push({emp:e,kind:'leave',reason,date});
+      sec.append(el('div',{class:'recon-row'}, whoCell(e), reason, date));
+    }
+    return sec;
+  }
+
+  openModal({ title:'Reconcile directory changes', subtitle:monthLabel(sm.month), icon:'🔄', wide:true,
+    build(body){
+      body.append(el('div',{class:'muted',style:'font-size:12.5px;margin-bottom:14px'},
+        `Payroll ${monthLabel(sm.month)} · ${sm.updated} updated · ${joiners.length} new · ${leavers.length} missing.`));
+      if(joiners.length) body.append(joinSection());
+      if(leavers.length) body.append(leaveSection());
+    },
+    foot:[
+      el('button',{class:'btn ghost',onclick:closeModal},'Skip — keep defaults'),
+      el('button',{class:'btn',onclick:()=>applyReconcile(rows)},'✔ Apply & save'),
+    ]});
+}
+async function applyReconcile(rows){
+  // Validate: any leaver with a chosen reason needs a valid effective date.
+  for(const r of rows){
+    if(r.kind==='leave' && clean(r.reason.value) && !parseAnyDate(clean(r.date.value))){
+      r.date.classList.add('bad'); toast('Enter a valid date (dd-mm-yyyy) for each exit.',true); r.date.focus(); return;
+    }
+  }
+  let joined=0, exited=0;
+  for(const r of rows){
+    const e=r.emp, reason=clean(r.reason.value), date=clean(r.date.value);
+    if(r.kind==='join'){
+      if(reason && reason!==e._additionType){
+        e._additionType=reason;
+        pushTimeline(e,'Join Reason Set', reason);
+      }
+      if(parseAnyDate(date)) e._joinedDeptDate=normDateStr(date);
+      e._updatedDate=nowISO(); joined++;
+    } else {
+      if(!reason) continue;                 // left as Keep pending
+      e._status=ST.EXITED; e._exitReason=reason; e._exitDate=normDateStr(date);
+      e._exitRemarks=clean(e._exitRemarks); e._updatedDate=nowISO();
+      pushTimeline(e,'Exit Recorded', reason, normDateStr(date));
+      exited++;
+    }
+  }
+  try{
+    await persistEmployees(['DS','GDS']);
+    closeModal(); renderAll();
+    toast(`Reconciled — ${joined} joiner${joined===1?'':'s'} classified, ${exited} exit${exited===1?'':'s'} recorded.`);
+  }catch(err){ toast('Save failed: '+err.message,true); }
 }
 
 /* ================= manual: Add Employee ================= */
