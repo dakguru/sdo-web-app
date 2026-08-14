@@ -432,7 +432,7 @@ function parseBalance(raw){
 }
 const MON={JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12};
 function parseTxnDate(raw){
-  // "31-MAR-26" or "31-MAR-2026" or "31/03/2026" or "2026-03-31" → iso yyyy-mm-dd
+  // "31-MAR-26" / "31-MAR-2026" / "31/03/2026" / "2026-03-31" / Excel serial → iso yyyy-mm-dd
   const s=cclean(raw);if(!s)return '';
   let m=s.match(/^(\d{1,2})[-\/ ]([A-Za-z]{3})[A-Za-z]*[-\/ ](\d{2,4})$/);
   if(m){let y=+m[3];if(y<100)y+=2000;const mo=MON[m[2].toUpperCase().slice(0,3)];if(mo)return `${y}-${String(mo).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`;}
@@ -440,6 +440,10 @@ function parseTxnDate(raw){
   if(m){let y=+m[3];if(y<100)y+=2000;return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`;}
   m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if(m)return `${m[1]}-${m[2]}-${m[3]}`;
+  // Excel serial date (dates come through .xlsx as a plain number). 20000≈1954, 80000≈2119.
+  m=s.match(/^(\d{4,6})(?:\.0+)?$/);
+  if(m){const n=+m[1];if(n>=20000&&n<=80000){const d=new Date(Date.UTC(1899,11,30)+n*86400000);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;}}
   return '';
 }
 function fmtTxnDate(iso){
@@ -466,12 +470,22 @@ const statusClass=s=>{const t=String(s||'').toLowerCase();
 // ─────────────────────────────────────────────────────────────
 //  Extract a clean report from raw rows
 // ─────────────────────────────────────────────────────────────
+// An account number in this report is 10, 11 or 12 digits (CIF IDs are 9). This
+// anchor is what makes extraction column-mismatch tolerant: we find the account
+// cell in each row and read every other field at its header-derived offset.
+const ACCT_RE=/^\d{10,12}$/;
+function acctCellIndex(row){
+  for(let i=0;i<row.length;i++){const v=cclean(row[i]).replace(/\s+/g,'');if(ACCT_RE.test(v))return i;}
+  return -1;
+}
+function isHeaderRow(low){return low.some(c=>/account\s*number/.test(c))&&low.some(c=>/balance\s*after/.test(c));}
+
 function extractReport(rows){
-  // locate header row: a row that has "account number" AND "balance after"
+  // locate the first header row (defines the column layout / relative offsets)
   let hIdx=-1,H=null;
   for(let r=0;r<rows.length;r++){
     const low=rows[r].map(c=>cclean(c).toLowerCase());
-    if(low.some(c=>/account\s*number/.test(c))&&low.some(c=>/balance\s*after/.test(c))){hIdx=r;H=low;break;}
+    if(isHeaderRow(low)){hIdx=r;H=low;break;}
   }
   if(hIdx<0)throw new Error('Could not find the report header (Account Number / Balance columns). Is this a Last Balance Report?');
   const findCol=(re,from=0)=>{for(let i=from;i<H.length;i++)if(re.test(H[i]))return i;return -1;};
@@ -487,8 +501,9 @@ function extractReport(rows){
   };
   if(col.status<0)col.status=findCol(/status/);
   if(col.name<0)col.name=findCol(/name/);
+  if(col.acct<0)throw new Error('Could not locate the Account Number column.');
 
-  // metadata: scan label rows anywhere
+  // metadata: scan label rows anywhere; also collect all pre-data header text
   const cellAfter=(r,re)=>{ // value = last non-empty cell after the labelled one
     const low=r.map(c=>cclean(c).toLowerCase());
     for(let i=0;i<low.length;i++)if(re.test(low[i])){
@@ -496,58 +511,65 @@ function extractReport(rows){
     }
     return '';
   };
-  let solId='',branchId='',schemeRaw='',schemeType='';
-  for(const r of rows){
-    if(!solId){const v=cellAfter(r,/^sol\s*id/);if(v)solId=v;}
-    if(!branchId){const v=cellAfter(r,/^branch\s*id/);if(v)branchId=v;}
-    if(!schemeRaw){const v=cellAfter(r,/^scheme\s*:?$|^scheme\s/);if(v&&!/type/.test(v.toLowerCase()))schemeRaw=v;}
-    for(const c of r){const m=cclean(c).match(/scheme\s*type\s*[-:]\s*([A-Za-z0-9]+)/i);if(m)schemeType=m[1];}
+  let solId='',branchId='',schemeCode='';const schemeText=[];
+  for(let r=0;r<rows.length;r++){
+    const row=rows[r];
+    if(!solId){const v=cellAfter(row,/^sol\s*id/);if(v)solId=v;}
+    if(!branchId){const v=cellAfter(row,/^branch\s*id/);if(v)branchId=v;}
+    if(!schemeCode){const v=cellAfter(row,/^scheme\s*:?$|^scheme\s/);if(v&&!/type/.test(v.toLowerCase()))schemeCode=v;}
+    // gather descriptive header text (scheme name / type lines) for a reliable guess
+    if(r<hIdx)for(const c of row){const t=cclean(c);if(t&&/[A-Za-z]/.test(t))schemeText.push(t);}
   }
 
-  // data rows: col0 is an integer S.No and the account cell is all digits
+  // data rows — anchor on the account cell so a shifted column layout still parses.
   const records=[];const boCount={};
+  const readAt=(row,headerCol,offset)=>{const i=headerCol<0?-1:headerCol+offset;return (i>=0&&i<row.length)?row[i]:'';};
   for(let r=hIdx+1;r<rows.length;r++){
     const row=rows[r];
-    const sno=cclean(row[0]);
-    const acctRaw=cclean(row[col.acct]);
-    if(!/^\d+$/.test(sno))continue;
-    if(!/^\d[\d\s]*$/.test(acctRaw))continue;
-    const acct=normAcct(acctRaw);
-    if(acct.length<8)continue; // skip stray numeric rows
-    const name=cclean(row[col.name]).replace(/\s+/g,' ');
+    const low=row.map(c=>cclean(c).toLowerCase());
+    if(isHeaderRow(low))continue;                    // repeated per-page header
+    const ai=acctCellIndex(row);
+    if(ai<0)continue;                                // no account number → not a data row
+    // require a small integer S.No somewhere before the account (guards against stray numbers)
+    let hasSno=false;for(let i=0;i<ai;i++){if(/^\d{1,5}$/.test(cclean(row[i]))){hasSno=true;break;}}
+    if(!hasSno)continue;
+    const offset=ai-col.acct;                        // correct any uniform column shift on this row
+    const acct=normAcct(row[ai]);
     const rec={
       acct,
-      name:name,
-      address:cleanAddress(col.addr>=0?row[col.addr]:''),
-      type:cclean(col.type>=0?row[col.type]:''),
-      balance:parseBalance(col.bal>=0?row[col.bal]:''),
-      date:parseTxnDate(col.date>=0?row[col.date]:''),
-      dateRaw:cclean(col.date>=0?row[col.date]:''),
-      status:cclean(col.status>=0?row[col.status]:'')||'—'
+      name:cclean(readAt(row,col.name,offset)).replace(/\s+/g,' '),
+      address:cleanAddress(readAt(row,col.addr,offset)),
+      type:cclean(readAt(row,col.type,offset)),
+      balance:parseBalance(readAt(row,col.bal,offset)),
+      date:parseTxnDate(readAt(row,col.date,offset)),
+      dateRaw:cclean(readAt(row,col.date,offset)),
+      status:cclean(readAt(row,col.status,offset))||'—'
     };
     records.push(rec);
-    const bo=cclean(col.bo>=0?row[col.bo]:'');
+    const bo=cclean(readAt(row,col.bo,offset));
     if(bo)boCount[bo]=(boCount[bo]||0)+1;
   }
   if(!records.length)throw new Error('No account rows were detected in this file.');
 
-  // office name: most common BO Name, else scheme office label
+  // office name: most common BO Name
   let officeName='';let best=0;
   for(const k in boCount)if(boCount[k]>best){best=boCount[k];officeName=k;}
 
-  // scheme guess
-  const guess=guessScheme(schemeType||schemeRaw);
+  // scheme guess — the exact "Scheme :" code first, then the descriptive header text.
+  const guess=guessScheme(schemeCode+' '+schemeText.join(' '));
   return {solId,branchId,officeName,scheme:guess,records};
 }
+// Guess the scheme from header text. Order matters: specific schemes are tested
+// before the generic Savings-Bank fallback so an SSA/RD/TD report is not read as SB.
 function guessScheme(raw){
-  const s=String(raw||'').toUpperCase();
-  if(/SSA|SUKANYA/.test(s))return 'SSA';
-  if(/RD|RECURRING/.test(s))return 'RD';
-  if(/SCSS|SR\s*CIT/.test(s))return 'SCSS';
-  if(/MIS|MONTHLY/.test(s))return 'MIS';
-  if(/PPF/.test(s))return 'PPF';
-  if(/TD|TIME/.test(s)){const m=s.match(/([1235])\s*Y/);return m?('TD'+m[1]):'TD1';}
-  if(/SB|SAVING/.test(s))return 'SB';
+  const s=' '+String(raw||'').toUpperCase()+' ';
+  if(/SUKANYA|\bSSA\b/.test(s))return 'SSA';
+  if(/RECURRING|\bRD\b/.test(s))return 'RD';
+  if(/SR\.?\s*CIT|SENIOR\s*CIT|\bSCSS\b/.test(s))return 'SCSS';
+  if(/MONTHLY\s*INCOME|\bMIS\b/.test(s))return 'MIS';
+  if(/PROVIDENT|\bPPF\b/.test(s))return 'PPF';
+  if(/TIME\s*DEPOSIT|\bTD\b|\bTDA?\b/.test(s)){const m=s.match(/([1235])\s*Y/);return m?('TD'+m[1]):'TD1';}
+  if(/SAVING|\bSB[A-Z]*\b/.test(s))return 'SB';
   return 'SB';
 }
 function statusCountsOf(records){
