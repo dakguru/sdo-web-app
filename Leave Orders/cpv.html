@@ -479,16 +479,11 @@ function acctCellIndex(row){
   return -1;
 }
 function isHeaderRow(low){return low.some(c=>/account\s*number/.test(c))&&low.some(c=>/balance\s*after/.test(c));}
-
-function extractReport(rows){
-  // locate the first header row (defines the column layout / relative offsets)
-  let hIdx=-1,H=null;
-  for(let r=0;r<rows.length;r++){
-    const low=rows[r].map(c=>cclean(c).toLowerCase());
-    if(isHeaderRow(low)){hIdx=r;H=low;break;}
-  }
-  if(hIdx<0)throw new Error('Could not find the report header (Account Number / Balance columns). Is this a Last Balance Report?');
-  const findCol=(re,from=0)=>{for(let i=from;i<H.length;i++)if(re.test(H[i]))return i;return -1;};
+// Build the column map from ONE header row. Column layout can differ from page to
+// page in the same report (extra/fewer blank columns), so we re-derive this from
+// whichever header actually precedes each data row.
+function makeColMap(low){
+  const findCol=(re,from=0)=>{for(let i=from;i<low.length;i++)if(re.test(low[i]))return i;return -1;};
   const col={
     acct:findCol(/account\s*number/),
     name:findCol(/cust1?\s*name|customer\s*name|^name$/),
@@ -496,12 +491,22 @@ function extractReport(rows){
     type:findCol(/account\s*type/),
     bal:findCol(/balance\s*after/),
     date:findCol(/date\s*of\s*last/),
+    // Status must not pick up the "Frzd/Discontd Reason" / "Pldgd/Frzd_frm" column.
     status:findCol(/^status$|^\s*status\s*$/),
     bo:findCol(/bo\s*name|branch\s*office\s*name/)
   };
-  if(col.status<0)col.status=findCol(/status/);
+  if(col.status<0)col.status=findCol(/^status/);
   if(col.name<0)col.name=findCol(/name/);
-  if(col.acct<0)throw new Error('Could not locate the Account Number column.');
+  return col;
+}
+
+function extractReport(rows){
+  // locate the first header row
+  let hIdx=-1;
+  for(let r=0;r<rows.length;r++){
+    if(isHeaderRow(rows[r].map(c=>cclean(c).toLowerCase()))){hIdx=r;break;}
+  }
+  if(hIdx<0)throw new Error('Could not find the report header (Account Number / Balance columns). Is this a Last Balance Report?');
 
   // metadata: scan label rows anywhere; also collect all pre-data header text
   const cellAfter=(r,re)=>{ // value = last non-empty cell after the labelled one
@@ -521,19 +526,22 @@ function extractReport(rows){
     if(r<hIdx)for(const c of row){const t=cclean(c);if(t&&/[A-Za-z]/.test(t))schemeText.push(t);}
   }
 
-  // data rows — anchor on the account cell so a shifted column layout still parses.
+  // data rows — use the column map from the nearest PRECEDING header (layout can
+  // change per page), and anchor on the account cell to absorb any per-row shift.
   const records=[];const boCount={};
   const readAt=(row,headerCol,offset)=>{const i=headerCol<0?-1:headerCol+offset;return (i>=0&&i<row.length)?row[i]:'';};
-  for(let r=hIdx+1;r<rows.length;r++){
+  let col=null;
+  for(let r=hIdx;r<rows.length;r++){
     const row=rows[r];
     const low=row.map(c=>cclean(c).toLowerCase());
-    if(isHeaderRow(low))continue;                    // repeated per-page header
+    if(isHeaderRow(low)){col=makeColMap(low);continue;}   // re-map columns for this page
+    if(!col||col.acct<0)continue;
     const ai=acctCellIndex(row);
-    if(ai<0)continue;                                // no account number → not a data row
+    if(ai<0)continue;                                       // no account number → not a data row
     // require a small integer S.No somewhere before the account (guards against stray numbers)
     let hasSno=false;for(let i=0;i<ai;i++){if(/^\d{1,5}$/.test(cclean(row[i]))){hasSno=true;break;}}
     if(!hasSno)continue;
-    const offset=ai-col.acct;                        // correct any uniform column shift on this row
+    const offset=ai-col.acct;                               // correct any residual per-row shift
     const acct=normAcct(row[ai]);
     const rec={
       acct,
