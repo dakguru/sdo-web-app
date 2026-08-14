@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <script src="/leave-orders/auth-guard.js"></script>
-<script src="supabase-sync.js"></script>
+<script src="supabase-sync.js?v=2-patch"></script>
 <title>High Value Memos — Karur Sub Division</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -308,6 +308,12 @@ const who=()=>{try{const u=window.AuthSession&&AuthSession.user();return u?(u.di
 function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');clearTimeout(toast._t);toast._t=setTimeout(()=>t.className='toast',3600);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function n(v){const x=parseInt(v,10);return isNaN(x)?0:x;}
+// Office identity for grouping — normalise the name (drop case/punctuation and a
+// trailing H.O/S.O/B.O) so entries typed slightly differently ("Karur H.O" vs
+// "Karur HO"), or saved with different office_ids, still merge into ONE office
+// group. This lets a single cover letter cite every entry of the same office.
+function normOfc(s){return String(s==null?'':s).toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(h\.?o|s\.?o|b\.?o|sso)$/,'');}
+function groupKeyOf(e){return normOfc(e.office_name)+'|'+String(e.office_kind||'');}
 // date helpers (stored ISO yyyy-mm-dd)
 function fmtDmy(iso){const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?`${m[3]}.${m[2]}.${m[1]}`:'';}
 function todayIso(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
@@ -416,9 +422,9 @@ function render(){
   }
   // group by office (id+name+kind)
   const groups={};
-  for(const e of list){const key=(e.office_id||'')+'|'+e.office_name+'|'+e.office_kind;(groups[key]=groups[key]||[]).push(e);}
+  for(const e of list){const key=groupKeyOf(e);(groups[key]=groups[key]||[]).push(e);}
   let html='';
-  Object.keys(groups).sort((a,b)=>a.split('|')[1].localeCompare(b.split('|')[1])).forEach(key=>{
+  Object.keys(groups).sort((a,b)=>String(groups[a][0].office_name||'').localeCompare(String(groups[b][0].office_name||''))).forEach(key=>{
     const rows=groups[key].slice().sort((a,b)=>String(a.date_of_receipt).localeCompare(b.date_of_receipt)||n(a.memo_from)-n(b.memo_from));
     const g=rows[0];
     const kindCls=g.office_kind==='HO'?'ho':'so';
@@ -553,7 +559,8 @@ async function despatchEntry(id,date){
   if(!date){toast('Pick the despatch date.','err');return;}
   if(state.busy)return;state.busy=true;
   try{
-    await SB.upsert('app_hmvm',{id,dispatch_date:date,status:'DESPATCHED',updated_at_ms:Date.now()});
+    const e=state.entries.find(x=>x.id===id);
+    await SB.upsert('app_hmvm',{...e,dispatch_date:date,status:'DESPATCHED',updated_at_ms:Date.now()});
     await reloadEntries();
     toast(`Despatched ✓ on ${fmtDmy(date)}.`,'ok');
   }catch(e){toast('Update failed: '+(e.message||''),'err');}
@@ -563,19 +570,19 @@ async function undispatchEntry(id){
   if(state.busy)return;state.busy=true;
   try{
     const e=state.entries.find(x=>x.id===id);
-    await SB.upsert('app_hmvm',{id,dispatch_date:null,status:e&&e.letter_date?'COMPLETED':'PENDING',updated_at_ms:Date.now()});
+    await SB.upsert('app_hmvm',{...e,dispatch_date:null,status:e&&e.letter_date?'COMPLETED':'PENDING',updated_at_ms:Date.now()});
     await reloadEntries();
     toast('Despatch undone.','ok');
   }catch(e){toast('Update failed: '+(e.message||''),'err');}
   finally{state.busy=false;}
 }
 async function markDespatched(key,date){
-  const rows=monthEntries().filter(e=>((e.office_id||'')+'|'+e.office_name+'|'+e.office_kind)===key&&e.status!=='DESPATCHED');
+  const rows=monthEntries().filter(e=>groupKeyOf(e)===key&&e.status!=='DESPATCHED');
   if(!date){toast('Pick the despatch date first.','err');return;}
   if(!rows.length){toast('Nothing left to despatch for this office.','err');return;}
   if(state.busy)return;state.busy=true;
   try{
-    for(const r of rows)await SB.upsert('app_hmvm',{id:r.id,dispatch_date:date,status:'DESPATCHED',updated_at_ms:Date.now()});
+    for(const r of rows)await SB.upsert('app_hmvm',{...r,dispatch_date:date,status:'DESPATCHED',updated_at_ms:Date.now()});
     await reloadEntries();
     toast(`Despatched ✓ — ${rows.length} ${rows.length===1?'entry':'entries'} on ${fmtDmy(date)}.`,'ok');
   }catch(e){toast('Update failed: '+(e.message||''),'err');}
@@ -614,7 +621,7 @@ function importRuns(doc,xmlStr){
 }
 
 async function generateLetter(key){
-  const rows=monthEntries().filter(e=>((e.office_id||'')+'|'+e.office_name+'|'+e.office_kind)===key&&e.status!=='DESPATCHED')
+  const rows=monthEntries().filter(e=>groupKeyOf(e)===key&&e.status!=='DESPATCHED')
     .sort((a,b)=>String(a.date_of_receipt).localeCompare(b.date_of_receipt)||n(a.memo_from)-n(b.memo_from));
   if(!rows.length){toast('Nothing to include for this office.','err');return;}
   const g=rows[0];
@@ -711,7 +718,7 @@ async function generateLetter(key){
 
   // mark included entries COMPLETED
   try{
-    for(const r of rows)if(r.status!=='COMPLETED')await SB.upsert('app_hmvm',{id:r.id,status:'COMPLETED',letter_no:LETTER_NO,letter_date:todayIso(),updated_at_ms:Date.now()});
+    for(const r of rows)if(r.status!=='COMPLETED')await SB.upsert('app_hmvm',{...r,status:'COMPLETED',letter_no:LETTER_NO,letter_date:todayIso(),updated_at_ms:Date.now()});
     await reloadEntries();
   }catch(e){/* draft already downloaded */}
   toast(`Cover letter generated ✓ — ${office}, ${grand} memos. Set the despatch date once posted.`,'ok');

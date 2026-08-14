@@ -45,6 +45,20 @@ const SB = (() => {
     return true;
   }
 
+  // Partial UPDATE of existing rows matched by `filter` (e.g. `id=eq.<uuid>`).
+  // Use this instead of upsert() when sending only some columns — upsert is an
+  // INSERT..ON CONFLICT and would fail NOT NULL checks on the omitted columns.
+  async function patch(table, filter, row) {
+    const url = `${REST}/${table}?${filter}`;
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: headers({ 'Prefer': 'return=minimal' }),
+      body: JSON.stringify(row),
+    });
+    if (!res.ok) throw new Error(`SB.patch ${table}: ${res.status} ${await res.text()}`);
+    return true;
+  }
+
   // ── Cross-app dataset codec ─────────────────────────────────────────
   // The Android app stores each dataset as strict typed entities (camelCase,
   // ISO-free dd-mm-yyyy dates, TEL as a list). The web app works in its own
@@ -222,5 +236,5 @@ const SB = (() => {
   }
   async function init() { if (_ready) return true; try { const ok = await ping(); _ready = ok; if(ok) console.log('%c☁ Supabase connected','color:#4ade80;font-weight:bold'); else console.warn('⚠ Supabase unreachable'); _updateBadge(ok); return ok; } catch(e) { _ready=false; _updateBadge(false); return false; } }
 
-  return { init, ping, get ready(){return _ready}, select, upsert, del, getDataset, putDataset, getAllDatasets, getPhoneEdits, putPhoneEdit, getUsers, getNotes, getFavorites, getActivity, getMessages, postMessage, SUPABASE_URL, REST };
+  return { init, ping, get ready(){return _ready}, select, upsert, patch, del, getDataset, putDataset, getAllDatasets, getPhoneEdits, putPhoneEdit, getUsers, getNotes, getFavorites, getActivity, getMessages, postMessage, SUPABASE_URL, REST };
 })();

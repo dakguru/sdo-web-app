@@ -65,6 +65,20 @@ const SB = (() => {
     return true;
   }
 
+  // Partial UPDATE of existing rows matched by `filter` (e.g. `id=eq.<uuid>`).
+  // Use this instead of upsert() when sending only some columns — upsert is an
+  // INSERT..ON CONFLICT and would fail NOT NULL checks on the omitted columns.
+  async function patch(table, filter, row) {
+    const url = `${REST}/${table}?${filter}`;
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: headers({ 'Prefer': 'return=minimal' }),
+      body: JSON.stringify(row),
+    });
+    if (!res.ok) throw new Error(`SB.patch ${table}: ${res.status} ${await res.text()}`);
+    return true;
+  }
+
   // ── Dataset helpers (app_datasets table) ────────────────────
   // The Android app stores whole-dataset snapshots in `app_datasets`:
   //   type:          'DS' | 'GDS' | 'OUT' | 'TEL' | 'OFFICES' | 'ARR'  (primary key)
@@ -216,7 +230,7 @@ const SB = (() => {
     get ready() { return _ready; },
 
     // Low-level
-    select, upsert, del,
+    select, upsert, patch, del,
 
     // Datasets (app_datasets)
     getDataset, putDataset, getAllDatasets,
