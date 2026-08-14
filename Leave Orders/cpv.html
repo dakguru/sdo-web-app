@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="/leave-orders/auth-guard.js"></script>
+<script src="supabase-sync.js"></script>
+<script src="/xlsx-lite.js"></script>
+<title>Cent Percent Verification — Karur Sub Division</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep:#0a0e1a; --glass-bg:rgba(255,255,255,0.06); --glass-bg-hover:rgba(255,255,255,0.12);
+  --glass-border:rgba(255,255,255,0.12); --glass-border-hover:rgba(255,255,255,0.25);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.25); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.35),0 0 0 1px rgba(255,255,255,0.15);
+  --glass-blur:20px; --text-primary:#f1f5f9; --text-secondary:rgba(241,245,249,0.7); --text-muted:rgba(241,245,249,0.45);
+  --teal:#2dd4bf; --teal2:#14b8a6; --cyan:#22d3ee; --blue:#60a5fa; --indigo:#818cf8; --violet:#a78bfa;
+  --em:#34d399; --gold:#fbbf24; --gold2:#f59e0b; --rose:#fb7185; --orange:#fb923c;
+  --radius-xl:24px; --radius-lg:18px; --radius-md:14px;
+}
+html.light{
+  --bg-deep:#f0f2f7; --glass-bg:rgba(255,255,255,0.72); --glass-bg-hover:rgba(255,255,255,0.95);
+  --glass-border:rgba(0,0,0,0.08); --glass-border-hover:rgba(0,0,0,0.15);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.08); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.12),0 0 0 1px rgba(0,0,0,0.06);
+  --text-primary:#0f172a; --text-secondary:rgba(15,23,42,0.7); --text-muted:rgba(15,23,42,0.45);
+  --teal:#0d9488; --teal2:#0f766e; --cyan:#0891b2; --blue:#2563eb; --indigo:#4f46e5; --violet:#7c3aed;
+  --em:#059669; --gold:#d97706; --gold2:#b45309; --rose:#e11d48; --orange:#ea580c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-deep);color:var(--text-primary);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s,color .4s}
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(45,212,191,0.15),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(34,211,238,0.12),transparent 65%),
+  radial-gradient(ellipse 600px 420px at 55% 92%,rgba(129,140,248,0.10),transparent 60%),
+  linear-gradient(180deg,#0a0e1a,#111827 55%,#0f1729)}
+html.light .bg-mesh{background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(13,148,136,0.08),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(8,145,178,0.06),transparent 65%),
+  linear-gradient(180deg,#f0f2f7,#e8ecf4 55%,#f0f2f7)}
+
+.page-wrap{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:26px 22px 70px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.back-link{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--text-secondary);font-weight:600;font-size:13.5px;
+  padding:9px 15px;border-radius:999px;background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(var(--glass-blur));transition:all .3s;cursor:pointer}
+.back-link:hover{background:var(--glass-bg-hover);color:var(--text-primary);transform:translateX(-2px)}
+.theme-toggle{width:44px;height:44px;border-radius:50%;border:1px solid var(--glass-border);cursor:pointer;background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));display:grid;place-items:center;font-size:20px;color:var(--text-primary);transition:all .3s}
+.theme-toggle:hover{background:var(--glass-bg-hover);transform:scale(1.08) rotate(12deg)}
+
+.hero{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden;backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow)}
+.hero::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal2),var(--teal),var(--cyan))}
+.hero-eyebrow{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-muted)}
+.hero-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:800;margin:6px 0 4px;
+  background:linear-gradient(135deg,var(--teal),var(--cyan) 55%,var(--indigo) 95%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:13.5px;color:var(--text-secondary);line-height:1.6;max-width:820px}
+
+/* upload */
+.drop{margin-top:18px;border:2px dashed var(--glass-border);border-radius:var(--radius-lg);padding:26px;text-align:center;background:rgba(255,255,255,.02);transition:all .25s;cursor:pointer}
+.drop.drag{border-color:var(--teal);background:rgba(45,212,191,.08)}
+.drop .di{font-size:38px;display:block;margin-bottom:8px;opacity:.85}
+.drop b{color:var(--text-primary)}
+.drop small{display:block;color:var(--text-muted);font-size:12px;margin-top:6px}
+
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+@media(max-width:820px){.summary{grid-template-columns:repeat(2,1fr)}}
+.st{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:16px 16px 14px;backdrop-filter:blur(var(--glass-blur));position:relative;overflow:hidden;transition:transform .3s}
+.st:hover{transform:translateY(-3px)}
+.st::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px}
+.st.s-off::before{background:linear-gradient(180deg,var(--teal),var(--teal2))}
+.st.s-sch::before{background:linear-gradient(180deg,var(--cyan),var(--blue))}
+.st.s-acc::before{background:linear-gradient(180deg,var(--indigo),var(--violet))}
+.st.s-bal::before{background:linear-gradient(180deg,var(--gold),var(--gold2))}
+.st .n{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:28px;font-weight:900;line-height:1}
+.st.s-off .n{color:var(--teal)} .st.s-sch .n{color:var(--cyan)} .st.s-acc .n{color:var(--indigo)} .st.s-bal .n{color:var(--gold)}
+.st .l{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-top:8px;color:var(--text-secondary)}
+
+.section-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin:26px 0 14px;display:flex;align-items:center;gap:10px}
+.section-title::before{content:'';width:4px;height:16px;border-radius:4px;background:linear-gradient(180deg,var(--teal),var(--cyan))}
+
+/* office group */
+.office-group{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);margin-bottom:16px;backdrop-filter:blur(var(--glass-blur));overflow:hidden;box-shadow:var(--glass-shadow);animation:pop .35s both}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.og-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:15px 18px;border-bottom:1px solid var(--glass-border);background:rgba(255,255,255,.02)}
+.og-badge{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:18px;color:#fff;flex-shrink:0;background:linear-gradient(135deg,var(--teal),var(--cyan));box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.og-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:16px;line-height:1.25}
+.og-sub{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+.og-sub b{color:var(--text-secondary)}
+.scheme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;padding:16px 18px}
+.scheme-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:14px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.scheme-card:hover{background:var(--glass-bg-hover);border-color:var(--glass-border-hover);transform:translateY(-2px);box-shadow:var(--glass-shadow-hover)}
+.scheme-card .sc-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.sc-chip{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:12px;letter-spacing:.4px;padding:4px 10px;border-radius:8px;background:rgba(45,212,191,.16);color:var(--teal);border:1px solid rgba(45,212,191,.28)}
+.sc-count{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:900;font-size:22px;color:var(--text-primary)}
+.sc-label{font-size:12px;color:var(--text-secondary);font-weight:600;margin-bottom:10px}
+.sc-stats{display:flex;flex-wrap:wrap;gap:5px}
+.pill{font-size:10px;font-weight:700;letter-spacing:.2px;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.pill.active{background:rgba(52,211,153,.16);color:var(--em)}
+.pill.dormant{background:rgba(251,191,36,.16);color:var(--gold)}
+.pill.freezed{background:rgba(251,113,133,.16);color:var(--rose)}
+.pill.other{background:rgba(129,140,248,.16);color:var(--indigo)}
+.sc-tools{position:absolute;top:8px;right:8px;display:flex;gap:5px;opacity:0;transition:opacity .2s}
+.scheme-card:hover .sc-tools{opacity:1}
+.sc-tool{width:24px;height:24px;border:none;border-radius:7px;cursor:pointer;font-size:12px;display:grid;place-items:center;transition:all .2s}
+.sc-edit{background:rgba(96,165,250,.16);color:var(--blue)}
+.sc-edit:hover{background:rgba(96,165,250,.32)}
+.sc-del{background:rgba(251,113,133,.14);color:var(--rose)}
+.sc-del:hover{background:rgba(251,113,133,.3)}
+.sc-foot{margin-top:9px;font-size:10px;color:var(--text-muted);font-weight:600}
+
+/* toolbar / filters */
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px}
+.search{flex:1;min-width:200px;display:flex;align-items:center;gap:10px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:999px;padding:10px 18px;backdrop-filter:blur(var(--glass-blur))}
+.search input{flex:1;background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:14px}
+.search input::placeholder{color:var(--text-muted)}
+.btn{border:none;border-radius:12px;padding:11px 18px;font-weight:700;font-size:13px;cursor:pointer;color:#fff;font-family:inherit;
+  background:linear-gradient(135deg,var(--teal2),var(--teal));transition:all .25s;box-shadow:0 4px 16px rgba(45,212,191,.28);display:inline-flex;align-items:center;gap:8px}
+.btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:var(--glass-bg);color:var(--text-secondary);border:1px solid var(--glass-border);box-shadow:none;backdrop-filter:blur(var(--glass-blur))}
+.btn.ghost:hover{background:var(--glass-bg-hover);color:var(--text-primary)}
+.btn.gold{background:linear-gradient(135deg,var(--gold2),var(--gold));box-shadow:0 4px 16px rgba(251,191,36,.28)}
+.btn.blue{background:linear-gradient(135deg,#3b82f6,var(--blue));box-shadow:0 4px 16px rgba(96,165,250,.28)}
+.btn.sm{padding:8px 13px;font-size:12px;border-radius:10px}
+.btn.danger{background:linear-gradient(135deg,#f43f5e,var(--rose));box-shadow:0 4px 16px rgba(251,113,133,.28)}
+
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:16px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:14px 16px;backdrop-filter:blur(var(--glass-blur))}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted)}
+.fg input,.fg select{background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:10px;padding:8px 11px;font-family:inherit;font-size:13px;font-weight:600;outline:none;transition:border-color .2s}
+html.light .fg input,html.light .fg select{background:#fff}
+.fg input:focus,.fg select:focus{border-color:var(--teal)}
+.fg input[type=date]{min-width:132px}
+.fg input.amt{width:118px}
+.fg.grow{flex:1;min-width:150px}
+.filter-spacer{flex:1}
+.fcount{font-size:12px;color:var(--text-muted);font-weight:600;white-space:nowrap}
+.fcount b{color:var(--teal)}
+
+.detail-head{display:flex;flex-wrap:wrap;gap:14px;align-items:center;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:16px;backdrop-filter:blur(var(--glass-blur))}
+.dh-badge{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:15px;color:#fff;background:linear-gradient(135deg,var(--teal),var(--cyan));flex-shrink:0}
+.dh-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:18px;line-height:1.2}
+.dh-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.meta-chip{font-size:11px;font-weight:700;color:var(--text-secondary);background:rgba(255,255,255,.05);border:1px solid var(--glass-border);padding:4px 10px;border-radius:999px}
+.meta-chip b{color:var(--text-primary)}
+.dh-spacer{flex:1}
+
+/* preview / edit bar */
+.preview-bar{background:linear-gradient(135deg,rgba(45,212,191,.10),rgba(34,211,238,.06));border:1px solid rgba(45,212,191,.35);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:16px;backdrop-filter:blur(var(--glass-blur))}
+.preview-bar .pv-tag{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:12.5px;letter-spacing:.3px;color:var(--teal);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.preview-bar .pv-fields{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:12px}
+.preview-bar .pv-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+
+.tbl-wrap{overflow-x:auto;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);backdrop-filter:blur(var(--glass-blur))}
+table.reg{width:100%;border-collapse:collapse;font-size:13px;min-width:940px}
+table.reg th{text-align:left;font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);padding:11px 12px;border-bottom:1px solid var(--glass-border);white-space:nowrap;position:sticky;top:0;background:var(--bg-deep);z-index:1}
+html.light table.reg th{background:#eef1f6}
+table.reg td{padding:10px 12px;border-bottom:1px solid var(--glass-border);color:var(--text-secondary);vertical-align:top}
+table.reg tr:last-child td{border-bottom:none}
+table.reg tbody tr:hover td{background:rgba(255,255,255,.03)}
+.mono{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text-primary);white-space:nowrap}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--text-primary);white-space:nowrap}
+.nm{color:var(--text-primary);font-weight:600}
+.addr{max-width:270px;font-size:12px;line-height:1.4}
+.status{font-size:10px;font-weight:800;letter-spacing:.3px;padding:4px 9px;border-radius:999px;display:inline-block;white-space:nowrap}
+.status.active{background:rgba(52,211,153,.16);color:var(--em)}
+.status.dormant{background:rgba(251,191,36,.16);color:var(--gold)}
+.status.freezed,.status.frozen{background:rgba(251,113,133,.16);color:var(--rose)}
+.status.other{background:rgba(129,140,248,.16);color:var(--indigo)}
+tr.totrow td{background:rgba(45,212,191,.08);font-weight:800;color:var(--text-primary);border-top:2px solid var(--glass-border)}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:14px;background:var(--glass-bg);border:1px dashed var(--glass-border);border-radius:var(--radius-lg)}
+.empty .ei{font-size:44px;display:block;margin-bottom:12px;opacity:.5}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,7,15,.62);backdrop-filter:blur(6px)}
+.modal-overlay.show{display:flex;animation:fade .2s both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{width:min(620px,100%);max-height:92vh;overflow-y:auto;background:var(--bg-deep);border:1px solid var(--glass-border-hover);border-radius:var(--radius-xl);padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.5);animation:rise .25s both}
+html.light .modal{background:#fff}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.modal-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:19px;display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.modal-title.danger{color:var(--rose)}
+.modal-desc{font-size:12.5px;color:var(--text-muted);margin-bottom:18px;line-height:1.5}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+.field{margin-bottom:13px;display:flex;flex-direction:column;gap:6px}
+.field label{font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--text-muted)}
+.field input,.field select{width:100%;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:11px;padding:11px 13px;font-family:inherit;font-size:13.5px;font-weight:600;outline:none;transition:border-color .2s}
+html.light .field input,html.light .field select{background:#f7f8fb}
+.field input:focus,.field select:focus{border-color:var(--teal)}
+.mini-stats{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 14px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+.del-msg{font-size:13.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:20px}
+.del-msg b{color:var(--text-primary)}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#111827;color:#fff;padding:13px 22px;border-radius:12px;font-size:13px;font-weight:600;z-index:400;box-shadow:0 12px 40px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);transition:all .35s;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(52,211,153,.4)} .toast.err{border-color:rgba(251,113,133,.5)}
+
+.footer{text-align:center;padding:34px 20px 8px;color:var(--text-muted);font-size:12px}
+.footer .credit{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:700;margin-top:5px;background:linear-gradient(135deg,var(--teal),var(--cyan));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+
+<div class="page-wrap">
+  <div class="topbar">
+    <a href="/" class="back-link">← Back to Home</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+  </div>
+
+  <div class="hero">
+    <div class="hero-eyebrow">Karur Sub Division · Department of Posts</div>
+    <div class="hero-title">✅ Cent Percent Verification</div>
+    <div class="hero-sub">Upload a messy <b>Last Balance Report</b> (CSV / Excel) for any office and scheme — the app cleans it into a tidy account list, computes status-wise counts, and stores it office-wise &amp; scheme-wise for later. Filter by date, account type, status or balance, and download a clean PDF or Excel.</div>
+    <div class="drop" id="drop">
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,text/csv" style="display:none">
+      <span class="di">📥</span>
+      <b>Drop a CSV / Excel file here, or click to choose</b>
+      <small>Accepts the SO/BO "Last Balance Report" export — SB, RD, SSA, TD (1/2/3/5 yr) &amp; more</small>
+    </div>
+  </div>
+
+  <!-- ============ DASHBOARD VIEW ============ -->
+  <div id="dashView">
+    <div class="summary">
+      <div class="st s-off"><div class="n" id="sOff">—</div><div class="l">Offices</div></div>
+      <div class="st s-sch"><div class="n" id="sSch">—</div><div class="l">Scheme Lists</div></div>
+      <div class="st s-acc"><div class="n" id="sAcc">—</div><div class="l">Total Accounts</div></div>
+      <div class="st s-bal"><div class="n" id="sBal">—</div><div class="l">Total Balance ₹</div></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search"><span>🔍</span><input id="dq" type="text" placeholder="Search office, SOL ID, branch…" autocomplete="off"></div>
+      <button class="btn ghost sm" id="refreshBtn">↻ Refresh</button>
+    </div>
+
+    <div class="section-title">Stored Lists — Office wise → Scheme wise</div>
+    <div id="dashboard"></div>
+  </div>
+
+  <!-- ============ DETAIL VIEW ============ -->
+  <div id="detailView" class="hidden">
+    <button class="back-link" id="backToDash" style="margin-bottom:16px">← Back to dashboard</button>
+
+    <!-- Preview / edit bar (shown only while previewing an upload or editing a stored list) -->
+    <div class="preview-bar hidden" id="previewBar">
+      <div class="pv-tag" id="pvTag">👁 Preview — not stored yet</div>
+      <div class="pv-fields">
+        <div class="fg grow"><label>Office name</label><input type="text" id="pvOffice" placeholder="Office name"></div>
+        <div class="fg"><label>SOL ID</label><input type="text" id="pvSol" placeholder="SOL ID"></div>
+        <div class="fg"><label>Branch ID</label><input type="text" id="pvBranch" placeholder="Branch ID"></div>
+        <div class="fg"><label>Scheme</label><select id="pvScheme"></select></div>
+      </div>
+      <div class="pv-actions">
+        <button class="btn ghost" id="pvCancel">✕ Cancel</button>
+        <button class="btn" id="pvStore">💾 Store list</button>
+      </div>
+    </div>
+
+    <div class="detail-head">
+      <div class="dh-badge" id="dhBadge">SB</div>
+      <div>
+        <div class="dh-title" id="dhTitle">—</div>
+        <div class="dh-meta" id="dhMeta"></div>
+      </div>
+      <div class="dh-spacer"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn gold sm" id="pdfBtn">📄 PDF</button>
+        <button class="btn blue sm" id="xlsBtn">⬇ Excel</button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="fg grow">
+        <label>Search</label>
+        <input type="text" id="fSearch" placeholder="Account no / name / address">
+      </div>
+      <div class="fg">
+        <label>Account type</label>
+        <select id="fType"><option value="">All types</option></select>
+      </div>
+      <div class="fg">
+        <label>Status</label>
+        <select id="fStatus"><option value="">All statuses</option></select>
+      </div>
+      <div class="fg">
+        <label>Last txn from</label>
+        <input type="date" id="fDateFrom">
+      </div>
+      <div class="fg">
+        <label>Last txn to</label>
+        <input type="date" id="fDateTo">
+      </div>
+      <div class="fg">
+        <label>Balance</label>
+        <select id="fBalMode">
+          <option value="">Any</option>
+          <option value="below">Below</option>
+          <option value="above">Above / equal</option>
+          <option value="between">Between</option>
+        </select>
+      </div>
+      <div class="fg" id="fBalWrap1"><label>Amount ₹</label><input type="number" class="amt" id="fBal1" placeholder="0" min="0"></div>
+      <div class="fg hidden" id="fBalWrap2"><label>and ₹</label><input type="number" class="amt" id="fBal2" placeholder="0" min="0"></div>
+      <div class="filter-spacer"></div>
+      <div class="fg" style="align-items:flex-end">
+        <button class="btn ghost sm" id="clearFilters">✕ Clear</button>
+      </div>
+    </div>
+    <div style="margin-bottom:12px"><span class="fcount" id="filterCount">—</span></div>
+
+    <div class="tbl-wrap"><table class="reg" id="detailTable"></table></div>
+  </div>
+
+  <div class="footer">
+    Cent Percent Verification · Karur Sub Division
+    <div class="credit">Designed by Arun Selvaraj · Karur Division</div>
+  </div>
+</div>
+
+<!-- Upload confirm modal -->
+<div class="modal-overlay" id="dupOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title">📋 A similar list already exists</div>
+    <div class="del-msg" id="dupMsg"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="dupCancel">Cancel</button>
+      <button class="btn gold" id="dupKeep">Keep both</button>
+      <button class="btn" id="dupReplace">Replace existing</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm -->
+<div class="modal-overlay" id="delOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title danger">🗑 Delete stored list</div>
+    <div class="del-msg" id="delMsg"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="delCancel">Cancel</button>
+      <button class="btn danger" id="delConfirm">Delete permanently</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── theme ──
+(function(){const h=document.documentElement;if(localStorage.getItem('theme')==='light')h.classList.add('light');
+  const b=document.getElementById('themeToggle');const paint=()=>b.textContent=h.classList.contains('light')?'☀️':'🌙';paint();
+  b.onclick=()=>{h.classList.toggle('light');localStorage.setItem('theme',h.classList.contains('light')?'light':'dark');paint();};})();
+
+const $=s=>document.querySelector(s);
+const who=()=>{try{const u=window.AuthSession&&AuthSession.user();return u?(u.displayName||u.username):'web';}catch{return 'web';}};
+function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');clearTimeout(toast._t);toast._t=setTimeout(()=>t.className='toast',3800);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+// ── scheme catalogue ──
+const SCHEMES=[
+  {code:'SB',label:'Savings Bank (SB)'},
+  {code:'RD',label:'Recurring Deposit (RD)'},
+  {code:'SSA',label:'Sukanya Samriddhi (SSA)'},
+  {code:'TD1',label:'Time Deposit — 1 Year'},
+  {code:'TD2',label:'Time Deposit — 2 Year'},
+  {code:'TD3',label:'Time Deposit — 3 Year'},
+  {code:'TD5',label:'Time Deposit — 5 Year'},
+  {code:'MIS',label:'Monthly Income Scheme (MIS)'},
+  {code:'SCSS',label:'Sr. Citizen Savings (SCSS)'},
+  {code:'PPF',label:'Public Provident Fund (PPF)'},
+  {code:'OTHER',label:'Other'}
+];
+const schemeLabel=code=>{const s=SCHEMES.find(x=>x.code===code);return s?s.label:code;};
+
+const state={list:[],dq:'',mode:'stored',current:null,detail:null,editKey:null,preview:null,delKey:null,busy:false};
+
+// ─────────────────────────────────────────────────────────────
+//  CSV / XLSX parsing
+// ─────────────────────────────────────────────────────────────
+function parseCSV(text){
+  // strip BOM
+  text=text.replace(/^﻿/,'');
+  const rows=[];let row=[],cell='',i=0,inQ=false;const n=text.length;
+  while(i<n){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){cell+='"';i+=2;continue;} inQ=false;i++;continue; }
+      cell+=c;i++;continue;
+    }
+    if(c==='"'){inQ=true;i++;continue;}
+    if(c===','){row.push(cell);cell='';i++;continue;}
+    if(c==='\r'){i++;continue;}
+    if(c==='\n'){row.push(cell);rows.push(row);row=[];cell='';i++;continue;}
+    cell+=c;i++;
+  }
+  row.push(cell);rows.push(row);
+  return rows;
+}
+async function readFileRows(file){
+  const name=(file.name||'').toLowerCase();
+  if(name.endsWith('.xlsx')||name.endsWith('.xls')){
+    if(!window.XLSXLite)throw new Error('Excel engine not available — save the file as CSV and retry.');
+    const buf=await file.arrayBuffer();
+    return await XLSXLite.parse(buf);
+  }
+  const text=await file.text();
+  return parseCSV(text);
+}
+
+// ── field helpers ──
+const cclean=v=>String(v==null?'':v).trim();
+function normAcct(raw){
+  let a=cclean(raw).replace(/\s+/g,'');
+  // 11-digit account starting with 1 or 2 → pad a leading zero to make 12.
+  if(/^\d{11}$/.test(a)&&/^[12]/.test(a))a='0'+a;
+  return a;
+}
+function cleanAddress(raw){
+  const s=cclean(raw);
+  if(!s)return '';
+  return s.split(',').map(p=>p.trim()).filter(Boolean).join(', ');
+}
+function parseBalance(raw){
+  const s=cclean(raw).replace(/[₹,\s]/g,'');
+  if(s===''||s==='-')return null;
+  const n=parseFloat(s);
+  return isNaN(n)?null:n;
+}
+const MON={JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12};
+function parseTxnDate(raw){
+  // "31-MAR-26" or "31-MAR-2026" or "31/03/2026" or "2026-03-31" → iso yyyy-mm-dd
+  const s=cclean(raw);if(!s)return '';
+  let m=s.match(/^(\d{1,2})[-\/ ]([A-Za-z]{3})[A-Za-z]*[-\/ ](\d{2,4})$/);
+  if(m){let y=+m[3];if(y<100)y+=2000;const mo=MON[m[2].toUpperCase().slice(0,3)];if(mo)return `${y}-${String(mo).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`;}
+  m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+  if(m){let y=+m[3];if(y<100)y+=2000;return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`;}
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m)return `${m[1]}-${m[2]}-${m[3]}`;
+  return '';
+}
+function fmtTxnDate(iso){
+  const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m)return '';
+  return `${m[3]}-${m[2]}-${m[1]}`;   // DD-MM-YYYY
+}
+function fmtAmt(n){
+  if(n==null||isNaN(n))return '';
+  return n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtUploaded(ms){
+  if(!ms)return 'Stored earlier';
+  const d=new Date(+ms);if(isNaN(d))return 'Stored earlier';
+  const p=x=>String(x).padStart(2,'0');
+  return `Uploaded ${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+const statusClass=s=>{const t=String(s||'').toLowerCase();
+  if(t.includes('active'))return 'active';
+  if(t.includes('dorm'))return 'dormant';
+  if(t.includes('freez')||t.includes('froz'))return 'freezed';
+  return 'other';};
+
+// ─────────────────────────────────────────────────────────────
+//  Extract a clean report from raw rows
+// ─────────────────────────────────────────────────────────────
+function extractReport(rows){
+  // locate header row: a row that has "account number" AND "balance after"
+  let hIdx=-1,H=null;
+  for(let r=0;r<rows.length;r++){
+    const low=rows[r].map(c=>cclean(c).toLowerCase());
+    if(low.some(c=>/account\s*number/.test(c))&&low.some(c=>/balance\s*after/.test(c))){hIdx=r;H=low;break;}
+  }
+  if(hIdx<0)throw new Error('Could not find the report header (Account Number / Balance columns). Is this a Last Balance Report?');
+  const findCol=(re,from=0)=>{for(let i=from;i<H.length;i++)if(re.test(H[i]))return i;return -1;};
+  const col={
+    acct:findCol(/account\s*number/),
+    name:findCol(/cust1?\s*name|customer\s*name|^name$/),
+    addr:findCol(/address/),
+    type:findCol(/account\s*type/),
+    bal:findCol(/balance\s*after/),
+    date:findCol(/date\s*of\s*last/),
+    status:findCol(/^status$|^\s*status\s*$/),
+    bo:findCol(/bo\s*name|branch\s*office\s*name/)
+  };
+  if(col.status<0)col.status=findCol(/status/);
+  if(col.name<0)col.name=findCol(/name/);
+
+  // metadata: scan label rows anywhere
+  const cellAfter=(r,re)=>{ // value = last non-empty cell after the labelled one
+    const low=r.map(c=>cclean(c).toLowerCase());
+    for(let i=0;i<low.length;i++)if(re.test(low[i])){
+      for(let j=r.length-1;j>i;j--){const v=cclean(r[j]);if(v)return v;}
+    }
+    return '';
+  };
+  let solId='',branchId='',schemeRaw='',schemeType='';
+  for(const r of rows){
+    if(!solId){const v=cellAfter(r,/^sol\s*id/);if(v)solId=v;}
+    if(!branchId){const v=cellAfter(r,/^branch\s*id/);if(v)branchId=v;}
+    if(!schemeRaw){const v=cellAfter(r,/^scheme\s*:?$|^scheme\s/);if(v&&!/type/.test(v.toLowerCase()))schemeRaw=v;}
+    for(const c of r){const m=cclean(c).match(/scheme\s*type\s*[-:]\s*([A-Za-z0-9]+)/i);if(m)schemeType=m[1];}
+  }
+
+  // data rows: col0 is an integer S.No and the account cell is all digits
+  const records=[];const boCount={};
+  for(let r=hIdx+1;r<rows.length;r++){
+    const row=rows[r];
+    const sno=cclean(row[0]);
+    const acctRaw=cclean(row[col.acct]);
+    if(!/^\d+$/.test(sno))continue;
+    if(!/^\d[\d\s]*$/.test(acctRaw))continue;
+    const acct=normAcct(acctRaw);
+    if(acct.length<8)continue; // skip stray numeric rows
+    const name=cclean(row[col.name]).replace(/\s+/g,' ');
+    const rec={
+      acct,
+      name:name,
+      address:cleanAddress(col.addr>=0?row[col.addr]:''),
+      type:cclean(col.type>=0?row[col.type]:''),
+      balance:parseBalance(col.bal>=0?row[col.bal]:''),
+      date:parseTxnDate(col.date>=0?row[col.date]:''),
+      dateRaw:cclean(col.date>=0?row[col.date]:''),
+      status:cclean(col.status>=0?row[col.status]:'')||'—'
+    };
+    records.push(rec);
+    const bo=cclean(col.bo>=0?row[col.bo]:'');
+    if(bo)boCount[bo]=(boCount[bo]||0)+1;
+  }
+  if(!records.length)throw new Error('No account rows were detected in this file.');
+
+  // office name: most common BO Name, else scheme office label
+  let officeName='';let best=0;
+  for(const k in boCount)if(boCount[k]>best){best=boCount[k];officeName=k;}
+
+  // scheme guess
+  const guess=guessScheme(schemeType||schemeRaw);
+  return {solId,branchId,officeName,scheme:guess,records};
+}
+function guessScheme(raw){
+  const s=String(raw||'').toUpperCase();
+  if(/SSA|SUKANYA/.test(s))return 'SSA';
+  if(/RD|RECURRING/.test(s))return 'RD';
+  if(/SCSS|SR\s*CIT/.test(s))return 'SCSS';
+  if(/MIS|MONTHLY/.test(s))return 'MIS';
+  if(/PPF/.test(s))return 'PPF';
+  if(/TD|TIME/.test(s)){const m=s.match(/([1235])\s*Y/);return m?('TD'+m[1]):'TD1';}
+  if(/SB|SAVING/.test(s))return 'SB';
+  return 'SB';
+}
+function statusCountsOf(records){
+  const c={};for(const r of records){const k=r.status||'—';c[k]=(c[k]||0)+1;}return c;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Upload → preview flow  (view temporarily → store / cancel)
+// ─────────────────────────────────────────────────────────────
+async function handleFile(file){
+  if(!file)return;
+  toast('Reading '+file.name+'…');
+  let rep;
+  try{ rep=extractReport(await readFileRows(file)); }
+  catch(e){ toast('Could not read file: '+(e.message||''),'err'); return; }
+  openPreview({
+    office:rep.officeName||file.name.replace(/\.[^.]+$/,''),
+    sol:rep.solId||'', branch:rep.branchId||'', scheme:rep.scheme,
+    records:rep.records, sourceName:file.name
+  }, null);
+}
+
+// Open the detail view in PREVIEW mode (unstored upload) or EDIT mode (editKey set),
+// so the full cleaned data can be viewed and filtered before storing.
+function openPreview(data, editKey){
+  state.mode='preview';
+  state.editKey=editKey||null;
+  state._dupChoiceKey=undefined;
+  state.detail=Array.isArray(data.records)?data.records:[];
+  state.preview={sourceName:data.sourceName||'', uploadedAtMs:data.uploadedAtMs||null, uploadedBy:data.uploadedBy||null};
+  $('#pvOffice').value=data.office||'';
+  $('#pvSol').value=data.sol||'';
+  $('#pvBranch').value=data.branch||'';
+  const sel=$('#pvScheme');sel.innerHTML=SCHEMES.map(s=>`<option value="${s.code}">${esc(s.label)}</option>`).join('');
+  sel.value=SCHEMES.some(s=>s.code===data.scheme)?data.scheme:'OTHER';
+  $('#pvTag').innerHTML=editKey
+    ? '✎ Editing stored list — change details below, then update'
+    : '👁 Preview — <b>'+state.detail.length+'</b> accounts detected · not stored yet';
+  $('#pvStore').textContent=editKey?'💾 Update list':'💾 Store list';
+  $('#previewBar').classList.remove('hidden');
+  $('#backToDash').classList.add('hidden');
+  buildDetailFilters();
+  clearFilters(true);
+  syncPreviewHeader();
+  $('#dashView').classList.add('hidden');
+  $('#detailView').classList.remove('hidden');
+  window.scrollTo(0,0);
+  renderDetail();
+}
+// Mirror the editable preview fields into the live header + the state.current used by the table/exports.
+function syncPreviewHeader(){
+  const scheme=$('#pvScheme').value;
+  state.current={
+    office_key:state.editKey||null,
+    office_name:$('#pvOffice').value.trim()||'(unnamed office)',
+    sol_id:$('#pvSol').value.trim(), branch_id:$('#pvBranch').value.trim(),
+    scheme, scheme_label:schemeLabel(scheme),
+    total_accounts:state.detail.length, status_counts:statusCountsOf(state.detail)
+  };
+  renderDetailHeader();
+}
+async function storePreview(){
+  if(state.busy)return;
+  const office=$('#pvOffice').value.trim();
+  if(!office){toast('Enter the office name before storing.','err');return;}
+  const scheme=$('#pvScheme').value, sol=$('#pvSol').value.trim(), branch=$('#pvBranch').value.trim();
+  // A brand-new upload that collides with an existing office+scheme → ask replace / keep both.
+  if(!state.editKey && state._dupChoiceKey===undefined){
+    const dup=state.list.find(o=>String(o.office_name||'').trim().toLowerCase()===office.toLowerCase() && o.scheme===scheme);
+    if(dup){ askDuplicate(dup); return; }
+  }
+  const recs=state.detail;
+  const key=state.editKey || state._dupChoiceKey ||
+    `${branch||office}::${scheme}::${Date.now().toString(36)}${Math.random().toString(36).slice(2,6)}`;
+  const row={
+    office_key:key, office_name:office, sol_id:sol, branch_id:branch,
+    scheme, scheme_label:schemeLabel(scheme),
+    total_accounts:recs.length, status_counts:statusCountsOf(recs),
+    records:recs, source_name:(state.preview&&state.preview.sourceName)||'',
+    uploaded_by:(state.editKey&&state.preview&&state.preview.uploadedBy)||who(),
+    uploaded_at_ms:(state.editKey&&state.preview&&state.preview.uploadedAtMs)||Date.now()
+  };
+  const wasEdit=!!state.editKey;
+  state.busy=true;const btn=$('#pvStore');btn.disabled=true;btn.textContent='Saving…';
+  try{
+    await SB.upsert('app_cpv',row);
+    toast(`${wasEdit?'Updated':'Stored'} ✓ — ${office}, ${schemeLabel(scheme)} (${recs.length} accounts).`,'ok');
+    state.mode='stored';state.editKey=null;state._dupChoiceKey=undefined;
+    await loadDashboard();
+    exitToDash();
+  }catch(e){
+    toast('Could not store: '+(e.message||''),'err');
+    if(/app_cpv|PGRST205/.test(String(e.message||'')))toast('Run migration_v12_cpv.sql in Supabase first.','err');
+  }
+  finally{state.busy=false;btn.disabled=false;btn.textContent=wasEdit?'💾 Update list':'💾 Store list';}
+}
+function cancelPreview(){ state._dupChoiceKey=undefined; state.editKey=null; exitToDash(); }
+// duplicate resolution
+function askDuplicate(dup){
+  state._dupCandidate=dup;
+  $('#dupMsg').innerHTML=`A list for <b>${esc(dup.office_name)}</b> · <b>${esc(dup.scheme_label||dup.scheme)}</b> is already stored (${(+dup.total_accounts||0)} accounts).<br><br>Replace it with this upload, or keep both as separate lists?`;
+  $('#dupOverlay').classList.add('show');
+}
+function resolveDuplicate(mode){
+  $('#dupOverlay').classList.remove('show');
+  state._dupChoiceKey = mode==='replace' ? state._dupCandidate.office_key : null; // keep both → fresh key
+  storePreview();
+}
+// Load a stored list into PREVIEW/EDIT mode so its details can be changed & re-saved in place.
+async function openEditStored(key){
+  toast('Loading list…');
+  let row;
+  try{ const rows=await SB.select('app_cpv',`office_key=eq.${encodeURIComponent(key)}&select=*&limit=1`); row=rows&&rows[0]; }
+  catch(e){toast('Could not load: '+(e.message||''),'err');return;}
+  if(!row){toast('List not found.','err');return;}
+  openPreview({office:row.office_name,sol:row.sol_id,branch:row.branch_id,scheme:row.scheme,
+    records:Array.isArray(row.records)?row.records:[],sourceName:row.source_name,
+    uploadedAtMs:row.uploaded_at_ms,uploadedBy:row.uploaded_by}, row.office_key);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Dashboard
+// ─────────────────────────────────────────────────────────────
+async function loadDashboard(){
+  try{await SB.init();}catch{}
+  try{
+    const rows=await SB.select('app_cpv','select=office_key,office_name,sol_id,branch_id,scheme,scheme_label,total_accounts,status_counts,uploaded_by,uploaded_at_ms&order=office_name.asc,scheme.asc');
+    state.list=Array.isArray(rows)?rows:[];
+    renderDashboard();
+  }catch(e){
+    $('#dashboard').innerHTML=`<div class="empty"><span class="ei">🛠️</span><b>Storage not set up yet.</b><br><br>
+      Run <b>android-app/supabase/migration_v12_cpv.sql</b> in the Supabase SQL editor to create the <b>app_cpv</b> table, then reload.<br>
+      <span style="font-size:11.5px;opacity:.7">(${esc(e.message||'table missing')})</span></div>`;
+    $('#sOff').textContent=$('#sSch').textContent=$('#sAcc').textContent=$('#sBal').textContent='0';
+  }
+}
+function renderDashboard(){
+  const q=state.dq.toLowerCase();
+  const list=state.list.filter(o=>{
+    if(!q)return true;
+    return (o.office_name+' '+(o.sol_id||'')+' '+(o.branch_id||'')+' '+o.scheme).toLowerCase().includes(q);
+  });
+  // summary
+  const offSet=new Set(state.list.map(o=>o.branch_id||o.office_name));
+  const totAcc=state.list.reduce((a,o)=>a+(+o.total_accounts||0),0);
+  $('#sOff').textContent=offSet.size;
+  $('#sSch').textContent=state.list.length;
+  $('#sAcc').textContent=totAcc.toLocaleString('en-IN');
+  $('#sBal').textContent='—'; // balances live inside records; shown per-list
+  // group by office
+  const box=$('#dashboard');
+  if(!list.length){
+    box.innerHTML=`<div class="empty"><span class="ei">🗂️</span>${state.list.length?'No lists match your search.':'No lists stored yet. Upload a Last Balance Report above to begin.'}</div>`;
+    return;
+  }
+  const groups={};
+  for(const o of list){const k=(o.branch_id||'')+'|'+o.office_name;(groups[k]=groups[k]||[]).push(o);}
+  let html='';
+  Object.keys(groups).sort((a,b)=>a.split('|')[1].localeCompare(b.split('|')[1])).forEach(k=>{
+    const items=groups[k].slice().sort((a,b)=>a.scheme.localeCompare(b.scheme));
+    const g=items[0];
+    const totAccG=items.reduce((a,o)=>a+(+o.total_accounts||0),0);
+    html+=`<div class="office-group">
+      <div class="og-head">
+        <div class="og-badge">🏤</div>
+        <div>
+          <div class="og-title">${esc(g.office_name)}</div>
+          <div class="og-sub">${g.sol_id?`SOL <b>${esc(g.sol_id)}</b> · `:''}${g.branch_id?`Branch <b>${esc(g.branch_id)}</b> · `:''}<b>${items.length}</b> scheme list${items.length===1?'':'s'} · <b>${totAccG.toLocaleString('en-IN')}</b> accounts</div>
+        </div>
+      </div>
+      <div class="scheme-grid">`;
+    for(const o of items){
+      const sc=o.status_counts||{};
+      const pills=Object.keys(sc).sort().map(s=>`<span class="pill ${statusClass(s)}">${esc(s)} ${sc[s]}</span>`).join('');
+      html+=`<div class="scheme-card" data-key="${esc(o.office_key)}">
+        <div class="sc-tools">
+          <button class="sc-tool sc-edit" data-edit="${esc(o.office_key)}" title="Edit / rename this list">✎</button>
+          <button class="sc-tool sc-del" data-del="${esc(o.office_key)}" title="Delete this list">🗑</button>
+        </div>
+        <div class="sc-top"><span class="sc-chip">${esc(o.scheme)}</span><span class="sc-count">${(+o.total_accounts||0).toLocaleString('en-IN')}</span></div>
+        <div class="sc-label">${esc(o.scheme_label||schemeLabel(o.scheme))}</div>
+        <div class="sc-stats">${pills}</div>
+        <div class="sc-foot">${fmtUploaded(o.uploaded_at_ms)}</div>
+      </div>`;
+    }
+    html+=`</div></div>`;
+  });
+  box.innerHTML=html;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Detail view
+// ─────────────────────────────────────────────────────────────
+async function openDetail(key){
+  toast('Loading list…');
+  let row;
+  try{
+    const rows=await SB.select('app_cpv',`office_key=eq.${encodeURIComponent(key)}&select=*&limit=1`);
+    row=rows&&rows[0];
+  }catch(e){toast('Could not load: '+(e.message||''),'err');return;}
+  if(!row){toast('List not found.','err');return;}
+  state.mode='stored';
+  state.current=row;
+  state.detail=Array.isArray(row.records)?row.records:[];
+  $('#previewBar').classList.add('hidden');
+  $('#backToDash').classList.remove('hidden');
+  renderDetailHeader();
+  buildDetailFilters();
+  clearFilters(true);
+  $('#dashView').classList.add('hidden');
+  $('#detailView').classList.remove('hidden');
+  window.scrollTo(0,0);
+  renderDetail();
+}
+function renderDetailHeader(){
+  const row=state.current;if(!row)return;
+  $('#dhBadge').textContent=row.scheme;
+  $('#dhTitle').textContent=row.office_name;
+  const meta=[];
+  if(row.sol_id)meta.push(`<span class="meta-chip">SOL <b>${esc(row.sol_id)}</b></span>`);
+  if(row.branch_id)meta.push(`<span class="meta-chip">Branch <b>${esc(row.branch_id)}</b></span>`);
+  meta.push(`<span class="meta-chip">Scheme <b>${esc(row.scheme_label||schemeLabel(row.scheme))}</b></span>`);
+  meta.push(`<span class="meta-chip">Total <b>${(+row.total_accounts||0).toLocaleString('en-IN')}</b></span>`);
+  const sc=row.status_counts||{};Object.keys(sc).sort().forEach(s=>meta.push(`<span class="meta-chip">${esc(s)} <b>${sc[s]}</b></span>`));
+  $('#dhMeta').innerHTML=meta.join('');
+}
+function buildDetailFilters(){
+  const types=[...new Set(state.detail.map(r=>r.type).filter(Boolean))].sort();
+  const sts=[...new Set(state.detail.map(r=>r.status).filter(Boolean))].sort();
+  $('#fType').innerHTML='<option value="">All types</option>'+types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  $('#fStatus').innerHTML='<option value="">All statuses</option>'+sts.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+}
+// Return to the dashboard from either the stored-detail or the preview/edit view.
+function exitToDash(){
+  $('#detailView').classList.add('hidden');
+  $('#dashView').classList.remove('hidden');
+  $('#previewBar').classList.add('hidden');
+  $('#backToDash').classList.remove('hidden');
+  state.mode='stored';state.current=null;state.detail=null;
+}
+function currentFilters(){
+  return {
+    q:$('#fSearch').value.trim().toLowerCase(),
+    type:$('#fType').value,
+    status:$('#fStatus').value,
+    from:$('#fDateFrom').value,
+    to:$('#fDateTo').value,
+    balMode:$('#fBalMode').value,
+    bal1:$('#fBal1').value===''?null:parseFloat($('#fBal1').value),
+    bal2:$('#fBal2').value===''?null:parseFloat($('#fBal2').value)
+  };
+}
+function filteredRecords(){
+  const f=currentFilters();
+  return state.detail.filter(r=>{
+    if(f.q){const hay=(r.acct+' '+r.name+' '+r.address).toLowerCase();if(!hay.includes(f.q))return false;}
+    if(f.type&&r.type!==f.type)return false;
+    if(f.status&&r.status!==f.status)return false;
+    if(f.from&&(!r.date||r.date<f.from))return false;
+    if(f.to&&(!r.date||r.date>f.to))return false;
+    if(f.balMode){
+      const b=r.balance;if(b==null)return false;
+      if(f.balMode==='below'&&!(f.bal1!=null&&b<f.bal1))return false;
+      if(f.balMode==='above'&&!(f.bal1!=null&&b>=f.bal1))return false;
+      if(f.balMode==='between'){if(f.bal1==null||f.bal2==null)return false;const lo=Math.min(f.bal1,f.bal2),hi=Math.max(f.bal1,f.bal2);if(b<lo||b>hi)return false;}
+    }
+    return true;
+  });
+}
+function renderDetail(){
+  const rows=filteredRecords();
+  const total=state.detail.length;
+  $('#filterCount').innerHTML=`Showing <b>${rows.length.toLocaleString('en-IN')}</b> of ${total.toLocaleString('en-IN')} accounts`;
+  const scheme=state.current?state.current.scheme:'';
+  let body=`<thead><tr>
+    <th>Sl.No</th><th>Scheme</th><th>Account No.</th><th>Customer Name</th><th>Address</th>
+    <th>Account Type</th><th style="text-align:right">Balance ₹</th><th>Last Txn</th><th>Status</th>
+  </tr></thead><tbody>`;
+  if(!rows.length){
+    body+=`<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">No accounts match the current filters.</td></tr>`;
+  }else{
+    let sum=0;
+    rows.forEach((r,i)=>{
+      if(r.balance!=null)sum+=r.balance;
+      body+=`<tr>
+        <td class="mono">${i+1}</td>
+        <td><span class="sc-chip" style="font-size:10px;padding:2px 7px">${esc(scheme)}</span></td>
+        <td class="mono">${esc(r.acct)}</td>
+        <td class="nm">${esc(r.name||'—')}</td>
+        <td class="addr">${esc(r.address||'—')}</td>
+        <td>${esc(r.type||'—')}</td>
+        <td class="num">${r.balance==null?'—':fmtAmt(r.balance)}</td>
+        <td class="mono">${esc(fmtTxnDate(r.date)||r.dateRaw||'—')}</td>
+        <td><span class="status ${statusClass(r.status)}">${esc(r.status||'—')}</span></td>
+      </tr>`;
+    });
+    body+=`<tr class="totrow"><td colspan="6" style="text-align:right">Total balance (${rows.length} accounts)</td><td class="num">₹ ${fmtAmt(sum)}</td><td colspan="2"></td></tr>`;
+  }
+  body+='</tbody>';
+  $('#detailTable').innerHTML=body;
+}
+function clearFilters(silent){
+  ['fSearch','fType','fStatus','fDateFrom','fDateTo','fBal1','fBal2'].forEach(id=>$('#'+id).value='');
+  $('#fBalMode').value='';syncBalInputs();
+  if(!silent)renderDetail();
+}
+function syncBalInputs(){
+  const m=$('#fBalMode').value;
+  $('#fBalWrap1').classList.toggle('hidden',!m);
+  $('#fBalWrap2').classList.toggle('hidden',m!=='between');
+  $('#fBalWrap1').querySelector('label').textContent=m==='between'?'Between ₹':'Amount ₹';
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Delete
+// ─────────────────────────────────────────────────────────────
+function openDelete(key){
+  const o=state.list.find(x=>x.office_key===key);if(!o)return;state.delKey=key;
+  $('#delMsg').innerHTML=`Delete the stored list <b>${esc(o.office_name)}</b> — ${esc(o.scheme_label||o.scheme)} (${(+o.total_accounts||0)} accounts)?<br>This cannot be undone.`;
+  $('#delOverlay').classList.add('show');
+}
+async function confirmDelete(){
+  if(!state.delKey||state.busy)return;
+  state.busy=true;const btn=$('#delConfirm');btn.disabled=true;btn.textContent='Deleting…';
+  try{
+    await SB.del('app_cpv',`office_key=eq.${encodeURIComponent(state.delKey)}`);
+    $('#delOverlay').classList.remove('show');
+    toast('List deleted ✓','ok');
+    state.delKey=null;
+    await loadDashboard();
+  }catch(e){toast('Delete failed: '+(e.message||''),'err');}
+  finally{state.busy=false;btn.disabled=false;btn.textContent='Delete permanently';}
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Exports
+// ─────────────────────────────────────────────────────────────
+function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+function exportBaseName(){
+  const o=state.current;return `CPV ${o.office_name} ${o.scheme}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function exportRows(){
+  const rows=filteredRecords();const scheme=state.current.scheme;
+  return rows.map((r,i)=>[
+    String(i+1),scheme,r.acct,r.name||'',r.address||'',r.type||'',
+    r.balance==null?'':fmtAmt(r.balance),fmtTxnDate(r.date)||r.dateRaw||'',r.status||''
+  ]);
+}
+const XLS_HEAD=['Sl.No','Scheme','Account No.','Customer Name','Address','Account Type','Balance After Transaction','Date of Last Transaction','Status'];
+function exportExcel(){
+  if(!window.XLSXLite){toast('Excel engine unavailable.','err');return;}
+  const data=exportRows();
+  if(!data.length){toast('Nothing to export with the current filters.','err');return;}
+  const bytes=XLSXLite.build(XLS_HEAD,data);
+  dl(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),exportBaseName()+'.xlsx');
+  toast('Excel downloaded ✓','ok');
+}
+
+// PDF (jsPDF + autotable, tricolour header)
+const PDF_URLS=['https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js'];
+let _pdfP;
+function loadScriptOnce(src){return new Promise((res,rej)=>{if([...document.scripts].some(s=>s.src===src))return res();
+  const s=document.createElement('script');s.src=src;s.onload=()=>res();
+  s.onerror=()=>rej(new Error('Could not load the PDF engine (check your connection).'));document.head.appendChild(s);});}
+async function loadPdf(){if(_pdfP)return _pdfP;_pdfP=(async()=>{for(const u of PDF_URLS)await loadScriptOnce(u);})();return _pdfP;}
+const CLR={green:[13,148,136],saffron:[255,153,51],white:[255,255,255],ind:[19,136,8]};
+async function exportPdf(){
+  const rows=filteredRecords();
+  if(!rows.length){toast('Nothing to export with the current filters.','err');return;}
+  await loadPdf();const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  const o=state.current;
+  const W=doc.internal.pageSize.getWidth();
+  let grand=0;
+  const body=rows.map((r,i)=>{if(r.balance!=null)grand+=r.balance;
+    return [i+1,o.scheme,r.acct,r.name||'',r.address||'',r.type||'',r.balance==null?'—':fmtAmt(r.balance),fmtTxnDate(r.date)||r.dateRaw||'—',r.status||'—'];});
+  const header=()=>{
+    doc.setFillColor(...CLR.green);doc.rect(0,0,W,58,'F');
+    const t=W/3;doc.setFillColor(...CLR.saffron);doc.rect(0,58,t,4,'F');doc.setFillColor(...CLR.white);doc.rect(t,58,t,4,'F');doc.setFillColor(...CLR.ind);doc.rect(2*t,58,t,4,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('Cent Percent Verification — '+o.office_name,32,25);
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text(`Department of Posts · Karur Sub Division   |   ${o.scheme_label||schemeLabel(o.scheme)}${o.sol_id?'  ·  SOL '+o.sol_id:''}${o.branch_id?'  ·  Branch '+o.branch_id:''}`,32,42);
+    doc.setFontSize(8.5);doc.text('Accounts: '+rows.length,W-32,25,{align:'right'});
+    doc.text('Generated: '+new Date().toLocaleString('en-IN'),W-32,42,{align:'right'});
+  };
+  const footer=()=>{const H=doc.internal.pageSize.getHeight();doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(150);
+    doc.text('O/o the Assistant Superintendent of Post Offices, Karur Sub Division',32,H-14);
+    doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber,W-32,H-14,{align:'right'});};
+  doc.autoTable({
+    head:[['Sl','Sch','Account No.','Customer Name','Address','Type','Balance ₹','Last Txn','Status']],
+    body,startY:74,margin:{top:70,left:24,right:24},
+    styles:{font:'helvetica',fontSize:8,cellPadding:3.5,overflow:'linebreak',lineColor:[214,230,228],lineWidth:.5},
+    headStyles:{fillColor:CLR.green,textColor:255,fontStyle:'bold',halign:'center',fontSize:8.4},
+    alternateRowStyles:{fillColor:[240,250,248]},
+    columnStyles:{0:{halign:'center',cellWidth:24},1:{halign:'center',cellWidth:30},2:{cellWidth:88,fontStyle:'bold'},3:{cellWidth:120},5:{cellWidth:70},6:{halign:'right',cellWidth:66,fontStyle:'bold'},7:{halign:'center',cellWidth:56},8:{halign:'center',cellWidth:56}},
+    didParseCell:d=>{if(d.section==='body'&&d.column.index===8){const cls=statusClass(d.cell.raw);d.cell.styles.fontStyle='bold';
+      if(cls==='active'){d.cell.styles.textColor=[16,120,80];}
+      else if(cls==='dormant'){d.cell.styles.textColor=[176,120,8];}
+      else if(cls==='freezed'){d.cell.styles.textColor=[190,40,60];}
+      else{d.cell.styles.textColor=[80,80,180];}}},
+    didDrawPage:()=>{header();footer();}
+  });
+  const finalY=doc.lastAutoTable.finalY||90;
+  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(13,148,136);
+  doc.text(`Total balance of ${rows.length} account(s):  Rs. ${fmtAmt(grand)}`,W-24,Math.min(finalY+20,doc.internal.pageSize.getHeight()-24),{align:'right'});
+  doc.save(exportBaseName()+'.pdf');
+  toast('PDF downloaded ✓','ok');
+}
+function runExport(btn,fn){const old=btn.textContent;btn.disabled=true;btn.textContent='⏳ Building…';
+  Promise.resolve().then(fn).catch(e=>toast('Could not build: '+(e.message||''),'err')).finally(()=>{btn.disabled=false;btn.textContent=old;});}
+
+// ─────────────────────────────────────────────────────────────
+//  Events
+// ─────────────────────────────────────────────────────────────
+const drop=$('#drop'),fileInput=$('#fileInput');
+drop.addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',e=>{const f=e.target.files[0];fileInput.value='';handleFile(f);});
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();if(ev==='dragleave'&&e.target!==drop)return;drop.classList.remove('drag');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)handleFile(f);});
+
+// preview / edit bar
+$('#pvStore').addEventListener('click',storePreview);
+$('#pvCancel').addEventListener('click',cancelPreview);
+['pvOffice','pvSol','pvBranch','pvScheme'].forEach(id=>{
+  const el=$('#'+id);el.addEventListener('input',syncPreviewHeader);el.addEventListener('change',syncPreviewHeader);
+});
+// duplicate-choice modal
+$('#dupCancel').addEventListener('click',()=>{$('#dupOverlay').classList.remove('show');});
+$('#dupReplace').addEventListener('click',()=>resolveDuplicate('replace'));
+$('#dupKeep').addEventListener('click',()=>resolveDuplicate('keep'));
+// delete-confirm modal
+$('#delCancel').addEventListener('click',()=>{$('#delOverlay').classList.remove('show');state.delKey=null;});
+$('#delConfirm').addEventListener('click',confirmDelete);
+
+let dqt;$('#dq').addEventListener('input',e=>{clearTimeout(dqt);dqt=setTimeout(()=>{state.dq=e.target.value.trim();renderDashboard();},130);});
+$('#refreshBtn').addEventListener('click',()=>loadDashboard());
+$('#backToDash').addEventListener('click',exitToDash);
+
+document.addEventListener('click',e=>{
+  const ed=e.target.closest('[data-edit]');if(ed){e.stopPropagation();openEditStored(ed.dataset.edit);return;}
+  const del=e.target.closest('[data-del]');if(del){e.stopPropagation();openDelete(del.dataset.del);return;}
+  const card=e.target.closest('.scheme-card');if(card){openDetail(card.dataset.key);return;}
+});
+
+['fSearch','fType','fStatus','fDateFrom','fDateTo','fBal1','fBal2'].forEach(id=>{
+  const el=$('#'+id);const ev=id==='fSearch'?'input':'change';
+  el.addEventListener(ev,()=>{if(id==='fSearch'){clearTimeout(el._t);el._t=setTimeout(renderDetail,140);}else renderDetail();});
+});
+$('#fBalMode').addEventListener('change',()=>{syncBalInputs();renderDetail();});
+$('#clearFilters').addEventListener('click',()=>clearFilters(false));
+$('#pdfBtn').addEventListener('click',e=>runExport(e.currentTarget,exportPdf));
+$('#xlsBtn').addEventListener('click',e=>runExport(e.currentTarget,exportExcel));
+
+[['dupOverlay',()=>{$('#dupOverlay').classList.remove('show');}],['delOverlay',()=>{$('#delOverlay').classList.remove('show');state.delKey=null;}]].forEach(([id,fn])=>{
+  const o=document.getElementById(id);o.addEventListener('click',e=>{if(e.target===o)fn();});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#dupOverlay').classList.remove('show');$('#delOverlay').classList.remove('show');}});
+
+// init
+loadDashboard();
+</script>
+</body>
+</html>

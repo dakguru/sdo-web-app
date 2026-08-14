@@ -6,6 +6,7 @@
     { "source": "/ir-library", "destination": "/Leave Orders/ir-library.html" },
     { "source": "/high-value-memos", "destination": "/Leave Orders/hmvm.html" },
     { "source": "/verification", "destination": "/Leave Orders/verification.html" },
+    { "source": "/cent-percent-verification", "destination": "/Leave Orders/cpv.html" },
     { "source": "/ir-builder", "destination": "/app/wwwroot/index.html" },
     { "source": "/leave-orders", "destination": "/Leave Orders/index.html" },
     { "source": "/arrangements", "destination": "/Leave Orders/arrangements.html" },

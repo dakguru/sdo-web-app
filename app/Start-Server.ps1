@@ -350,6 +350,7 @@ try {
       if ($path -eq '/high-value-memos' -or $path -eq '/high-value-memos/') { Send-File $ctx (Join-Path $root 'Leave Orders\hmvm.html') (MimeOf 'index.html'); continue }
       if ($path -eq '/ir-library' -or $path -eq '/ir-library/')             { Send-File $ctx (Join-Path $root 'Leave Orders\ir-library.html') (MimeOf 'index.html'); continue }
       if ($path -eq '/verification' -or $path -eq '/verification/')         { Send-File $ctx (Join-Path $root 'Leave Orders\verification.html') (MimeOf 'index.html'); continue }
+      if ($path -eq '/cent-percent-verification' -or $path -eq '/cent-percent-verification/') { Send-File $ctx (Join-Path $root 'Leave Orders\cpv.html') (MimeOf 'index.html'); continue }
 
       # Pages reference auth-guard.js by a root-relative path (e.g. from /employees
       # the browser requests /auth-guard.js); serve it from the Leave Orders folder.
