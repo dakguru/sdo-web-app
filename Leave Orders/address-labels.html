@@ -195,17 +195,24 @@ html.light .miniselect select{background:#fff}
 /* preview */
 .preview-wrap{overflow:auto;background:repeating-conic-gradient(rgba(128,128,128,.05) 0% 25%,transparent 0% 50%) 0/22px 22px;border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:18px;display:flex;flex-direction:column;align-items:center;gap:20px;max-height:760px}
 .sheet{position:relative;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.35);flex-shrink:0}
-.lbl{position:absolute;overflow:hidden;display:flex;flex-direction:column;justify-content:center;color:#080808;line-height:1.24}
+/* Labels render in a system Helvetica/Arial stack — no web-font load race (so the
+   auto-fit measures correctly) and metrics that match the printed PDF (Helvetica). */
+.lbl{position:absolute;overflow:hidden;display:flex;flex-direction:column;justify-content:center;color:#080808;line-height:1.24;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif}
 .lbl.guide{outline:1px dashed rgba(99,102,241,.5)}
 .lbl.skipcell{background:repeating-linear-gradient(135deg,rgba(120,120,120,.12) 0 6px,transparent 6px 12px);outline:1px dashed rgba(150,150,150,.55)}
 .lbl{font-weight:700}
 .lbl .l-to{font-weight:700}
 .lbl .l-desig{font-weight:800}
 .lbl .l-name{font-weight:800}
-.lbl .l-addr{font-weight:800}
+.lbl .l-addr{font-weight:800;white-space:pre-line}
 .lbl .l-pin{font-weight:800}
 .lbl .l-mob{font-weight:700}
 .lbl .l-ref{opacity:.6;border-bottom:.5px solid rgba(0,0,0,.25);padding-bottom:2px;margin-bottom:2px}
+.lbl .l-barcode{margin:0 0 1px;text-align:center}
+.lbl .l-barcode svg{display:inline-block}
+.lbl .l-bcno{font-weight:800;letter-spacing:.6px;color:#000;text-align:center;padding-bottom:3px;margin-bottom:3px;border-bottom:.5px solid rgba(0,0,0,.3)}
+.lbl .l-bctop{overflow:hidden}
+.lbl .lfit{transform-origin:top left}
 .sheet-tag{font-size:11px;font-weight:700;color:var(--text-muted);text-align:center}
 .pv-empty{color:var(--text-muted);font-size:13px;text-align:center;padding:40px}
 
@@ -280,7 +287,7 @@ html.light .modal{background:#fff}
                 <label>Addressee</label>
                 <select id="obDesig">
                   <option value="auto">Auto (by office type)</option>
-                  <option value="The Sub Post Master">The Sub Post Master</option>
+                  <option value="The Sub Postmaster">The Sub Postmaster</option>
                   <option value="The Branch Postmaster">The Branch Postmaster</option>
                   <option value="The Postmaster">The Postmaster</option>
                   <option value="">None (office name only)</option>
@@ -344,7 +351,13 @@ html.light .modal{background:#fff}
           <div class="sub-title">Label content</div>
           <label class="chk"><input type="checkbox" id="cShowTo" checked> Print “To,” line above each recipient</label>
           <label class="chk"><input type="checkbox" id="cGuides"> Draw label borders (for a test alignment print)</label>
-          <div class="field" style="margin-top:12px">
+          <label class="chk"><input type="checkbox" id="cBarcode"> Print India Post barcode &amp; number (in place of reference)</label>
+          <div class="field" id="bcField" style="margin-top:12px;display:none">
+            <label>First barcode number <span style="text-transform:none;font-weight:600;color:var(--text-muted)">(subsequent numbers auto-generated)</span></label>
+            <input type="text" id="cBarcodeStart" placeholder="ET909871256IN" autocomplete="off" spellcheck="false" style="letter-spacing:.6px">
+            <div class="hint" id="bcHint" style="margin-top:8px">Enter the first EMS Speed Post article number (e.g. <code>ET909871256IN</code>). Each label gets the next number in sequence, with the check digit computed automatically.</div>
+          </div>
+          <div class="field" id="refField" style="margin-top:12px">
             <label>Reference text (optional — printed small at the top of every label)</label>
             <input type="text" id="cRef" placeholder="e.g. Ref. No. ASP/KRR/Estt/2026">
           </div>
@@ -486,6 +499,82 @@ const DEF={pageW:211,pageH:298,lblW:65,lblH:48,colGap:3,rowGap:0,offX:0,offY:0};
 const COLS=3, ROWS=6, PER=COLS*ROWS;
 
 // ─────────────────────────────────────────────────────────────
+//  India Post barcode (UPU S10) — number sequence + Code 128
+// ─────────────────────────────────────────────────────────────
+// S10 check digit: weights on the 8 serial digits; 10→0, 11→5.
+function s10Check(serial8){
+  const s=String(serial8).padStart(8,'0'), w=[8,6,4,2,3,5,9,7];
+  let sum=0;for(let i=0;i<8;i++)sum+=(+s[i])*w[i];
+  let c=11-(sum%11);if(c===10)c=0;else if(c===11)c=5;return c;
+}
+// Parse a full article number "ET909871256IN" → {prefix, serial(8-digit number), suffix}.
+function parseBarcode(raw){
+  const s=String(raw==null?'':raw).toUpperCase().replace(/\s+/g,'');
+  const m=s.match(/^([A-Z]{2})(\d{8})(\d)([A-Z]{2})$/);
+  if(!m)return null;
+  const base={prefix:m[1],serial:parseInt(m[2],10),suffix:m[4]};
+  // Reject numbers whose stated check digit doesn't match the S10 rule.
+  if(s10Check(m[2])!==+m[3])return {...base,badCheck:true};
+  return base;
+}
+// Build the k-th number from a parsed base (k=0 → the base itself).
+function barcodeNoAt(base,k){
+  const serial=base.serial+k, s8=String(serial).padStart(8,'0').slice(-8);
+  return base.prefix+s8+s10Check(s8)+base.suffix;
+}
+// Code 128 pattern table (values 0..106; 103/104/105=Start A/B/C, 106=Stop).
+const C128=["212222","222122","222221","121223","121322","131222","122213","122312","132212","221213",
+"221312","231212","112232","122132","122231","113222","123122","123221","223211","221132",
+"221231","213212","223112","312131","311222","321122","321221","312212","322112","322211",
+"212123","212321","232121","111323","131123","131321","112313","132113","132311","211313",
+"231113","231311","112133","112331","132131","113123","113321","133121","313121","211331",
+"231131","213113","213311","213131","311123","311321","331121","312113","312311","332111",
+"314111","221411","431111","111224","111422","121124","121421","141122","141221","112214",
+"112412","122114","122411","142112","142211","241211","221114","413111","241112","134111",
+"111242","121142","121241","114212","124112","124211","411212","421112","421211","212141",
+"214121","412121","111143","111341","131141","114113","114311","411113","411311","113141",
+"114131","311141","411131","211412","211214","211232","2331112"];
+// Encode a string as Code 128 with automatic B/C switching. Runs of digits are
+// packed into subset C (two digits per symbol), matching how India Post encodes
+// the S10 number — this keeps the bars as wide as possible for reliable scanning.
+function code128Bars(data){
+  data=String(data);
+  const len=data.length;
+  const isNum=(i,n)=>{if(i+n>len)return false;for(let k=0;k<n;k++){const c=data.charCodeAt(i+k);if(c<48||c>57)return false;}return true;};
+  const codes=[]; let i=0, inC;
+  if(isNum(0,len===2?2:4)){codes.push(105);inC=true;}   // Start C
+  else{codes.push(104);inC=false;}                       // Start B
+  while(i<len){
+    if(inC){
+      if(isNum(i,2)){codes.push(parseInt(data.substr(i,2),10));i+=2;}
+      else{codes.push(100);inC=false;}                   // switch to Code B
+    }else{
+      if(isNum(i,i===0?(len===2?2:4):4)){codes.push(99);inC=true;} // switch to Code C
+      else{codes.push(data.charCodeAt(i)-32);i++;}
+    }
+  }
+  let sum=codes[0]; for(let j=1;j<codes.length;j++)sum+=codes[j]*j;
+  codes.push(sum%103); codes.push(106);                  // checksum + Stop
+  let mods=''; codes.forEach(c=>mods+=C128[c]);
+  const bars=[]; let x=0;
+  for(let k=0;k<mods.length;k++){const w=+mods[k];if(k%2===0)bars.push({x,w});x+=w;}
+  return {bars,total:x};
+}
+// Inline SVG barcode for the live preview (px units).
+function barcodeSVG(data,wpx,hpx){
+  const {bars,total}=code128Bars(data), mw=wpx/total;
+  const rects=bars.map(b=>`<rect x="${(b.x*mw).toFixed(2)}" y="0" width="${(b.w*mw).toFixed(2)}" height="${hpx.toFixed(1)}"/>`).join('');
+  return `<svg width="${wpx.toFixed(1)}" height="${hpx.toFixed(1)}" viewBox="0 0 ${wpx.toFixed(1)} ${hpx.toFixed(1)}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><g fill="#000">${rects}</g></svg>`;
+}
+// Read the barcode option once for a render/generate pass.
+function barcodeOpt(){
+  if(!$('#cBarcode').checked)return null;
+  const base=parseBarcode($('#cBarcodeStart').value);
+  if(!base||base.badCheck)return null;
+  return base;
+}
+
+// ─────────────────────────────────────────────────────────────
 //  Tabs
 // ─────────────────────────────────────────────────────────────
 $$('.tab').forEach(t=>t.addEventListener('click',()=>{
@@ -498,12 +587,12 @@ $$('.tab').forEach(t=>t.addEventListener('click',()=>{
 // ─────────────────────────────────────────────────────────────
 //  Office address book (Karur Sub Division)
 // ─────────────────────────────────────────────────────────────
-function officeDesigAuto(name,type){
-  const n=(name||'').toLowerCase(), t=(type||'').toLowerCase();
-  if(/\bh\.?o\b|head\s*office/.test(n)||t==='ho')return 'The Postmaster';
-  if(/\bb\.?o\b/.test(n)||/^b/.test(t)&&t!=='bo/so')return 'The Branch Postmaster';
-  if(/\bs\.?o\b|sub\s*office/.test(n)||t==='so')return 'The Sub Post Master';
-  return 'The Sub Post Master';
+// Salutation line for an office, keyed on its class (so / bo / ho / other).
+function salutationForClass(cls){
+  return cls==='ho'?'The Postmaster'
+       : cls==='bo'?'The Branch Postmaster'
+       : cls==='so'?'The Sub Postmaster'
+       : 'The Postmaster';
 }
 function composeOfficeAddress(o){
   const parts=[];
@@ -517,9 +606,9 @@ function composeOfficeAddress(o){
 function toTitle(s){return cclean(s).toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());}
 function typeClass(name,type){
   const n=(name||'').toLowerCase(),t=(type||'').toLowerCase();
-  if(/\bh\.?o\b/.test(n)||t==='ho')return 'ho';
-  if(/\bb\.?o\b/.test(n)||/^bp?o$/.test(t))return 'bo';
-  if(/\bs\.?o\b/.test(n)||t==='so')return 'so';
+  if(/\bh\.?o\b/.test(n)||t==='ho'||t==='hpo')return 'ho';
+  if(/\bb\.?o\b/.test(n)||/^bp?o$/.test(t)||t==='bpo')return 'bo';
+  if(/\bs\.?o\b/.test(n)||t==='so'||t==='spo')return 'so';
   return 'other';
 }
 function typeLabel(cls){return cls==='ho'?'H.O':cls==='bo'?'B.O':cls==='so'?'S.O':'PO';}
@@ -553,7 +642,8 @@ async function loadOffices(){
     return {
       id:cclean(o.office_id)||name, name, type, cls,
       pincode:cclean(o.pincode), address:composeOfficeAddress(o),
-      desigAuto:officeDesigAuto(name,type)
+      accountSO:cclean(o.so_name),          // parent S.O for a branch office ("a/w")
+      desigAuto:salutationForClass(cls)
     };
   }).filter(o=>{ if(!o.name)return false; const k=o.id+'|'+o.name; if(seen.has(k))return false; seen.add(k); return true; })
     .sort((a,b)=>a.name.localeCompare(b.name));
@@ -591,12 +681,20 @@ $('#obSelectAll').addEventListener('click',()=>{
 $('#obClearSel').addEventListener('click',()=>{state.obSelected.clear();renderOfficeList();});
 $('#obAdd').addEventListener('click',()=>{
   if(!state.obSelected.size){toast('Select one or more offices first.','err');return;}
-  const mode=$('#obDesig').value;
+  const mode=$('#obDesig').value;   // 'auto' | a salutation | '' (none)
   let n=0;
   state.offices.forEach(o=>{
     if(!state.obSelected.has(o.id))return;
-    const desig=mode==='auto'?o.desigAuto:mode;
-    state.queue.push({id:uid(),src:'office',desig,name:o.name,address:o.address,pincode:o.pincode,mobile:''});
+    // Salutation line — auto by office class, or the user's explicit override.
+    let sal=mode==='auto'?o.desigAuto:mode;
+    const desig=sal?sal.replace(/,\s*$/,'')+',':'';   // exactly one trailing comma
+    // Branch offices carry an "a/w" (along with) line naming their account S.O.
+    let name=o.name, address='';
+    if(o.cls==='bo'&&o.accountSO&&o.accountSO.toLowerCase()!==o.name.toLowerCase()){
+      name=o.name+' a/w';
+      address=o.accountSO;
+    }
+    state.queue.push({id:uid(),src:'office',desig,name,address,pincode:o.pincode,mobile:''});
     n++;
   });
   state.obSelected.clear();renderOfficeList();
@@ -698,7 +796,7 @@ function placements(){
   const out=[]; let sheet=0, cell=0, li=0, guard=0;
   while(li<labels.length && guard++<200000){
     if(sheet===0 && state.skip.has(cell)){ cell++; if(cell>=PER){cell=0;sheet++;} continue; }
-    out.push({sheet,cell,label:labels[li]}); li++;
+    out.push({sheet,cell,label:labels[li],seq:li}); li++;
     cell++; if(cell>=PER){cell=0;sheet++;}
   }
   return out;
@@ -794,6 +892,27 @@ function updateGridInfo(){
 ['cShowTo','cGuides','cRef'].forEach(id=>$('#'+id).addEventListener('input',renderPreview));
 $('#cCopies').addEventListener('input',syncQueue);
 
+// ── barcode option: toggle field, validate the starting number ──
+function updateBarcodeUI(){
+  const on=$('#cBarcode').checked;
+  $('#bcField').style.display=on?'':'none';
+  $('#refField').style.display=on?'none':'';   // reference is replaced by the barcode
+  if(on){
+    const raw=cclean($('#cBarcodeStart').value);
+    const h=$('#bcHint');
+    if(!raw){h.innerHTML='Enter the first EMS Speed Post article number (e.g. <code>ET909871256IN</code>). Each label gets the next number in sequence, with the check digit computed automatically.';h.style.color='';}
+    else{
+      const base=parseBarcode(raw);
+      if(!base){h.innerHTML='⚠️ Not a valid article number — expected 2 letters + 9 digits + 2 letters, e.g. <code>ET909871256IN</code>.';h.style.color='var(--rose)';}
+      else if(base.badCheck){h.innerHTML='⚠️ The last digit isn’t a valid check digit for this number. Please re-check — the correct one would be <code>'+esc(barcodeNoAt({...base,serial:base.serial},0))+'</code>.';h.style.color='var(--gold)';}
+      else{const last=state.queue.length?barcodeNoAt(base,totalLabels()-1):base.prefix+String(base.serial).padStart(8,'0')+s10Check(base.serial)+base.suffix;
+        h.innerHTML='✓ First <b>'+esc(barcodeNoAt(base,0))+'</b>'+(state.queue.length?' … last <b>'+esc(last)+'</b>':'')+' — auto-incremented per label.';h.style.color='var(--em)';}
+    }
+  }
+}
+$('#cBarcode').addEventListener('change',()=>{updateBarcodeUI();renderPreview();});
+$('#cBarcodeStart').addEventListener('input',()=>{updateBarcodeUI();renderPreview();});
+
 // ── reuse a part-used sheet: 3×6 cell picker (first sheet only) ──
 function renderCellGrid(){
   const g=$('#cellGrid');
@@ -830,12 +949,14 @@ function expandedLabels(){
 // ─────────────────────────────────────────────────────────────
 const PXMM=3.3; // px per mm on screen
 function renderPreview(){
-  updateGridInfo();
+  updateGridInfo();updateBarcodeUI();
   const box=$('#preview');
   const places=placements();
   if(!places.length){box.innerHTML='<div class="pv-empty">Add recipients to see the sheet preview.</div>';$('#pvSub').textContent='True-to-scale — exactly what prints';return;}
   const g=geom();
-  const showTo=$('#cShowTo').checked, guides=$('#cGuides').checked, reference=cclean($('#cRef').value);
+  const showTo=$('#cShowTo').checked, guides=$('#cGuides').checked;
+  const bcBase=barcodeOpt();
+  const reference=bcBase?'':cclean($('#cRef').value);
   const sheets=sheetsNeeded();
   const bySheet={};places.forEach(pl=>{(bySheet[pl.sheet]=bySheet[pl.sheet]||[]).push(pl);});
   let html='';
@@ -844,10 +965,15 @@ function renderPreview(){
     // faintly mark the used (skipped) cells on the first sheet
     if(s===0&&state.skip.size)state.skip.forEach(ci=>{const p=cellXY(g,ci);
       html+=`<div class="lbl skipcell" style="left:${p.x*PXMM}px;top:${p.y*PXMM}px;width:${g.lblW*PXMM}px;height:${g.lblH*PXMM}px"></div>`;});
-    (bySheet[s]||[]).forEach(pl=>{const p=cellXY(g,pl.cell);html+=labelHTML(pl.label,p,g,{showTo,guides,reference});});
+    (bySheet[s]||[]).forEach(pl=>{const p=cellXY(g,pl.cell);
+      const barcodeNo=bcBase?barcodeNoAt(bcBase,pl.seq):null;
+      html+=labelHTML(pl.label,p,g,{showTo,guides,reference,barcodeNo});});
     html+=`</div><div class="sheet-tag">Sheet ${s+1} of ${sheets}${s===0&&state.skip.size?` · ${state.skip.size} used cell${state.skip.size===1?'':'s'} skipped`:''}</div></div>`;
   }
   box.innerHTML=html;
+  fitPreviewLabels();
+  // Re-fit once fonts are ready, in case the first measurement used fallback metrics.
+  if(document.fonts&&document.fonts.status!=='loaded')document.fonts.ready.then(()=>{if($('#preview').firstElementChild)fitPreviewLabels();});
   $('#pvSub').textContent=`${places.length} label${places.length===1?'':'s'} across ${sheets} sheet${sheets===1?'':'s'} · true-to-scale`;
 }
 function labelHTML(r,p,g,opt){
@@ -855,16 +981,44 @@ function labelHTML(r,p,g,opt){
   const innerW=(g.lblW-2*pad)*PXMM;
   const style=`left:${p.x*PXMM}px;top:${p.y*PXMM}px;width:${g.lblW*PXMM}px;height:${g.lblH*PXMM}px;padding:${pad*PXMM}px`;
   const F=0.352778*PXMM; // px per pt at preview scale (true-to-print)
-  const fs=pt=>(pt*F).toFixed(1)+'px';
-  let inner='';
-  if(opt.reference)inner+=`<div class="l-ref" style="font-size:${fs(7.5)}">${esc(opt.reference)}</div>`;
-  if(opt.showTo)inner+=`<div class="l-to" style="font-size:${fs(9.5)}">To,</div>`;
-  if(r.desig)inner+=`<div class="l-desig" style="font-size:${fs(11)}">${esc(r.desig)}</div>`;
-  if(r.name)inner+=`<div class="l-name" style="font-size:${fs(12.5)}">${esc(r.name)}</div>`;
-  if(r.address)inner+=`<div class="l-addr" style="font-size:${fs(10.5)}">${esc(r.address)}</div>`;
-  if(r.pincode)inner+=`<div class="l-pin" style="font-size:${fs(11.5)}">PIN: ${esc(fmtPin(r.pincode))}</div>`;
-  if(r.mobile)inner+=`<div class="l-mob" style="font-size:${fs(9.5)}">Mobile: ${esc(r.mobile)}</div>`;
-  return `<div class="lbl${opt.guides?' guide':''}" style="${style}"><div style="width:${innerW}px">${inner}</div></div>`;
+  // Fixed top block — the barcode never scales (its size is set for scanning).
+  let top='';
+  if(opt.barcodeNo){
+    const bcH=8*PXMM, bcW=innerW-2*1.5*PXMM; // 1.5mm inset each side → generous quiet zone
+    top+=`<div class="l-barcode">${barcodeSVG(opt.barcodeNo,bcW,bcH)}</div>`;
+    top+=`<div class="l-bcno" style="font-size:${(8*F).toFixed(1)}px">${esc(opt.barcodeNo)}</div>`;
+  }
+  const bctop=top?`<div class="l-bctop">${top}</div>`:'';
+  // Scalable text block — sizes are in em; 1em = 1pt because .lfit's font-size is F px.
+  // A post-render pass (fitPreviewLabels) grows/shrinks .lfit to fill the label.
+  const pinLabel=r.src==='office'?'PINCODE - ':'PIN: ';
+  let fit='';
+  if(!opt.barcodeNo&&opt.reference)fit+=`<div class="l-ref" style="font-size:7.5em">${esc(opt.reference)}</div>`;
+  if(opt.showTo)fit+=`<div class="l-to" style="font-size:9.5em">To,</div>`;
+  if(r.desig)fit+=`<div class="l-desig" style="font-size:11em">${esc(r.desig)}</div>`;
+  if(r.name)fit+=`<div class="l-name" style="font-size:12.5em">${esc(r.name)}</div>`;
+  if(r.address)fit+=`<div class="l-addr" style="font-size:10.5em">${esc(r.address)}</div>`;
+  if(r.pincode)fit+=`<div class="l-pin" style="font-size:11.5em">${pinLabel}${esc(fmtPin(r.pincode))}</div>`;
+  if(r.mobile)fit+=`<div class="l-mob" style="font-size:9.5em">Mobile: ${esc(r.mobile)}</div>`;
+  return `<div class="lbl${opt.guides?' guide':''}" style="${style}"><div class="lwrap" style="width:${innerW.toFixed(1)}px">${bctop}<div class="lfit" data-f="${F.toFixed(3)}" style="font-size:${F.toFixed(3)}px">${fit}</div></div></div>`;
+}
+// Grow/shrink each preview label's text block to fill its free height — mirrors the
+// PDF's uniform-scale fit so the preview stays true to what prints.
+function fitPreviewLabels(){
+  $$('#preview .lbl').forEach(lbl=>{
+    const fit=lbl.querySelector('.lfit'); if(!fit)return;
+    const cs=getComputedStyle(lbl);
+    const contentH=lbl.clientHeight-(parseFloat(cs.paddingTop)||0)-(parseFloat(cs.paddingBottom)||0);
+    const bctop=lbl.querySelector('.l-bctop');
+    const avail=(contentH-(bctop?bctop.offsetHeight:0))*FIT_FILL;
+    if(avail<=0)return;
+    const F=parseFloat(fit.dataset.f)||1;
+    const fits=s=>{fit.style.fontSize=(F*s).toFixed(3)+'px';return fit.scrollHeight<=avail;};
+    // Binary-search the largest uniform scale that fits — mirrors the PDF's fit.
+    let lo=FIT_MIN, hi=FIT_MAX;
+    if(fits(FIT_MIN)){for(let it=0;it<12;it++){const mid=(lo+hi)/2; if(fits(mid))lo=mid; else hi=mid;}}
+    fit.style.fontSize=(F*lo).toFixed(3)+'px';
+  });
 }
 $('#pvRefresh').addEventListener('click',renderPreview);
 
@@ -878,37 +1032,59 @@ function loadScriptOnce(src){return new Promise((res,rej)=>{if([...document.scri
 async function loadPdf(){if(_pdfP)return _pdfP;_pdfP=(async()=>{for(const u of PDF_URLS)await loadScriptOnce(u);})();return _pdfP;}
 
 const PT_MM=0.352778; // 1pt in mm
+// Draw a dark Code 128 barcode (filled bars) plus its human-readable number.
+function drawBarcode(doc,data,x,y,wmm,hmm){
+  const {bars,total}=code128Bars(data), mw=wmm/total;
+  doc.setFillColor(0,0,0);
+  bars.forEach(b=>doc.rect(x+b.x*mw,y,b.w*mw,hmm,'F'));
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(0,0,0);
+  const tw=doc.getTextWidth(data);
+  doc.text(data,x+Math.max(0,(wmm-tw)/2),y+hmm+2.7);
+  doc.setDrawColor(120);doc.setLineWidth(0.15);doc.line(x,y+hmm+3.9,x+wmm,y+hmm+3.9);
+  return hmm+5.1; // total height consumed (barcode + number + rule)
+}
+// Uniform font-scale limits — the block grows to fill short labels (e.g. the tidy
+// office format) and shrinks to fit long addresses from Manual / Excel.
+const FIT_MIN=0.55, FIT_MAX=1.6, FIT_FILL=0.95;
 function drawLabel(doc,r,p,g,opt){
-  const pad=3.6, innerW=g.lblW-2*pad, innerH=g.lblH-2*pad;
+  const pad=3.6, innerW=g.lblW-2*pad;
+  let topOffset=0;
+  if(opt.barcodeNo)topOffset=drawBarcode(doc,opt.barcodeNo,p.x+pad+1.5,p.y+pad,innerW-3,8);
+  const innerH=g.lblH-2*pad-topOffset;
   // Build segments {text, size(pt), bold, isBlock}
   const segs=[];
   const INK=[8,8,8]; // very dark, near-black — for every content line
-  if(opt.reference)segs.push({text:opt.reference,size:7.5,bold:true,color:[85,85,85],rule:true});
+  const pinLabel=r.src==='office'?'PINCODE - ':'PIN: '; // office book uses the requested style
+  if(opt.reference&&!opt.barcodeNo)segs.push({text:opt.reference,size:7.5,bold:true,color:[85,85,85],rule:true});
   if(opt.showTo)segs.push({text:'To,',size:9.5,bold:true,color:INK});
   if(r.desig)segs.push({text:r.desig,size:11,bold:true,color:INK});
   if(r.name)segs.push({text:r.name,size:12.5,bold:true,color:INK});
   if(r.address){String(r.address).split(/\r?\n/).forEach(ln=>{if(cclean(ln))segs.push({text:ln,size:10.5,bold:true,color:INK});});}
-  if(r.pincode)segs.push({text:'PIN: '+fmtPin(r.pincode),size:11.5,bold:true,color:INK});
+  if(r.pincode)segs.push({text:pinLabel+fmtPin(r.pincode),size:11.5,bold:true,color:INK});
   if(r.mobile)segs.push({text:'Mobile: '+r.mobile,size:9.5,bold:true,color:INK});
 
-  // Wrap + measure; shrink font uniformly until the block fits the label height.
-  let scale=1;
-  for(let attempt=0;attempt<10;attempt++){
+  // Measure the wrapped block height at a given uniform scale.
+  const measure=scale=>{
     const lines=[];let total=0;
     for(const sg of segs){
       const size=sg.size*scale;
-      doc.setFont('helvetica',sg.bold?'bold':'normal');
-      doc.setFontSize(size);
+      doc.setFont('helvetica',sg.bold?'bold':'normal');doc.setFontSize(size);
       const wrapped=doc.splitTextToSize(sg.text,innerW);
       wrapped.forEach(w=>{const lh=size*PT_MM*1.16;lines.push({t:w,size,bold:sg.bold,color:sg.color,rule:sg.rule,lh});total+=lh;});
       if(sg.rule)total+=1.1;
     }
-    if(total<=innerH||scale<=0.6){ drawLines(doc,lines,p,pad,innerW,innerH,total); return; }
-    scale*=0.92;
-  }
+    return {lines,total};
+  };
+  // Binary-search the largest uniform scale whose block fits the available height.
+  let lo=FIT_MIN, hi=FIT_MAX;
+  if(measure(FIT_MIN).total<=innerH){
+    for(let it=0;it<18;it++){const mid=(lo+hi)/2; if(measure(mid).total<=innerH*FIT_FILL) lo=mid; else hi=mid;}
+  } // else: even the smallest fit overflows → draw at FIT_MIN
+  const {lines,total}=measure(lo);
+  drawLines(doc,lines,p,pad,topOffset,innerW,innerH,total);
 }
-function drawLines(doc,lines,p,pad,innerW,innerH,total){
-  let y=p.y+pad+Math.max(0,innerH-total)/2; // vertically center the block
+function drawLines(doc,lines,p,pad,topOffset,innerW,innerH,total){
+  let y=p.y+pad+topOffset+Math.max(0,innerH-total)/2; // vertically center in the space below the barcode
   const x=p.x+pad;
   for(const L of lines){
     doc.setFont('helvetica',L.bold?'bold':'normal');
@@ -922,12 +1098,14 @@ function drawLines(doc,lines,p,pad,innerW,innerH,total){
 async function generatePdf(btn){
   const labels=expandedLabels();
   if(!labels.length){toast('Add recipients first.','err');return;}
+  if($('#cBarcode').checked&&!barcodeOpt()){toast('Enter a valid first barcode number (e.g. ET909871256IN) or turn off the barcode option.','err');$('#cBarcodeStart').focus();return;}
   const old=btn.innerHTML;btn.disabled=true;btn.innerHTML='<span class="spin"></span> Building…';
   try{
     await loadPdf();const {jsPDF}=window.jspdf;
     const g=geom();
     const doc=new jsPDF({orientation:g.pageH>=g.pageW?'portrait':'landscape',unit:'mm',format:[g.pageW,g.pageH]});
-    const opt={showTo:$('#cShowTo').checked,guides:$('#cGuides').checked,reference:cclean($('#cRef').value)};
+    const bcBase=barcodeOpt();
+    const opt={showTo:$('#cShowTo').checked,guides:$('#cGuides').checked,reference:bcBase?'':cclean($('#cRef').value)};
     const orient=g.pageH>=g.pageW?'portrait':'landscape';
     const places=placements();
     let curSheet=0;
@@ -935,7 +1113,7 @@ async function generatePdf(btn){
       while(pl.sheet>curSheet){doc.addPage([g.pageW,g.pageH],orient);curSheet++;}
       const p=cellXY(g,pl.cell);
       if(opt.guides){doc.setDrawColor(150,160,210);doc.setLineWidth(0.2);doc.setLineDashPattern([1,1],0);doc.rect(p.x,p.y,g.lblW,g.lblH);doc.setLineDashPattern([],0);}
-      drawLabel(doc,pl.label,p,g,opt);
+      drawLabel(doc,pl.label,p,g,{...opt,barcodeNo:bcBase?barcodeNoAt(bcBase,pl.seq):null});
     });
     const stamp=new Date().toISOString().slice(0,10);
     doc.save(`Address Labels (${labels.length}) ${stamp}.pdf`);
