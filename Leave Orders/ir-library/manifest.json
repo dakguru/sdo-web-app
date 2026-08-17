@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-11 13:03",
+  "generatedAt": "2026-08-17 07:36",
   "items": [
     {
       "file": "Renganathapuram BO - IR 2026 - 09.07.2026.docx",
@@ -360,14 +360,6 @@
       "date": "27.06.2025",
       "sort": 20250627,
       "sizeKB": 80
-    },
-    {
-      "file": "IR appipalayam 15.07.26.doc",
-      "year": "2026",
-      "type": "IR",
-      "office": "IR appipalayam 15.07.26",
-      "date": "15.07.2026",
-      "sizeKB": 337
     },
     {
       "file": "IR Mudiganam 22.07.26.docx",
@@ -1294,5 +1286,5 @@
       "sizeKB": 26
     }
   ],
-  "count": 144
+  "count": 143
 }
