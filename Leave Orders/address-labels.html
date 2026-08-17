@@ -6,6 +6,7 @@
 <script src="/leave-orders/auth-guard.js"></script>
 <script src="/leave-orders/karur-scope.js"></script>
 <script src="/xlsx-lite.js"></script>
+<script src="supabase-sync.js"></script>
 <title>Address Labels — Karur Sub Division</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -238,6 +239,38 @@ html.light .modal{background:#fff}
 .hidden{display:none!important}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
+
+/* barcode inventory + dispatch register */
+.inv-status{font-size:12px;color:var(--text-secondary);font-weight:600;line-height:1.55;margin-top:10px}
+.inv-status b{color:var(--teal)} .inv-status .warn{color:var(--gold)}
+.modal.wide{width:min(880px,100%)}
+.sheetcard{border:1px solid var(--glass-border);border-radius:var(--radius-md);margin-bottom:12px;overflow:hidden;background:rgba(255,255,255,.02)}
+.sheethead{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--glass-border)}
+.sheethead .sh-t{font-weight:800;font-size:13px;color:var(--text-primary);letter-spacing:.3px}
+.sheethead .sh-m{font-size:11px;color:var(--text-muted);margin-top:2px}
+.sheethead .sh-badge{font-size:10px;font-weight:800;padding:3px 9px;border-radius:7px;background:rgba(52,211,153,.16);color:var(--em);flex-shrink:0}
+.sheethead .sh-del{width:26px;height:26px;border:1px solid var(--glass-border);border-radius:7px;background:var(--glass-bg);color:var(--text-secondary);cursor:pointer;font-size:12px;flex-shrink:0}
+.sheethead .sh-del:hover{background:rgba(251,113,133,.2);color:var(--rose);border-color:rgba(251,113,133,.3)}
+.serialgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:7px;padding:12px 13px}
+.serialchip{display:flex;flex-direction:column;gap:5px;border:1px solid var(--glass-border);border-radius:10px;padding:8px 9px;background:var(--glass-bg);transition:all .15s}
+.serialchip .sc-no{font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--text-primary);font-variant-numeric:tabular-nums}
+.serialchip .sc-act{display:flex;gap:5px}
+.serialchip.used{background:repeating-linear-gradient(135deg,rgba(251,113,133,.13) 0 5px,rgba(251,113,133,.04) 5px 10px);border-color:rgba(251,113,133,.35)}
+.serialchip.used .sc-no{text-decoration:line-through;opacity:.65;color:var(--rose)}
+.serialchip.start{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal)}
+.sc-btn{flex:1;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-secondary);border-radius:6px;font-size:9.5px;font-weight:800;padding:4px 5px;cursor:pointer;transition:all .15s}
+.sc-btn:hover{background:var(--glass-bg-hover);color:var(--text-primary)}
+.sc-btn.on{background:linear-gradient(135deg,var(--teal2),var(--teal));color:#fff;border-color:transparent}
+.reg-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+.reg-wrap{max-height:52vh;overflow:auto;border:1px solid var(--glass-border);border-radius:var(--radius-md)}
+.reg-table{width:100%;border-collapse:collapse;font-size:12px}
+.reg-table th,.reg-table td{padding:8px 10px;border-bottom:1px solid var(--glass-border);text-align:left;white-space:nowrap}
+.reg-table td{color:var(--text-secondary);font-weight:600}
+.reg-table th{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);position:sticky;top:0;background:var(--bg-deep);z-index:1}
+html.light .reg-table th{background:#fff}
+.reg-table tr:last-child td{border-bottom:none}
+.reg-table td.bc{font-weight:800;color:var(--teal);font-variant-numeric:tabular-nums;letter-spacing:.3px}
+.reg-table td.nm{white-space:normal;color:var(--text-primary);font-weight:700;min-width:180px}
 </style>
 </head>
 <body>
@@ -356,6 +389,11 @@ html.light .modal{background:#fff}
             <label>First barcode number <span style="text-transform:none;font-weight:600;color:var(--text-muted)">(subsequent numbers auto-generated)</span></label>
             <input type="text" id="cBarcodeStart" placeholder="ET909871256IN" autocomplete="off" spellcheck="false" style="letter-spacing:.6px">
             <div class="hint" id="bcHint" style="margin-top:8px">Enter the first EMS Speed Post article number (e.g. <code>ET909871256IN</code>). Each label gets the next number in sequence, with the check digit computed automatically.</div>
+            <div class="btn-row" style="margin-top:12px">
+              <button class="btn ghost sm" id="bcManage">📦 Barcode inventory</button>
+              <button class="btn ghost sm" id="bcUseNext">⏭ Use next free serial</button>
+            </div>
+            <div class="inv-status" id="bcInvStatus"></div>
           </div>
           <div class="field" id="refField" style="margin-top:12px">
             <label>Reference text (optional — printed small at the top of every label)</label>
@@ -419,6 +457,7 @@ html.light .modal{background:#fff}
           <div class="btn-row" style="margin-bottom:16px">
             <button class="btn ghost sm" id="qSave">💾 Save list</button>
             <button class="btn ghost sm" id="qLoad">📂 Load saved</button>
+            <button class="btn ghost sm" id="openReg">📖 Dispatch register</button>
             <div style="flex:1"></div>
             <button class="btn ghost sm" id="qSort">↕ Sort A–Z</button>
           </div>
@@ -475,6 +514,65 @@ html.light .modal{background:#fff}
   </div>
 </div>
 
+<!-- Generate & record confirm -->
+<div class="modal-overlay" id="genOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title">📄 Generate &amp; record dispatch</div>
+    <div class="del-msg" id="genMsg"></div>
+    <div class="field"><label>Date of despatch</label><input type="date" id="genDate"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="genCancel">Cancel</button>
+      <button class="btn" id="genConfirm">📄 Generate &amp; record</button>
+    </div>
+  </div>
+</div>
+
+<!-- Barcode inventory -->
+<div class="modal-overlay" id="invOverlay">
+  <div class="modal wide" role="dialog" aria-modal="true">
+    <div class="modal-title">📦 Barcode inventory</div>
+    <div class="del-msg" style="margin-bottom:16px">Register each India Post barcode sticker sheet by its <b>first serial</b> — it expands to <b>36</b> sequential numbers (adjust the count if your sheet differs). Pick a serial to <b>start</b> printing from, or <b>mark</b> serials already used. The next free serial is remembered across devices, so you never re-type it.</div>
+    <div class="reg-filters">
+      <div class="field" style="flex:1;min-width:190px;margin-bottom:0"><label>First serial of a new sheet</label><input type="text" id="invFirst" placeholder="ET909871256IN" autocomplete="off" spellcheck="false" style="letter-spacing:.6px"></div>
+      <div class="field" style="width:100px;margin-bottom:0"><label>Barcodes</label><input type="number" id="invCount" value="36" min="1" max="200"></div>
+      <button class="btn" id="invRegister">➕ Register sheet</button>
+    </div>
+    <div class="inv-status" id="invModalStatus" style="margin:4px 0 14px"></div>
+    <div id="invSheets"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="invClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dispatch register -->
+<div class="modal-overlay" id="regOverlay">
+  <div class="modal wide" role="dialog" aria-modal="true">
+    <div class="modal-title">📖 Dispatch register</div>
+    <div class="reg-filters">
+      <div class="search" style="flex:1;min-width:190px"><span>🔍</span><input id="regSearch" type="text" placeholder="Search addressee / barcode / pincode / mobile…" autocomplete="off"></div>
+      <div class="field" style="width:150px;margin-bottom:0"><label>From date</label><input type="date" id="regFrom"></div>
+      <div class="field" style="width:150px;margin-bottom:0"><label>To date</label><input type="date" id="regTo"></div>
+      <button class="btn ghost sm" id="regReload">↻ Reload</button>
+    </div>
+    <div class="btn-row" style="margin-bottom:12px;align-items:center">
+      <span class="ob-count" id="regCount"></span>
+      <div style="flex:1"></div>
+      <button class="btn blue sm" id="regXls">⬇ Excel</button>
+      <button class="btn gold sm" id="regPdf">⬇ PDF</button>
+    </div>
+    <div class="reg-wrap">
+      <table class="reg-table">
+        <thead><tr><th>Sl</th><th>Date of Despatch</th><th>Barcode No.</th><th>Name of the Addressee</th><th>Pincode</th><th>Mobile No.</th></tr></thead>
+        <tbody id="regBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="regClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -490,9 +588,12 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;',
 const cclean=v=>String(v==null?'':v).trim();
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 function fmtPin(raw){const d=cclean(raw).replace(/\D/g,'');if(d.length===6)return d.slice(0,3)+' '+d.slice(3);return cclean(raw);}
+const who=()=>{try{const u=window.AuthSession&&AuthSession.user();return u?(u.displayName||u.username):'web';}catch{return 'web';}};
+function todayISO(){const d=new Date(),z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());}
+function fmtDMY(iso){const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}-${m[2]}-${m[1]}`:(iso||'');}
 
 const LS_KEY='sdo_addr_labels_queue';
-const state={queue:[],offices:[],obFilter:'',obSelected:new Set(),editId:null,skip:new Set()};
+const state={queue:[],offices:[],obFilter:'',obSelected:new Set(),editId:null,skip:new Set(),serials:[],register:[]};
 
 // ── default geometry (mm) — from the measured precut sheet ──
 const DEF={pageW:211,pageH:298,lblW:65,lblH:48,colGap:3,rowGap:0,offX:0,offY:0};
@@ -572,6 +673,186 @@ function barcodeOpt(){
   const base=parseBarcode($('#cBarcodeStart').value);
   if(!base||base.badCheck)return null;
   return base;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Barcode serial inventory (Supabase app_barcode_serials)
+//  Sticker sheets of 36 pre-printed S10 numbers. Stored so the
+//  next free serial is remembered — no re-typing — and any serial
+//  can be picked as the start or marked used.
+// ─────────────────────────────────────────────────────────────
+async function loadSerials(){
+  try{ state.serials=await SB.select('app_barcode_serials','select=serial,prefix,seq,suffix,sheet_id,sheet_pos,status,note,used_at_ms&order=seq.asc'); }
+  catch(e){ state.serials=[]; }
+  return state.serials;
+}
+const serialsSorted=()=>[...state.serials].sort((a,b)=>(a.seq-b.seq)||String(a.serial).localeCompare(b.serial));
+function nextFreeSerial(){const f=serialsSorted().find(s=>s.status!=='used');return f?f.serial:null;}
+
+function refreshBarcodeInv(){
+  const el=$('#bcInvStatus'); if(!el)return;
+  if(!state.serials.length){ el.innerHTML='No barcode sheets registered yet — open <b>Barcode inventory</b> to add your sticker sheet (36 per sheet).'; return; }
+  const total=state.serials.length, used=state.serials.filter(s=>s.status==='used').length, free=total-used, nx=nextFreeSerial();
+  el.innerHTML=`Inventory: <b>${free}</b> free · ${used} used · ${total} total.${nx?` Next free: <b>${esc(nx)}</b>.`:' <span class="warn">All serials used — register a new sheet.</span>'}`;
+}
+
+async function registerSheet(){
+  const raw=cclean($('#invFirst').value);
+  const base=parseBarcode(raw);
+  if(!base){toast('Enter a valid first serial, e.g. ET909871256IN.','err');$('#invFirst').focus();return;}
+  if(base.badCheck){toast('That number’s check digit is wrong — the correct one is '+barcodeNoAt(base,0),'err');return;}
+  const count=Math.max(1,Math.min(200,parseInt($('#invCount').value)||36));
+  const sheetId=barcodeNoAt(base,0), now=Date.now(), by=who();
+  const existing=new Set(state.serials.map(s=>s.serial));
+  const fresh=[];
+  for(let k=0;k<count;k++){
+    const serial=barcodeNoAt(base,k);
+    if(existing.has(serial))continue;   // never clobber an already-tracked serial's status
+    fresh.push({serial,prefix:base.prefix,seq:base.serial+k,suffix:base.suffix,sheet_id:sheetId,sheet_pos:k,status:'available',note:null,used_at_ms:null,updated_by:by,created_at_ms:now});
+  }
+  if(!fresh.length){toast('All those serials are already in your inventory.','err');return;}
+  const btn=$('#invRegister'), old=btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spin"></span> Saving…';
+  try{
+    await SB.upsert('app_barcode_serials',fresh);
+    await loadSerials(); renderInvModal(); refreshBarcodeInv();
+    toast(`Registered ${fresh.length} serial${fresh.length===1?'':'s'} — ${sheetId} … ${barcodeNoAt(base,count-1)} ✓`,'ok');
+    $('#invFirst').value='';
+  }catch(e){ toast('Could not save inventory: '+(e.message||''),'err'); }
+  finally{ btn.disabled=false; btn.innerHTML=old; }
+}
+
+async function toggleSerialUsed(serial){
+  const row=state.serials.find(s=>s.serial===serial); if(!row)return;
+  const toUsed=row.status!=='used';
+  try{
+    await SB.patch('app_barcode_serials',`serial=eq.${encodeURIComponent(serial)}`,{status:toUsed?'used':'available',used_at_ms:toUsed?Date.now():null,updated_by:who()});
+    row.status=toUsed?'used':'available'; row.used_at_ms=toUsed?Date.now():null;
+    renderInvModal(); refreshBarcodeInv();
+  }catch(e){ toast('Could not update serial: '+(e.message||''),'err'); }
+}
+// Mark a list of consumed serials used in one PATCH (only those already tracked).
+async function markSerialsUsed(serials){
+  const set=new Set(serials);
+  const rows=state.serials.filter(s=>set.has(s.serial)&&s.status!=='used');
+  if(!rows.length)return;
+  const inList=rows.map(r=>r.serial).join(',');   // serials are alphanumeric — safe in a PostgREST in() list
+  await SB.patch('app_barcode_serials',`serial=in.(${inList})`,{status:'used',used_at_ms:Date.now(),updated_by:who()});
+  rows.forEach(r=>{r.status='used';r.used_at_ms=Date.now();});
+}
+async function deleteSheet(sheetId){
+  try{
+    await SB.del('app_barcode_serials',`sheet_id=eq.${encodeURIComponent(sheetId)}`);
+    state.serials=state.serials.filter(s=>s.sheet_id!==sheetId);
+    renderInvModal(); refreshBarcodeInv(); toast('Sheet removed.','ok');
+  }catch(e){ toast('Could not remove sheet: '+(e.message||''),'err'); }
+}
+
+function useSerialAsStart(serial){
+  $('#cBarcodeStart').value=serial;
+  if(!$('#cBarcode').checked){$('#cBarcode').checked=true;}
+  updateBarcodeUI(); renderPreview(); renderInvModal();
+  toast('Start serial set to '+serial,'ok');
+}
+
+function renderInvModal(){
+  const box=$('#invSheets');
+  if(!state.serials.length){ box.innerHTML='<div class="empty" style="border:none"><span class="ei">📦</span>No sheets registered yet. Add one above to get started.</div>'; $('#invModalStatus').innerHTML=''; return; }
+  const groups={}; serialsSorted().forEach(s=>{(groups[s.sheet_id]=groups[s.sheet_id]||[]).push(s);});
+  const sheetIds=Object.keys(groups).sort((a,b)=>groups[a][0].seq-groups[b][0].seq);
+  const start=cclean($('#cBarcodeStart').value);
+  box.innerHTML=sheetIds.map(sid=>{
+    const rows=groups[sid], used=rows.filter(r=>r.status==='used').length;
+    return `<div class="sheetcard">
+      <div class="sheethead">
+        <div style="flex:1;min-width:0"><div class="sh-t">${esc(rows[0].serial)} … ${esc(rows[rows.length-1].serial)}</div>
+        <div class="sh-m">${rows.length} barcodes · ${rows.length-used} free · ${used} used</div></div>
+        <span class="sh-badge">${rows.length-used}/${rows.length} free</span>
+        <button class="sh-del" data-delsheet="${esc(sid)}" title="Remove this sheet">🗑</button>
+      </div>
+      <div class="serialgrid">
+        ${rows.map(r=>{const isStart=r.serial===start;
+          return `<div class="serialchip${r.status==='used'?' used':''}${isStart?' start':''}">
+            <div class="sc-no">${esc(r.serial)}</div>
+            <div class="sc-act">
+              <button class="sc-btn${isStart?' on':''}" data-start="${esc(r.serial)}">${isStart?'✓ Start':'Start here'}</button>
+              <button class="sc-btn" data-toggle="${esc(r.serial)}">${r.status==='used'?'↺ Free':'Mark used'}</button>
+            </div></div>`;}).join('')}
+      </div></div>`;
+  }).join('');
+  const total=state.serials.length, u=state.serials.filter(s=>s.status==='used').length;
+  $('#invModalStatus').innerHTML=`<b>${total-u}</b> free of <b>${total}</b> across ${sheetIds.length} sheet${sheetIds.length===1?'':'s'}.`;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Dispatch register (Supabase app_dispatch_register)
+// ─────────────────────────────────────────────────────────────
+async function loadRegister(){
+  const body=$('#regBody');
+  body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:26px;color:var(--text-muted)"><span class="spin" style="border-color:rgba(129,140,248,.35);border-top-color:var(--teal)"></span> Loading…</td></tr>';
+  try{ state.register=await SB.select('app_dispatch_register','select=id,batch_id,dispatch_date,barcode_no,addressee,pincode,mobile,office,created_at_ms&order=dispatch_date.desc,created_at_ms.desc&limit=5000'); }
+  catch(e){ state.register=[]; body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:26px;color:var(--rose)">Could not load the register — has the v13 migration been run in Supabase?</td></tr>'; $('#regCount').textContent=''; return; }
+  renderRegister();
+}
+function filteredRegister(){
+  const q=cclean($('#regSearch').value).toLowerCase(), from=$('#regFrom').value, to=$('#regTo').value;
+  return state.register.filter(r=>{
+    if(from&&(r.dispatch_date||'')<from)return false;
+    if(to&&(r.dispatch_date||'')>to)return false;
+    if(q){const hay=((r.addressee||'')+' '+(r.barcode_no||'')+' '+(r.pincode||'')+' '+(r.mobile||'')).toLowerCase();if(!hay.includes(q))return false;}
+    return true;
+  });
+}
+function renderRegister(){
+  const rows=filteredRegister(), body=$('#regBody');
+  $('#regCount').innerHTML=`<b>${rows.length}</b> record${rows.length===1?'':'s'}`;
+  if(!rows.length){ body.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:26px;color:var(--text-muted)">No dispatch records${state.register.length?' match the filters.':' yet — generate a label PDF to start the register.'}</td></tr>`; return; }
+  body.innerHTML=rows.map((r,i)=>`<tr>
+    <td>${i+1}</td>
+    <td>${esc(fmtDMY(r.dispatch_date))}</td>
+    <td class="bc">${r.barcode_no?esc(r.barcode_no):'—'}</td>
+    <td class="nm">${esc(r.addressee||'')}</td>
+    <td>${r.pincode?esc(fmtPin(r.pincode)):'—'}</td>
+    <td>${r.mobile?esc(r.mobile):'—'}</td></tr>`).join('');
+}
+function runExport(btn,fn){const old=btn.innerHTML;btn.disabled=true;btn.innerHTML='<span class="spin"></span> Building…';
+  Promise.resolve().then(fn).catch(e=>toast('Could not build: '+(e.message||''),'err')).finally(()=>{btn.disabled=false;btn.innerHTML=old;});}
+function regExportExcel(){
+  if(!window.XLSXLite)throw new Error('Excel engine unavailable.');
+  const rows=filteredRegister(); if(!rows.length){toast('Nothing to export with the current filters.','err');return;}
+  const data=rows.map((r,i)=>[String(i+1),fmtDMY(r.dispatch_date),r.barcode_no||'',r.addressee||'',r.pincode?fmtPin(r.pincode):'',r.mobile||'']);
+  const bytes=XLSXLite.build(['Sl. No','Date of Despatch','Barcode No.','Name of the Addressee','Pincode','Mobile No.'],data);
+  dl(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Dispatch Register '+todayISO()+'.xlsx');
+  toast('Excel downloaded ✓','ok');
+}
+const REG_CLR={green:[13,148,136],saffron:[255,153,51],white:[255,255,255],ind:[19,136,8]};
+async function regExportPdf(){
+  const rows=filteredRegister(); if(!rows.length){toast('Nothing to export with the current filters.','err');return;}
+  await loadPdf(); await loadScriptOnce('https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js');
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
+  const W=doc.internal.pageSize.getWidth();
+  const body=rows.map((r,i)=>[i+1,fmtDMY(r.dispatch_date),r.barcode_no||'—',r.addressee||'',r.pincode?fmtPin(r.pincode):'—',r.mobile||'—']);
+  const header=()=>{
+    doc.setFillColor(...REG_CLR.green);doc.rect(0,0,W,58,'F');
+    const t=W/3;doc.setFillColor(...REG_CLR.saffron);doc.rect(0,58,t,4,'F');doc.setFillColor(...REG_CLR.white);doc.rect(t,58,t,4,'F');doc.setFillColor(...REG_CLR.ind);doc.rect(2*t,58,t,4,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(15);doc.text('Dispatch Register',32,26);
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('Department of Posts · Karur Sub Division',32,43);
+    doc.setFontSize(8.5);doc.text('Records: '+rows.length,W-32,26,{align:'right'});doc.text('Generated: '+new Date().toLocaleString('en-IN'),W-32,43,{align:'right'});
+  };
+  const footer=()=>{const H=doc.internal.pageSize.getHeight();doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(150);
+    doc.text('O/o the Assistant Superintendent of Post Offices, Karur Sub Division',32,H-14);
+    doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber,W-32,H-14,{align:'right'});};
+  doc.autoTable({
+    head:[['Sl','Date of Despatch','Barcode No.','Name of the Addressee','Pincode','Mobile No.']],
+    body,startY:74,margin:{top:70,left:24,right:24},
+    styles:{font:'helvetica',fontSize:9,cellPadding:4.5,overflow:'linebreak',lineColor:[214,230,228],lineWidth:.5},
+    headStyles:{fillColor:REG_CLR.green,textColor:255,fontStyle:'bold',halign:'center',fontSize:9},
+    alternateRowStyles:{fillColor:[240,250,248]},
+    columnStyles:{0:{halign:'center',cellWidth:26},1:{halign:'center',cellWidth:88},2:{cellWidth:98,fontStyle:'bold',textColor:REG_CLR.green},4:{halign:'center',cellWidth:58},5:{halign:'center',cellWidth:74}},
+    didDrawPage:()=>{header();footer();}
+  });
+  doc.save('Dispatch Register '+todayISO()+'.pdf');
+  toast('PDF downloaded ✓','ok');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1095,10 +1376,33 @@ function drawLines(doc,lines,p,pad,topOffset,innerW,innerH,total){
     if(L.rule){doc.setDrawColor(150);doc.setLineWidth(0.15);doc.line(x,y+0.6,x+innerW,y+0.6);y+=1.1;}
   }
 }
-async function generatePdf(btn){
+// Step 1 — validate & summarise, then open the confirm-and-record dialog.
+function openGenConfirm(){
   const labels=expandedLabels();
   if(!labels.length){toast('Add recipients first.','err');return;}
   if($('#cBarcode').checked&&!barcodeOpt()){toast('Enter a valid first barcode number (e.g. ET909871256IN) or turn off the barcode option.','err');$('#cBarcodeStart').focus();return;}
+  const places=placements(), n=places.length, sh=sheetsNeeded();
+  const bcBase=barcodeOpt();
+  let msg=`This generates <b>${n}</b> label${n===1?'':'s'} on <b>${sh}</b> sheet${sh===1?'':'s'} and saves <b>${n}</b> row${n===1?'':'s'} to the dispatch register for ready reference.`;
+  if(bcBase){
+    const first=barcodeNoAt(bcBase,0), last=barcodeNoAt(bcBase,n-1);
+    const consumed=places.map(pl=>barcodeNoAt(bcBase,pl.seq));
+    const known=new Set(state.serials.map(s=>s.serial));
+    const inInv=consumed.filter(s=>known.has(s)).length;
+    msg+=`<br><br>Barcodes <b>${esc(first)}</b> → <b>${esc(last)}</b> are printed and marked <b>Used</b> in inventory`;
+    msg+= inInv<n ? ` <span style="color:var(--gold)">(${n-inInv} of these ${n} aren’t in your inventory yet — they’re still recorded).</span>` : '.';
+  }else{
+    msg+=`<br><br>Barcodes are off, so the <b>Barcode No.</b> column will be blank.`;
+  }
+  $('#genMsg').innerHTML=msg;
+  $('#genDate').value=todayISO();
+  $('#genOverlay').classList.add('show');
+}
+// Step 2 — build the PDF, then record dispatch rows + consume serials.
+async function generateAndRecord(dispDate){
+  const btn=$('#genPdf');
+  const labels=expandedLabels();
+  if(!labels.length){toast('Add recipients first.','err');return;}
   const old=btn.innerHTML;btn.disabled=true;btn.innerHTML='<span class="spin"></span> Building…';
   try{
     await loadPdf();const {jsPDF}=window.jspdf;
@@ -1108,30 +1412,83 @@ async function generatePdf(btn){
     const opt={showTo:$('#cShowTo').checked,guides:$('#cGuides').checked,reference:bcBase?'':cclean($('#cRef').value)};
     const orient=g.pageH>=g.pageW?'portrait':'landscape';
     const places=placements();
+    const batchId=uid()+Date.now().toString(36), now=Date.now(), by=who();
+    const regRows=[], consumed=[];
     let curSheet=0;
     places.forEach(pl=>{
       while(pl.sheet>curSheet){doc.addPage([g.pageW,g.pageH],orient);curSheet++;}
       const p=cellXY(g,pl.cell);
       if(opt.guides){doc.setDrawColor(150,160,210);doc.setLineWidth(0.2);doc.setLineDashPattern([1,1],0);doc.rect(p.x,p.y,g.lblW,g.lblH);doc.setLineDashPattern([],0);}
-      drawLabel(doc,pl.label,p,g,{...opt,barcodeNo:bcBase?barcodeNoAt(bcBase,pl.seq):null});
+      const barcodeNo=bcBase?barcodeNoAt(bcBase,pl.seq):null;
+      drawLabel(doc,pl.label,p,g,{...opt,barcodeNo});
+      const r=pl.label;
+      if(barcodeNo)consumed.push(barcodeNo);
+      regRows.push({id:uid()+'-'+pl.seq, batch_id:batchId, dispatch_date:dispDate, barcode_no:barcodeNo||null,
+        addressee:r.name||'', pincode:cclean(r.pincode).replace(/\s+/g,'')||null, mobile:cclean(r.mobile)||null,
+        office:r.address?String(r.address).replace(/\n/g,', '):null, created_by:by, created_at_ms:now});
     });
-    const stamp=new Date().toISOString().slice(0,10);
+    const stamp=todayISO();
     doc.save(`Address Labels (${labels.length}) ${stamp}.pdf`);
-    toast(`PDF ready — ${labels.length} labels on ${sheetsNeeded()} sheet(s) ✓`,'ok');
+    // Record to Supabase — best effort; the PDF is already saved either way.
+    let saved=false;
+    try{
+      await SB.upsert('app_dispatch_register',regRows);
+      if(consumed.length)await markSerialsUsed(consumed);
+      saved=true;
+    }catch(e){ console.warn('dispatch record failed',e); }
+    // Advance the start-serial field so it's ready for the next run.
+    if(bcBase){
+      if(saved)await loadSerials();
+      const nx=nextFreeSerial();
+      $('#cBarcodeStart').value = nx || barcodeNoAt(bcBase,places.length);
+      updateBarcodeUI(); refreshBarcodeInv();
+    }
+    renderPreview();
+    toast(saved?`PDF ready — ${labels.length} labels · ${regRows.length} saved to the register ✓`
+               :`PDF ready, but the register couldn’t be saved (offline or migration not run).`, saved?'ok':'err');
   }catch(e){toast('Could not build PDF: '+(e.message||''),'err');}
   finally{btn.disabled=false;btn.innerHTML=old;}
 }
-$('#genPdf').addEventListener('click',e=>generatePdf(e.currentTarget));
+$('#genPdf').addEventListener('click',openGenConfirm);
+$('#genCancel').addEventListener('click',()=>$('#genOverlay').classList.remove('show'));
+$('#genConfirm').addEventListener('click',()=>{const date=$('#genDate').value||todayISO();$('#genOverlay').classList.remove('show');generateAndRecord(date);});
+
+// ── inventory + register modal wiring ──
+$('#bcManage').addEventListener('click',()=>{renderInvModal();$('#invOverlay').classList.add('show');});
+$('#bcUseNext').addEventListener('click',()=>{const nx=nextFreeSerial();if(!nx){toast('No free serials — register a sheet in Barcode inventory.','err');return;}useSerialAsStart(nx);});
+$('#invRegister').addEventListener('click',registerSheet);
+$('#invFirst').addEventListener('keydown',e=>{if(e.key==='Enter')registerSheet();});
+$('#invClose').addEventListener('click',()=>$('#invOverlay').classList.remove('show'));
+$('#invSheets').addEventListener('click',e=>{
+  const s=e.target.closest('[data-start]');if(s){useSerialAsStart(s.dataset.start);return;}
+  const t=e.target.closest('[data-toggle]');if(t){toggleSerialUsed(t.dataset.toggle);return;}
+  const d=e.target.closest('[data-delsheet]');if(d){if(confirm('Remove this whole sheet of serials from inventory?'))deleteSheet(d.dataset.delsheet);return;}
+});
+$('#openReg').addEventListener('click',()=>{$('#regOverlay').classList.add('show');loadRegister();});
+$('#regClose').addEventListener('click',()=>$('#regOverlay').classList.remove('show'));
+$('#regReload').addEventListener('click',loadRegister);
+['#regSearch','#regFrom','#regTo'].forEach(s=>$(s).addEventListener('input',renderRegister));
+$('#regXls').addEventListener('click',e=>runExport(e.currentTarget,regExportExcel));
+$('#regPdf').addEventListener('click',e=>runExport(e.currentTarget,regExportPdf));
 
 // keyboard
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#editOverlay').classList.remove('show');$('#clrOverlay').classList.remove('show');}});
-[['editOverlay'],['clrOverlay']].forEach(([id])=>{const o=document.getElementById(id);o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');});});
+const OVERLAYS=['editOverlay','clrOverlay','genOverlay','invOverlay','regOverlay'];
+document.addEventListener('keydown',e=>{if(e.key==='Escape')OVERLAYS.forEach(id=>$('#'+id).classList.remove('show'));});
+OVERLAYS.forEach(id=>{const o=document.getElementById(id);o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');});});
 
 // ── init ──
 (function(){
   // restore soft-persisted queue
   try{const raw=localStorage.getItem(LS_KEY+'_auto');if(raw){const arr=JSON.parse(raw);if(Array.isArray(arr))state.queue=arr;}}catch(e){}
   updateGridInfo();renderCellGrid();syncQueue();loadOffices();
+  // barcode inventory — connect, load serials, and pre-fill the next free start serial
+  (async()=>{
+    try{await SB.init();}catch(e){}
+    try{await loadSerials();}catch(e){}
+    refreshBarcodeInv();
+    const nx=nextFreeSerial();
+    if(nx&&!cclean($('#cBarcodeStart').value)){$('#cBarcodeStart').value=nx;updateBarcodeUI();}
+  })();
 })();
 </script>
 </body>
