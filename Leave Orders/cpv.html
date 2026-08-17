@@ -487,6 +487,8 @@ function makeColMap(low){
   const col={
     acct:findCol(/account\s*number/),
     name:findCol(/cust1?\s*name|customer\s*name|^name$/),
+    // Primary depositor's CIF ID — the "Cust1 CIF ID" column (9 digits).
+    cif:findCol(/cust1?\s*cif/),
     addr:findCol(/address/),
     type:findCol(/account\s*type/),
     bal:findCol(/balance\s*after/),
@@ -497,6 +499,7 @@ function makeColMap(low){
   };
   if(col.status<0)col.status=findCol(/^status/);
   if(col.name<0)col.name=findCol(/name/);
+  if(col.cif<0)col.cif=findCol(/\bcif\b/);
   return col;
 }
 
@@ -546,6 +549,7 @@ function extractReport(rows){
     const rec={
       acct,
       name:cclean(readAt(row,col.name,offset)).replace(/\s+/g,' '),
+      cif:cclean(readAt(row,col.cif,offset)).replace(/\s+/g,''),
       address:cleanAddress(readAt(row,col.addr,offset)),
       type:cclean(readAt(row,col.type,offset)),
       balance:parseBalance(readAt(row,col.bal,offset)),
@@ -862,11 +866,11 @@ function renderDetail(){
   $('#filterCount').innerHTML=`Showing <b>${rows.length.toLocaleString('en-IN')}</b> of ${total.toLocaleString('en-IN')} accounts`;
   const scheme=state.current?state.current.scheme:'';
   let body=`<thead><tr>
-    <th>Sl.No</th><th>Scheme</th><th>Account No.</th><th>Customer Name</th><th>Address</th>
+    <th>Sl.No</th><th>Scheme</th><th>Account No.</th><th>Customer Name</th><th>CIF ID</th><th>Address</th>
     <th>Account Type</th><th style="text-align:right">Balance ₹</th><th>Last Txn</th><th>Status</th>
   </tr></thead><tbody>`;
   if(!rows.length){
-    body+=`<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">No accounts match the current filters.</td></tr>`;
+    body+=`<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)">No accounts match the current filters.</td></tr>`;
   }else{
     let sum=0;
     rows.forEach((r,i)=>{
@@ -876,6 +880,7 @@ function renderDetail(){
         <td><span class="sc-chip" style="font-size:10px;padding:2px 7px">${esc(scheme)}</span></td>
         <td class="mono">${esc(r.acct)}</td>
         <td class="nm">${esc(r.name||'—')}</td>
+        <td class="mono">${esc(r.cif||'—')}</td>
         <td class="addr">${esc(r.address||'—')}</td>
         <td>${esc(r.type||'—')}</td>
         <td class="num">${r.balance==null?'—':fmtAmt(r.balance)}</td>
@@ -883,7 +888,7 @@ function renderDetail(){
         <td><span class="status ${statusClass(r.status)}">${esc(r.status||'—')}</span></td>
       </tr>`;
     });
-    body+=`<tr class="totrow"><td colspan="6" style="text-align:right">Total balance (${rows.length} accounts)</td><td class="num">₹ ${fmtAmt(sum)}</td><td colspan="2"></td></tr>`;
+    body+=`<tr class="totrow"><td colspan="7" style="text-align:right">Total balance (${rows.length} accounts)</td><td class="num">₹ ${fmtAmt(sum)}</td><td colspan="2"></td></tr>`;
   }
   body+='</tbody>';
   $('#detailTable').innerHTML=body;
@@ -931,11 +936,11 @@ function exportBaseName(){
 function exportRows(){
   const rows=filteredRecords();const scheme=state.current.scheme;
   return rows.map((r,i)=>[
-    String(i+1),scheme,r.acct,r.name||'',r.address||'',r.type||'',
+    String(i+1),scheme,r.acct,r.name||'',r.cif||'',r.address||'',r.type||'',
     r.balance==null?'':fmtAmt(r.balance),fmtTxnDate(r.date)||r.dateRaw||'',r.status||''
   ]);
 }
-const XLS_HEAD=['Sl.No','Scheme','Account No.','Customer Name','Address','Account Type','Balance After Transaction','Date of Last Transaction','Status'];
+const XLS_HEAD=['Sl.No','Scheme','Account No.','Customer Name','Cust1 CIF ID','Address','Account Type','Balance After Transaction','Date of Last Transaction','Status'];
 function exportExcel(){
   if(!window.XLSXLite){toast('Excel engine unavailable.','err');return;}
   const data=exportRows();
@@ -962,7 +967,7 @@ async function exportPdf(){
   const W=doc.internal.pageSize.getWidth();
   let grand=0;
   const body=rows.map((r,i)=>{if(r.balance!=null)grand+=r.balance;
-    return [i+1,o.scheme,r.acct,r.name||'',r.address||'',r.type||'',r.balance==null?'—':fmtAmt(r.balance),fmtTxnDate(r.date)||r.dateRaw||'—',r.status||'—'];});
+    return [i+1,o.scheme,r.acct,r.name||'',r.cif||'—',r.address||'',r.type||'',r.balance==null?'—':fmtAmt(r.balance),fmtTxnDate(r.date)||r.dateRaw||'—',r.status||'—'];});
   const header=()=>{
     doc.setFillColor(...CLR.green);doc.rect(0,0,W,58,'F');
     const t=W/3;doc.setFillColor(...CLR.saffron);doc.rect(0,58,t,4,'F');doc.setFillColor(...CLR.white);doc.rect(t,58,t,4,'F');doc.setFillColor(...CLR.ind);doc.rect(2*t,58,t,4,'F');
@@ -976,13 +981,13 @@ async function exportPdf(){
     doc.text('O/o the Assistant Superintendent of Post Offices, Karur Sub Division',32,H-14);
     doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber,W-32,H-14,{align:'right'});};
   doc.autoTable({
-    head:[['Sl','Sch','Account No.','Customer Name','Address','Type','Balance ₹','Last Txn','Status']],
+    head:[['Sl','Sch','Account No.','Customer Name','CIF ID','Address','Type','Balance ₹','Last Txn','Status']],
     body,startY:74,margin:{top:70,left:24,right:24},
     styles:{font:'helvetica',fontSize:8,cellPadding:3.5,overflow:'linebreak',lineColor:[214,230,228],lineWidth:.5},
     headStyles:{fillColor:CLR.green,textColor:255,fontStyle:'bold',halign:'center',fontSize:8.4},
     alternateRowStyles:{fillColor:[240,250,248]},
-    columnStyles:{0:{halign:'center',cellWidth:24},1:{halign:'center',cellWidth:30},2:{cellWidth:88,fontStyle:'bold'},3:{cellWidth:120},5:{cellWidth:70},6:{halign:'right',cellWidth:66,fontStyle:'bold'},7:{halign:'center',cellWidth:56},8:{halign:'center',cellWidth:56}},
-    didParseCell:d=>{if(d.section==='body'&&d.column.index===8){const cls=statusClass(d.cell.raw);d.cell.styles.fontStyle='bold';
+    columnStyles:{0:{halign:'center',cellWidth:22},1:{halign:'center',cellWidth:28},2:{cellWidth:86,fontStyle:'bold'},3:{cellWidth:108},4:{halign:'center',cellWidth:62},6:{cellWidth:64},7:{halign:'right',cellWidth:64,fontStyle:'bold'},8:{halign:'center',cellWidth:54},9:{halign:'center',cellWidth:54}},
+    didParseCell:d=>{if(d.section==='body'&&d.column.index===9){const cls=statusClass(d.cell.raw);d.cell.styles.fontStyle='bold';
       if(cls==='active'){d.cell.styles.textColor=[16,120,80];}
       else if(cls==='dormant'){d.cell.styles.textColor=[176,120,8];}
       else if(cls==='freezed'){d.cell.styles.textColor=[190,40,60];}

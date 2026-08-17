@@ -89,6 +89,177 @@
     return new Uint8Array(await new Response(stream).arrayBuffer());
   }
 
+  /* ---------- legacy .xls (OLE2 / BIFF8) reader ----------
+     Old India-Post exports come as binary .xls (OLE2 compound file, magic
+     D0CF11E0), not zipped .xlsx. This reads the "Workbook" stream out of the
+     OLE2 container and decodes just enough BIFF8 to rebuild the cell grid as
+     rows of strings — numbers are emitted as plain numeric strings so leading
+     zeros are re-padded downstream and Excel date serials survive. */
+  const OLE_ENDOFCHAIN = 0xFFFFFFFE, OLE_FREESECT = 0xFFFFFFFF;
+  function looksLikeOle(bytes) {
+    return bytes.length > 8 && bytes[0] === 0xD0 && bytes[1] === 0xCF &&
+      bytes[2] === 0x11 && bytes[3] === 0xE0 && bytes[4] === 0xA1 && bytes[5] === 0xB1;
+  }
+  function le32(u8, o) { return (u8[o] | (u8[o + 1] << 8) | (u8[o + 2] << 16) | (u8[o + 3] << 24)) >>> 0; }
+
+  function parseXls(bytes) {
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const g16 = o => dv.getUint16(o, true), g32 = o => dv.getUint32(o, true) >>> 0;
+    const sectorSize = 1 << g16(30);          // usually 512
+    const miniSize = 1 << g16(32);            // usually 64
+    const dirStart = g32(48);
+    const miniCutoff = g32(56);               // usually 4096
+    const miniFatStart = g32(60);
+    const difatStart = g32(68), numDifat = g32(72);
+
+    // Collect FAT sector numbers: first 109 live in the header DIFAT, the rest
+    // (only for very large files) chain through dedicated DIFAT sectors.
+    const fatSectors = [];
+    for (let i = 0; i < 109; i++) { const v = g32(76 + i * 4); if (v === OLE_FREESECT) break; fatSectors.push(v); }
+    let ds = difatStart, guard = 0;
+    while (numDifat > 0 && ds !== OLE_ENDOFCHAIN && ds !== OLE_FREESECT && guard++ < numDifat + 8) {
+      const off = 512 + ds * sectorSize, per = (sectorSize / 4) - 1;
+      for (let i = 0; i < per; i++) { const v = g32(off + i * 4); if (v !== OLE_FREESECT) fatSectors.push(v); }
+      ds = g32(off + per * 4);
+    }
+    // Build the FAT (sector → next sector).
+    const perSec = sectorSize / 4;
+    const fat = new Uint32Array(fatSectors.length * perSec);
+    let fi = 0;
+    for (const fs of fatSectors) { const off = 512 + fs * sectorSize; for (let i = 0; i < perSec; i++) fat[fi++] = g32(off + i * 4); }
+
+    const readChain = (start, size) => {           // walk regular FAT chain
+      const parts = []; let s = start, seen = new Set();
+      while (s !== OLE_ENDOFCHAIN && s !== OLE_FREESECT && s < fat.length && !seen.has(s)) {
+        seen.add(s); const off = 512 + s * sectorSize;
+        parts.push(bytes.subarray(off, off + sectorSize)); s = fat[s];
+      }
+      let out = concat(parts); return size != null ? out.subarray(0, size) : out;
+    };
+
+    // Directory entries.
+    const dir = readChain(dirStart, null);
+    const entries = [];
+    for (let o = 0; o + 128 <= dir.length; o += 128) {
+      const type = dir[o + 66]; if (type === 0) continue;   // 1 storage · 2 stream · 5 root
+      const nameLen = dir[o + 64] | (dir[o + 65] << 8);
+      let name = '';
+      for (let i = 0; i + 1 < nameLen && i < 64; i += 2) { const c = dir[o + i] | (dir[o + i + 1] << 8); if (c) name += String.fromCharCode(c); }
+      entries.push({ name, type, start: le32(dir, o + 116), size: le32(dir, o + 120) });
+    }
+    const root = entries.find(e => e.type === 5);
+    if (!root) throw new Error('This .xls file is unreadable (no OLE root). Save it as .xlsx or CSV and retry.');
+
+    // Mini-stream + mini-FAT (small streams live here).
+    let miniStream = null, miniFat = null;
+    const ensureMini = () => {
+      if (miniStream) return;
+      miniStream = readChain(root.start, root.size);
+      const mf = readChain(miniFatStart, null);
+      miniFat = new Uint32Array(Math.floor(mf.length / 4));
+      for (let i = 0; i < miniFat.length; i++) miniFat[i] = le32(mf, i * 4);
+    };
+    const readMiniChain = (start, size) => {
+      ensureMini(); const parts = []; let s = start, seen = new Set();
+      while (s !== OLE_ENDOFCHAIN && s !== OLE_FREESECT && s < miniFat.length && !seen.has(s)) {
+        seen.add(s); const off = s * miniSize; parts.push(miniStream.subarray(off, off + miniSize)); s = miniFat[s];
+      }
+      let out = concat(parts); return size != null ? out.subarray(0, size) : out;
+    };
+
+    const wbEntry = entries.find(e => e.type === 2 && (e.name === 'Workbook' || e.name === 'Book'));
+    if (!wbEntry) throw new Error('No Workbook stream found in this .xls file.');
+    const wb = wbEntry.size < miniCutoff ? readMiniChain(wbEntry.start, wbEntry.size) : readChain(wbEntry.start, wbEntry.size);
+    return biffToRows(wb);
+  }
+
+  // Decode an RK-encoded number (BIFF).
+  function decodeRK(rk) {
+    let n;
+    if (rk & 0x02) { n = (rk | 0) >> 2; }
+    else { const b = new ArrayBuffer(8), d = new DataView(b); d.setUint32(4, rk & 0xFFFFFFFC, true); n = d.getFloat64(0, true); }
+    return (rk & 0x01) ? n / 100 : n;
+  }
+  // Numbers → plain strings (no exponent) so account numbers & date serials survive.
+  function numStr(n) { return Number.isFinite(n) ? String(n) : ''; }
+  // BIFF8 XLUnicodeString with a 16-bit char count and a single option-flags byte
+  // (used by LABEL and the STRING result record). Rich/phonetic extras are ignored.
+  function readXLString16(u8, off) {
+    const cch = u8[off] | (u8[off + 1] << 8); const grbit = u8[off + 2];
+    const high = grbit & 0x01; let o = off + 3, s = '';
+    for (let i = 0; i < cch; i++) { if (high) { s += String.fromCharCode(u8[o] | (u8[o + 1] << 8)); o += 2; } else { s += String.fromCharCode(u8[o++]); } }
+    return s;
+  }
+
+  // Parse the SST (shared string table), which may be split across CONTINUE
+  // records. Each split re-emits the option-flags byte inside character data.
+  function parseSST(segs) {
+    let si = 0, pos = 0;
+    const need = () => { while (si < segs.length && pos >= segs[si].length) { si++; pos = 0; } };
+    const u8 = () => { need(); return segs[si][pos++]; };
+    const u16 = () => u8() | (u8() << 8);
+    const u32 = () => (u8() | (u8() << 8) | (u8() << 16) | (u8() << 24)) >>> 0;
+    const skip = n => { while (n > 0) { if (pos >= segs[si].length) { si++; pos = 0; } const take = Math.min(segs[si].length - pos, n); pos += take; n -= take; } };
+    u32(); const cstUnique = u32();           // skip cstTotal, keep unique count
+    const out = [];
+    for (let k = 0; k < cstUnique; k++) {
+      const cch = u16(); let grbit = u8();
+      let high = grbit & 0x01; const rich = grbit & 0x08, ext = grbit & 0x04;
+      const cRun = rich ? u16() : 0, cbExt = ext ? u32() : 0;
+      let s = '';
+      for (let i = 0; i < cch; i++) {
+        if (pos >= segs[si].length) { si++; pos = 0; grbit = segs[si][pos++]; high = grbit & 0x01; }   // fresh flags at boundary
+        if (high) { s += String.fromCharCode(segs[si][pos] | (segs[si][pos + 1] << 8)); pos += 2; }
+        else { s += String.fromCharCode(segs[si][pos++]); }
+      }
+      skip(cRun * 4 + cbExt);
+      out.push(s);
+    }
+    return out;
+  }
+
+  function biffToRows(wb) {
+    const dv = new DataView(wb.buffer, wb.byteOffset, wb.byteLength);
+    const u16 = o => dv.getUint16(o, true), u32 = o => dv.getUint32(o, true) >>> 0;
+    const n = wb.length;
+    let sst = [], sheetCount = 0, maxRow = -1, maxCol = -1;
+    const cells = Object.create(null);
+    const set = (r, c, v) => { cells[r + ',' + c] = v; if (r > maxRow) maxRow = r; if (c > maxCol) maxCol = c; };
+    let p = 0;
+    while (p + 4 <= n) {
+      const type = u16(p), len = u16(p + 2), d = p + 4;
+      if (type === 0x0809) {                    // BOF — stop after the first worksheet substream
+        const dt = u16(d + 2);
+        if (dt === 0x0010) { sheetCount++; if (sheetCount > 1) break; }
+      } else if (type === 0x00FC) {             // SST (+ following CONTINUE records)
+        const segs = [wb.subarray(d, d + len)]; let q = d + len;
+        while (q + 4 <= n && u16(q) === 0x003C) { const l2 = u16(q + 2); segs.push(wb.subarray(q + 4, q + 4 + l2)); q += 4 + l2; }
+        sst = parseSST(segs); p = q; continue;
+      } else if (type === 0x00FD) {             // LABELSST — row, col, ixfe, isst(u32 @ +6)
+        set(u16(d), u16(d + 2), sst[u32(d + 6)] || '');
+      } else if (type === 0x0204) {             // LABEL
+        set(u16(d), u16(d + 2), readXLString16(wb, d + 6));
+      } else if (type === 0x0203) {             // NUMBER
+        set(u16(d), u16(d + 2), numStr(dv.getFloat64(d + 6, true)));
+      } else if (type === 0x027E) {             // RK
+        set(u16(d), u16(d + 2), numStr(decodeRK(u32(d + 6))));
+      } else if (type === 0x00BD) {             // MULRK
+        const r = u16(d), cFirst = u16(d + 2), cLast = u16(d + len - 2);
+        let o = d + 4;
+        for (let c = cFirst; c <= cLast; c++) { set(r, c, numStr(decodeRK(u32(o + 2)))); o += 6; }
+      } else if (type === 0x0006) {             // FORMULA — cached number, or STRING record follows
+        const r = u16(d), c = u16(d + 2);
+        if (wb[d + 12] === 0xFF && wb[d + 13] === 0xFF) {
+          if (wb[d + 6] === 0x00 && p + 4 + len + 4 <= n && u16(d + len) === 0x0207) set(r, c, readXLString16(wb, d + len + 4));
+        } else { set(r, c, numStr(dv.getFloat64(d + 6, true))); }
+      }
+      p = d + len;
+    }
+    const rows = [];
+    for (let r = 0; r <= maxRow; r++) { const row = new Array(maxCol + 1).fill(''); for (let c = 0; c <= maxCol; c++) { const v = cells[r + ',' + c]; if (v != null) row[c] = v; } rows.push(row); }
+    return rows;
+  }
+
   /* ---------- workbook parts (text-formatted) ---------- */
   const CONTENT_TYPES =
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -168,7 +339,9 @@
 
   /* parse(arrayBuffer) -> rows:[[string]]  (first row is normally the header) */
   async function parse(arrayBuffer) {
-    const files = await unzip(new Uint8Array(arrayBuffer));
+    const raw = new Uint8Array(arrayBuffer);
+    if (looksLikeOle(raw)) return parseXls(raw);          // legacy binary .xls
+    const files = await unzip(raw);
     const dec = new TextDecoder();
     const shared = parseSharedStrings(files['xl/sharedStrings.xml'] ? dec.decode(files['xl/sharedStrings.xml']) : '');
     let sheetName = files['xl/worksheets/sheet1.xml'] ? 'xl/worksheets/sheet1.xml'
