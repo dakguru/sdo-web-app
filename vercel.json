@@ -8,6 +8,7 @@
     { "source": "/verification", "destination": "/Leave Orders/verification.html" },
     { "source": "/cent-percent-verification", "destination": "/Leave Orders/cpv.html" },
     { "source": "/address-labels", "destination": "/Leave Orders/address-labels.html" },
+    { "source": "/test-letters", "destination": "/Leave Orders/test-letters.html" },
     { "source": "/ir-builder", "destination": "/app/wwwroot/index.html" },
     { "source": "/leave-orders", "destination": "/Leave Orders/index.html" },
     { "source": "/arrangements", "destination": "/Leave Orders/arrangements.html" },

@@ -1,0 +1,839 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="/leave-orders/auth-guard.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
+<script src="supabase-sync.js"></script>
+<title>Test Letters (DTLR) — Karur Sub Division</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep:#0a0e1a; --glass-bg:rgba(255,255,255,0.06); --glass-bg-hover:rgba(255,255,255,0.12);
+  --glass-border:rgba(255,255,255,0.12); --glass-border-hover:rgba(255,255,255,0.25);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.25); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.35),0 0 0 1px rgba(255,255,255,0.15);
+  --glass-blur:20px; --text-primary:#f1f5f9; --text-secondary:rgba(241,245,249,0.7); --text-muted:rgba(241,245,249,0.45);
+  --teal:#818cf8; --teal2:#6366f1; --cyan:#a78bfa; --blue:#60a5fa; --indigo:#818cf8; --violet:#a78bfa;
+  --em:#34d399; --gold:#fbbf24; --gold2:#f59e0b; --rose:#fb7185; --orange:#fb923c; --pink:#f472b6;
+  --radius-xl:24px; --radius-lg:18px; --radius-md:14px;
+}
+html.light{
+  --bg-deep:#f0f2f7; --glass-bg:rgba(255,255,255,0.72); --glass-bg-hover:rgba(255,255,255,0.95);
+  --glass-border:rgba(0,0,0,0.08); --glass-border-hover:rgba(0,0,0,0.15);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.08); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.12),0 0 0 1px rgba(0,0,0,0.06);
+  --text-primary:#0f172a; --text-secondary:rgba(15,23,42,0.7); --text-muted:rgba(15,23,42,0.45);
+  --teal:#6366f1; --teal2:#4f46e5; --cyan:#7c3aed; --blue:#2563eb; --indigo:#4f46e5; --violet:#7c3aed;
+  --em:#059669; --gold:#d97706; --gold2:#b45309; --rose:#e11d48; --orange:#ea580c; --pink:#db2777;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-deep);color:var(--text-primary);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s,color .4s}
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(129,140,248,0.16),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(167,139,250,0.13),transparent 65%),
+  radial-gradient(ellipse 600px 420px at 55% 92%,rgba(244,114,182,0.09),transparent 60%),
+  linear-gradient(180deg,#0a0e1a,#111827 55%,#0f1729)}
+html.light .bg-mesh{background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(99,102,241,0.08),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(124,58,237,0.06),transparent 65%),
+  linear-gradient(180deg,#f0f2f7,#e8ecf4 55%,#f0f2f7)}
+
+.page-wrap{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:26px 22px 70px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.back-link{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--text-secondary);font-weight:600;font-size:13.5px;
+  padding:9px 15px;border-radius:999px;background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(var(--glass-blur));transition:all .3s;cursor:pointer}
+.back-link:hover{background:var(--glass-bg-hover);color:var(--text-primary);transform:translateX(-2px)}
+.tb-right{display:flex;align-items:center;gap:10px}
+.privacy{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text-secondary);background:var(--glass-bg);border:1px solid var(--glass-border);padding:8px 13px;border-radius:999px;backdrop-filter:blur(var(--glass-blur))}
+.privacy .dot{width:8px;height:8px;border-radius:50%;background:var(--em);box-shadow:0 0 8px var(--em)}
+.theme-toggle{width:44px;height:44px;border-radius:50%;border:1px solid var(--glass-border);cursor:pointer;background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));display:grid;place-items:center;font-size:20px;color:var(--text-primary);transition:all .3s}
+.theme-toggle:hover{background:var(--glass-bg-hover);transform:scale(1.08) rotate(12deg)}
+
+.hero{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden;backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow)}
+.hero::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal2),var(--teal),var(--cyan),var(--pink))}
+.hero-eyebrow{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-muted)}
+.hero-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:800;margin:6px 0 4px;
+  background:linear-gradient(135deg,var(--teal),var(--cyan) 55%,var(--pink) 95%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:13.5px;color:var(--text-secondary);line-height:1.6;max-width:900px}
+.hero-specs{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.spec{font-size:10.5px;font-weight:700;letter-spacing:.3px;color:var(--text-secondary);background:rgba(129,140,248,.12);border:1px solid rgba(129,140,248,.22);padding:5px 11px;border-radius:999px}
+.spec b{color:var(--teal)}
+
+.cols{display:grid;grid-template-columns:1.05fr .95fr;gap:20px;align-items:start}
+@media(max-width:1000px){.cols{grid-template-columns:1fr}}
+
+.card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow);overflow:hidden;margin-bottom:20px}
+.card-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--glass-border);background:rgba(255,255,255,.02)}
+.card-head .ci{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:19px;color:#fff;background:linear-gradient(135deg,var(--teal),var(--cyan));flex-shrink:0;box-shadow:0 4px 14px rgba(99,102,241,.28)}
+.card-head .ct{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:15.5px;line-height:1.2}
+.card-head .cs{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+.card-head .spacer{flex:1}
+.card-body{padding:18px}
+
+.field{margin-bottom:13px;display:flex;flex-direction:column;gap:6px}
+.field label{font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--text-muted)}
+.field input,.field select,.field textarea{width:100%;background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:11px;padding:11px 13px;font-family:inherit;font-size:13.5px;font-weight:600;outline:none;transition:border-color .2s;resize:vertical}
+html.light .field input,html.light .field select,html.light .field textarea{background:#fff}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:520px){.grid2,.grid3{grid-template-columns:1fr}}
+
+.btn{border:none;border-radius:12px;padding:11px 18px;font-weight:700;font-size:13px;cursor:pointer;color:#fff;font-family:inherit;
+  background:linear-gradient(135deg,var(--teal2),var(--teal));transition:all .25s;box-shadow:0 4px 16px rgba(99,102,241,.3);display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:var(--glass-bg);color:var(--text-secondary);border:1px solid var(--glass-border);box-shadow:none;backdrop-filter:blur(var(--glass-blur))}
+.btn.ghost:hover:not(:disabled){background:var(--glass-bg-hover);color:var(--text-primary)}
+.btn.gold{background:linear-gradient(135deg,var(--gold2),var(--gold));box-shadow:0 4px 16px rgba(251,191,36,.28)}
+.btn.em{background:linear-gradient(135deg,#059669,var(--em));box-shadow:0 4px 16px rgba(52,211,153,.28)}
+.btn.blue{background:linear-gradient(135deg,#3b82f6,var(--blue));box-shadow:0 4px 16px rgba(96,165,250,.28)}
+.btn.danger{background:linear-gradient(135deg,#f43f5e,var(--rose));box-shadow:0 4px 16px rgba(251,113,133,.28)}
+.btn.sm{padding:8px 13px;font-size:12px;border-radius:10px}
+.btn.block{width:100%}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+
+/* random pick banner */
+.pickbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:rgba(129,140,248,.08);border:1px solid rgba(129,140,248,.2);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:14px}
+.pickbar .pb-count{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;color:var(--teal);min-width:34px;text-align:center}
+.pickbar .pb-lbl{font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.rangewrap{display:flex;align-items:center;gap:9px;flex:1;min-width:170px}
+.rangewrap input[type=range]{flex:1;accent-color:var(--teal)}
+
+/* office list */
+.ob-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.search{flex:1;min-width:170px;display:flex;align-items:center;gap:9px;background:var(--bg-deep);border:1px solid var(--glass-border);border-radius:999px;padding:9px 15px}
+html.light .search{background:#fff}
+.search input{flex:1;background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:13.5px;font-weight:600}
+.search input::placeholder{color:var(--text-muted)}
+.oblist{max-height:300px;overflow-y:auto;border:1px solid var(--glass-border);border-radius:var(--radius-md);background:rgba(255,255,255,.02)}
+.obrow{display:flex;align-items:center;gap:11px;padding:9px 13px;border-bottom:1px solid var(--glass-border);cursor:pointer;transition:background .15s}
+.obrow:last-child{border-bottom:none}
+.obrow:hover{background:rgba(129,140,248,.07)}
+.obrow.on{background:rgba(129,140,248,.12)}
+.obrow input{width:17px;height:17px;accent-color:var(--teal);cursor:pointer;flex-shrink:0}
+.obrow .obn{font-weight:700;font-size:13px;color:var(--text-primary);line-height:1.25;flex:1}
+.obrow .obm{font-size:11px;color:var(--text-muted);margin-top:1px;font-weight:600}
+.obtype{font-size:9.5px;font-weight:800;letter-spacing:.4px;padding:2px 7px;border-radius:6px;flex-shrink:0}
+.obtype.so{background:rgba(129,140,248,.18);color:var(--teal)}
+.obtype.bo{background:rgba(52,211,153,.18);color:var(--em)}
+
+/* batches */
+.batchlist{display:flex;flex-direction:column;gap:9px}
+.batchrow{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--glass-border);border-radius:var(--radius-md);background:rgba(255,255,255,.02);cursor:pointer;transition:all .18s}
+.batchrow:hover{background:var(--glass-bg-hover);border-color:var(--glass-border-hover)}
+.batchrow.on{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal);background:rgba(129,140,248,.08)}
+.batchrow .bmon{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:14.5px;color:var(--text-primary)}
+.batchrow .bsub{font-size:11px;color:var(--text-muted);margin-top:2px;font-weight:600}
+.batchrow .bstat{margin-left:auto;text-align:right}
+.pill{font-size:10px;font-weight:800;letter-spacing:.3px;padding:3px 9px;border-radius:999px;display:inline-block}
+.pill.done{background:rgba(52,211,153,.16);color:var(--em)}
+.pill.pend{background:rgba(251,191,36,.16);color:var(--gold)}
+
+/* tracking table */
+.tt-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.bulkbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:rgba(129,140,248,.08);border:1px solid rgba(129,140,248,.2);border-radius:12px;padding:9px 12px}
+.bulkbox .bsel{font-size:11.5px;font-weight:800;color:var(--teal)}
+.bulkbox input[type=date]{background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:9px;padding:7px 10px;font-family:inherit;font-size:12.5px;font-weight:600}
+html.light .bulkbox input[type=date]{background:#fff}
+.tt-wrap{overflow:auto;border:1px solid var(--glass-border);border-radius:var(--radius-md);max-height:64vh}
+table.tt{width:100%;border-collapse:collapse;font-size:12.5px;min-width:860px}
+table.tt th,table.tt td{padding:8px 10px;border-bottom:1px solid var(--glass-border);text-align:left;white-space:nowrap}
+table.tt th{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);position:sticky;top:0;background:var(--bg-deep);z-index:2}
+html.light table.tt th{background:#eef0f7}
+table.tt tr:last-child td{border-bottom:none}
+table.tt td.nm{white-space:normal;color:var(--text-primary);font-weight:700;min-width:150px}
+table.tt td.aw{font-size:11px;color:var(--text-muted);font-weight:600}
+table.tt tbody tr:hover{background:rgba(129,140,248,.06)}
+table.tt tbody tr.rsel{background:rgba(129,140,248,.12)}
+table.tt input[type=date],table.tt input[type=text]{background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:12px;font-weight:600;outline:none;max-width:145px}
+html.light table.tt input[type=date],html.light table.tt input[type=text]{background:#fff}
+table.tt input:focus{border-color:var(--teal)}
+table.tt input[type=checkbox]{width:16px;height:16px;accent-color:var(--teal);cursor:pointer}
+.normbadge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:7px;letter-spacing:.3px}
+.norm-fast{background:rgba(52,211,153,.16);color:var(--em)}
+.norm-mid{background:rgba(251,191,36,.16);color:var(--gold)}
+.norm-slow{background:rgba(251,113,133,.16);color:var(--rose)}
+.norm-none{background:rgba(148,163,184,.16);color:var(--text-muted)}
+
+.empty{padding:32px 20px;text-align:center;color:var(--text-muted);font-size:13px;font-weight:600}
+.mono{font-variant-numeric:tabular-nums}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(120px);background:#1e293b;color:#fff;padding:13px 22px;border-radius:12px;font-weight:700;font-size:13.5px;box-shadow:0 12px 40px rgba(0,0,0,.4);z-index:9999;opacity:0;transition:all .35s cubic-bezier(.16,1,.3,1);max-width:88vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.ok{background:linear-gradient(135deg,#059669,#10b981)}
+.toast.err{background:linear-gradient(135deg,#dc2626,#ef4444)}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(4,7,16,.62);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.show{display:flex}
+.modal{background:var(--bg-deep);border:1px solid var(--glass-border-hover);border-radius:var(--radius-lg);max-width:520px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.5);overflow:hidden}
+html.light .modal{background:#fff}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--glass-border);font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:16px}
+.modal-body{padding:18px 20px;font-size:13px;color:var(--text-secondary);line-height:1.6;max-height:60vh;overflow:auto}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--glass-border);display:flex;gap:10px;justify-content:flex-end}
+.hint{font-size:11.5px;color:var(--text-muted);line-height:1.6;margin-top:10px}
+.hint code{background:rgba(129,140,248,.14);color:var(--teal);padding:1px 6px;border-radius:5px;font-size:11px;font-weight:700}
+.warnbox{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.28);border-radius:11px;padding:11px 13px;font-size:12px;color:var(--text-secondary);line-height:1.55;margin-top:12px}
+.section-note{font-size:12px;color:var(--text-muted);line-height:1.55;margin:2px 0 14px}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+
+<div class="page-wrap">
+  <div class="topbar">
+    <a href="/" class="back-link">← Back to Home</a>
+    <div class="tb-right">
+      <span class="privacy"><span class="dot"></span> Offline · local only</span>
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-eyebrow">Karur Sub Division · Department of Posts</div>
+    <div class="hero-title">✉️ Test Letters — DTLR</div>
+    <div class="hero-sub">Every month, post <b>test letters (DTLR)</b> to a random <b>15–20 Sub / Branch Offices</b> to check the punctual dispatch and prompt delivery of mail. Generate ready-to-print letters from the official template, record the <b>delivery date</b> as the folded sheets return — single or in bulk — and produce a clean, beautiful <b>Result of the DTLRs</b> report in Excel &amp; PDF.</div>
+    <div class="hero-specs">
+      <span class="spec">Posted from <b>Karur HO</b></span>
+      <span class="spec">Random <b>15–20 offices</b></span>
+      <span class="spec">Norm <b>D+n</b> (Sundays excluded)</span>
+      <span class="spec">Word letters + Excel/PDF report</span>
+    </div>
+  </div>
+
+  <div class="cols">
+    <!-- ============ COMPOSE ============ -->
+    <div>
+      <div class="card">
+        <div class="card-head">
+          <div class="ci">📮</div>
+          <div><div class="ct">Compose this month's batch</div><div class="cs">Pick the month &amp; posting details, then draw a random set</div></div>
+        </div>
+        <div class="card-body">
+          <div class="grid2">
+            <div class="field"><label>Batch month</label><input type="month" id="fMonth"></div>
+            <div class="field"><label>Posting date</label><input type="date" id="fPostDate"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label>O/o Posting 🔒</label><input type="text" id="fPostOffice" value="Karur HO" readonly title="Test letters are always posted from Karur HO" style="opacity:.75;cursor:not-allowed"></div>
+            <div class="field"><label>Posting time</label><input type="text" id="fPostTime" value="1600 hours"></div>
+          </div>
+
+          <div class="pickbar">
+            <div style="text-align:center"><div class="pb-count" id="pickCount">18</div><div class="pb-lbl">to draw</div></div>
+            <div class="rangewrap">
+              <input type="range" id="pickRange" min="1" max="20" value="18">
+            </div>
+            <button class="btn sm" id="btnShuffle">🎲 Draw random</button>
+            <button class="btn sm ghost" id="btnClear">Clear</button>
+          </div>
+          <div class="section-note">Draw picks distinct offices at random from the Karur Sub Division S.O / B.O book below — <b>offices tested in the last 2 months are rested and excluded</b>. Fine-tune by ticking / unticking. <b><span id="selCount">0</span></b> selected · <span id="availNote"></span></div>
+
+          <div class="ob-controls">
+            <div class="search"><span>🔍</span><input id="obSearch" type="text" placeholder="Search office name / pincode…" autocomplete="off"></div>
+          </div>
+          <div class="oblist" id="obList"><div class="empty">Loading the Karur Sub Division office book…</div></div>
+
+          <div class="btn-row" style="margin-top:16px">
+            <button class="btn block" id="btnCreate">📝 Create batch &amp; generate letters</button>
+          </div>
+          <div class="hint">The letters are built from the real <code>Test letter.docx</code> template — every font, border and line is preserved. You'll get one combined Word file (a page per office) plus a per-office download in the tracker.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ BATCHES ============ -->
+    <div>
+      <div class="card">
+        <div class="card-head">
+          <div class="ci" style="background:linear-gradient(135deg,var(--gold2),var(--gold))">🗂️</div>
+          <div><div class="ct">Monthly batches</div><div class="cs">Select a month to track deliveries &amp; build the report</div></div>
+          <div class="spacer"></div>
+          <button class="btn sm ghost" id="btnReloadBatches">↻</button>
+        </div>
+        <div class="card-body">
+          <div class="batchlist" id="batchList"><div class="empty">No batches yet — create one on the left.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TRACKER ============ -->
+  <div class="card" id="trackCard" style="display:none">
+    <div class="card-head">
+      <div class="ci" style="background:linear-gradient(135deg,#059669,var(--em))">📊</div>
+      <div><div class="ct" id="trackTitle">Delivery tracker</div><div class="cs" id="trackSub"></div></div>
+      <div class="spacer"></div>
+      <div class="btn-row">
+        <button class="btn sm em" id="btnXlsx">⬇ Excel report</button>
+        <button class="btn sm blue" id="btnPdf">⬇ PDF report</button>
+        <button class="btn sm ghost" id="btnWordAll">⬇ All letters (.docx)</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="tt-toolbar">
+        <div class="bulkbox">
+          <span class="bsel"><span id="bulkN">0</span> selected</span>
+          <label style="font-size:11px;color:var(--text-muted);font-weight:700">Set delivery</label>
+          <input type="date" id="bulkDate">
+          <button class="btn sm" id="btnBulkApply">Apply to selected</button>
+          <button class="btn sm ghost" id="btnBulkRepost">Reposted = delivered</button>
+        </div>
+        <div class="spacer" style="flex:1"></div>
+        <button class="btn sm ghost" id="btnDeleteBatch">🗑 Delete batch</button>
+      </div>
+      <div class="tt-wrap">
+        <table class="tt">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="chkAll"></th>
+              <th>Sl</th><th>O/o Posting</th><th>Date of Posting</th><th>O/o Destination</th>
+              <th>Date of Delivery</th><th>Reposting @ Dest.</th><th>Norm</th><th>Remarks</th><th>Letter</th>
+            </tr>
+          </thead>
+          <tbody id="ttBody"></tbody>
+        </table>
+      </div>
+      <div class="hint">Delivery norm is auto-computed as <b>D+n</b> counting days from posting to delivery, <b>excluding Sundays</b> — matching the official register. Edits save automatically.</div>
+    </div>
+  </div>
+</div>
+
+<!-- confirm modal -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal">
+    <div class="modal-head" id="cfTitle">Create batch</div>
+    <div class="modal-body" id="cfBody"></div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="cfCancel">Cancel</button>
+      <button class="btn" id="cfOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');clearTimeout(toast._t);toast._t=setTimeout(()=>t.className='toast',3800);}
+
+// theme
+(function(){const h=document.documentElement;if(localStorage.getItem('theme')==='light')h.classList.add('light');
+  const b=$('#themeToggle');const paint=()=>b.textContent=h.classList.contains('light')?'☀️':'🌙';paint();
+  b.onclick=()=>{h.classList.toggle('light');localStorage.setItem('theme',h.classList.contains('light')?'light':'dark');paint();};})();
+
+// ── helpers ───────────────────────────────────────────────────
+const TABLE='app_test_letters';
+const LS_KEY='sdo_test_letters_v1';
+const TEMPLATE_URL='/leave-orders/test-letter/letter-template.docx';
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+function cclean(v){return v==null?'':String(v).replace(/\s+/g,' ').trim();}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function fmtPin(p){p=String(p||'').replace(/\D/g,'');return p.length===6?p.slice(0,3)+' '+p.slice(3):p;}
+function monthLabel(ym){const m=/^(\d{4})-(\d{2})$/.exec(ym||'');if(!m)return ym||'';return MONTHS[+m[2]-1]+' '+m[1];}
+function todayIso(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function fmtDot(iso){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');return m?`${m[3]}.${m[2]}.${m[1]}`:'';}
+// Delivery norm D+n, excluding Sundays, matching the official DTLR register.
+function deliveryNorm(postIso,delIso){
+  if(!postIso||!delIso)return null;
+  const p=new Date(postIso+'T00:00:00'),d=new Date(delIso+'T00:00:00');
+  if(isNaN(p)||isNaN(d)||d<p)return null;
+  let n=0;const cur=new Date(p);
+  while(cur<d){cur.setDate(cur.getDate()+1);if(cur.getDay()!==0)n++;}
+  return n;
+}
+function normBadge(n){
+  if(n==null)return '<span class="normbadge norm-none">—</span>';
+  const cls=n<=1?'norm-fast':n<=2?'norm-mid':'norm-slow';
+  return `<span class="normbadge ${cls}">D+${n}</span>`;
+}
+
+const COOLDOWN_MONTHS=2; // an office rests at least 2 months between test letters
+const state={offices:[],picked:new Set(),obFilter:'',batches:[],current:null,rows:[],selRows:new Set(),sbReady:false,
+  usage:new Map(),/* office_id -> [batch_month…] */ cooldown:new Set(),lastTested:new Map()};
+// The k calendar months immediately before ym (YYYY-MM).
+function monthsBefore(ym,k){const m=/^(\d{4})-(\d{2})$/.exec(ym||'');if(!m)return [];
+  let y=+m[1],mo=+m[2];const out=[];for(let i=0;i<k;i++){mo--;if(mo<1){mo=12;y--;}out.push(y+'-'+String(mo).padStart(2,'0'));}return out;}
+// Rebuild the cooldown set for the currently chosen compose month: any office
+// tested in the previous COOLDOWN_MONTHS months is excluded from the draw.
+function refreshCooldown(){
+  const ym=$('#fMonth').value;const prev=new Set(monthsBefore(ym,COOLDOWN_MONTHS));
+  state.cooldown=new Set();state.lastTested=new Map();
+  state.usage.forEach((months,id)=>{
+    let last='';months.forEach(mo=>{if(mo>last)last=mo;if(mo!==ym&&prev.has(mo))state.cooldown.add(id);});
+    if(last)state.lastTested.set(id,last);
+  });
+  // drop any picked office that just fell into cooldown
+  state.cooldown.forEach(id=>state.picked.delete(id));
+  renderOfficeList();updateSelCount();updateAvail();
+}
+function availableOffices(){return state.offices.filter(o=>!state.cooldown.has(o.id));}
+function updateAvail(){
+  const avail=availableOffices().length,rng=$('#pickRange');
+  const mx=Math.max(1,Math.min(20,avail));rng.max=mx;
+  if(+rng.value>mx){rng.value=mx;$('#pickCount').textContent=mx;}
+  const el=$('#availNote');if(el)el.textContent=`${avail} office${avail!==1?'s':''} available this month (${state.cooldown.size} resting).`;
+}
+
+// ── office book (Karur Sub Division, S.O / B.O only) ─────────────
+function typeClass(name,type){
+  const n=(name||'').toLowerCase(),t=(type||'').toLowerCase();
+  if(/\bh\.?o\b/.test(n)||t==='ho'||t==='hpo')return 'ho';
+  if(/\bb\.?o\b/.test(n)||/^bp?o$/.test(t)||t==='bpo')return 'bo';
+  if(/\bs\.?o\b/.test(n)||t==='so'||t==='spo')return 'so';
+  return 'other';
+}
+async function loadOffices(){
+  let offs=null;const urls=['/api/offices-master','/data/office_master.json'];
+  for(const u of urls){try{const res=await fetch(u,{cache:'no-store'});if(!res.ok)continue;const j=await res.json();offs=j.offices||j||[];if(offs.length)break;}catch(e){}}
+  if(!offs||!offs.length){$('#obList').innerHTML='<div class="empty">⚠️ Could not load the office master.</div>';return;}
+  if(window.KarurScope){try{await KarurScope.load();}catch(e){}offs=KarurScope.filterOffices(offs);}
+  const seen=new Set();
+  state.offices=offs.map(o=>{
+    const name=cclean(o.office_name),type=cclean(o.office_type),cls=typeClass(name,type);
+    return {id:cclean(o.office_id)||name,name,cls,type:cls==='bo'?'BO':'SO',pincode:cclean(o.pincode),aw:cclean(o.so_name)};
+  }).filter(o=>{if(!o.name||(o.cls!=='so'&&o.cls!=='bo'))return false;const k=o.id+'|'+o.name;if(seen.has(k))return false;seen.add(k);return true;})
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  renderOfficeList();
+}
+function renderOfficeList(){
+  const box=$('#obList'),q=state.obFilter.toLowerCase();
+  const list=state.offices.filter(o=>!q||(o.name+' '+o.pincode).toLowerCase().includes(q));
+  if(!list.length){box.innerHTML='<div class="empty">No offices match.</div>';return;}
+  box.innerHTML=list.map(o=>{
+    const on=state.picked.has(o.id);
+    const rest=state.cooldown.has(o.id);
+    const last=state.lastTested.get(o.id);
+    const meta=rest?`<span style="color:var(--rose)">💤 rested · last tested ${monthLabel(last)}</span>`
+      :`${o.pincode?'PIN '+esc(fmtPin(o.pincode)):'—'}${o.aw?' · a/w '+esc(o.aw):''}${last?' · last '+monthLabel(last):''}`;
+    return `<label class="obrow ${on?'on':''}" data-id="${esc(o.id)}" style="${rest?'opacity:.5;cursor:not-allowed':''}">
+      <input type="checkbox" ${on?'checked':''} ${rest?'disabled':''}>
+      <span style="flex:1"><span class="obn">${esc(o.name)}</span>
+        <span class="obm">${meta}</span></span>
+      <span class="obtype ${o.cls}">${o.type}</span>
+    </label>`;
+  }).join('');
+  box.querySelectorAll('.obrow input').forEach(inp=>inp.addEventListener('change',e=>{
+    const id=e.target.closest('.obrow').dataset.id;
+    if(e.target.checked)state.picked.add(id);else state.picked.delete(id);
+    e.target.closest('.obrow').classList.toggle('on',e.target.checked);
+    updateSelCount();
+  }));
+}
+function updateSelCount(){$('#selCount').textContent=state.picked.size;}
+function shufflePick(){
+  const n=+$('#pickRange').value;const pool=availableOffices();
+  if(!pool.length){toast('Every office is resting this month — widen the month or clear old batches.','err');return;}
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  state.picked=new Set(pool.slice(0,Math.min(n,pool.length)).map(o=>o.id));
+  renderOfficeList();updateSelCount();
+}
+
+// ── batches ────────────────────────────────────────────────────
+function readLS(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]');}catch(e){return [];}}
+function writeLS(rows){localStorage.setItem(LS_KEY,JSON.stringify(rows));}
+async function allRows(){
+  if(state.sbReady){try{return await SB.select(TABLE,'select=*&order=batch_month.desc,office_name.asc&limit=20000');}catch(e){state.sbReady=false;}}
+  return readLS();
+}
+async function loadBatches(){
+  const rows=await allRows();const map=new Map();const usage=new Map();
+  rows.forEach(r=>{const k=r.batch_id;if(!map.has(k))map.set(k,{batch_id:k,batch_month:r.batch_month,batch_label:r.batch_label||monthLabel(r.batch_month),total:0,delivered:0});
+    const b=map.get(k);b.total++;if(r.delivery_date)b.delivered++;
+    const id=r.office_id||r.office_name;if(id){if(!usage.has(id))usage.set(id,[]);usage.get(id).push(r.batch_month);}});
+  state.usage=usage;
+  state.batches=Array.from(map.values()).sort((a,b)=>(b.batch_month||'').localeCompare(a.batch_month||''));
+  renderBatches();
+  if(state.offices.length)refreshCooldown();
+}
+function renderBatches(){
+  const box=$('#batchList');
+  if(!state.batches.length){box.innerHTML='<div class="empty">No batches yet — create one on the left.</div>';return;}
+  box.innerHTML=state.batches.map(b=>{
+    const done=b.delivered>=b.total&&b.total>0;
+    return `<div class="batchrow ${state.current===b.batch_id?'on':''}" data-id="${esc(b.batch_id)}">
+      <div><div class="bmon">${esc(b.batch_label)}</div><div class="bsub">${b.total} letter${b.total!==1?'s':''} · ${b.delivered} delivered</div></div>
+      <div class="bstat"><span class="pill ${done?'done':'pend'}">${done?'✓ Complete':b.delivered+' / '+b.total}</span></div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.batchrow').forEach(r=>r.addEventListener('click',()=>selectBatch(r.dataset.id)));
+}
+async function selectBatch(id){
+  state.current=id;state.selRows.clear();
+  const rows=await allRows();
+  state.rows=rows.filter(r=>r.batch_id===id).sort((a,b)=>(a.office_name||'').localeCompare(b.office_name||''));
+  renderBatches();renderTracker();
+}
+
+// ── tracker ────────────────────────────────────────────────────
+function renderTracker(){
+  const card=$('#trackCard');
+  if(!state.current||!state.rows.length){card.style.display='none';return;}
+  card.style.display='block';
+  const b=state.batches.find(x=>x.batch_id===state.current)||{batch_label:monthLabel(state.rows[0].batch_month)};
+  $('#trackTitle').textContent='Result of the DTLRs — '+b.batch_label;
+  const del=state.rows.filter(r=>r.delivery_date).length;
+  $('#trackSub').textContent=`${state.rows.length} letters · ${del} delivered · posted from ${state.rows[0].posting_office||'Karur HO'}`;
+  const body=$('#ttBody');
+  body.innerHTML=state.rows.map((r,i)=>{
+    const n=deliveryNorm(r.posting_date,r.delivery_date);
+    const sel=state.selRows.has(r.id);
+    return `<tr data-id="${esc(r.id)}" class="${sel?'rsel':''}">
+      <td><input type="checkbox" class="rchk" ${sel?'checked':''}></td>
+      <td class="mono">${i+1}</td>
+      <td>${esc(r.posting_office||'Karur HO')}</td>
+      <td><input type="date" class="ed" data-f="posting_date" value="${esc(r.posting_date||'')}"></td>
+      <td class="nm">${esc(r.office_name)}${r.aw_office?`<div class="aw">a/w ${esc(r.aw_office)}</div>`:''}</td>
+      <td><input type="date" class="ed" data-f="delivery_date" value="${esc(r.delivery_date||'')}"></td>
+      <td><input type="date" class="ed" data-f="reposting_date" value="${esc(r.reposting_date||'')}"></td>
+      <td class="norm">${normBadge(n)}</td>
+      <td><input type="text" class="ed" data-f="remarks" value="${esc(r.remarks||'')}" placeholder="—" style="max-width:150px"></td>
+      <td><button class="btn sm ghost bword">📄</button></td>
+    </tr>`;
+  }).join('');
+  body.querySelectorAll('.ed').forEach(inp=>inp.addEventListener('change',onEdit));
+  body.querySelectorAll('.rchk').forEach(c=>c.addEventListener('change',onRowCheck));
+  body.querySelectorAll('.bword').forEach(btn=>btn.addEventListener('click',e=>{
+    const id=e.target.closest('tr').dataset.id;const r=state.rows.find(x=>x.id===id);if(r)genWord([r],false);}));
+  $('#chkAll').checked=false;updateBulkN();
+}
+async function onEdit(e){
+  const tr=e.target.closest('tr'),id=tr.dataset.id,f=e.target.dataset.f,r=state.rows.find(x=>x.id===id);
+  if(!r)return;r[f]=e.target.value||null;r.updated_at_ms=Date.now();
+  // refresh the norm cell if a date changed
+  if(f==='posting_date'||f==='delivery_date')tr.querySelector('.norm').innerHTML=normBadge(deliveryNorm(r.posting_date,r.delivery_date));
+  await persistRow(r);
+  loadBatches();
+}
+function onRowCheck(e){const id=e.target.closest('tr').dataset.id;if(e.target.checked)state.selRows.add(id);else state.selRows.delete(id);
+  e.target.closest('tr').classList.toggle('rsel',e.target.checked);updateBulkN();}
+function updateBulkN(){$('#bulkN').textContent=state.selRows.size;}
+
+async function persistRow(r){
+  if(state.sbReady){try{await SB.upsert(TABLE,r);return;}catch(e){state.sbReady=false;toast('Cloud save failed — kept locally.','err');}}
+  const all=readLS();const i=all.findIndex(x=>x.id===r.id);if(i>=0)all[i]=r;else all.push(r);writeLS(all);
+}
+async function persistMany(rows){
+  if(state.sbReady){try{await SB.upsert(TABLE,rows);return;}catch(e){state.sbReady=false;toast('Cloud save failed — kept locally.','err');}}
+  const all=readLS();rows.forEach(r=>{const i=all.findIndex(x=>x.id===r.id);if(i>=0)all[i]=r;else all.push(r);});writeLS(all);
+}
+
+// bulk
+async function bulkApply(field){
+  const d=$('#bulkDate').value;
+  if(field==='delivery_date'&&!d){toast('Pick a delivery date first.','err');return;}
+  if(!state.selRows.size){toast('Select some rows first (tick the boxes).','err');return;}
+  const changed=[];
+  state.rows.forEach(r=>{if(!state.selRows.has(r.id))return;
+    if(field==='delivery_date')r.delivery_date=d;
+    if(field==='reposting_date')r.reposting_date=r.delivery_date||d||r.reposting_date;
+    r.updated_at_ms=Date.now();changed.push(r);});
+  await persistMany(changed);renderTracker();loadBatches();
+  toast(`Updated ${changed.length} office${changed.length!==1?'s':''} ✓`,'ok');
+}
+
+// ── create batch ───────────────────────────────────────────────
+function openCreate(){
+  const ym=$('#fMonth').value,pd=$('#fPostDate').value;
+  if(!ym){toast('Choose the batch month.','err');return;}
+  if(!pd){toast('Choose the posting date.','err');return;}
+  if(!state.picked.size){toast('Draw or tick at least one office.','err');return;}
+  const dupe=state.batches.find(b=>b.batch_id===ym);
+  const chosen=state.offices.filter(o=>state.picked.has(o.id));
+  $('#cfTitle').textContent='Create batch — '+monthLabel(ym);
+  $('#cfBody').innerHTML=`<div>You're about to create the <b>${monthLabel(ym)}</b> test-letter batch for <b>${chosen.length}</b> office${chosen.length!==1?'s':''}, posted from <b>${esc(cclean($('#fPostOffice').value)||'Karur HO')}</b> on <b>${fmtDot(pd)}</b> at <b>${esc(cclean($('#fPostTime').value)||'1600 hours')}</b>.</div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-muted);line-height:1.7">${chosen.map(o=>esc(o.name)).join(' · ')}</div>
+    ${dupe?`<div class="warnbox">⚠️ A batch already exists for ${monthLabel(ym)} (${dupe.total} letters). Creating again will <b>add</b> these offices to it.</div>`:''}
+    <div class="hint" style="margin-top:12px">On confirm, the letters save${state.sbReady?' to the shared cloud':' locally'} and a combined Word file downloads.</div>`;
+  $('#confirmOverlay').classList.add('show');
+  $('#cfOk').onclick=()=>{$('#confirmOverlay').classList.remove('show');doCreate(ym,pd);};
+}
+async function doCreate(ym,pd){
+  const office=cclean($('#fPostOffice').value)||'Karur HO';
+  const time=cclean($('#fPostTime').value)||'1600 hours';
+  const now=Date.now();
+  const chosen=state.offices.filter(o=>state.picked.has(o.id));
+  const rows=chosen.map(o=>({
+    id:uid(),batch_id:ym,batch_month:ym,batch_label:monthLabel(ym),
+    office_id:o.id,office_name:o.name,office_type:o.type,pincode:o.pincode||null,aw_office:o.type==='BO'?(o.aw||null):null,
+    posting_office:office,posting_time:time,posting_date:pd,
+    delivery_date:null,reposting_date:null,remarks:null,
+    created_by:(window.AuthSession&&AuthSession.user()&&(AuthSession.user().displayName||AuthSession.user().username))||'web',created_at_ms:now,updated_at_ms:now
+  }));
+  await persistMany(rows);
+  toast(`Batch created — ${rows.length} letters ✓`,'ok');
+  await loadBatches();await selectBatch(ym);
+  try{await genWord(state.rows,true);}catch(e){toast('Letters saved, but Word build failed: '+(e.message||''),'err');}
+}
+async function deleteBatch(){
+  if(!state.current)return;
+  const b=state.batches.find(x=>x.batch_id===state.current);
+  if(!confirm(`Delete the entire ${b?b.batch_label:'selected'} batch (${state.rows.length} letters)? This cannot be undone.`))return;
+  const ids=state.rows.map(r=>r.id);
+  if(state.sbReady){try{await SB.del(TABLE,`batch_id=eq.${encodeURIComponent(state.current)}`);}catch(e){toast('Cloud delete failed.','err');}}
+  const all=readLS().filter(r=>!ids.includes(r.id));writeLS(all);
+  state.current=null;state.rows=[];$('#trackCard').style.display='none';
+  await loadBatches();toast('Batch deleted.','ok');
+}
+
+// ── Word letters (from the real template) ──────────────────────
+const WNS='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const XMLNS='http://www.w3.org/XML/1998/namespace';
+let _zipP;
+function loadJSZip(){
+  if(window.JSZip)return Promise.resolve(window.JSZip);
+  if(_zipP)return _zipP;
+  _zipP=new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    s.onload=()=>window.JSZip?res(window.JSZip):rej(new Error('document engine failed to load'));
+    s.onerror=()=>rej(new Error('Could not load the document engine (check your connection).'));
+    document.head.appendChild(s);});
+  return _zipP;
+}
+function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+function letterModel(r){
+  const type=r.office_type||'SO';
+  return {
+    office:r.office_name,isBO:type==='BO',aw:r.aw_office||'',
+    salutation:type==='BO'?'The Branch Postmaster':type==='HO'?'The Postmaster':'The Sub Postmaster',
+    pincode:fmtPin(r.pincode),postingDateStr:fmtDot(r.posting_date),
+    postingTime:r.posting_time||'1600 hours',postingOffice:r.posting_office||'Karur HO'
+  };
+}
+function allT(nodes){let out=[];nodes.forEach(nd=>{out.push(...nd.getElementsByTagNameNS(WNS,'t'));});return out;}
+function textOf(el){return Array.from(el.getElementsByTagNameNS(WNS,'t')).map(t=>t.textContent).join('');}
+function setT(t,v){t.textContent=v;if(/^\s|\s$/.test(v))t.setAttributeNS(XMLNS,'xml:space','preserve');}
+function fillUnit(nodes,L){
+  const ts=allT(nodes);
+  const find=p=>ts.find(t=>p(t.textContent));
+  const eq=v=>ts.find(t=>t.textContent.trim()===v);
+  let t;
+  // addressee block
+  t=find(x=>x.includes('Sub Postmaster'));if(t)setT(t,L.salutation);
+  t=find(x=>x.includes('Name of the SO/BO'));if(t)setT(t,(L.isBO&&L.aw)?L.office+', ':L.office);
+  t=eq('a/w');if(t)setT(t,(L.isBO&&L.aw)?'a/w':'');
+  t=find(x=>x.includes('Name of the SO')&&!x.includes('SO/BO'));if(t)setT(t,(L.isBO&&L.aw)?' '+L.aw:'');
+  // pincode
+  t=find(x=>x.includes('PINCODE'));if(t)setT(t,'PINCODE - ');
+  t=eq('pincode');if(t)setT(t,L.pincode||'');
+  t=eq('>');if(t)setT(t,'');
+  // letter-no date  ("... the  <date>")
+  t=eq('date>');if(t)setT(t,L.postingDateStr);
+  t=eq('<');if(t)setT(t,'');
+  // table posted row: date + time are globally unique tokens
+  t=eq('<date>');if(t)setT(t,L.postingDateStr);
+  t=eq('1600 hours');if(t)setT(t,L.postingTime);
+  // posting office lives in the posted row as "Karur"+" HO" — scope to that row
+  if(L.postingOffice!=='Karur HO'){
+    const tbl=nodes.find(n=>n.localName==='tbl')||nodes.map(n=>n.getElementsByTagNameNS(WNS,'tbl')[0]).find(Boolean);
+    if(tbl){const rows=Array.from(tbl.getElementsByTagNameNS(WNS,'tr'));
+      const prow=rows.find(rr=>textOf(rr).includes('Posted date'));
+      if(prow){const rts=Array.from(prow.getElementsByTagNameNS(WNS,'t'));
+        const k=rts.find(x=>x.textContent.trim()==='Karur');if(k)setT(k,L.postingOffice);
+        const h=rts.find(x=>x.textContent.trim()==='HO');if(h)setT(h,'');}}
+  }
+}
+async function genWord(rows,combined){
+  if(!rows||!rows.length){toast('Nothing to generate.','err');return;}
+  const JSZip=await loadJSZip();
+  const resp=await fetch(TEMPLATE_URL,{cache:'no-store'});
+  if(!resp.ok)throw new Error('template '+resp.status);
+  const zip=await JSZip.loadAsync(await resp.arrayBuffer());
+  const xmlStr=await zip.file('word/document.xml').async('string');
+  const doc=new DOMParser().parseFromString(xmlStr,'application/xml');
+  if(doc.getElementsByTagName('parsererror').length)throw new Error('template parse error');
+  const body=doc.getElementsByTagNameNS(WNS,'body')[0];
+  const children=Array.from(body.children);
+  const sectPr=children.find(c=>c.localName==='sectPr')||null;
+  const unit=children.filter(c=>c!==sectPr);
+  const snapshot=unit.map(n=>n.cloneNode(true));
+  fillUnit(unit,letterModel(rows[0]));
+  if(combined){
+    for(let i=1;i<rows.length;i++){
+      const pb=doc.createElementNS(WNS,'w:p');const r=doc.createElementNS(WNS,'w:r');
+      const br=doc.createElementNS(WNS,'w:br');br.setAttributeNS(WNS,'w:type','page');
+      r.appendChild(br);pb.appendChild(r);body.insertBefore(pb,sectPr);
+      const clones=snapshot.map(n=>n.cloneNode(true));
+      fillUnit(clones,letterModel(rows[i]));
+      clones.forEach(c=>body.insertBefore(c,sectPr));
+    }
+  }
+  zip.file('word/document.xml',new XMLSerializer().serializeToString(doc));
+  const blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+  const lbl=(rows[0].batch_label||monthLabel(rows[0].batch_month)).replace(/\s+/g,' ');
+  dl(blob,combined?`Test Letters ${lbl} (${rows.length}).docx`:`Test Letter ${cclean(rows[0].office_name)} ${lbl}.docx`);
+  toast(combined?`Word file with ${rows.length} letters downloaded ✓`:'Letter downloaded ✓','ok');
+}
+
+// ── Report: styled Excel (Report.xlsx layout) ──────────────────
+function colL(i){let s='';i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=(i-m-1)/26;}return s;}
+function xE(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));}
+function reportRows(){
+  return state.rows.slice().sort((a,b)=>(a.posting_date||'').localeCompare(b.posting_date||'')||(a.office_name||'').localeCompare(b.office_name||''))
+    .map((r,i)=>{const n=deliveryNorm(r.posting_date,r.delivery_date);
+      return {sl:i+1,post:r.posting_office||'Karur HO',pdate:fmtDot(r.posting_date),dest:r.office_name,
+        ddate:fmtDot(r.delivery_date)||(r.remarks?'':'—'),rdate:fmtDot(r.reposting_date),
+        norm:n==null?'':'D+'+n,rem:r.remarks||(r.delivery_date?'':'Data not received')};});
+}
+async function exportXlsx(){
+  if(!state.rows.length){toast('Nothing to export.','err');return;}
+  const JSZip=await loadJSZip();
+  const b=state.batches.find(x=>x.batch_id===state.current)||{batch_label:monthLabel(state.rows[0].batch_month)};
+  const rows=reportRows();
+  const HEAD=['Sl. no','O/o Posting','Date of Posting','O/o Destination','Date of Delivery','Date of Reposting @ Destination','Delivery norms','Remarks'];
+  const widths=[6,18,13,20,12,14,10,16];
+  const title1='भारतीय डाक विभाग / DEPARTMENT OF POSTS';
+  const title2='Result of the DTLRs posted in the month of '+b.batch_label;
+  // styles: 1 title, 2 subtitle, 3 header, 4 cell-center, 5 cell-left, 6 cell-center-alt, 7 cell-left-alt
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="4">
+<font><sz val="11"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+<font><b/><sz val="14"/><color rgb="FF3730A3"/><name val="Calibri"/></font>
+<font><b/><sz val="12"/><color rgb="FF4F46E5"/><name val="Calibri"/></font>
+</fonts>
+<fills count="5">
+<fill><patternFill patternType="none"/></fill>
+<fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF4F46E5"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFEEF0FF"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF6F7FF"/></patternFill></fill>
+</fills>
+<borders count="2">
+<border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color rgb="FFB9BFE8"/></left><right style="thin"><color rgb="FFB9BFE8"/></right><top style="thin"><color rgb="FFB9BFE8"/></top><bottom style="thin"><color rgb="FFB9BFE8"/></bottom></border>
+</borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="8">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="2" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+</cellXfs>
+</styleSheet>`;
+  const cell=(ci,ri,v,s)=>`<c r="${colL(ci)}${ri}" t="inlineStr" s="${s}"><is><t xml:space="preserve">${xE(v)}</t></is></c>`;
+  let sd='';
+  sd+=`<row r="1" ht="30" customHeight="1"><c r="A1" t="inlineStr" s="1"><is><t xml:space="preserve">${xE(title1)}</t></is></c>`;
+  for(let i=1;i<8;i++)sd+=`<c r="${colL(i)}1" s="1"/>`;sd+='</row>';
+  sd+=`<row r="2" ht="20" customHeight="1"><c r="A2" t="inlineStr" s="2"><is><t xml:space="preserve">${xE(title2)}</t></is></c>`;
+  for(let i=1;i<8;i++)sd+=`<c r="${colL(i)}2" s="2"/>`;sd+='</row>';
+  sd+='<row r="3" ht="34" customHeight="1">'+HEAD.map((h,i)=>cell(i,3,h,3)).join('')+'</row>';
+  rows.forEach((r,idx)=>{const ri=idx+4;const alt=idx%2===1;const c=alt?6:4,cl=alt?7:5;
+    sd+=`<row r="${ri}" ht="26" customHeight="1">`+
+      cell(0,ri,r.sl,c)+cell(1,ri,r.post,cl)+cell(2,ri,r.pdate,c)+cell(3,ri,r.dest,cl)+
+      cell(4,ri,r.ddate,c)+cell(5,ri,r.rdate,c)+cell(6,ri,r.norm,c)+cell(7,ri,r.rem,cl)+'</row>';});
+  const lastRow=rows.length+3;
+  const cols=widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:H${lastRow}"/>
+<sheetViews><sheetView showGridLines="0" workbookViewId="0"/></sheetViews>
+<cols>${cols}</cols>
+<sheetData>${sd}</sheetData>
+<mergeCells count="2"><mergeCell ref="A1:H1"/><mergeCell ref="A2:H2"/></mergeCells>
+<pageMargins left="0.4" right="0.3" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
+<pageSetup orientation="portrait"/></worksheet>`;
+  const wb=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xE(b.batch_label).slice(0,31)}" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+  const wbRels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+  const ct=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
+  const rels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+  const z=new JSZip();
+  z.file('[Content_Types].xml',ct);z.folder('_rels').file('.rels',rels);
+  const xl=z.folder('xl');xl.file('workbook.xml',wb);xl.folder('_rels').file('workbook.xml.rels',wbRels);
+  xl.file('styles.xml',styles);xl.folder('worksheets').file('sheet1.xml',sheet);
+  const blob=await z.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  dl(blob,`DTLR Report ${b.batch_label}.xlsx`);
+  toast('Excel report downloaded ✓','ok');
+}
+
+// ── Report: PDF (jsPDF + autotable, tricolour header) ──────────
+const PDF_URLS=['https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js'];
+let _pdfP;
+function loadScriptOnce(src){return new Promise((res,rej)=>{if([...document.scripts].some(s=>s.src===src))return res();
+  const s=document.createElement('script');s.src=src;s.onload=()=>res();s.onerror=()=>rej(new Error('Could not load the PDF engine (check your connection).'));document.head.appendChild(s);});}
+async function loadPdf(){if(_pdfP)return _pdfP;_pdfP=(async()=>{for(const u of PDF_URLS)await loadScriptOnce(u);})();return _pdfP;}
+const CLR={ind:[79,70,229],saffron:[255,153,51],white:[255,255,255],green:[19,136,8]};
+async function exportPdf(){
+  if(!state.rows.length){toast('Nothing to export.','err');return;}
+  await loadPdf();const {jsPDF}=window.jspdf;
+  const b=state.batches.find(x=>x.batch_id===state.current)||{batch_label:monthLabel(state.rows[0].batch_month)};
+  const rows=reportRows();
+  const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
+  const W=doc.internal.pageSize.getWidth();
+  const del=state.rows.filter(r=>r.delivery_date).length;
+  const header=()=>{
+    doc.setFillColor(...CLR.ind);doc.rect(0,0,W,58,'F');
+    const t=W/3;doc.setFillColor(...CLR.saffron);doc.rect(0,58,t,4,'F');doc.setFillColor(...CLR.white);doc.rect(t,58,t,4,'F');doc.setFillColor(...CLR.green);doc.rect(2*t,58,t,4,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('Department of Posts — Result of the DTLRs',32,25);
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text(`Karur Sub Division   |   Posted in the month of ${b.batch_label}`,32,42);
+    doc.setFontSize(8.5);doc.text('Letters: '+rows.length+'   Delivered: '+del,W-32,25,{align:'right'});
+    doc.text('Generated: '+new Date().toLocaleString('en-IN'),W-32,42,{align:'right'});
+  };
+  const footer=()=>{const H=doc.internal.pageSize.getHeight();doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(150);
+    doc.text('O/o the Assistant Superintendent of Post Offices, Karur Sub Division',32,H-14);
+    doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber,W-32,H-14,{align:'right'});};
+  doc.autoTable({
+    head:[['Sl','O/o Posting','Date of Posting','O/o Destination','Date of Delivery','Reposting @ Dest.','Norm','Remarks']],
+    body:rows.map(r=>[r.sl,r.post,r.pdate,r.dest,r.ddate,r.rdate,r.norm,r.rem]),
+    startY:74,margin:{top:70,left:24,right:24},
+    styles:{font:'helvetica',fontSize:8,cellPadding:4,overflow:'linebreak',lineColor:[200,205,235],lineWidth:.5,valign:'middle'},
+    headStyles:{fillColor:CLR.ind,textColor:255,fontStyle:'bold',halign:'center',fontSize:8.2},
+    alternateRowStyles:{fillColor:[244,245,255]},
+    columnStyles:{0:{halign:'center',cellWidth:24},1:{halign:'center',cellWidth:62},2:{halign:'center',cellWidth:62},3:{cellWidth:96,fontStyle:'bold'},4:{halign:'center',cellWidth:62},5:{halign:'center',cellWidth:62},6:{halign:'center',cellWidth:34},7:{cellWidth:'auto'}},
+    didParseCell:d=>{if(d.section==='body'&&d.column.index===6){const v=String(d.cell.raw||'');d.cell.styles.fontStyle='bold';
+      const m=/D\+(\d+)/.exec(v);if(m){const n=+m[1];d.cell.styles.textColor=n<=1?[16,120,80]:n<=2?[176,120,8]:[190,40,60];}}},
+    didDrawPage:()=>{header();footer();}
+  });
+  doc.save(`DTLR Report ${b.batch_label}.pdf`);
+  toast('PDF report downloaded ✓','ok');
+}
+function runExport(btn,fn){const old=btn.textContent;btn.disabled=true;btn.textContent='⏳ Building…';
+  Promise.resolve().then(fn).catch(e=>toast('Could not build: '+(e.message||''),'err')).finally(()=>{btn.disabled=false;btn.textContent=old;});}
+
+// ── events ─────────────────────────────────────────────────────
+$('#pickRange').addEventListener('input',e=>$('#pickCount').textContent=e.target.value);
+$('#fMonth').addEventListener('change',refreshCooldown);
+$('#btnShuffle').addEventListener('click',shufflePick);
+$('#btnClear').addEventListener('click',()=>{state.picked.clear();renderOfficeList();updateSelCount();});
+$('#obSearch').addEventListener('input',e=>{state.obFilter=e.target.value;renderOfficeList();});
+$('#btnCreate').addEventListener('click',openCreate);
+$('#cfCancel').addEventListener('click',()=>$('#confirmOverlay').classList.remove('show'));
+$('#confirmOverlay').addEventListener('click',e=>{if(e.target.id==='confirmOverlay')$('#confirmOverlay').classList.remove('show');});
+$('#btnReloadBatches').addEventListener('click',loadBatches);
+$('#btnBulkApply').addEventListener('click',()=>bulkApply('delivery_date'));
+$('#btnBulkRepost').addEventListener('click',()=>bulkApply('reposting_date'));
+$('#chkAll').addEventListener('change',e=>{
+  state.selRows.clear();if(e.target.checked)state.rows.forEach(r=>state.selRows.add(r.id));
+  $$('#ttBody .rchk').forEach(c=>{c.checked=e.target.checked;c.closest('tr').classList.toggle('rsel',e.target.checked);});
+  updateBulkN();});
+$('#btnXlsx').addEventListener('click',e=>runExport(e.target,exportXlsx));
+$('#btnPdf').addEventListener('click',e=>runExport(e.target,exportPdf));
+$('#btnWordAll').addEventListener('click',e=>runExport(e.target,()=>genWord(state.rows,true)));
+$('#btnDeleteBatch').addEventListener('click',deleteBatch);
+
+// ── init ───────────────────────────────────────────────────────
+(async function init(){
+  const ym=todayIso().slice(0,7);$('#fMonth').value=ym;$('#fPostDate').value=todayIso();
+  try{await SB.init();state.sbReady=SB.ready;}catch(e){state.sbReady=false;}
+  const pv=$('.privacy');if(pv){pv.innerHTML='<span class="dot"></span> '+(state.sbReady?'Cloud · synced':'Offline · local only');
+    if(!state.sbReady)pv.querySelector('.dot').style.background='var(--gold)';}
+  await loadOffices();
+  await loadBatches();
+})();
+</script>
+</body>
+</html>
