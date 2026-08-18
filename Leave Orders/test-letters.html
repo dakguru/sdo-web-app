@@ -133,6 +133,20 @@ html.light .search{background:#fff}
 .pill.pend{background:rgba(251,191,36,.16);color:var(--gold)}
 
 /* tracking table */
+.statbar{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:820px){.statbar{grid-template-columns:repeat(2,1fr)}}
+.statbar .stat{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:13px 15px;text-align:center}
+.statbar .stat-v{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:26px;line-height:1;color:var(--teal);font-variant-numeric:tabular-nums}
+.statbar .stat-l{font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--text-muted);margin-top:6px;line-height:1.3}
+.statbar .stat:nth-child(2) .stat-v{color:var(--em)}
+.statbar .stat:nth-child(3) .stat-v{color:var(--gold)}
+.statbar .stat:nth-child(4) .stat-v{color:var(--pink)}
+.statbar .normctl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.statbar .normctl label{font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--text-muted)}
+.statbar .normpick{display:flex;align-items:center;gap:4px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:18px;color:var(--text-primary)}
+.statbar .normpick input{width:52px;background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:9px;padding:6px 8px;font-family:inherit;font-size:16px;font-weight:800;text-align:center;outline:none}
+html.light .statbar .normpick input{background:#fff}
+.statbar .normpick input:focus{border-color:var(--teal)}
 .tt-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .bulkbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:rgba(129,140,248,.08);border:1px solid rgba(129,140,248,.2);border-radius:12px;padding:9px 12px}
 .bulkbox .bsel{font-size:11.5px;font-weight:800;color:var(--teal)}
@@ -220,7 +234,7 @@ html.light .modal{background:#fff}
           </div>
           <div class="grid2">
             <div class="field"><label>O/o Posting 🔒</label><input type="text" id="fPostOffice" value="Karur HO" readonly title="Test letters are always posted from Karur HO" style="opacity:.75;cursor:not-allowed"></div>
-            <div class="field"><label>Posting time</label><input type="text" id="fPostTime" value="1600 hours"></div>
+            <div class="field"><label>Posting time</label><input type="text" id="fPostTime" value="1600 hrs"></div>
           </div>
 
           <div class="pickbar">
@@ -271,10 +285,22 @@ html.light .modal{background:#fff}
       <div class="btn-row">
         <button class="btn sm em" id="btnXlsx">⬇ Excel report</button>
         <button class="btn sm blue" id="btnPdf">⬇ PDF report</button>
+        <button class="btn sm gold" id="btnCover">✉️ Covering letter</button>
         <button class="btn sm ghost" id="btnWordAll">⬇ All letters (.docx)</button>
       </div>
     </div>
     <div class="card-body">
+      <!-- summary stats -->
+      <div class="statbar" id="statBar">
+        <div class="stat"><div class="stat-v" id="stPosted">0</div><div class="stat-l">Test Letters Posted</div></div>
+        <div class="stat"><div class="stat-v" id="stDelivered">0</div><div class="stat-l">Letters Delivered</div></div>
+        <div class="stat"><div class="stat-v" id="stWithin">0</div><div class="stat-l">Delivered within Norms</div></div>
+        <div class="stat"><div class="stat-v" id="stPct">0%</div><div class="stat-l">Percentage of Delivery</div></div>
+        <div class="stat normctl">
+          <label>Within norms</label>
+          <div class="normpick">D+<input type="number" id="normDays" min="1" max="9" value="2" step="1"></div>
+        </div>
+      </div>
       <div class="tt-toolbar">
         <div class="bulkbox">
           <span class="bsel"><span id="bulkN">0</span> selected</span>
@@ -330,6 +356,7 @@ function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toas
 const TABLE='app_test_letters';
 const LS_KEY='sdo_test_letters_v1';
 const TEMPLATE_URL='/leave-orders/test-letter/letter-template.docx';
+const COVER_URL='/leave-orders/test-letter/covering-template.docx';
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
 function cclean(v){return v==null?'':String(v).replace(/\s+/g,' ').trim();}
@@ -500,19 +527,45 @@ function renderTracker(){
   body.querySelectorAll('.rchk').forEach(c=>c.addEventListener('change',onRowCheck));
   body.querySelectorAll('.bword').forEach(btn=>btn.addEventListener('click',e=>{
     const id=e.target.closest('tr').dataset.id;const r=state.rows.find(x=>x.id===id);if(r)genWord([r],false);}));
-  $('#chkAll').checked=false;updateBulkN();
+  $('#chkAll').checked=false;updateBulkN();renderStats();
 }
 async function onEdit(e){
   const tr=e.target.closest('tr'),id=tr.dataset.id,f=e.target.dataset.f,r=state.rows.find(x=>x.id===id);
   if(!r)return;r[f]=e.target.value||null;r.updated_at_ms=Date.now();
   // refresh the norm cell if a date changed
-  if(f==='posting_date'||f==='delivery_date')tr.querySelector('.norm').innerHTML=normBadge(deliveryNorm(r.posting_date,r.delivery_date));
+  if(f==='posting_date'||f==='delivery_date'){tr.querySelector('.norm').innerHTML=normBadge(deliveryNorm(r.posting_date,r.delivery_date));renderStats();}
   await persistRow(r);
   loadBatches();
 }
 function onRowCheck(e){const id=e.target.closest('tr').dataset.id;if(e.target.checked)state.selRows.add(id);else state.selRows.delete(id);
   e.target.closest('tr').classList.toggle('rsel',e.target.checked);updateBulkN();}
 function updateBulkN(){$('#bulkN').textContent=state.selRows.size;}
+
+// ── summary stats (Posted / Delivered / within Norms / % delivery) ──
+// The within-norms cut-off is a small per-batch setting kept in localStorage
+// (keyed by batch id) — deliberately NOT a DB column, so it never touches the
+// shared schema. Defaults to D+2 everywhere.
+const NORM_KEY='sdo_test_letters_norm';
+function normStore(){try{return JSON.parse(localStorage.getItem(NORM_KEY)||'{}');}catch(e){return {};}}
+function batchNormDays(){const v=normStore()[state.current];return v?(+v||2):2;}
+function setBatchNormDays(nd){const m=normStore();m[state.current]=nd;localStorage.setItem(NORM_KEY,JSON.stringify(m));}
+function computeStats(){
+  const posted=state.rows.length;
+  const delivered=state.rows.filter(r=>r.delivery_date).length;
+  const nd=batchNormDays();
+  const within=state.rows.filter(r=>{const n=deliveryNorm(r.posting_date,r.delivery_date);return n!=null&&n<=nd;}).length;
+  const pct=posted?Math.round(delivered/posted*1000)/10:0;
+  return {posted,delivered,within,pct,nd};
+}
+function renderStats(){
+  const s=computeStats();
+  $('#stPosted').textContent=s.posted;
+  $('#stDelivered').textContent=s.delivered;
+  $('#stWithin').textContent=s.within;
+  $('#stPct').textContent=s.pct+'%';
+  const nd=$('#normDays');if(document.activeElement!==nd)nd.value=s.nd;
+  const wl=$('#stWithin').parentElement.querySelector('.stat-l');if(wl)wl.textContent='Delivered within Norms (D+'+s.nd+')';
+}
 
 async function persistRow(r){
   if(state.sbReady){try{await SB.upsert(TABLE,r);return;}catch(e){state.sbReady=false;toast('Cloud save failed — kept locally.','err');}}
@@ -546,7 +599,7 @@ function openCreate(){
   const dupe=state.batches.find(b=>b.batch_id===ym);
   const chosen=state.offices.filter(o=>state.picked.has(o.id));
   $('#cfTitle').textContent='Create batch — '+monthLabel(ym);
-  $('#cfBody').innerHTML=`<div>You're about to create the <b>${monthLabel(ym)}</b> test-letter batch for <b>${chosen.length}</b> office${chosen.length!==1?'s':''}, posted from <b>${esc(cclean($('#fPostOffice').value)||'Karur HO')}</b> on <b>${fmtDot(pd)}</b> at <b>${esc(cclean($('#fPostTime').value)||'1600 hours')}</b>.</div>
+  $('#cfBody').innerHTML=`<div>You're about to create the <b>${monthLabel(ym)}</b> test-letter batch for <b>${chosen.length}</b> office${chosen.length!==1?'s':''}, posted from <b>${esc(cclean($('#fPostOffice').value)||'Karur HO')}</b> on <b>${fmtDot(pd)}</b> at <b>${esc(cclean($('#fPostTime').value)||'1600 hrs')}</b>.</div>
     <div style="margin-top:10px;font-size:12px;color:var(--text-muted);line-height:1.7">${chosen.map(o=>esc(o.name)).join(' · ')}</div>
     ${dupe?`<div class="warnbox">⚠️ A batch already exists for ${monthLabel(ym)} (${dupe.total} letters). Creating again will <b>add</b> these offices to it.</div>`:''}
     <div class="hint" style="margin-top:12px">On confirm, the letters save${state.sbReady?' to the shared cloud':' locally'} and a combined Word file downloads.</div>`;
@@ -555,7 +608,7 @@ function openCreate(){
 }
 async function doCreate(ym,pd){
   const office=cclean($('#fPostOffice').value)||'Karur HO';
-  const time=cclean($('#fPostTime').value)||'1600 hours';
+  const time=cclean($('#fPostTime').value)||'1600 hrs';
   const now=Date.now();
   const chosen=state.offices.filter(o=>state.picked.has(o.id));
   const rows=chosen.map(o=>({
@@ -596,13 +649,16 @@ function loadJSZip(){
   return _zipP;
 }
 function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+function monthYearOf(ym){const m=/^(\d{4})-(\d{2})$/.exec(ym||'');return m?{month:MONTHS[+m[2]-1],year:m[1]}:{month:'',year:''};}
 function letterModel(r){
   const type=r.office_type||'SO';
+  const my=monthYearOf(r.batch_month);
   return {
     office:r.office_name,isBO:type==='BO',aw:r.aw_office||'',
     salutation:type==='BO'?'The Branch Postmaster':type==='HO'?'The Postmaster':'The Sub Postmaster',
     pincode:fmtPin(r.pincode),postingDateStr:fmtDot(r.posting_date),
-    postingTime:r.posting_time||'1600 hours',postingOffice:r.posting_office||'Karur HO'
+    postingTime:r.posting_time||'1600 hrs',postingOffice:r.posting_office||'Karur HO',
+    month:my.month,year:my.year
   };
 }
 function allT(nodes){let out=[];nodes.forEach(nd=>{out.push(...nd.getElementsByTagNameNS(WNS,'t'));});return out;}
@@ -625,17 +681,25 @@ function fillUnit(nodes,L){
   // letter-no date  ("... the  <date>")
   t=eq('date>');if(t)setT(t,L.postingDateStr);
   t=eq('<');if(t)setT(t,'');
-  // table posted row: date + time are globally unique tokens
+  // subject line: "Posting of Test Letters for the month of <Month> <Year> - "
+  t=find(x=>x.includes('<Month>')||x.includes('<Year>'));
+  if(t)setT(t,t.textContent.replace('<Month>',L.month).replace('<Year>',L.year));
+  // table posted row: <date> token is globally unique
   t=eq('<date>');if(t)setT(t,L.postingDateStr);
-  t=eq('1600 hours');if(t)setT(t,L.postingTime);
-  // posting office lives in the posted row as "Karur"+" HO" — scope to that row
-  if(L.postingOffice!=='Karur HO'){
-    const tbl=nodes.find(n=>n.localName==='tbl')||nodes.map(n=>n.getElementsByTagNameNS(WNS,'tbl')[0]).find(Boolean);
-    if(tbl){const rows=Array.from(tbl.getElementsByTagNameNS(WNS,'tr'));
-      const prow=rows.find(rr=>textOf(rr).includes('Posted date'));
-      if(prow){const rts=Array.from(prow.getElementsByTagNameNS(WNS,'t'));
-        const k=rts.find(x=>x.textContent.trim()==='Karur');if(k)setT(k,L.postingOffice);
-        const h=rts.find(x=>x.textContent.trim()==='HO');if(h)setT(h,'');}}
+  // posted-row time + office live in the delivery table (find the row with "Posted date"
+  // across ALL tables, so we never touch "Karur" in the From/To or return-address blocks)
+  let allTr=[];nodes.forEach(n=>{if(n.getElementsByTagNameNS)allTr.push(...n.getElementsByTagNameNS(WNS,'tr'));});
+  const prow=allTr.find(rr=>textOf(rr).includes('Posted date'));
+  if(prow){
+    const rts=Array.from(prow.getElementsByTagNameNS(WNS,'t'));
+    // time cell: "1600 " + "hrs"  (or legacy "1600 hours")
+    const tk=rts.find(x=>x.textContent.trim()==='1600'||x.textContent.trim()==='1600 hours');
+    if(tk){setT(tk,L.postingTime);const th=rts.find(x=>x.textContent.trim()==='hrs');if(th)setT(th,'');}
+    // posting office cell: "Karur" + " HO"  (only if not the default Karur HO)
+    if(L.postingOffice!=='Karur HO'){
+      const k=rts.find(x=>x.textContent.trim()==='Karur');if(k)setT(k,L.postingOffice);
+      const h=rts.find(x=>x.textContent.trim()==='HO');if(h)setT(h,'');
+    }
   }
 }
 async function genWord(rows,combined){
@@ -670,6 +734,37 @@ async function genWord(rows,combined){
   toast(combined?`Word file with ${rows.length} letters downloaded ✓`:'Letter downloaded ✓','ok');
 }
 
+// ── Forwarding / covering letter (from the real template) ──────
+// Generated after the month's process is complete; forwards the report to the
+// Supdt of Post Offices, Karur Division. Fills <date> and <Month> <Year>.
+async function genCover(){
+  if(!state.rows.length){toast('Select a batch first.','err');return;}
+  const my=monthYearOf(state.rows[0].batch_month);
+  const dateStr=fmtDot(todayIso());
+  const JSZip=await loadJSZip();
+  const resp=await fetch(COVER_URL,{cache:'no-store'});
+  if(!resp.ok)throw new Error('covering template '+resp.status);
+  const zip=await JSZip.loadAsync(await resp.arrayBuffer());
+  const xmlStr=await zip.file('word/document.xml').async('string');
+  const doc=new DOMParser().parseFromString(xmlStr,'application/xml');
+  if(doc.getElementsByTagName('parsererror').length)throw new Error('covering template parse error');
+  const ts=Array.from(doc.getElementsByTagNameNS(WNS,'t'));
+  const eq=v=>ts.find(t=>t.textContent.trim()===v);
+  const find=p=>ts.find(t=>p(t.textContent));
+  let t;
+  // letter-no date: "... the  <" + "date>"
+  t=eq('date>');if(t)setT(t,dateStr);
+  t=find(x=>x.trim()==='<'||/the\s+<$/.test(x));if(t)setT(t,t.textContent.replace(/<\s*$/,''));
+  // Subject already reads "Forwarding of Test Letters – Karur Sub-Division – Reg." (no month token)
+  // Body: "... during the month of <Month> <Year> ..." — a single run holds both tokens
+  ts.forEach(tt=>{if(tt.textContent.includes('<Month>')||tt.textContent.includes('<Year>'))
+    setT(tt,tt.textContent.replace('<Month>',my.month).replace('<Year>',my.year));});
+  zip.file('word/document.xml',new XMLSerializer().serializeToString(doc));
+  const blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+  dl(blob,`Covering Letter DTLR ${my.month} ${my.year}.docx`);
+  toast('Covering letter downloaded ✓','ok');
+}
+
 // ── Report: styled Excel (Report.xlsx layout) ──────────────────
 function colL(i){let s='';i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=(i-m-1)/26;}return s;}
 function xE(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));}
@@ -685,61 +780,75 @@ async function exportXlsx(){
   const JSZip=await loadJSZip();
   const b=state.batches.find(x=>x.batch_id===state.current)||{batch_label:monthLabel(state.rows[0].batch_month)};
   const rows=reportRows();
+  const st=computeStats();
   const HEAD=['Sl. no','O/o Posting','Date of Posting','O/o Destination','Date of Delivery','Date of Reposting @ Destination','Delivery norms','Remarks'];
-  const widths=[6,18,13,20,12,14,10,16];
+  const widths=[5,17,12,26,11,13,9,13];
   const title1='भारतीय डाक विभाग / DEPARTMENT OF POSTS';
   const title2='Result of the DTLRs posted in the month of '+b.batch_label;
-  // styles: 1 title, 2 subtitle, 3 header, 4 cell-center, 5 cell-left, 6 cell-center-alt, 7 cell-left-alt
+  // Font: Palatino Linotype throughout (matches the test letter). Clean, print-friendly.
+  // fonts: 0 body 11 · 1 title b14 · 2 head/subtitle b11 · 3 summary b12
   const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <fonts count="4">
-<font><sz val="11"/><name val="Calibri"/></font>
-<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
-<font><b/><sz val="14"/><color rgb="FF3730A3"/><name val="Calibri"/></font>
-<font><b/><sz val="12"/><color rgb="FF4F46E5"/><name val="Calibri"/></font>
+<font><sz val="11"/><name val="Palatino Linotype"/><family val="1"/></font>
+<font><b/><sz val="14"/><name val="Palatino Linotype"/><family val="1"/></font>
+<font><b/><sz val="11"/><name val="Palatino Linotype"/><family val="1"/></font>
+<font><b/><sz val="12"/><name val="Palatino Linotype"/><family val="1"/></font>
 </fonts>
-<fills count="5">
+<fills count="3">
 <fill><patternFill patternType="none"/></fill>
 <fill><patternFill patternType="gray125"/></fill>
-<fill><patternFill patternType="solid"><fgColor rgb="FF4F46E5"/></patternFill></fill>
-<fill><patternFill patternType="solid"><fgColor rgb="FFEEF0FF"/></patternFill></fill>
-<fill><patternFill patternType="solid"><fgColor rgb="FFF6F7FF"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F2"/></patternFill></fill>
 </fills>
 <borders count="2">
 <border><left/><right/><top/><bottom/><diagonal/></border>
-<border><left style="thin"><color rgb="FFB9BFE8"/></left><right style="thin"><color rgb="FFB9BFE8"/></right><top style="thin"><color rgb="FFB9BFE8"/></top><bottom style="thin"><color rgb="FFB9BFE8"/></bottom></border>
+<border><left style="thin"><color rgb="FF808080"/></left><right style="thin"><color rgb="FF808080"/></right><top style="thin"><color rgb="FF808080"/></top><bottom style="thin"><color rgb="FF808080"/></bottom></border>
 </borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
 <cellXfs count="8">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-<xf numFmtId="0" fontId="2" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
-<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
-<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1"/></xf>
+<xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
 </cellXfs>
 </styleSheet>`;
   const cell=(ci,ri,v,s)=>`<c r="${colL(ci)}${ri}" t="inlineStr" s="${s}"><is><t xml:space="preserve">${xE(v)}</t></is></c>`;
+  const blanks=(ri,s)=>{let o='';for(let i=1;i<8;i++)o+=`<c r="${colL(i)}${ri}" s="${s}"/>`;return o;};
   let sd='';
-  sd+=`<row r="1" ht="30" customHeight="1"><c r="A1" t="inlineStr" s="1"><is><t xml:space="preserve">${xE(title1)}</t></is></c>`;
-  for(let i=1;i<8;i++)sd+=`<c r="${colL(i)}1" s="1"/>`;sd+='</row>';
-  sd+=`<row r="2" ht="20" customHeight="1"><c r="A2" t="inlineStr" s="2"><is><t xml:space="preserve">${xE(title2)}</t></is></c>`;
-  for(let i=1;i<8;i++)sd+=`<c r="${colL(i)}2" s="2"/>`;sd+='</row>';
-  sd+='<row r="3" ht="34" customHeight="1">'+HEAD.map((h,i)=>cell(i,3,h,3)).join('')+'</row>';
-  rows.forEach((r,idx)=>{const ri=idx+4;const alt=idx%2===1;const c=alt?6:4,cl=alt?7:5;
-    sd+=`<row r="${ri}" ht="26" customHeight="1">`+
-      cell(0,ri,r.sl,c)+cell(1,ri,r.post,cl)+cell(2,ri,r.pdate,c)+cell(3,ri,r.dest,cl)+
-      cell(4,ri,r.ddate,c)+cell(5,ri,r.rdate,c)+cell(6,ri,r.norm,c)+cell(7,ri,r.rem,cl)+'</row>';});
-  const lastRow=rows.length+3;
+  sd+=`<row r="1" ht="40" customHeight="1">`+cell(0,1,title1,1)+blanks(1,1)+'</row>';
+  sd+=`<row r="2" ht="20" customHeight="1">`+cell(0,2,title2,2)+blanks(2,2)+'</row>';
+  sd+='<row r="3" ht="32" customHeight="1">'+HEAD.map((h,i)=>cell(i,3,h,3)).join('')+'</row>';
+  rows.forEach((r,idx)=>{const ri=idx+4;
+    sd+=`<row r="${ri}" ht="27" customHeight="1">`+
+      cell(0,ri,r.sl,4)+cell(1,ri,r.post,4)+cell(2,ri,r.pdate,4)+cell(3,ri,r.dest,5)+
+      cell(4,ri,r.ddate,4)+cell(5,ri,r.rdate,4)+cell(6,ri,r.norm,4)+cell(7,ri,r.rem,5)+'</row>';});
+  // ── summary block ──
+  const dataEnd=rows.length+3;
+  const sumStart=dataEnd+2;                       // one blank spacer row
+  const summ=[
+    ['No. of Test Letters Posted',String(st.posted)],
+    ['No. of Letters Delivered',String(st.delivered)],
+    ['Delivered within Norms (D+'+st.nd+')',String(st.within)],
+    ['Percentage of Delivery',st.pct+' %']
+  ];
+  const merges=['A1:H1','A2:H2'];
+  summ.forEach((s,i)=>{const ri=sumStart+i;
+    sd+=`<row r="${ri}" ht="24" customHeight="1">`+cell(0,ri,s[0],6)+
+      `<c r="B${ri}" s="6"/><c r="C${ri}" s="6"/><c r="D${ri}" s="6"/><c r="E${ri}" s="6"/>`+
+      cell(5,ri,s[1],7)+`<c r="G${ri}" s="7"/><c r="H${ri}" s="7"/>`+'</row>';
+    merges.push('A'+ri+':E'+ri);merges.push('F'+ri+':H'+ri);});
+  const lastRow=sumStart+summ.length-1;
   const cols=widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
   const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:H${lastRow}"/>
 <sheetViews><sheetView showGridLines="0" workbookViewId="0"/></sheetViews>
 <cols>${cols}</cols>
 <sheetData>${sd}</sheetData>
-<mergeCells count="2"><mergeCell ref="A1:H1"/><mergeCell ref="A2:H2"/></mergeCells>
+<mergeCells count="${merges.length}">${merges.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells>
 <pageMargins left="0.4" right="0.3" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
 <pageSetup orientation="portrait"/></worksheet>`;
   const wb=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -765,39 +874,55 @@ let _pdfP;
 function loadScriptOnce(src){return new Promise((res,rej)=>{if([...document.scripts].some(s=>s.src===src))return res();
   const s=document.createElement('script');s.src=src;s.onload=()=>res();s.onerror=()=>rej(new Error('Could not load the PDF engine (check your connection).'));document.head.appendChild(s);});}
 async function loadPdf(){if(_pdfP)return _pdfP;_pdfP=(async()=>{for(const u of PDF_URLS)await loadScriptOnce(u);})();return _pdfP;}
-const CLR={ind:[79,70,229],saffron:[255,153,51],white:[255,255,255],green:[19,136,8]};
+// Black & white, serif (Palatino Linotype can't be embedded in a browser PDF
+// without bundling the font, so jsPDF's built-in Times serif is used — the Excel
+// report carries the exact Palatino Linotype layout). Printer-friendly: no colour.
 async function exportPdf(){
   if(!state.rows.length){toast('Nothing to export.','err');return;}
   await loadPdf();const {jsPDF}=window.jspdf;
   const b=state.batches.find(x=>x.batch_id===state.current)||{batch_label:monthLabel(state.rows[0].batch_month)};
-  const rows=reportRows();
+  const rows=reportRows();const st=computeStats();
+  const SF='times';
   const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
-  const W=doc.internal.pageSize.getWidth();
-  const del=state.rows.filter(r=>r.delivery_date).length;
+  const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight();
   const header=()=>{
-    doc.setFillColor(...CLR.ind);doc.rect(0,0,W,58,'F');
-    const t=W/3;doc.setFillColor(...CLR.saffron);doc.rect(0,58,t,4,'F');doc.setFillColor(...CLR.white);doc.rect(t,58,t,4,'F');doc.setFillColor(...CLR.green);doc.rect(2*t,58,t,4,'F');
-    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('Department of Posts — Result of the DTLRs',32,25);
-    doc.setFont('helvetica','normal');doc.setFontSize(9);
-    doc.text(`Karur Sub Division   |   Posted in the month of ${b.batch_label}`,32,42);
-    doc.setFontSize(8.5);doc.text('Letters: '+rows.length+'   Delivered: '+del,W-32,25,{align:'right'});
-    doc.text('Generated: '+new Date().toLocaleString('en-IN'),W-32,42,{align:'right'});
+    doc.setTextColor(0,0,0);
+    doc.setFont(SF,'bold');doc.setFontSize(15);doc.text('DEPARTMENT OF POSTS',W/2,34,{align:'center'});
+    doc.setFontSize(12);doc.text('Result of the DTLRs posted in the month of '+b.batch_label,W/2,52,{align:'center'});
+    doc.setFont(SF,'normal');doc.setFontSize(10);
+    doc.text('Office of the Asst. Supdt. of Post Offices, Karur Sub Division',W/2,68,{align:'center'});
+    doc.setDrawColor(0,0,0);doc.setLineWidth(1);doc.line(24,76,W-24,76);
   };
-  const footer=()=>{const H=doc.internal.pageSize.getHeight();doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(150);
-    doc.text('O/o the Assistant Superintendent of Post Offices, Karur Sub Division',32,H-14);
-    doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber,W-32,H-14,{align:'right'});};
+  const footer=()=>{doc.setFont(SF,'normal');doc.setFontSize(9);doc.setTextColor(90,90,90);
+    doc.text('Generated: '+new Date().toLocaleString('en-IN'),24,H-14);
+    doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber,W-24,H-14,{align:'right'});};
   doc.autoTable({
-    head:[['Sl','O/o Posting','Date of Posting','O/o Destination','Date of Delivery','Reposting @ Dest.','Norm','Remarks']],
+    head:[['Sl. no','O/o Posting','Date of Posting','O/o Destination','Date of Delivery','Date of Reposting @ Destination','Delivery norms','Remarks']],
     body:rows.map(r=>[r.sl,r.post,r.pdate,r.dest,r.ddate,r.rdate,r.norm,r.rem]),
-    startY:74,margin:{top:70,left:24,right:24},
-    styles:{font:'helvetica',fontSize:8,cellPadding:4,overflow:'linebreak',lineColor:[200,205,235],lineWidth:.5,valign:'middle'},
-    headStyles:{fillColor:CLR.ind,textColor:255,fontStyle:'bold',halign:'center',fontSize:8.2},
-    alternateRowStyles:{fillColor:[244,245,255]},
-    columnStyles:{0:{halign:'center',cellWidth:24},1:{halign:'center',cellWidth:62},2:{halign:'center',cellWidth:62},3:{cellWidth:96,fontStyle:'bold'},4:{halign:'center',cellWidth:62},5:{halign:'center',cellWidth:62},6:{halign:'center',cellWidth:34},7:{cellWidth:'auto'}},
-    didParseCell:d=>{if(d.section==='body'&&d.column.index===6){const v=String(d.cell.raw||'');d.cell.styles.fontStyle='bold';
-      const m=/D\+(\d+)/.exec(v);if(m){const n=+m[1];d.cell.styles.textColor=n<=1?[16,120,80]:n<=2?[176,120,8]:[190,40,60];}}},
+    startY:86,margin:{top:82,left:24,right:24},
+    styles:{font:SF,fontSize:9,cellPadding:3.5,overflow:'linebreak',lineColor:[80,80,80],lineWidth:.6,valign:'middle',textColor:[0,0,0]},
+    headStyles:{fillColor:[238,238,238],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:9,lineColor:[80,80,80],lineWidth:.6},
+    alternateRowStyles:{fillColor:[246,246,246]},
+    columnStyles:{0:{halign:'center',cellWidth:24},1:{halign:'center',cellWidth:56},2:{halign:'center',cellWidth:56},3:{cellWidth:150,fontStyle:'bold'},4:{halign:'center',cellWidth:56},5:{halign:'center',cellWidth:62},6:{halign:'center',cellWidth:48,fontStyle:'bold'},7:{cellWidth:'auto'}},
     didDrawPage:()=>{header();footer();}
   });
+  // summary block
+  let y=(doc.lastAutoTable.finalY||90)+24;
+  if(y>H-110){doc.addPage();y=90;}
+  doc.setFont(SF,'bold');doc.setFontSize(12);doc.setTextColor(0,0,0);
+  doc.text('Summary',24,y);y+=8;
+  const lines=[
+    ['No. of Test Letters Posted',String(st.posted)],
+    ['No. of Letters Delivered',String(st.delivered)],
+    ['Delivered within Norms (D+'+st.nd+')',String(st.within)],
+    ['Percentage of Delivery',st.pct+' %']
+  ];
+  const bx=24,lw=280,vw=90,rh=24;
+  doc.setDrawColor(80,80,80);doc.setLineWidth(.6);doc.setFontSize(12);
+  lines.forEach((ln,i)=>{const yy=y+i*rh;
+    doc.rect(bx,yy,lw,rh);doc.rect(bx+lw,yy,vw,rh);
+    doc.setFont(SF,'normal');doc.text(ln[0],bx+8,yy+16);
+    doc.setFont(SF,'bold');doc.text(ln[1],bx+lw+vw/2,yy+16,{align:'center'});});
   doc.save(`DTLR Report ${b.batch_label}.pdf`);
   toast('PDF report downloaded ✓','ok');
 }
@@ -822,8 +947,14 @@ $('#chkAll').addEventListener('change',e=>{
   updateBulkN();});
 $('#btnXlsx').addEventListener('click',e=>runExport(e.target,exportXlsx));
 $('#btnPdf').addEventListener('click',e=>runExport(e.target,exportPdf));
+$('#btnCover').addEventListener('click',e=>runExport(e.target,genCover));
 $('#btnWordAll').addEventListener('click',e=>runExport(e.target,()=>genWord(state.rows,true)));
 $('#btnDeleteBatch').addEventListener('click',deleteBatch);
+$('#normDays').addEventListener('change',e=>{
+  const nd=Math.max(1,Math.min(9,parseInt(e.target.value,10)||2));e.target.value=nd;
+  if(state.current)setBatchNormDays(nd);
+  renderStats();
+});
 
 // ── init ───────────────────────────────────────────────────────
 (async function init(){
