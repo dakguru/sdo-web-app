@@ -60,6 +60,10 @@ interface EmployeeDao {
     @Query("SELECT * FROM employees")
     suspend fun allList(): List<EmployeeEntity>
 
+    /** All staff as a reactive stream — drives birthdays/retirements. */
+    @Query("SELECT * FROM employees")
+    fun allFlow(): Flow<List<EmployeeEntity>>
+
     /** Distinct office ids that have a staff member whose name matches — for office search-by-staff. */
     @Query("SELECT DISTINCT officeId FROM employees WHERE name LIKE '%' || :q || '%'")
     fun officeIdsByStaffName(q: String): Flow<List<String>>

@@ -32,7 +32,11 @@ import com.karursdo.ui.directory.DirectoryScreen
 import com.karursdo.ui.directory.EmployeeDetailScreen
 import com.karursdo.ui.directory.OfficeDetailScreen
 import com.karursdo.ui.directory.OutsiderDetailScreen
+import com.karursdo.ui.cpv.CpvDetailScreen
+import com.karursdo.ui.cpv.CpvListScreen
 import com.karursdo.ui.home.HomeScreen
+import com.karursdo.ui.people.BirthdaysScreen
+import com.karursdo.ui.people.RetirementsScreen
 import com.karursdo.ui.ingest.ImportScreen
 import com.karursdo.ui.mo.MoBeatListScreen
 import com.karursdo.ui.mo.MoLandingScreen
@@ -117,7 +121,30 @@ fun KsdApp(onLogout: () -> Unit = {}) {
                     onOpenImport = { navController.navigate(ImportRoute) },
                     onOpenDirectory = { navController.navigate(DirectoryRoute) },
                     onOpenArrangements = { navController.navigate(ArrangementsRoute) },
-                    onOpenMoBeat = { beat -> navController.navigate(MoBeatListRoute(beat)) }
+                    onOpenMoBeat = { beat -> navController.navigate(MoBeatListRoute(beat)) },
+                    onOpenCpv = { navController.navigate(CpvRoute) },
+                    onOpenBirthdays = { navController.navigate(BirthdaysRoute) },
+                    onOpenRetirements = { navController.navigate(RetirementsRoute) }
+                )
+            }
+            composable<BirthdaysRoute> {
+                BirthdaysScreen(onBack = { navController.popBackStack() })
+            }
+            composable<RetirementsRoute> {
+                RetirementsScreen(onBack = { navController.popBackStack() })
+            }
+            composable<CpvRoute> {
+                CpvListScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenBatch = { key, title -> navController.navigate(CpvDetailRoute(key, title)) }
+                )
+            }
+            composable<CpvDetailRoute> { entry ->
+                val r = entry.toRoute<CpvDetailRoute>()
+                CpvDetailScreen(
+                    officeKey = r.officeKey,
+                    title = r.title,
+                    onBack = { navController.popBackStack() }
                 )
             }
             composable<DirectoryRoute> {

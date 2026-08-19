@@ -1,7 +1,9 @@
 package com.karursdo.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,15 +11,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Upload
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -28,7 +28,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import com.karursdo.data.db.MoProgrammeEntity
@@ -83,6 +86,15 @@ class HomeViewModel @Inject constructor(
     val todayProgrammes = repo.programmesForDate(LocalDate.now().toString())
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList<MoProgrammeEntity>())
 
+    // Today's birthdays (DS/GDS/OUT) and retirements (DS/GDS) — computed from staff DOB.
+    val todayBirthdays = combine(repo.employeeDao.allFlow(), repo.outsiderDao.all()) { emps, outs ->
+        com.karursdo.ui.people.buildBirthdays(emps, outs).filter { it.days == 0 }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val todayRetirements = repo.employeeDao.allFlow().map { emps ->
+        com.karursdo.ui.people.buildRetirements(emps).filter { it.days == 0 }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     // beat -> admin-tagged Mail Overseer display name, for the programme banner.
     val moNames: StateFlow<Map<String, String>> = combine(
         userRepo.globalPrefFlow(PREF_MO_I_USER),
@@ -103,6 +115,9 @@ fun HomeScreen(
     onOpenDirectory: () -> Unit,
     onOpenArrangements: () -> Unit,
     onOpenMoBeat: (String) -> Unit,
+    onOpenCpv: () -> Unit = {},
+    onOpenBirthdays: () -> Unit = {},
+    onOpenRetirements: () -> Unit = {},
     vm: HomeViewModel = hiltViewModel()
 ) {
     val ds by vm.dsCount.collectAsState()
@@ -113,6 +128,8 @@ fun HomeScreen(
     val moIIOverdue by vm.moIIOverdue.collectAsState()
     val todayProgrammes by vm.todayProgrammes.collectAsState()
     val moNames by vm.moNames.collectAsState()
+    val todayBirthdays by vm.todayBirthdays.collectAsState()
+    val todayRetirements by vm.todayRetirements.collectAsState()
     val todayLabel = remember { LocalDate.now().format(HOME_DATE_FMT) }
 
     LazyColumn(
@@ -160,6 +177,16 @@ fun HomeScreen(
             }
         }
 
+        // ---- Today's birthdays & retirements (shown ABOVE the MO programme) ----
+        item {
+            TodayPeopleCard(
+                birthdays = todayBirthdays,
+                retirements = todayRetirements,
+                onOpenBirthdays = onOpenBirthdays,
+                onOpenRetirements = onOpenRetirements
+            )
+        }
+
         // ---- Today's Mail Overseer programme (shown ABOVE the due-office counts) ----
         item {
             SectionCard("Today's MO Programme · $todayLabel") {
@@ -201,29 +228,22 @@ fun HomeScreen(
 
         item {
             SectionCard("Quick access") {
-                Button(
-                    onClick = onOpenDirectory,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("📇 Staff Directory — search & browse") }
-                Spacer(Modifier.height(8.dp))
-                Button(
-                    onClick = onOpenArrangements,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Brand.Teal),
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("🔁 Temporary Arrangements") }
-                Spacer(Modifier.height(8.dp))
-                Button(
-                    onClick = onOpenImport,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Brand.PrimaryDarker),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Rounded.Upload, contentDescription = null)
-                    Spacer(Modifier.padding(horizontal = 4.dp))
-                    Text("Update monthly data")
+                val tiles = listOf(
+                    QuickAction("📇", "Staff Directory", Brand.Indigo, onOpenDirectory),
+                    QuickAction("🔁", "Arrangements", Brand.Teal, onOpenArrangements),
+                    QuickAction("✅", "Cent % Verification", Brand.Pink, onOpenCpv),
+                    QuickAction("🎂", "Birthdays", Brand.Violet, onOpenBirthdays),
+                    QuickAction("🗓️", "Retirements", Brand.Rose, onOpenRetirements),
+                    QuickAction("⬆️", "Update data", Brand.PrimaryDarker, onOpenImport)
+                )
+                tiles.chunked(2).forEach { rowTiles ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowTiles.forEach { QuickTile(it, Modifier.weight(1f)) }
+                        if (rowTiles.size == 1) Spacer(Modifier.weight(1f))
+                    }
                 }
             }
         }
@@ -250,6 +270,111 @@ fun HomeScreen(
             }
         }
         item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+/** One Quick-access action: emoji icon, label, accent and tap handler. */
+private data class QuickAction(
+    val icon: String,
+    val label: String,
+    val accent: Color,
+    val onClick: () -> Unit
+)
+
+/** A tappable Quick-access tile: coloured icon chip over a label. */
+@Composable
+private fun QuickTile(action: QuickAction, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 2.dp,
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = action.onClick)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(vertical = 14.dp, horizontal = 8.dp)
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(46.dp).clip(RoundedCornerShape(13.dp))
+                    .background(action.accent.copy(alpha = 0.14f))
+            ) { Text(action.icon, fontSize = 22.sp) }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                action.label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+/** Dashboard card summarising today's birthdays and retirements. */
+@Composable
+private fun TodayPeopleCard(
+    birthdays: List<com.karursdo.ui.people.BirthdayPerson>,
+    retirements: List<com.karursdo.ui.people.RetirementPerson>,
+    onOpenBirthdays: () -> Unit,
+    onOpenRetirements: () -> Unit
+) {
+    SectionCard("Today · Birthdays & Retirements") {
+        // Birthdays
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                .clickable(onClick = onOpenBirthdays).padding(vertical = 6.dp)
+        ) {
+            Text("🎂", fontSize = 20.sp)
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                if (birthdays.isEmpty()) {
+                    Text("No birthdays today", style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    Text(
+                        birthdays.joinToString(", ") { it.name },
+                        style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        "${birthdays.size} birthday${if (birthdays.size == 1) "" else "s"} today · tap to view all",
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Text("›", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+        }
+        Spacer(Modifier.height(6.dp))
+        // Retirements
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                .clickable(onClick = onOpenRetirements).padding(vertical = 6.dp)
+        ) {
+            Text("🗓️", fontSize = 20.sp)
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                if (retirements.isEmpty()) {
+                    Text("No retirements today", style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    Text(
+                        retirements.joinToString(", ") { it.name },
+                        style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        "${retirements.size} retiring today · tap to view all",
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Text("›", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+        }
     }
 }
 
