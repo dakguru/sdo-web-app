@@ -169,6 +169,28 @@ table.reg tbody tr:hover td{background:rgba(255,255,255,.03)}
 .status.other{background:rgba(129,140,248,.16);color:var(--indigo)}
 tr.totrow td{background:rgba(45,212,191,.08);font-weight:800;color:var(--text-primary);border-top:2px solid var(--glass-border)}
 
+/* verification */
+.vchk{width:17px;height:17px;accent-color:var(--teal);cursor:pointer}
+.vbtn{border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-secondary);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:inherit;transition:all .18s;white-space:nowrap}
+.vbtn:hover{background:var(--glass-bg-hover);color:var(--text-primary)}
+.vbtn.on{background:rgba(52,211,153,.16);border-color:rgba(52,211,153,.4);color:var(--em)}
+.vbtn-prov{font-size:9.5px;color:var(--text-muted);margin-top:3px;font-weight:600;line-height:1.3}
+.cifgrp{border:none;background:none;color:var(--indigo);cursor:pointer;font-size:11px;padding:1px 4px;border-radius:6px;font-weight:800}
+.cifgrp:hover{background:rgba(129,140,248,.16)}
+.rmk-in{width:100%;min-width:130px;background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:12px;outline:none;transition:border-color .2s}
+html.light .rmk-in{background:#fff}
+.rmk-in:focus{border-color:var(--teal)}
+.rmk-in.has{border-color:var(--gold)}
+.vstat{font-size:10px;font-weight:800;letter-spacing:.3px;padding:3px 8px;border-radius:999px;display:inline-block;white-space:nowrap}
+.vstat.yes{background:rgba(52,211,153,.16);color:var(--em)} .vstat.no{background:rgba(148,163,184,.18);color:var(--text-muted)}
+
+.bulkbar{display:none;flex-wrap:wrap;gap:10px;align-items:center;position:sticky;top:0;z-index:5;margin-bottom:14px;background:linear-gradient(135deg,rgba(45,212,191,.12),rgba(34,211,238,.07));border:1px solid rgba(45,212,191,.35);border-radius:var(--radius-lg);padding:12px 14px;backdrop-filter:blur(var(--glass-blur))}
+.bulkbar.show{display:flex}
+.bulkbar .bk-count{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:13px;color:var(--teal);white-space:nowrap}
+.bulkbar .bk-rmk{flex:1;min-width:170px;background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:13px;outline:none}
+html.light .bulkbar .bk-rmk{background:#fff}
+.bulkbar .bk-rmk:focus{border-color:var(--teal)}
+
 .empty{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:14px;background:var(--glass-bg);border:1px dashed var(--glass-border);border-radius:var(--radius-lg)}
 .empty .ei{font-size:44px;display:block;margin-bottom:12px;opacity:.5}
 
@@ -215,7 +237,7 @@ html.light .field input,html.light .field select{background:#f7f8fb}
   <div class="hero">
     <div class="hero-eyebrow">Karur Sub Division · Department of Posts</div>
     <div class="hero-title">✅ Cent Percent Verification</div>
-    <div class="hero-sub">Upload a messy <b>Last Balance Report</b> (CSV / Excel) for any office and scheme — the app cleans it into a tidy account list, computes status-wise counts, and stores it office-wise &amp; scheme-wise for later. Filter by date, account type, status or balance, and download a clean PDF or Excel.</div>
+    <div class="hero-sub">Upload a messy <b>Last Balance Report</b> (CSV / Excel) for any office and scheme — the app cleans it into a tidy account list, computes status-wise counts, and stores it office-wise &amp; scheme-wise for later. Open a stored list to <b>verify each account</b> (single or in bulk by customer / CIF), note any discrepancy, filter verified / unverified, and download a clean PDF or Excel verification report.</div>
     <div class="drop" id="drop">
       <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,text/csv" style="display:none">
       <span class="di">📥</span>
@@ -287,6 +309,14 @@ html.light .field input,html.light .field select{background:#f7f8fb}
         <label>Status</label>
         <select id="fStatus"><option value="">All statuses</option></select>
       </div>
+      <div class="fg" id="fVerifyWrap">
+        <label>Verification</label>
+        <select id="fVerify">
+          <option value="">All</option>
+          <option value="yes">✓ Verified</option>
+          <option value="no">Unverified</option>
+        </select>
+      </div>
       <div class="fg">
         <label>Last txn from</label>
         <input type="date" id="fDateFrom">
@@ -312,6 +342,15 @@ html.light .field input,html.light .field select{background:#f7f8fb}
       </div>
     </div>
     <div style="margin-bottom:12px"><span class="fcount" id="filterCount">—</span></div>
+
+    <!-- Bulk verification bar (shown when one or more accounts are selected) -->
+    <div class="bulkbar" id="bulkBar">
+      <span class="bk-count" id="bkCount">0 selected</span>
+      <input type="text" class="bk-rmk" id="bkRemark" placeholder="Remark for selected (optional — leave blank to keep each account's own)">
+      <button class="btn sm" id="bkVerify">✓ Verify selected</button>
+      <button class="btn ghost sm" id="bkUnverify">Unverify</button>
+      <button class="btn ghost sm" id="bkClear">Clear</button>
+    </div>
 
     <div class="tbl-wrap"><table class="reg" id="detailTable"></table></div>
   </div>
@@ -376,7 +415,11 @@ const SCHEMES=[
 ];
 const schemeLabel=code=>{const s=SCHEMES.find(x=>x.code===code);return s?s.label:code;};
 
-const state={list:[],dq:'',mode:'stored',current:null,detail:null,editKey:null,preview:null,delKey:null,busy:false};
+const state={list:[],dq:'',mode:'stored',current:null,detail:null,editKey:null,preview:null,delKey:null,busy:false,
+  verif:{},        // acct -> {verified, remarks, verified_by, verified_at_ms}  (stored lists only)
+  sel:new Set()};  // selected account numbers for bulk verification
+// True only when the open list is a stored batch that can be verified (not an unstored preview).
+function canVerify(){return state.mode==='stored'&&state.current&&!!state.current.office_key;}
 
 // ─────────────────────────────────────────────────────────────
 //  CSV / XLSX parsing
@@ -795,6 +838,8 @@ async function openDetail(key){
   state.mode='stored';
   state.current=row;
   state.detail=Array.isArray(row.records)?row.records:[];
+  state.verif={};state.sel.clear();
+  await loadVerifications(key);
   $('#previewBar').classList.add('hidden');
   $('#backToDash').classList.remove('hidden');
   renderDetailHeader();
@@ -805,6 +850,23 @@ async function openDetail(key){
   window.scrollTo(0,0);
   renderDetail();
 }
+// Load the per-account verification rows for a stored batch into state.verif (keyed by acct).
+async function loadVerifications(key){
+  try{
+    const rows=await SB.select('app_cpv_verification',`office_key=eq.${encodeURIComponent(key)}&select=acct,verified,remarks,verified_by,verified_at_ms`);
+    const map={};
+    (rows||[]).forEach(r=>{map[String(r.acct)]={verified:!!r.verified,remarks:r.remarks||'',verified_by:r.verified_by||'',verified_at_ms:r.verified_at_ms||null};});
+    state.verif=map;
+  }catch(e){
+    state.verif={};
+    // Missing table → verification simply unavailable; the rest of the list still works.
+    if(/app_cpv_verification|PGRST205|42P01/.test(String(e.message||'')))
+      toast('Verification storage not set up — run migration_v15_cpv_verification.sql.','err');
+  }
+}
+// One verification record for an account (defaults = unverified, no remark).
+function vOf(acct){return state.verif[acct]||{verified:false,remarks:'',verified_by:'',verified_at_ms:null};}
+function verifiedCount(records){let v=0;for(const r of records)if(vOf(r.acct).verified)v++;return v;}
 function renderDetailHeader(){
   const row=state.current;if(!row)return;
   $('#dhBadge').textContent=row.scheme;
@@ -815,6 +877,11 @@ function renderDetailHeader(){
   meta.push(`<span class="meta-chip">Scheme <b>${esc(row.scheme_label||schemeLabel(row.scheme))}</b></span>`);
   meta.push(`<span class="meta-chip">Total <b>${(+row.total_accounts||0).toLocaleString('en-IN')}</b></span>`);
   const sc=row.status_counts||{};Object.keys(sc).sort().forEach(s=>meta.push(`<span class="meta-chip">${esc(s)} <b>${sc[s]}</b></span>`));
+  if(canVerify()){
+    const recs=state.detail||[];const v=verifiedCount(recs);const u=recs.length-v;
+    meta.push(`<span class="meta-chip" style="border-color:rgba(52,211,153,.4)">✓ Verified <b style="color:var(--em)">${v}</b></span>`);
+    meta.push(`<span class="meta-chip">Unverified <b>${u}</b></span>`);
+  }
   $('#dhMeta').innerHTML=meta.join('');
 }
 function buildDetailFilters(){
@@ -829,13 +896,15 @@ function exitToDash(){
   $('#dashView').classList.remove('hidden');
   $('#previewBar').classList.add('hidden');
   $('#backToDash').classList.remove('hidden');
-  state.mode='stored';state.current=null;state.detail=null;
+  $('#bulkBar').classList.remove('show');
+  state.mode='stored';state.current=null;state.detail=null;state.verif={};state.sel.clear();
 }
 function currentFilters(){
   return {
     q:$('#fSearch').value.trim().toLowerCase(),
     type:$('#fType').value,
     status:$('#fStatus').value,
+    verify:$('#fVerify').value,
     from:$('#fDateFrom').value,
     to:$('#fDateTo').value,
     balMode:$('#fBalMode').value,
@@ -849,6 +918,7 @@ function filteredRecords(){
     if(f.q){const hay=(r.acct+' '+r.name+' '+r.address).toLowerCase();if(!hay.includes(f.q))return false;}
     if(f.type&&r.type!==f.type)return false;
     if(f.status&&r.status!==f.status)return false;
+    if(f.verify){const isV=vOf(r.acct).verified;if(f.verify==='yes'&&!isV)return false;if(f.verify==='no'&&isV)return false;}
     if(f.from&&(!r.date||r.date<f.from))return false;
     if(f.to&&(!r.date||r.date>f.to))return false;
     if(f.balMode){
@@ -860,41 +930,90 @@ function filteredRecords(){
     return true;
   });
 }
+function fmtVerAt(ms){if(!ms)return '';const d=new Date(+ms);if(isNaN(d))return '';const p=x=>String(x).padStart(2,'0');return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()}`;}
 function renderDetail(){
+  const v=canVerify();
+  $('#fVerifyWrap').classList.toggle('hidden',!v);
   const rows=filteredRecords();
   const total=state.detail.length;
-  $('#filterCount').innerHTML=`Showing <b>${rows.length.toLocaleString('en-IN')}</b> of ${total.toLocaleString('en-IN')} accounts`;
+  // Prune the selection to accounts still visible under the current filters.
+  if(v){const shown=new Set(rows.map(r=>r.acct));[...state.sel].forEach(a=>{if(!shown.has(a))state.sel.delete(a);});}
+  const vShown=v?rows.filter(r=>vOf(r.acct).verified).length:0;
+  $('#filterCount').innerHTML=`Showing <b>${rows.length.toLocaleString('en-IN')}</b> of ${total.toLocaleString('en-IN')} accounts`
+    +(v?` · <b style="color:var(--em)">${vShown}</b> verified · <b>${rows.length-vShown}</b> unverified`:'');
   const scheme=state.current?state.current.scheme:'';
+  // Account Type & Status are intentionally hidden from this table view (they remain in the
+  // filters and in the PDF/Excel reports). This keeps room for the verification columns.
+  const balCol=v?7:6;                       // 0-based column index of the Balance cell
+  const totCols=v?11:8;
+  const allSel=v&&rows.length&&rows.every(r=>state.sel.has(r.acct));
   let body=`<thead><tr>
+    ${v?`<th style="width:26px"><input type="checkbox" class="vchk" id="selAll" ${allSel?'checked':''} title="Select all shown"></th>`:''}
     <th>Sl.No</th><th>Scheme</th><th>Account No.</th><th>Customer Name</th><th>CIF ID</th><th>Address</th>
-    <th>Account Type</th><th style="text-align:right">Balance ₹</th><th>Last Txn</th><th>Status</th>
+    <th style="text-align:right">Balance ₹</th><th>Last Txn</th>
+    ${v?'<th>Verified</th><th style="min-width:150px">Remarks</th>':''}
   </tr></thead><tbody>`;
   if(!rows.length){
-    body+=`<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)">No accounts match the current filters.</td></tr>`;
+    body+=`<tr><td colspan="${totCols}" style="text-align:center;padding:40px;color:var(--text-muted)">No accounts match the current filters.</td></tr>`;
   }else{
     let sum=0;
     rows.forEach((r,i)=>{
       if(r.balance!=null)sum+=r.balance;
-      body+=`<tr>
+      const rec=vOf(r.acct);const sel=state.sel.has(r.acct);
+      const cifCell=v&&r.cif
+        ? `${esc(r.cif)} <button class="cifgrp" data-cifgrp="${esc(r.cif)}" title="Select all accounts of this CIF">⧉</button>`
+        : esc(r.cif||'—');
+      body+=`<tr${sel?' style="background:rgba(45,212,191,.07)"':''}>
+        ${v?`<td><input type="checkbox" class="vchk" data-selacct="${esc(r.acct)}" ${sel?'checked':''}></td>`:''}
         <td class="mono">${i+1}</td>
         <td><span class="sc-chip" style="font-size:10px;padding:2px 7px">${esc(scheme)}</span></td>
         <td class="mono">${esc(r.acct)}</td>
         <td class="nm">${esc(r.name||'—')}</td>
-        <td class="mono">${esc(r.cif||'—')}</td>
+        <td class="mono">${cifCell}</td>
         <td class="addr">${esc(r.address||'—')}</td>
-        <td>${esc(r.type||'—')}</td>
         <td class="num">${r.balance==null?'—':fmtAmt(r.balance)}</td>
         <td class="mono">${esc(fmtTxnDate(r.date)||r.dateRaw||'—')}</td>
-        <td><span class="status ${statusClass(r.status)}">${esc(r.status||'—')}</span></td>
+        ${v?`<td><button class="vbtn ${rec.verified?'on':''}" data-vtoggle="${esc(r.acct)}">${rec.verified?'✓ Verified':'Verify'}</button>${rec.verified&&(rec.verified_by||rec.verified_at_ms)?`<div class="vbtn-prov">${esc(rec.verified_by||'')}${rec.verified_at_ms?' · '+fmtVerAt(rec.verified_at_ms):''}</div>`:''}</td>
+        <td><input type="text" class="rmk-in ${rec.remarks?'has':''}" data-rmk="${esc(r.acct)}" value="${esc(rec.remarks||'')}" placeholder="Note discrepancy…"></td>`:''}
       </tr>`;
     });
-    body+=`<tr class="totrow"><td colspan="7" style="text-align:right">Total balance (${rows.length} accounts)</td><td class="num">₹ ${fmtAmt(sum)}</td><td colspan="2"></td></tr>`;
+    const after=totCols-balCol-1;
+    body+=`<tr class="totrow"><td colspan="${balCol}" style="text-align:right">Total balance (${rows.length} accounts)</td><td class="num">₹ ${fmtAmt(sum)}</td><td colspan="${after}"></td></tr>`;
   }
   body+='</tbody>';
   $('#detailTable').innerHTML=body;
+  updateBulkBar();
+}
+// ── selection + bulk bar ──
+function updateBulkBar(){
+  const bar=$('#bulkBar');const n=state.sel.size;
+  bar.classList.toggle('show',canVerify()&&n>0);
+  $('#bkCount').textContent=`${n} selected`;
+}
+// Apply a verification change to a set of accounts and persist it (upsert into app_cpv_verification).
+// `changes` may carry `verified` and/or `remarks`; absent keys keep each account's current value.
+async function applyVerif(accts,changes){
+  if(!canVerify()||!accts||!accts.length)return;
+  const now=Date.now(),by=who(),key=state.current.office_key;
+  const rows=accts.map(acct=>{
+    const cur=vOf(acct);
+    const verified=('verified' in changes)?!!changes.verified:cur.verified;
+    const remarks =('remarks'  in changes)?String(changes.remarks||''):cur.remarks;
+    return {office_key:key,acct:String(acct),verified,remarks:remarks||null,verified_by:by,verified_at_ms:now};
+  });
+  // optimistic local update so the UI responds instantly
+  rows.forEach(r=>{state.verif[r.acct]={verified:r.verified,remarks:r.remarks||'',verified_by:r.verified_by,verified_at_ms:r.verified_at_ms};});
+  renderDetailHeader();renderDetail();
+  try{
+    await SB.upsert('app_cpv_verification',rows);
+  }catch(e){
+    toast('Could not save verification: '+(e.message||''),'err');
+    if(/app_cpv_verification|PGRST205|42P01/.test(String(e.message||'')))toast('Run migration_v15_cpv_verification.sql in Supabase first.','err');
+    await loadVerifications(key);renderDetailHeader();renderDetail();
+  }
 }
 function clearFilters(silent){
-  ['fSearch','fType','fStatus','fDateFrom','fDateTo','fBal1','fBal2'].forEach(id=>$('#'+id).value='');
+  ['fSearch','fType','fStatus','fVerify','fDateFrom','fDateTo','fBal1','fBal2'].forEach(id=>$('#'+id).value='');
   $('#fBalMode').value='';syncBalInputs();
   if(!silent)renderDetail();
 }
@@ -934,18 +1053,24 @@ function exportBaseName(){
   const o=state.current;return `CPV ${o.office_name} ${o.scheme}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim();
 }
 function exportRows(){
-  const rows=filteredRecords();const scheme=state.current.scheme;
-  return rows.map((r,i)=>[
-    String(i+1),scheme,r.acct,r.name||'',r.cif||'',r.address||'',r.type||'',
-    r.balance==null?'':fmtAmt(r.balance),fmtTxnDate(r.date)||r.dateRaw||'',r.status||''
-  ]);
+  const rows=filteredRecords();const scheme=state.current.scheme;const v=canVerify();
+  return rows.map((r,i)=>{
+    const base=[
+      String(i+1),scheme,r.acct,r.name||'',r.cif||'',r.address||'',r.type||'',
+      r.balance==null?'':fmtAmt(r.balance),fmtTxnDate(r.date)||r.dateRaw||'',r.status||''
+    ];
+    if(v){const rec=vOf(r.acct);base.push(rec.verified?'Yes':'No',rec.remarks||'',rec.verified_by||'',fmtVerAt(rec.verified_at_ms)||'');}
+    return base;
+  });
 }
-const XLS_HEAD=['Sl.No','Scheme','Account No.','Customer Name','Cust1 CIF ID','Address','Account Type','Balance After Transaction','Date of Last Transaction','Status'];
+const XLS_HEAD_BASE=['Sl.No','Scheme','Account No.','Customer Name','Cust1 CIF ID','Address','Account Type','Balance After Transaction','Date of Last Transaction','Status'];
+const XLS_HEAD_VER=['Verified','Remarks','Verified By','Verified On'];
 function exportExcel(){
   if(!window.XLSXLite){toast('Excel engine unavailable.','err');return;}
   const data=exportRows();
   if(!data.length){toast('Nothing to export with the current filters.','err');return;}
-  const bytes=XLSXLite.build(XLS_HEAD,data);
+  const head=canVerify()?XLS_HEAD_BASE.concat(XLS_HEAD_VER):XLS_HEAD_BASE;
+  const bytes=XLSXLite.build(head,data);
   dl(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),exportBaseName()+'.xlsx');
   toast('Excel downloaded ✓','ok');
 }
@@ -963,35 +1088,46 @@ async function exportPdf(){
   if(!rows.length){toast('Nothing to export with the current filters.','err');return;}
   await loadPdf();const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
-  const o=state.current;
+  const o=state.current;const v=canVerify();
   const W=doc.internal.pageSize.getWidth();
-  let grand=0;
+  let grand=0,vCount=0;
   const body=rows.map((r,i)=>{if(r.balance!=null)grand+=r.balance;
-    return [i+1,o.scheme,r.acct,r.name||'',r.cif||'—',r.address||'',r.type||'',r.balance==null?'—':fmtAmt(r.balance),fmtTxnDate(r.date)||r.dateRaw||'—',r.status||'—'];});
+    const row=[i+1,o.scheme,r.acct,r.name||'',r.cif||'—',r.address||'',r.type||'',r.balance==null?'—':fmtAmt(r.balance),fmtTxnDate(r.date)||r.dateRaw||'—',r.status||'—'];
+    if(v){const rec=vOf(r.acct);if(rec.verified)vCount++;
+      const vt=rec.verified?('Yes'+(rec.verified_by?' · '+rec.verified_by:'')+(rec.verified_at_ms?' · '+fmtVerAt(rec.verified_at_ms):'')):'—';
+      row.push(vt,rec.remarks||'—');}
+    return row;});
   const header=()=>{
     doc.setFillColor(...CLR.green);doc.rect(0,0,W,58,'F');
     const t=W/3;doc.setFillColor(...CLR.saffron);doc.rect(0,58,t,4,'F');doc.setFillColor(...CLR.white);doc.rect(t,58,t,4,'F');doc.setFillColor(...CLR.ind);doc.rect(2*t,58,t,4,'F');
     doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('Cent Percent Verification — '+o.office_name,32,25);
     doc.setFont('helvetica','normal');doc.setFontSize(9);
     doc.text(`Department of Posts · Karur Sub Division   |   ${o.scheme_label||schemeLabel(o.scheme)}${o.sol_id?'  ·  SOL '+o.sol_id:''}${o.branch_id?'  ·  Branch '+o.branch_id:''}`,32,42);
-    doc.setFontSize(8.5);doc.text('Accounts: '+rows.length,W-32,25,{align:'right'});
+    doc.setFontSize(8.5);doc.text('Accounts: '+rows.length+(v?'   ·   Verified: '+vCount+' / '+rows.length:''),W-32,25,{align:'right'});
     doc.text('Generated: '+new Date().toLocaleString('en-IN'),W-32,42,{align:'right'});
   };
   const footer=()=>{const H=doc.internal.pageSize.getHeight();doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(150);
     doc.text('O/o the Assistant Superintendent of Post Offices, Karur Sub Division',32,H-14);
     doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber,W-32,H-14,{align:'right'});};
+  const head=['Sl','Sch','Account No.','Customer Name','CIF ID','Address','Type','Balance ₹','Last Txn','Status'];
+  // Verification report → tighter base columns to make room for Verified + Remarks.
+  const colStyles=v
+    ?{0:{halign:'center',cellWidth:20},1:{halign:'center',cellWidth:24},2:{cellWidth:74,fontStyle:'bold'},3:{cellWidth:82},4:{halign:'center',cellWidth:54},6:{cellWidth:50},7:{halign:'right',cellWidth:54,fontStyle:'bold'},8:{halign:'center',cellWidth:46},9:{halign:'center',cellWidth:48},10:{cellWidth:78},11:{cellWidth:90}}
+    :{0:{halign:'center',cellWidth:22},1:{halign:'center',cellWidth:28},2:{cellWidth:86,fontStyle:'bold'},3:{cellWidth:108},4:{halign:'center',cellWidth:62},6:{cellWidth:64},7:{halign:'right',cellWidth:64,fontStyle:'bold'},8:{halign:'center',cellWidth:54},9:{halign:'center',cellWidth:54}};
+  if(v)head.push('Verified','Remarks');
   doc.autoTable({
-    head:[['Sl','Sch','Account No.','Customer Name','CIF ID','Address','Type','Balance ₹','Last Txn','Status']],
+    head:[head],
     body,startY:74,margin:{top:70,left:24,right:24},
-    styles:{font:'helvetica',fontSize:8,cellPadding:3.5,overflow:'linebreak',lineColor:[214,230,228],lineWidth:.5},
-    headStyles:{fillColor:CLR.green,textColor:255,fontStyle:'bold',halign:'center',fontSize:8.4},
+    styles:{font:'helvetica',fontSize:v?7.2:8,cellPadding:v?2.8:3.5,overflow:'linebreak',lineColor:[214,230,228],lineWidth:.5},
+    headStyles:{fillColor:CLR.green,textColor:255,fontStyle:'bold',halign:'center',fontSize:v?7.6:8.4},
     alternateRowStyles:{fillColor:[240,250,248]},
-    columnStyles:{0:{halign:'center',cellWidth:22},1:{halign:'center',cellWidth:28},2:{cellWidth:86,fontStyle:'bold'},3:{cellWidth:108},4:{halign:'center',cellWidth:62},6:{cellWidth:64},7:{halign:'right',cellWidth:64,fontStyle:'bold'},8:{halign:'center',cellWidth:54},9:{halign:'center',cellWidth:54}},
+    columnStyles:colStyles,
     didParseCell:d=>{if(d.section==='body'&&d.column.index===9){const cls=statusClass(d.cell.raw);d.cell.styles.fontStyle='bold';
       if(cls==='active'){d.cell.styles.textColor=[16,120,80];}
       else if(cls==='dormant'){d.cell.styles.textColor=[176,120,8];}
       else if(cls==='freezed'){d.cell.styles.textColor=[190,40,60];}
-      else{d.cell.styles.textColor=[80,80,180];}}},
+      else{d.cell.styles.textColor=[80,80,180];}}
+      if(v&&d.section==='body'&&d.column.index===10){d.cell.styles.fontStyle='bold';if(String(d.cell.raw||'').startsWith('Yes'))d.cell.styles.textColor=[16,120,80];else d.cell.styles.textColor=[150,150,150];}},
     didDrawPage:()=>{header();footer();}
   });
   const finalY=doc.lastAutoTable.finalY||90;
@@ -1037,10 +1173,42 @@ document.addEventListener('click',e=>{
   const card=e.target.closest('.scheme-card');if(card){openDetail(card.dataset.key);return;}
 });
 
-['fSearch','fType','fStatus','fDateFrom','fDateTo','fBal1','fBal2'].forEach(id=>{
+['fSearch','fType','fStatus','fVerify','fDateFrom','fDateTo','fBal1','fBal2'].forEach(id=>{
   const el=$('#'+id);const ev=id==='fSearch'?'input':'change';
   el.addEventListener(ev,()=>{if(id==='fSearch'){clearTimeout(el._t);el._t=setTimeout(renderDetail,140);}else renderDetail();});
 });
+
+// ── verification: table interactions (selection / verify toggle / remarks / CIF group) ──
+$('#detailTable').addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='selAll'){const rows=filteredRecords();if(t.checked)rows.forEach(r=>state.sel.add(r.acct));else state.sel.clear();renderDetail();return;}
+  if(t.dataset.selacct!=null){
+    const a=t.dataset.selacct;if(t.checked)state.sel.add(a);else state.sel.delete(a);
+    const tr=t.closest('tr');if(tr)tr.style.background=t.checked?'rgba(45,212,191,.07)':'';
+    const rows=filteredRecords();const sa=$('#selAll');if(sa)sa.checked=rows.length>0&&rows.every(r=>state.sel.has(r.acct));
+    updateBulkBar();return;
+  }
+  if(t.dataset.rmk!=null){applyVerif([t.dataset.rmk],{remarks:t.value.trim()});return;}
+});
+$('#detailTable').addEventListener('click',e=>{
+  const vt=e.target.closest('[data-vtoggle]');
+  if(vt){const a=vt.dataset.vtoggle;applyVerif([a],{verified:!vOf(a).verified});return;}
+  const cg=e.target.closest('[data-cifgrp]');
+  if(cg){const cif=cg.dataset.cifgrp;let n=0;filteredRecords().forEach(r=>{if(r.cif===cif){state.sel.add(r.acct);n++;}});renderDetail();toast(`Selected ${n} account${n===1?'':'s'} of CIF ${cif}`);return;}
+});
+// bulk bar actions
+$('#bkVerify').addEventListener('click',async()=>{
+  const a=[...state.sel];if(!a.length)return;const rm=$('#bkRemark').value.trim();
+  await applyVerif(a,rm?{verified:true,remarks:rm}:{verified:true});
+  $('#bkRemark').value='';state.sel.clear();renderDetail();
+  toast(`Verified ${a.length} account${a.length===1?'':'s'} ✓`,'ok');
+});
+$('#bkUnverify').addEventListener('click',async()=>{
+  const a=[...state.sel];if(!a.length)return;
+  await applyVerif(a,{verified:false});state.sel.clear();renderDetail();
+  toast(`Marked ${a.length} account${a.length===1?'':'s'} unverified`,'ok');
+});
+$('#bkClear').addEventListener('click',()=>{state.sel.clear();renderDetail();});
 $('#fBalMode').addEventListener('change',()=>{syncBalInputs();renderDetail();});
 $('#clearFilters').addEventListener('click',()=>clearFilters(false));
 $('#pdfBtn').addEventListener('click',e=>runExport(e.currentTarget,exportPdf));
