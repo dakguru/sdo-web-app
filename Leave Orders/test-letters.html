@@ -520,13 +520,15 @@ function renderTracker(){
       <td><input type="date" class="ed" data-f="reposting_date" value="${esc(r.reposting_date||'')}"></td>
       <td class="norm">${normBadge(n)}</td>
       <td><input type="text" class="ed" data-f="remarks" value="${esc(r.remarks||'')}" placeholder="—" style="max-width:150px"></td>
-      <td><button class="btn sm ghost bword">📄</button></td>
+      <td style="white-space:nowrap"><button class="btn sm ghost bword" title="Download this letter">📄</button><button class="btn sm ghost bdel" title="Delete this letter" style="margin-left:4px">🗑</button></td>
     </tr>`;
   }).join('');
   body.querySelectorAll('.ed').forEach(inp=>inp.addEventListener('change',onEdit));
   body.querySelectorAll('.rchk').forEach(c=>c.addEventListener('change',onRowCheck));
   body.querySelectorAll('.bword').forEach(btn=>btn.addEventListener('click',e=>{
     const id=e.target.closest('tr').dataset.id;const r=state.rows.find(x=>x.id===id);if(r)genWord([r],false);}));
+  body.querySelectorAll('.bdel').forEach(btn=>btn.addEventListener('click',e=>{
+    const id=e.target.closest('tr').dataset.id;deleteRow(id);}));
   $('#chkAll').checked=false;updateBulkN();renderStats();
 }
 async function onEdit(e){
@@ -632,6 +634,17 @@ async function deleteBatch(){
   const all=readLS().filter(r=>!ids.includes(r.id));writeLS(all);
   state.current=null;state.rows=[];$('#trackCard').style.display='none';
   await loadBatches();toast('Batch deleted.','ok');
+}
+async function deleteRow(id){
+  const r=state.rows.find(x=>x.id===id);if(!r)return;
+  const who=r.office_name+(r.aw_office?` (a/w ${r.aw_office})`:'');
+  if(!confirm(`Delete the test letter for ${who}? This cannot be undone.`))return;
+  if(state.sbReady){try{await SB.del(TABLE,`id=eq.${encodeURIComponent(id)}`);}catch(e){toast('Cloud delete failed.','err');return;}}
+  writeLS(readLS().filter(x=>x.id!==id));
+  state.rows=state.rows.filter(x=>x.id!==id);state.selRows.delete(id);
+  if(state.rows.length){renderTracker();}
+  else{state.current=null;$('#trackCard').style.display='none';}
+  await loadBatches();toast('Letter deleted.','ok');
 }
 
 // ── Word letters (from the real template) ──────────────────────
