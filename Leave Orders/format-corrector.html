@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="/leave-orders/auth-guard.js"></script>
+<title>Alignment / Format Corrector — Karur Sub Division</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep:#0a0e1a; --glass-bg:rgba(255,255,255,0.06); --glass-bg-hover:rgba(255,255,255,0.12);
+  --glass-border:rgba(255,255,255,0.12); --glass-border-hover:rgba(255,255,255,0.25);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.25); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.35),0 0 0 1px rgba(255,255,255,0.15);
+  --glass-blur:20px; --text-primary:#f1f5f9; --text-secondary:rgba(241,245,249,0.7); --text-muted:rgba(241,245,249,0.45);
+  --teal:#a78bfa; --teal2:#8b5cf6; --cyan:#c084fc; --blue:#60a5fa; --indigo:#818cf8; --violet:#a78bfa;
+  --em:#34d399; --gold:#fbbf24; --gold2:#f59e0b; --rose:#fb7185; --orange:#fb923c; --pink:#f472b6;
+  --radius-xl:24px; --radius-lg:18px; --radius-md:14px;
+}
+html.light{
+  --bg-deep:#f0f2f7; --glass-bg:rgba(255,255,255,0.72); --glass-bg-hover:rgba(255,255,255,0.95);
+  --glass-border:rgba(0,0,0,0.08); --glass-border-hover:rgba(0,0,0,0.15);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.08); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.12),0 0 0 1px rgba(0,0,0,0.06);
+  --text-primary:#0f172a; --text-secondary:rgba(15,23,42,0.7); --text-muted:rgba(15,23,42,0.45);
+  --teal:#8b5cf6; --teal2:#7c3aed; --cyan:#9333ea; --blue:#2563eb; --indigo:#4f46e5; --violet:#7c3aed;
+  --em:#059669; --gold:#d97706; --gold2:#b45309; --rose:#e11d48; --orange:#ea580c; --pink:#db2777;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-deep);color:var(--text-primary);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s,color .4s}
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(167,139,250,0.16),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(192,132,252,0.13),transparent 65%),
+  radial-gradient(ellipse 600px 420px at 55% 92%,rgba(244,114,182,0.09),transparent 60%),
+  linear-gradient(180deg,#0a0e1a,#111827 55%,#0f1729)}
+html.light .bg-mesh{background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(139,92,246,0.08),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(147,51,234,0.06),transparent 65%),
+  linear-gradient(180deg,#f0f2f7,#e8ecf4 55%,#f0f2f7)}
+
+.page-wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:26px 22px 70px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.back-link{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--text-secondary);font-weight:600;font-size:13.5px;
+  padding:9px 15px;border-radius:999px;background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(var(--glass-blur));transition:all .3s;cursor:pointer}
+.back-link:hover{background:var(--glass-bg-hover);color:var(--text-primary);transform:translateX(-2px)}
+.tb-right{display:flex;align-items:center;gap:10px}
+.privacy{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text-secondary);background:var(--glass-bg);border:1px solid var(--glass-border);padding:8px 13px;border-radius:999px;backdrop-filter:blur(var(--glass-blur))}
+.privacy .dot{width:8px;height:8px;border-radius:50%;background:var(--em);box-shadow:0 0 8px var(--em)}
+.theme-toggle{width:44px;height:44px;border-radius:50%;border:1px solid var(--glass-border);cursor:pointer;background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));display:grid;place-items:center;font-size:20px;color:var(--text-primary);transition:all .3s}
+.theme-toggle:hover{background:var(--glass-bg-hover);transform:scale(1.08) rotate(12deg)}
+
+.hero{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden;backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow)}
+.hero::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal2),var(--teal),var(--cyan),var(--pink))}
+.hero-eyebrow{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-muted)}
+.hero-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:800;margin:6px 0 4px;
+  background:linear-gradient(135deg,var(--teal),var(--cyan) 55%,var(--pink) 95%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:13.5px;color:var(--text-secondary);line-height:1.6;max-width:900px}
+.hero-specs{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.spec{font-size:10.5px;font-weight:700;letter-spacing:.3px;color:var(--text-secondary);background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.22);padding:5px 11px;border-radius:999px}
+.spec b{color:var(--teal)}
+
+.card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow);overflow:hidden;margin-bottom:20px}
+.card-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--glass-border);background:rgba(255,255,255,.02)}
+.card-head .ci{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:19px;color:#fff;background:linear-gradient(135deg,var(--teal),var(--cyan));flex-shrink:0;box-shadow:0 4px 14px rgba(139,92,246,.28)}
+.card-head .ct{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:15.5px;line-height:1.2}
+.card-head .cs{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+.card-body{padding:18px}
+
+/* dropzone */
+.drop{border:2px dashed var(--glass-border-hover);border-radius:var(--radius-lg);padding:36px 22px;text-align:center;cursor:pointer;transition:all .25s;background:rgba(167,139,250,.04)}
+.drop:hover{border-color:var(--teal);background:rgba(167,139,250,.09)}
+.drop.drag{border-color:var(--teal);background:rgba(167,139,250,.14);transform:scale(1.005)}
+.drop .big{font-size:40px;margin-bottom:10px}
+.drop .lead{font-weight:800;font-size:15px;font-family:'Plus Jakarta Sans','Inter',sans-serif}
+.drop .hint{font-size:12px;color:var(--text-muted);margin-top:6px}
+.drop input{display:none}
+
+.filebox{display:flex;align-items:center;gap:13px;padding:14px 16px;border:1px solid var(--glass-border);border-radius:var(--radius-md);background:var(--bg-deep);margin-top:14px}
+html.light .filebox{background:#fff}
+.filebox .fi{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#2b6cb0,#3182ce);display:grid;place-items:center;color:#fff;font-size:18px;flex-shrink:0}
+.filebox .fn{font-weight:700;font-size:13.5px;word-break:break-all}
+.filebox .fm{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+.filebox .rm{margin-left:auto;background:none;border:none;color:var(--rose);cursor:pointer;font-size:20px;font-weight:700;padding:4px 8px;border-radius:8px}
+.filebox .rm:hover{background:rgba(251,113,133,.12)}
+
+/* pre-flight stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:14px}
+.stat{background:var(--bg-deep);border:1px solid var(--glass-border);border-radius:12px;padding:12px 14px}
+html.light .stat{background:#fff}
+.stat .n{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:20px;color:var(--teal)}
+.stat .l{font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chip{font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;background:rgba(251,113,133,.12);border:1px solid rgba(251,113,133,.25);color:var(--rose)}
+.chip.ok{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.28);color:var(--em)}
+
+/* options */
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.opts{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--text-muted)}
+.field select,.field input[type=number]{width:100%;background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:11px;padding:11px 13px;font-family:inherit;font-size:13.5px;font-weight:600;outline:none;transition:border-color .2s}
+html.light .field select,html.light .field input[type=number]{background:#fff}
+.field select:focus,.field input:focus{border-color:var(--teal)}
+.toggles{display:flex;flex-direction:column;gap:11px;margin-top:6px}
+.tg{display:flex;align-items:center;gap:11px;cursor:pointer;user-select:none}
+.tg input{position:absolute;opacity:0;pointer-events:none}
+.tg .sw{width:42px;height:24px;border-radius:999px;background:var(--glass-border);position:relative;transition:background .2s;flex-shrink:0}
+.tg .sw::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.tg input:checked + .sw{background:linear-gradient(135deg,var(--teal2),var(--teal))}
+.tg input:checked + .sw::after{transform:translateX(18px)}
+.tg .txt{font-size:13px;font-weight:600}
+.tg .txt small{display:block;font-size:11px;color:var(--text-muted);font-weight:500;margin-top:1px}
+
+.btn{border:none;border-radius:12px;padding:13px 20px;font-weight:800;font-size:14px;cursor:pointer;color:#fff;font-family:inherit;
+  background:linear-gradient(135deg,var(--teal2),var(--teal));transition:all .25s;box-shadow:0 4px 16px rgba(139,92,246,.3);display:inline-flex;align-items:center;gap:9px;justify-content:center;width:100%}
+.btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.actions{margin-top:18px}
+
+.changelist{list-style:none;display:grid;gap:9px}
+.changelist li{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text-secondary);line-height:1.5}
+.changelist li .ck{color:var(--em);font-weight:900;flex-shrink:0}
+.changelist li b{color:var(--text-primary)}
+
+.result{display:none;text-align:center;padding:8px 4px}
+.result.show{display:block}
+.result .rok{font-size:44px}
+.result .rt{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:18px;margin:8px 0 4px}
+.result .rs{font-size:13px;color:var(--text-muted)}
+
+.busy{display:none;align-items:center;justify-content:center;gap:12px;padding:20px;font-weight:700;color:var(--text-secondary)}
+.busy.show{display:flex}
+.spin{width:22px;height:22px;border:3px solid var(--glass-border);border-top-color:var(--teal);border-radius:50%;animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.page-footer{text-align:center;margin-top:40px;color:var(--text-muted)}
+.footer-line{font-size:12.5px}.footer-line .heart{color:var(--rose)}
+.footer-credit{font-size:12px;font-weight:700;color:var(--teal);margin-top:4px}
+
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(120px);background:#1e293b;color:#fff;padding:13px 22px;border-radius:12px;font-weight:700;font-size:13.5px;box-shadow:0 12px 40px rgba(0,0,0,.4);z-index:9999;opacity:0;transition:all .35s cubic-bezier(.16,1,.3,1);max-width:88vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.ok{background:linear-gradient(135deg,#059669,#10b981)}
+.toast.err{background:linear-gradient(135deg,#dc2626,#ef4444)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+
+<div class="page-wrap">
+  <div class="topbar">
+    <a href="/" class="back-link">← Back to Home</a>
+    <div class="tb-right">
+      <span class="privacy"><span class="dot"></span> Offline · local only</span>
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-eyebrow">Karur Sub Division · Department of Posts</div>
+    <div class="hero-title">🪄 Alignment / Format Corrector</div>
+    <div class="hero-sub">Upload any <b>IR / VR inspection report</b> (Word <b>.docx</b>) and get back an <b>ultra-professional</b>, perfectly uniform document — analysed top to bottom and rebuilt to a single clean standard: <b>Palatino Linotype</b> font, uniform <b>11 / 11.5&nbsp;pt</b> size, <b>1.15</b> line spacing with tidy paragraph spacing, neatly centred tables with clean borders and aligned cells, proper bullets &amp; sub-bullets, and emboldened headings. Your words, numbers, tables and images are <b>never changed</b> — only the formatting.</div>
+    <div class="hero-specs">
+      <span class="spec">Font <b>Palatino Linotype</b></span>
+      <span class="spec">Size <b>11 / 11.5 pt</b></span>
+      <span class="spec">Line <b>1.15</b></span>
+      <span class="spec">Tables <b>centred &amp; clean</b></span>
+      <span class="spec"><b>100% offline</b> in your browser</span>
+    </div>
+  </div>
+
+  <!-- STEP 1 — Upload -->
+  <div class="card">
+    <div class="card-head">
+      <div class="ci">📄</div>
+      <div><div class="ct">1 · Upload the report</div><div class="cs">Word .docx only — nothing leaves your device</div></div>
+    </div>
+    <div class="card-body">
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+        <div class="big">📤</div>
+        <div class="lead">Drop your IR report here, or click to browse</div>
+        <div class="hint">Only Microsoft Word .docx files are supported</div>
+      </label>
+
+      <div id="fileWrap" class="hidden">
+        <div class="filebox">
+          <div class="fi">📝</div>
+          <div style="min-width:0">
+            <div class="fn" id="fileName">—</div>
+            <div class="fm" id="fileMeta">—</div>
+          </div>
+          <button class="rm" id="removeFile" title="Remove">×</button>
+        </div>
+        <div class="stats" id="stats"></div>
+        <div class="chips" id="chips"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 — Options -->
+  <div class="card" id="optCard">
+    <div class="card-head">
+      <div class="ci">⚙️</div>
+      <div><div class="ct">2 · Formatting standard</div><div class="cs">Sensible defaults are pre-selected — adjust only if you need to</div></div>
+    </div>
+    <div class="card-body">
+      <div class="opts">
+        <div class="field">
+          <label for="sizeSel">Base font size</label>
+          <select id="sizeSel">
+            <option value="11.5" selected>11.5 pt (recommended)</option>
+            <option value="11">11 pt</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="spaceSel">Paragraph spacing (after)</label>
+          <select id="spaceSel">
+            <option value="6" selected>6 pt (recommended)</option>
+            <option value="8">8 pt</option>
+            <option value="4">4 pt</option>
+            <option value="0">None</option>
+          </select>
+        </div>
+      </div>
+      <div class="toggles">
+        <label class="tg"><input type="checkbox" id="tgHeadings" checked><span class="sw"></span>
+          <span class="txt">Bold section headings<small>Detect &amp; embolden headings like “A. ADMINISTRATION”, “1. General…”</small></span></label>
+        <label class="tg"><input type="checkbox" id="tgTidy" checked><span class="sw"></span>
+          <span class="txt">Tidy manual spacing<small>Remove fake leading-space indentation &amp; margin-busting indents</small></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 — Generate -->
+  <div class="card">
+    <div class="card-head">
+      <div class="ci">✨</div>
+      <div><div class="ct">3 · Correct &amp; download</div><div class="cs">Rebuilds the document to the standard above</div></div>
+    </div>
+    <div class="card-body">
+      <ul class="changelist">
+        <li><span class="ck">✓</span><span>Every run set to <b>Palatino Linotype</b> at a <b>uniform size</b> (Tamil / complex-script fonts kept intact so they still render)</span></li>
+        <li><span class="ck">✓</span><span><b>1.15 line spacing</b> throughout, with clean paragraph spacing between blocks</span></li>
+        <li><span class="ck">✓</span><span>All tables <b>centred</b>, clamped to the page, given <b>clean single borders</b> with <b>no colour shading</b>, padded &amp; vertically-centred cells, and a bold repeating header row — with the dead space around tables removed</span></li>
+        <li><span class="ck">✓</span><span>Bullets &amp; sub-bullets given <b>uniform, perfectly-aligned indentation</b> and clean glyphs</span></li>
+        <li><span class="ck">✓</span><span>Page set to <b>A4</b> with balanced margins; negative &amp; margin-busting indents flattened</span></li>
+      </ul>
+      <div class="busy" id="busy"><div class="spin"></div><span>Analysing &amp; reformatting…</span></div>
+      <div class="result" id="result">
+        <div class="rok">🎉</div>
+        <div class="rt">Ultra-professional document ready</div>
+        <div class="rs" id="resultSub">Your download should have started.</div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="goBtn" disabled>🪄 Correct formatting &amp; download</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="page-footer">
+    <div class="footer-line">Built with <span class="heart">♥</span> for the Department of Posts</div>
+    <div class="footer-credit">Designed by Arun Selvaraj · Karur Division</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/leave-orders/format-engine.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');clearTimeout(toast._t);toast._t=setTimeout(()=>t.className='toast',3800);}
+
+// theme
+(function(){const h=document.documentElement;if(localStorage.getItem('theme')==='light')h.classList.add('light');
+  const b=$('#themeToggle');const paint=()=>b.textContent=h.classList.contains('light')?'☀️':'🌙';paint();
+  b.onclick=()=>{h.classList.toggle('light');localStorage.setItem('theme',h.classList.contains('light')?'light':'dark');paint();};})();
+
+// JSZip loader (same CDN as the rest of the app)
+let _zipP;
+function loadJSZip(){
+  if(window.JSZip)return Promise.resolve(window.JSZip);
+  if(_zipP)return _zipP;
+  _zipP=new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    s.onload=()=>window.JSZip?res(window.JSZip):rej(new Error('document engine failed to load'));
+    s.onerror=()=>rej(new Error('Could not load the document engine (check your connection).'));
+    document.head.appendChild(s);});
+  return _zipP;
+}
+function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+function fmtBytes(n){if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(0)+' KB';return (n/1048576).toFixed(1)+' MB';}
+
+let currentFile=null, currentStats=null;
+
+const drop=$('#drop'), fileInput=$('#file');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(f)handleFile(f);});
+fileInput.addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(f)handleFile(f);});
+$('#removeFile').addEventListener('click',clearFile);
+
+function clearFile(){
+  currentFile=null;currentStats=null;fileInput.value='';
+  $('#fileWrap').classList.add('hidden');
+  $('#result').classList.remove('show');
+  $('#goBtn').disabled=true;
+}
+
+async function handleFile(f){
+  const name=(f.name||'').toLowerCase();
+  if(name.endsWith('.doc')&&!name.endsWith('.docx')){
+    toast('This is an old .doc file. Please re-save it as .docx in Word first.','err');return;
+  }
+  if(!name.endsWith('.docx')){toast('Please choose a Word .docx file.','err');return;}
+  currentFile=f;
+  $('#fileName').textContent=f.name;
+  $('#fileMeta').textContent=fmtBytes(f.size)+' · Word document';
+  $('#fileWrap').classList.remove('hidden');
+  $('#result').classList.remove('show');
+  $('#goBtn').disabled=false;
+  $('#stats').innerHTML='';$('#chips').innerHTML='';
+  // pre-flight inspection
+  try{
+    const JSZip=await loadJSZip();
+    const zip=await JSZip.loadAsync(await f.arrayBuffer());
+    if(!zip.file('word/document.xml')){toast('That .docx looks corrupt or empty.','err');clearFile();return;}
+    currentStats=await FormatEngine.inspect(zip);
+    renderStats(currentStats);
+  }catch(err){console.error(err);toast(err.message||'Could not read the file.','err');clearFile();}
+}
+
+function renderStats(s){
+  const cells=[['📑',s.paragraphs,'Paragraphs'],['▦',s.tables,'Tables'],['≣',s.rows,'Table rows'],['•',s.lists,'List items']];
+  $('#stats').innerHTML=cells.map(c=>`<div class="stat"><div class="n">${c[0]} ${c[1]}</div><div class="l">${c[2]}</div></div>`).join('');
+  const chips=[];
+  const mixedFonts=(s.fonts||[]).filter(f=>f!=='Palatino Linotype');
+  if(mixedFonts.length) chips.push(`<span class="chip">${mixedFonts.length} mixed font${mixedFonts.length>1?'s':''}: ${mixedFonts.slice(0,4).join(', ')}</span>`);
+  else chips.push('<span class="chip ok">Fonts already Palatino</span>');
+  const sizes=(s.sizesHalfPt||[]).map(v=>(+v/2)).filter(v=>v).sort((a,b)=>a-b);
+  if(sizes.length>1) chips.push(`<span class="chip">${sizes.length} different sizes: ${sizes.join(', ')} pt</span>`);
+  chips.push('<span class="chip ok">Ready to standardise</span>');
+  $('#chips').innerHTML=chips.join('');
+}
+
+$('#goBtn').addEventListener('click',async()=>{
+  if(!currentFile)return;
+  const btn=$('#goBtn');btn.disabled=true;
+  $('#busy').classList.add('show');$('#result').classList.remove('show');
+  try{
+    const JSZip=await loadJSZip();
+    const zip=await JSZip.loadAsync(await currentFile.arrayBuffer());
+    const opts={
+      sizePt:parseFloat($('#sizeSel').value),
+      paraAfterPt:parseInt($('#spaceSel').value,10),
+      boldHeadings:$('#tgHeadings').checked,
+      tidySpacing:$('#tgTidy').checked
+    };
+    await FormatEngine.reformat(zip,opts);
+    const blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',compression:'DEFLATE',compressionOptions:{level:6}});
+    const base=currentFile.name.replace(/\.docx$/i,'');
+    dl(blob,`FORMATTED - ${base}.docx`);
+    $('#resultSub').textContent=`“FORMATTED - ${base}.docx” downloaded — open it in Word.`;
+    $('#result').classList.add('show');
+    toast('Formatted document downloaded ✓','ok');
+  }catch(err){
+    console.error(err);
+    toast(err.message||'Something went wrong while reformatting.','err');
+  }finally{
+    $('#busy').classList.remove('show');
+    btn.disabled=false;
+  }
+});
+</script>
+</body>
+</html>
