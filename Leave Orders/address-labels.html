@@ -563,7 +563,7 @@ html.light .reg-table th{background:#fff}
     </div>
     <div class="reg-wrap">
       <table class="reg-table">
-        <thead><tr><th>Sl</th><th>Date of Despatch</th><th>Barcode No.</th><th>Name of the Addressee</th><th>Pincode</th><th>Mobile No.</th></tr></thead>
+        <thead><tr><th>Sl</th><th>Date of Despatch</th><th>Barcode No.</th><th>Name of the Addressee</th><th>Address Line 2</th><th>Pincode</th><th>Mobile No.</th></tr></thead>
         <tbody id="regBody"></tbody>
       </table>
     </div>
@@ -788,9 +788,9 @@ function renderInvModal(){
 // ─────────────────────────────────────────────────────────────
 async function loadRegister(){
   const body=$('#regBody');
-  body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:26px;color:var(--text-muted)"><span class="spin" style="border-color:rgba(129,140,248,.35);border-top-color:var(--teal)"></span> Loading…</td></tr>';
+  body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:26px;color:var(--text-muted)"><span class="spin" style="border-color:rgba(129,140,248,.35);border-top-color:var(--teal)"></span> Loading…</td></tr>';
   try{ state.register=await SB.select('app_dispatch_register','select=id,batch_id,dispatch_date,barcode_no,addressee,pincode,mobile,office,created_at_ms&order=dispatch_date.desc,created_at_ms.desc&limit=5000'); }
-  catch(e){ state.register=[]; body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:26px;color:var(--rose)">Could not load the register — has the v13 migration been run in Supabase?</td></tr>'; $('#regCount').textContent=''; return; }
+  catch(e){ state.register=[]; body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:26px;color:var(--rose)">Could not load the register — has the v13 migration been run in Supabase?</td></tr>'; $('#regCount').textContent=''; return; }
   renderRegister();
 }
 function filteredRegister(){
@@ -798,19 +798,20 @@ function filteredRegister(){
   return state.register.filter(r=>{
     if(from&&(r.dispatch_date||'')<from)return false;
     if(to&&(r.dispatch_date||'')>to)return false;
-    if(q){const hay=((r.addressee||'')+' '+(r.barcode_no||'')+' '+(r.pincode||'')+' '+(r.mobile||'')).toLowerCase();if(!hay.includes(q))return false;}
+    if(q){const hay=((r.addressee||'')+' '+(r.office||'')+' '+(r.barcode_no||'')+' '+(r.pincode||'')+' '+(r.mobile||'')).toLowerCase();if(!hay.includes(q))return false;}
     return true;
   });
 }
 function renderRegister(){
   const rows=filteredRegister(), body=$('#regBody');
   $('#regCount').innerHTML=`<b>${rows.length}</b> record${rows.length===1?'':'s'}`;
-  if(!rows.length){ body.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:26px;color:var(--text-muted)">No dispatch records${state.register.length?' match the filters.':' yet — generate a label PDF to start the register.'}</td></tr>`; return; }
+  if(!rows.length){ body.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:26px;color:var(--text-muted)">No dispatch records${state.register.length?' match the filters.':' yet — generate a label PDF to start the register.'}</td></tr>`; return; }
   body.innerHTML=rows.map((r,i)=>`<tr>
     <td>${i+1}</td>
     <td>${esc(fmtDMY(r.dispatch_date))}</td>
     <td class="bc">${r.barcode_no?esc(r.barcode_no):'—'}</td>
     <td class="nm">${esc(r.addressee||'')}</td>
+    <td>${r.office?esc(r.office):'—'}</td>
     <td>${r.pincode?esc(fmtPin(r.pincode)):'—'}</td>
     <td>${r.mobile?esc(r.mobile):'—'}</td></tr>`).join('');
 }
@@ -819,8 +820,8 @@ function runExport(btn,fn){const old=btn.innerHTML;btn.disabled=true;btn.innerHT
 function regExportExcel(){
   if(!window.XLSXLite)throw new Error('Excel engine unavailable.');
   const rows=filteredRegister(); if(!rows.length){toast('Nothing to export with the current filters.','err');return;}
-  const data=rows.map((r,i)=>[String(i+1),fmtDMY(r.dispatch_date),r.barcode_no||'',r.addressee||'',r.pincode?fmtPin(r.pincode):'',r.mobile||'']);
-  const bytes=XLSXLite.build(['Sl. No','Date of Despatch','Barcode No.','Name of the Addressee','Pincode','Mobile No.'],data);
+  const data=rows.map((r,i)=>[String(i+1),fmtDMY(r.dispatch_date),r.barcode_no||'',r.addressee||'',r.office||'',r.pincode?fmtPin(r.pincode):'',r.mobile||'']);
+  const bytes=XLSXLite.build(['Sl. No','Date of Despatch','Barcode No.','Name of the Addressee','Address Line 2','Pincode','Mobile No.'],data);
   dl(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Dispatch Register '+todayISO()+'.xlsx');
   toast('Excel downloaded ✓','ok');
 }
@@ -831,7 +832,7 @@ async function regExportPdf(){
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
   const W=doc.internal.pageSize.getWidth();
-  const body=rows.map((r,i)=>[i+1,fmtDMY(r.dispatch_date),r.barcode_no||'—',r.addressee||'',r.pincode?fmtPin(r.pincode):'—',r.mobile||'—']);
+  const body=rows.map((r,i)=>[i+1,fmtDMY(r.dispatch_date),r.barcode_no||'—',r.addressee||'',r.office||'—',r.pincode?fmtPin(r.pincode):'—',r.mobile||'—']);
   const header=()=>{
     doc.setFillColor(...REG_CLR.green);doc.rect(0,0,W,58,'F');
     const t=W/3;doc.setFillColor(...REG_CLR.saffron);doc.rect(0,58,t,4,'F');doc.setFillColor(...REG_CLR.white);doc.rect(t,58,t,4,'F');doc.setFillColor(...REG_CLR.ind);doc.rect(2*t,58,t,4,'F');
@@ -843,12 +844,12 @@ async function regExportPdf(){
     doc.text('O/o the Assistant Superintendent of Post Offices, Karur Sub Division',32,H-14);
     doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber,W-32,H-14,{align:'right'});};
   doc.autoTable({
-    head:[['Sl','Date of Despatch','Barcode No.','Name of the Addressee','Pincode','Mobile No.']],
+    head:[['Sl','Date of Despatch','Barcode No.','Name of the Addressee','Address Line 2','Pincode','Mobile No.']],
     body,startY:74,margin:{top:70,left:24,right:24},
     styles:{font:'helvetica',fontSize:9,cellPadding:4.5,overflow:'linebreak',lineColor:[214,230,228],lineWidth:.5},
     headStyles:{fillColor:REG_CLR.green,textColor:255,fontStyle:'bold',halign:'center',fontSize:9},
     alternateRowStyles:{fillColor:[240,250,248]},
-    columnStyles:{0:{halign:'center',cellWidth:26},1:{halign:'center',cellWidth:88},2:{cellWidth:98,fontStyle:'bold',textColor:REG_CLR.green},4:{halign:'center',cellWidth:58},5:{halign:'center',cellWidth:74}},
+    columnStyles:{0:{halign:'center',cellWidth:26},1:{halign:'center',cellWidth:80},2:{cellWidth:90,fontStyle:'bold',textColor:REG_CLR.green},5:{halign:'center',cellWidth:52},6:{halign:'center',cellWidth:70}},
     didDrawPage:()=>{header();footer();}
   });
   doc.save('Dispatch Register '+todayISO()+'.pdf');
