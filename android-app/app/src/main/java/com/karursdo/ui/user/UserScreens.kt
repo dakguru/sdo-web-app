@@ -119,6 +119,15 @@ class UserViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProfileView())
 
+    // Whether this user may manage events/announcements (Admin, or ASP/PA designation).
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val canManageEvents: StateFlow<Boolean> = session.current.flatMapLatest { u ->
+        if (u == null) flowOf(false)
+        else userRepo.designationFlow(u.username).map {
+            com.karursdo.data.repo.EventsRepository.canManage(u, it?.value)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     val syncEnabled: Boolean get() = syncEngine.enabled
     private val _syncing = MutableStateFlow(false)
     val syncing: StateFlow<Boolean> = _syncing
@@ -164,10 +173,12 @@ class UserViewModel @Inject constructor(
 fun ProfileScreen(
     onOpenFavorite: (itemType: String, itemId: String) -> Unit,
     onOpenUserAdmin: () -> Unit,
+    onOpenEvents: () -> Unit,
     onLogout: () -> Unit,
     vm: UserViewModel = hiltViewModel()
 ) {
     val currentUser by vm.currentUser.collectAsState()
+    val canManageEvents by vm.canManageEvents.collectAsState()
     val profile by vm.profileView.collectAsState()
     val favorites by vm.favorites.collectAsState()
     val notes by vm.notes.collectAsState()
@@ -216,6 +227,15 @@ fun ProfileScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Change my password") }
+                if (canManageEvents) {
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = onOpenEvents,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("🗓️ Manage events & announcements") }
+                }
                 if (currentUser?.isAdmin == true) {
                     Spacer(Modifier.height(8.dp))
                     Button(

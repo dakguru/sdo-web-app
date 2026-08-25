@@ -45,6 +45,7 @@ import com.karursdo.ui.offices.OfficeManagementScreen
 import com.karursdo.ui.offices.OfficeMasterDetailScreen
 import com.karursdo.data.repo.UserDataRepository
 import com.karursdo.ui.chat.ChatScreen
+import com.karursdo.ui.events.EventsAdminScreen
 import com.karursdo.ui.scaffolds.ArrangementsScreen
 import com.karursdo.ui.theme.Brand
 import com.karursdo.ui.user.ProfileScreen
@@ -246,11 +247,15 @@ fun KsdApp(onLogout: () -> Unit = {}) {
                         }
                     },
                     onOpenUserAdmin = { navController.navigate(UserAdminRoute) },
+                    onOpenEvents = { navController.navigate(EventsAdminRoute) },
                     onLogout = onLogout
                 )
             }
             composable<UserAdminRoute> {
                 UserAdminScreen(onBack = { navController.popBackStack() })
+            }
+            composable<EventsAdminRoute> {
+                EventsAdminScreen(onBack = { navController.popBackStack() })
             }
         }
     }

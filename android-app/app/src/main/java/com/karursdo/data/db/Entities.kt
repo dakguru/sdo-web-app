@@ -361,6 +361,68 @@ data class PresenceEntity(
 )
 
 /**
+ * A user's edit to an office's working days/hours, synced to every device (last-write-wins).
+ * Applied on top of the imported office master so a working-hours change made by any user
+ * shows for everyone. Keyed by [officeId]. Re-applied after a fresh OFFICES import so it sticks.
+ */
+@Entity(tableName = "office_edits")
+data class OfficeEditEntity(
+    @PrimaryKey val officeId: String,
+    val workingDays: String?,
+    val workingHoursFrom: String?,
+    val workingHoursTo: String?,
+    val updatedBy: String?,     // who edited (display name / username)
+    val updatedAt: Long,        // epoch millis of the edit
+    val syncState: String = "P"
+)
+
+/**
+ * An app-side staff overlay, synced to every device (last-write-wins), keyed by (type, employeeId):
+ *   • [added] = true  → a staff member entered manually in the app (materialised into `employees`).
+ *   • exit fields set  → the exit/retirement details recorded for an existing staff member.
+ * Re-applied after a fresh DS/GDS import so manual additions and exit marks survive re-imports.
+ */
+@Entity(tableName = "staff_edits", primaryKeys = ["type", "employeeId"])
+data class StaffEditEntity(
+    val type: String,           // "DS" | "GDS"
+    val employeeId: String,
+    val added: Boolean,         // true = manually-added staff (not from HRMS import)
+    val name: String?,
+    val designation: String?,
+    val officeId: String?,
+    val officeName: String?,
+    val gender: String?,
+    val dateOfBirth: String?,
+    val dateOfJoin: String?,
+    val mobile: String?,
+    val exitDate: String?,      // date the staff exited/retired (dd-mm-yyyy or free text)
+    val exitReason: String?,    // retirement / transfer / resignation …
+    val status: String?,        // effective status to reflect on the staff row
+    val updatedBy: String?,
+    val updatedAt: Long,
+    val syncState: String = "P"
+)
+
+/**
+ * A Karur Sub Division event / announcement shown on the dashboard banner. A dated event
+ * counts down the days remaining; [important] pins it to the top. An entry with a blank
+ * [date] is a standing announcement (important message) with no countdown. Authored by an
+ * Admin/ASP/PA user and synced to every device (last-write-wins).
+ */
+@Entity(tableName = "events", indices = [Index("date")])
+data class EventEntity(
+    @PrimaryKey val id: String,   // UUID
+    val date: String,             // ISO yyyy-MM-dd, or "" for a standing announcement
+    val title: String,
+    val important: Boolean = false,
+    val author: String? = null,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val deleted: Boolean = false,
+    val syncState: String = "P"
+)
+
+/**
  * A whole-set snapshot of one imported dataset (DS / GDS / OUT / TEL / OFFICES / ARR),
  * so a monthly-data or arrangements upload on one device propagates to every user. The
  * payload is the parsed rows as JSON; on pull, a newer remote snapshot replaces the local

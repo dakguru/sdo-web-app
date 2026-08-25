@@ -122,12 +122,32 @@ class MainActivity : FragmentActivity() {
 
         // Screenshots are allowed app-wide (FLAG_SECURE intentionally not set).
 
+        // Restore a persisted signed-in session so the app opens straight to the content and never
+        // re-prompts for biometric until the user explicitly logs out.
+        val restoredUser = keyManager.activeUsername
+        if (restoredUser != null) locked = false
+
         lifecycleScope.launch {
             runCatching { seedLoader.seedIfEmpty() }
             // Pull the latest accounts BEFORE login so a user created on another device
             // can sign in here, then seed the default admin only if nothing exists at all.
             runCatching { syncEngine.refreshUsers() }
             runCatching { authRepo.seedAdminIfEmpty() }
+            // Re-hydrate the in-memory session from the persisted username.
+            if (restoredUser != null) {
+                val acct = runCatching { authRepo.accountByUsername(restoredUser) }.getOrNull()
+                if (acct != null && acct.active) {
+                    session.setCurrent(SessionUser(acct.username, acct.displayName, acct.role))
+                    keyManager.lastUsername = acct.username
+                    needPasswordChange = acct.mustChangePassword
+                    locked = false
+                    runCatching { syncEngine.syncNow() }
+                } else {
+                    // Account removed/disabled elsewhere — fall back to the login gate.
+                    keyManager.activeUsername = null
+                    locked = keyManager.appLockEnabled
+                }
+            }
         }
 
         // Ask for notification permission on Android 13+ (no-op on older versions).
@@ -156,7 +176,9 @@ class MainActivity : FragmentActivity() {
                 if (event == Lifecycle.Event.ON_STOP) {
                     if (AppLock.suppressNextAutoLock) {
                         AppLock.suppressNextAutoLock = false
-                    } else if (keyManager.appLockEnabled) {
+                    } else if (keyManager.appLockEnabled && keyManager.activeUsername == null) {
+                        // Only re-lock when nobody is signed in. Once signed in, the app stays
+                        // unlocked across backgrounding until the user explicitly logs out.
                         locked = true
                     }
                 }
@@ -222,6 +244,7 @@ class MainActivity : FragmentActivity() {
                 is LoginResult.Success -> {
                     session.setCurrent(SessionUser(res.user.username, res.user.displayName, res.user.role))
                     keyManager.lastUsername = res.user.username
+                    keyManager.activeUsername = res.user.username
                     needPasswordChange = res.user.mustChangePassword
                     loggingIn = false
                     onLoggedIn()
@@ -280,8 +303,10 @@ class MainActivity : FragmentActivity() {
 
     private fun logout() {
         session.clear()
-        // Forget the remembered user so biometric can't silently sign them back in.
+        // Forget the remembered user so biometric can't silently sign them back in, and end the
+        // persisted session so the app locks and asks to sign in again.
         keyManager.lastUsername = null
+        keyManager.activeUsername = null
         loginError = null
         needPasswordChange = false
         locked = true
@@ -306,6 +331,7 @@ class MainActivity : FragmentActivity() {
                             val acct = runCatching { authRepo.accountByUsername(username) }.getOrNull()
                             if (acct != null && acct.active) {
                                 session.setCurrent(SessionUser(acct.username, acct.displayName, acct.role))
+                                keyManager.activeUsername = acct.username
                                 needPasswordChange = acct.mustChangePassword
                                 onLoggedIn()
                             }

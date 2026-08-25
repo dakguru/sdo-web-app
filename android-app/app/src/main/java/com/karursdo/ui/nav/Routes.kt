@@ -15,6 +15,7 @@ import kotlinx.serialization.Serializable
 @Serializable object ImportRoute
 @Serializable object ProfileRoute
 @Serializable object UserAdminRoute
+@Serializable object EventsAdminRoute
 @Serializable object MoRoute
 @Serializable data class MoBeatListRoute(val beat: String)
 @Serializable data class MoOfficeDetailRoute(val moOfficeId: Long)

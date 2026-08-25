@@ -11,12 +11,17 @@ import com.karursdo.data.db.ImportMetaEntity
 import com.karursdo.data.db.MoBeatDao
 import com.karursdo.data.db.MoProgrammeDao
 import com.karursdo.data.db.MoProgrammeEntity
+import com.karursdo.data.db.EmployeeEntity
 import com.karursdo.data.db.MobileDao
 import com.karursdo.data.db.MobileMapEntity
+import com.karursdo.data.db.OfficeEditDao
+import com.karursdo.data.db.OfficeEditEntity
 import com.karursdo.data.db.OfficeMasterDao
 import com.karursdo.data.db.OutsiderDao
 import com.karursdo.data.db.PhoneEditDao
 import com.karursdo.data.db.PhoneEditEntity
+import com.karursdo.data.db.StaffEditDao
+import com.karursdo.data.db.StaffEditEntity
 import com.karursdo.data.ingest.ImportEngine
 import com.karursdo.data.ingest.ImportType
 import com.karursdo.data.ingest.MobileMatcher
@@ -54,6 +59,8 @@ class DirectoryRepository @Inject constructor(
     val moBeatDao: MoBeatDao,
     val moProgrammeDao: MoProgrammeDao,
     val phoneEditDao: PhoneEditDao,
+    val officeEditDao: OfficeEditDao,
+    val staffEditDao: StaffEditDao,
     val datasetDao: DatasetSnapshotDao,
     private val session: SessionManager
 ) {
@@ -111,6 +118,8 @@ class DirectoryRepository @Inject constructor(
                         }
                         if (replaceWholeSet) employeeDao.deleteMissing(typeKey, seen.keys.toList())
                         employeeDao.upsertAll(seen.values.toList())
+                        // Re-apply manual additions / exit marks so they survive this re-import.
+                        reapplyStaffEdits(typeKey)
                         saveSnapshot(typeKey, seen.values.toList())
                         importMetaDao.upsert(
                             ImportMetaEntity(typeKey, joinedNames, seen.size, today)
@@ -227,6 +236,110 @@ class DirectoryRepository @Inject constructor(
         phoneEditDao.upsert(
             PhoneEditEntity(type, id, phone, session.authorName(), System.currentTimeMillis(), "P")
         )
+    }
+
+    // ---- Office working days/hours (synced overlay on the office master) ----
+
+    /** Reactive office master row (reflects working-hours edits). */
+    fun officeFlow(officeId: String) = officeMasterDao.flowById(officeId)
+
+    /**
+     * Save an office's working days/hours: apply it onto the office master and stamp a
+     * sync-pending override so the change reflects to every user (last-write-wins).
+     */
+    suspend fun setOfficeHours(officeId: String, days: String?, from: String?, to: String?) =
+        withContext(Dispatchers.IO) {
+            val d = days?.trim().orEmpty().ifBlank { null }
+            val f = from?.trim().orEmpty().ifBlank { null }
+            val t = to?.trim().orEmpty().ifBlank { null }
+            officeMasterDao.updateWorkingHours(officeId, d, f, t)
+            officeEditDao.upsert(
+                OfficeEditEntity(officeId, d, f, t, session.authorName(), System.currentTimeMillis(), "P")
+            )
+        }
+
+    // ---- Manual staff additions + exit details (synced overlay on the directory) ----
+
+    /** Overlay rows (exit marks / manual additions) for an office — drives the staff cards. */
+    fun staffEditsForOffice(officeId: String) = staffEditDao.byOffice(officeId)
+
+    /** Materialise the added/exit overlays for one staff type back onto the employees table. */
+    private suspend fun reapplyStaffEdits(type: String) {
+        staffEditDao.allList().filter { it.type == type }.forEach { e ->
+            if (e.added) {
+                val existing = employeeDao.byId(e.type, e.employeeId)
+                employeeDao.upsert(
+                    (existing ?: EmployeeEntity(
+                        type = e.type, employeeId = e.employeeId, payrollId = null, ddoOfficeId = null,
+                        name = e.name.orEmpty(), gender = e.gender, level = null, postId = null,
+                        designation = e.designation, estKey = null, estDescription = null,
+                        officeId = e.officeId.orEmpty(), officeName = e.officeName, pan = null,
+                        dateOfBirth = e.dateOfBirth, dateOfJoin = e.dateOfJoin, bankAccNo = null,
+                        ifsc = null, bankType = null, status = e.status ?: "Working",
+                        totalEarnings = null, totalDeductions = null, totalThirdparty = null,
+                        netPayable = null, payloadJson = "{}"
+                    ))
+                )
+                if (!e.mobile.isNullOrBlank()) mobileDao.upsert(MobileMapEntity(e.employeeId, e.mobile))
+            }
+            if (!e.status.isNullOrBlank()) employeeDao.setStatus(e.type, e.employeeId, e.status)
+        }
+    }
+
+    /** Add a staff member manually; materialise into the directory and stamp a sync-pending overlay. */
+    suspend fun addStaff(
+        type: String, employeeId: String, name: String, designation: String?,
+        officeId: String, officeName: String?, gender: String?,
+        dateOfBirth: String?, dateOfJoin: String?, mobile: String?
+    ) = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        val edit = StaffEditEntity(
+            type = type, employeeId = employeeId, added = true, name = name, designation = designation,
+            officeId = officeId, officeName = officeName, gender = gender, dateOfBirth = dateOfBirth,
+            dateOfJoin = dateOfJoin, mobile = mobile?.ifBlank { null }, exitDate = null, exitReason = null,
+            status = "Working", updatedBy = session.authorName(), updatedAt = now, syncState = "P"
+        )
+        staffEditDao.upsert(edit)
+        employeeDao.upsert(
+            EmployeeEntity(
+                type = type, employeeId = employeeId, payrollId = null, ddoOfficeId = null,
+                name = name, gender = gender, level = null, postId = null, designation = designation,
+                estKey = null, estDescription = null, officeId = officeId, officeName = officeName,
+                pan = null, dateOfBirth = dateOfBirth, dateOfJoin = dateOfJoin, bankAccNo = null,
+                ifsc = null, bankType = null, status = "Working", totalEarnings = null,
+                totalDeductions = null, totalThirdparty = null, netPayable = null, payloadJson = "{}"
+            )
+        )
+        if (!mobile.isNullOrBlank()) {
+            mobileDao.upsert(MobileMapEntity(employeeId, mobile))
+            recordPhoneEdit(PHONE_EMPLOYEE, employeeId, mobile)
+        }
+    }
+
+    /**
+     * Record exit / retirement details for an existing staff member and reflect the exit status
+     * on the directory row. Stamps a sync-pending overlay so it reaches every user.
+     */
+    suspend fun setStaffExit(
+        type: String, employeeId: String, exitDate: String?, exitReason: String?
+    ) = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        val emp = employeeDao.byId(type, employeeId)
+        val existing = staffEditDao.byId(type, employeeId)
+        val cleared = exitDate.isNullOrBlank() && exitReason.isNullOrBlank()
+        val status = if (cleared) "Working" else "Exited" + (exitDate?.takeIf { it.isNotBlank() }?.let { " · $it" } ?: "")
+        staffEditDao.upsert(
+            StaffEditEntity(
+                type = type, employeeId = employeeId, added = existing?.added ?: false,
+                name = existing?.name ?: emp?.name, designation = existing?.designation ?: emp?.designation,
+                officeId = existing?.officeId ?: emp?.officeId, officeName = existing?.officeName ?: emp?.officeName,
+                gender = existing?.gender ?: emp?.gender, dateOfBirth = existing?.dateOfBirth ?: emp?.dateOfBirth,
+                dateOfJoin = existing?.dateOfJoin ?: emp?.dateOfJoin, mobile = existing?.mobile,
+                exitDate = exitDate?.ifBlank { null }, exitReason = exitReason?.ifBlank { null },
+                status = status, updatedBy = session.authorName(), updatedAt = now, syncState = "P"
+            )
+        )
+        employeeDao.setStatus(type, employeeId, status)
     }
 
     /** Add one ISO visit date (yyyy-MM-dd) to an MO beat office, kept sorted & de-duped. */

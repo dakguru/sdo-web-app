@@ -67,6 +67,13 @@ interface EmployeeDao {
     /** Distinct office ids that have a staff member whose name matches — for office search-by-staff. */
     @Query("SELECT DISTINCT officeId FROM employees WHERE name LIKE '%' || :q || '%'")
     fun officeIdsByStaffName(q: String): Flow<List<String>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(item: EmployeeEntity)
+
+    /** Reflect an exit/retirement (or restored) status onto a staff row. */
+    @Query("UPDATE employees SET status = :status WHERE type = :type AND employeeId = :id")
+    suspend fun setStatus(type: String, id: String, status: String?)
 }
 
 @Dao
@@ -190,6 +197,95 @@ interface OfficeMasterDao {
 
     @Query("SELECT COUNT(*) FROM office_master")
     fun count(): Flow<Int>
+
+    @Query("SELECT * FROM office_master WHERE officeId = :id LIMIT 1")
+    fun flowById(id: String): Flow<OfficeMasterEntity?>
+
+    /** Apply a working days/hours override onto the office master row. */
+    @Query(
+        """UPDATE office_master SET workingDays = :days, workingHoursFrom = :from,
+           workingHoursTo = :to WHERE officeId = :id"""
+    )
+    suspend fun updateWorkingHours(id: String, days: String?, from: String?, to: String?)
+}
+
+/** Manual office working-days/hours edits, synced across all users (last-write-wins). */
+@Dao
+interface OfficeEditDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(edit: OfficeEditEntity)
+
+    @Query("SELECT * FROM office_edits")
+    suspend fun allList(): List<OfficeEditEntity>
+
+    @Query("SELECT * FROM office_edits WHERE officeId = :id LIMIT 1")
+    suspend fun byId(id: String): OfficeEditEntity?
+
+    @Query("SELECT * FROM office_edits WHERE syncState = 'P'")
+    suspend fun pending(): List<OfficeEditEntity>
+
+    @Query("UPDATE office_edits SET syncState = 'S' WHERE officeId = :id")
+    suspend fun markSynced(id: String)
+
+    @Query("SELECT syncState FROM office_edits WHERE officeId = :id")
+    suspend fun syncStateFor(id: String): String?
+
+    @Query("SELECT updatedAt FROM office_edits WHERE officeId = :id")
+    suspend fun updatedAtFor(id: String): Long?
+}
+
+/** Manually-added staff + exit details, synced across all users (last-write-wins). */
+@Dao
+interface StaffEditDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(edit: StaffEditEntity)
+
+    @Query("SELECT * FROM staff_edits")
+    suspend fun allList(): List<StaffEditEntity>
+
+    /** Overlay rows for one office (exit marks / manual additions) — drives the office staff cards. */
+    @Query("SELECT * FROM staff_edits WHERE officeId = :officeId")
+    fun byOffice(officeId: String): Flow<List<StaffEditEntity>>
+
+    @Query("SELECT * FROM staff_edits WHERE type = :type AND employeeId = :id LIMIT 1")
+    suspend fun byId(type: String, id: String): StaffEditEntity?
+
+    @Query("SELECT * FROM staff_edits WHERE syncState = 'P'")
+    suspend fun pending(): List<StaffEditEntity>
+
+    @Query("UPDATE staff_edits SET syncState = 'S' WHERE type = :type AND employeeId = :id")
+    suspend fun markSynced(type: String, id: String)
+
+    @Query("SELECT syncState FROM staff_edits WHERE type = :type AND employeeId = :id")
+    suspend fun syncStateFor(type: String, id: String): String?
+
+    @Query("SELECT updatedAt FROM staff_edits WHERE type = :type AND employeeId = :id")
+    suspend fun updatedAtFor(type: String, id: String): Long?
+}
+
+/** Dashboard events / announcements for Karur Sub Division, synced to all users. */
+@Dao
+interface EventDao {
+    @Query("SELECT * FROM events WHERE deleted = 0 ORDER BY (date = '') ASC, date ASC, createdAt DESC")
+    fun all(): Flow<List<EventEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(event: EventEntity)
+
+    @Query("UPDATE events SET deleted = 1, updatedAt = :at, syncState = 'P' WHERE id = :id")
+    suspend fun softDelete(id: String, at: Long)
+
+    @Query("SELECT * FROM events WHERE syncState = 'P'")
+    suspend fun pending(): List<EventEntity>
+
+    @Query("UPDATE events SET syncState = 'S' WHERE id = :id")
+    suspend fun markSynced(id: String)
+
+    @Query("SELECT syncState FROM events WHERE id = :id")
+    suspend fun syncStateOf(id: String): String?
+
+    @Query("SELECT updatedAt FROM events WHERE id = :id")
+    suspend fun updatedAtOf(id: String): Long?
 }
 
 @Dao

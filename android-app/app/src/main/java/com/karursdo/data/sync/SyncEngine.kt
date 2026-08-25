@@ -12,7 +12,13 @@ import com.karursdo.data.db.DatasetSnapshotDao
 import com.karursdo.data.db.DatasetSnapshotEntity
 import com.karursdo.data.db.EmployeeDao
 import com.karursdo.data.db.EmployeeEntity
+import com.karursdo.data.db.EventDao
+import com.karursdo.data.db.EventEntity
 import com.karursdo.data.db.FavoriteEntity
+import com.karursdo.data.db.OfficeEditDao
+import com.karursdo.data.db.OfficeEditEntity
+import com.karursdo.data.db.StaffEditDao
+import com.karursdo.data.db.StaffEditEntity
 import com.karursdo.data.db.ImportMetaDao
 import com.karursdo.data.db.ImportMetaEntity
 import com.karursdo.data.db.OfficeMasterDao
@@ -172,6 +178,48 @@ private data class DatasetDto(
 )
 
 @Serializable
+private data class OfficeHoursDto(
+    val office_id: String,
+    val working_days: String?,
+    val working_hours_from: String?,
+    val working_hours_to: String?,
+    val updated_by: String?,
+    val updated_at_ms: Long
+)
+
+@Serializable
+private data class StaffEditDto(
+    val type: String,
+    val employee_id: String,
+    val added: Boolean,
+    val name: String?,
+    val designation: String?,
+    val office_id: String?,
+    val office_name: String?,
+    val gender: String?,
+    val date_of_birth: String?,
+    val date_of_join: String?,
+    val mobile: String?,
+    val exit_date: String?,
+    val exit_reason: String?,
+    val status: String?,
+    val updated_by: String?,
+    val updated_at_ms: Long
+)
+
+@Serializable
+private data class EventDto(
+    val id: String,
+    val date: String,
+    val title: String,
+    val important: Boolean = false,
+    val author: String? = null,
+    val created_at: Long,
+    val updated_at_ms: Long,
+    val deleted: Boolean = false
+)
+
+@Serializable
 private data class PushTokenDto(
     val token: String,
     val username: String?,
@@ -214,6 +262,9 @@ class SyncEngine @Inject constructor(
     private val chatReactionDao: ChatReactionDao,
     private val presenceDao: PresenceDao,
     private val datasetDao: DatasetSnapshotDao,
+    private val officeEditDao: OfficeEditDao,
+    private val staffEditDao: StaffEditDao,
+    private val eventDao: EventDao,
     private val employeeDao: EmployeeDao,
     private val officeMasterDao: OfficeMasterDao,
     private val arrangementDao: ArrangementDao,
@@ -300,7 +351,8 @@ class SyncEngine @Inject constructor(
         try {
             val pushed = push()
             val pulled = pull() + syncProgrammes() + syncPhones() +
-                syncChatReads() + syncReactions() + syncPresence() + syncDatasets()
+                syncChatReads() + syncReactions() + syncPresence() + syncDatasets() +
+                syncOfficeHours() + syncStaffEdits() + syncEvents()
             keyManager.lastSyncAt = System.currentTimeMillis()
             SyncOutcome.Success(pushed, pulled)
         } catch (t: Throwable) {
@@ -518,6 +570,144 @@ class SyncEngine @Inject constructor(
         n
     }
 
+    /**
+     * Office working-days/hours edits (push pending, pull all) — so any user's change to an
+     * office's hours reflects to everyone. Pulled edits are applied onto the office master
+     * last-write-wins. No-op if disabled.
+     */
+    suspend fun syncOfficeHours(): Int = withContext(Dispatchers.IO) {
+        if (!client.enabled) return@withContext 0
+        var n = 0
+        val pending = officeEditDao.pending()
+        if (pending.isNotEmpty()) {
+            val body = json.encodeToString(
+                pending.map { OfficeHoursDto(it.officeId, it.workingDays, it.workingHoursFrom, it.workingHoursTo, it.updatedBy, it.updatedAt) }
+            )
+            if (client.upsert("app_office_hours", body)) {
+                pending.forEach { officeEditDao.markSynced(it.officeId) }
+                n += pending.size
+            }
+        }
+        client.selectAll("app_office_hours")?.let { txt ->
+            val rows = runCatching { json.decodeFromString<List<OfficeHoursDto>>(txt) }.getOrNull().orEmpty()
+            for (r in rows) {
+                if (officeEditDao.syncStateFor(r.office_id) == "P") continue      // keep local pending
+                val localTs = officeEditDao.updatedAtFor(r.office_id)
+                if (localTs != null && localTs >= r.updated_at_ms) continue       // local newer/same
+                officeEditDao.upsert(
+                    OfficeEditEntity(r.office_id, r.working_days, r.working_hours_from, r.working_hours_to, r.updated_by, r.updated_at_ms, "S")
+                )
+                officeMasterDao.updateWorkingHours(r.office_id, r.working_days, r.working_hours_from, r.working_hours_to)
+                n++
+            }
+        }
+        n
+    }
+
+    /**
+     * Staff overlay sync (push pending, pull all) — manual staff additions and exit/retirement
+     * marks reflect to everyone. Pulled rows are materialised into the directory (add → employees;
+     * exit → status) last-write-wins. No-op if disabled.
+     */
+    suspend fun syncStaffEdits(): Int = withContext(Dispatchers.IO) {
+        if (!client.enabled) return@withContext 0
+        var n = 0
+        val pending = staffEditDao.pending()
+        if (pending.isNotEmpty()) {
+            val body = json.encodeToString(
+                pending.map {
+                    StaffEditDto(
+                        it.type, it.employeeId, it.added, it.name, it.designation, it.officeId,
+                        it.officeName, it.gender, it.dateOfBirth, it.dateOfJoin, it.mobile,
+                        it.exitDate, it.exitReason, it.status, it.updatedBy, it.updatedAt
+                    )
+                }
+            )
+            if (client.upsert("app_staff_edits", body)) {
+                pending.forEach { staffEditDao.markSynced(it.type, it.employeeId) }
+                n += pending.size
+            }
+        }
+        client.selectAll("app_staff_edits")?.let { txt ->
+            val rows = runCatching { json.decodeFromString<List<StaffEditDto>>(txt) }.getOrNull().orEmpty()
+            for (r in rows) {
+                if (staffEditDao.syncStateFor(r.type, r.employee_id) == "P") continue
+                val localTs = staffEditDao.updatedAtFor(r.type, r.employee_id)
+                if (localTs != null && localTs >= r.updated_at_ms) continue
+                val edit = StaffEditEntity(
+                    r.type, r.employee_id, r.added, r.name, r.designation, r.office_id, r.office_name,
+                    r.gender, r.date_of_birth, r.date_of_join, r.mobile, r.exit_date, r.exit_reason,
+                    r.status, r.updated_by, r.updated_at_ms, "S"
+                )
+                staffEditDao.upsert(edit)
+                applyStaffEdit(edit)
+                n++
+            }
+        }
+        n
+    }
+
+    /** Materialise one staff overlay onto the directory (added → employees; exit → status; mobile → map). */
+    private suspend fun applyStaffEdit(e: StaffEditEntity) {
+        if (e.added) {
+            val existing = employeeDao.byId(e.type, e.employeeId)
+            employeeDao.upsert(
+                (existing ?: EmployeeEntity(
+                    type = e.type, employeeId = e.employeeId, payrollId = null, ddoOfficeId = null,
+                    name = e.name.orEmpty(), gender = e.gender, level = null, postId = null,
+                    designation = e.designation, estKey = null, estDescription = null,
+                    officeId = e.officeId.orEmpty(), officeName = e.officeName, pan = null,
+                    dateOfBirth = e.dateOfBirth, dateOfJoin = e.dateOfJoin, bankAccNo = null,
+                    ifsc = null, bankType = null, status = e.status ?: "Working",
+                    totalEarnings = null, totalDeductions = null, totalThirdparty = null,
+                    netPayable = null, payloadJson = "{}"
+                )).copy(
+                    name = e.name ?: existing?.name ?: "",
+                    designation = e.designation ?: existing?.designation,
+                    officeId = e.officeId ?: existing?.officeId ?: "",
+                    officeName = e.officeName ?: existing?.officeName,
+                    gender = e.gender ?: existing?.gender,
+                    dateOfBirth = e.dateOfBirth ?: existing?.dateOfBirth,
+                    dateOfJoin = e.dateOfJoin ?: existing?.dateOfJoin,
+                    status = e.status ?: existing?.status
+                )
+            )
+            if (!e.mobile.isNullOrBlank()) mobileDao.upsert(MobileMapEntity(e.employeeId, e.mobile))
+        }
+        if (!e.status.isNullOrBlank()) employeeDao.setStatus(e.type, e.employeeId, e.status)
+    }
+
+    /**
+     * Dashboard events / announcements sync (push pending, pull all). No-op if disabled.
+     */
+    suspend fun syncEvents(): Int = withContext(Dispatchers.IO) {
+        if (!client.enabled) return@withContext 0
+        var n = 0
+        val pending = eventDao.pending()
+        if (pending.isNotEmpty()) {
+            val body = json.encodeToString(
+                pending.map { EventDto(it.id, it.date, it.title, it.important, it.author, it.createdAt, it.updatedAt, it.deleted) }
+            )
+            if (client.upsert("app_events", body)) {
+                pending.forEach { eventDao.markSynced(it.id) }
+                n += pending.size
+            }
+        }
+        client.selectAll("app_events")?.let { txt ->
+            val rows = runCatching { json.decodeFromString<List<EventDto>>(txt) }.getOrNull().orEmpty()
+            for (r in rows) {
+                if (eventDao.syncStateOf(r.id) == "P") continue
+                val localTs = eventDao.updatedAtOf(r.id)
+                if (localTs != null && localTs >= r.updated_at_ms) continue
+                eventDao.upsert(
+                    EventEntity(r.id, r.date, r.title, r.important, r.author, r.created_at, r.updated_at_ms, r.deleted, "S")
+                )
+                n++
+            }
+        }
+        n
+    }
+
     /** Merge remote accounts into the local table (last-write-wins), skipping local pending edits. */
     private suspend fun pullUsers(): Int {
         var n = 0
@@ -700,6 +890,8 @@ class SyncEngine @Inject constructor(
                 val list = json.decodeFromString<List<EmployeeEntity>>(r.payload)
                 employeeDao.deleteByType(r.type)
                 employeeDao.upsertAll(list)
+                // Re-apply manual additions / exit marks so they survive the re-import.
+                staffEditDao.allList().filter { it.type == r.type }.forEach { applyStaffEdit(it) }
             }
             "OUT" -> {
                 val list = json.decodeFromString<List<OutsiderEntity>>(r.payload)
@@ -714,6 +906,10 @@ class SyncEngine @Inject constructor(
             "OFFICES" -> {
                 val list = json.decodeFromString<List<OfficeMasterEntity>>(r.payload)
                 officeMasterDao.replaceAll(list)
+                // Re-apply working-hours overrides so a re-import doesn't clobber them.
+                officeEditDao.allList().forEach {
+                    officeMasterDao.updateWorkingHours(it.officeId, it.workingDays, it.workingHoursFrom, it.workingHoursTo)
+                }
             }
             "ARR" -> {
                 val list = json.decodeFromString<List<ArrangementEntity>>(r.payload)

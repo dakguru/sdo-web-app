@@ -65,16 +65,12 @@ class HomeViewModel @Inject constructor(
     repo: DirectoryRepository,
     userRepo: UserDataRepository,
     userAccountDao: UserAccountDao,
+    eventsRepo: com.karursdo.data.repo.EventsRepository,
     val themeController: com.karursdo.ui.theme.ThemeController
 ) : ViewModel() {
-    val dsCount = repo.employeeDao.countByType("DS")
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-    val gdsCount = repo.employeeDao.countByType("GDS")
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-    val outCount = repo.outsiderDao.count()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-    val officeCount = repo.employeeDao.officeCount()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    // Karur Sub Division events & announcements shown on the dashboard banner.
+    val events = eventsRepo.events()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList<com.karursdo.data.db.EventEntity>())
 
     // Mail Overseer OVERDUE-office counts, recomputed whenever visits change.
     val moIOverdue = repo.moBeatDao.byBeat(MoBeatSeed.MO_I).map { moOverdueCount(it) }
@@ -120,10 +116,7 @@ fun HomeScreen(
     onOpenRetirements: () -> Unit = {},
     vm: HomeViewModel = hiltViewModel()
 ) {
-    val ds by vm.dsCount.collectAsState()
-    val gds by vm.gdsCount.collectAsState()
-    val out by vm.outCount.collectAsState()
-    val offices by vm.officeCount.collectAsState()
+    val events by vm.events.collectAsState()
     val moIOverdue by vm.moIOverdue.collectAsState()
     val moIIOverdue by vm.moIIOverdue.collectAsState()
     val todayProgrammes by vm.todayProgrammes.collectAsState()
@@ -163,19 +156,8 @@ fun HomeScreen(
                 )
             }
         }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatCard("Total staff", ds + gds, Modifier.weight(1f))
-                StatCard("Offices", offices, Modifier.weight(1f))
-            }
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatCard("Departmental", ds, Modifier.weight(1f))
-                StatCard("GDS", gds, Modifier.weight(1f))
-                StatCard("Outsiders", out, Modifier.weight(1f))
-            }
-        }
+        // ---- Events & announcements banner (replaces the old stat counts) ----
+        item { EventsBanner(events = events) }
 
         // ---- Today's birthdays & retirements (shown ABOVE the MO programme) ----
         item {
@@ -270,6 +252,144 @@ fun HomeScreen(
             }
         }
         item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+private val EVENT_IN_FMT = DateTimeFormatter.ISO_LOCAL_DATE
+private val EVENT_OUT_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
+
+/** Parsed, display-ready event with computed days-remaining (null for a standing announcement). */
+private data class BannerItem(
+    val id: String,
+    val title: String,
+    val dateText: String?,
+    val daysLeft: Long?,
+    val important: Boolean
+)
+
+private fun buildBannerItems(events: List<com.karursdo.data.db.EventEntity>): List<BannerItem> {
+    val today = LocalDate.now()
+    return events.mapNotNull { e ->
+        val date = e.date.trim().takeIf { it.isNotBlank() }
+            ?.let { runCatching { LocalDate.parse(it, EVENT_IN_FMT) }.getOrNull() }
+        val days = date?.let { java.time.temporal.ChronoUnit.DAYS.between(today, it) }
+        // Drop dated events that are more than a day in the past; keep announcements (no date).
+        if (days != null && days < 0) null
+        else BannerItem(
+            id = e.id,
+            title = e.title,
+            dateText = date?.format(EVENT_OUT_FMT),
+            daysLeft = days,
+            important = e.important
+        )
+    }.sortedWith(
+        compareByDescending<BannerItem> { it.important }
+            .thenBy { it.daysLeft == null }               // dated events before standing announcements
+            .thenBy { it.daysLeft ?: Long.MAX_VALUE }
+    )
+}
+
+private fun daysLeftLabel(days: Long): String = when {
+    days == 0L -> "Today"
+    days == 1L -> "Tomorrow"
+    else -> "$days days left"
+}
+
+/**
+ * Dashboard events & announcements banner (replaces the old stat counts). A rich navy card
+ * listing important messages and upcoming Karur Sub Division events with a live day-countdown.
+ */
+@Composable
+private fun EventsBanner(events: List<com.karursdo.data.db.EventEntity>) {
+    val items = remember(events) { buildBannerItems(events) }
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(Brand.HeroGradient)
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("📢", fontSize = 20.sp)
+            Spacer(Modifier.width(8.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Events & Announcements",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    "Karur Sub Division",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        if (items.isEmpty()) {
+            Text(
+                "No events or announcements yet.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.9f)
+            )
+            Text(
+                "Admin / ASP / PA users can add them from Profile → Manage events.",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.7f)
+            )
+        } else {
+            items.forEachIndexed { i, item ->
+                if (i > 0) Spacer(Modifier.height(8.dp))
+                EventRow(item)
+            }
+        }
+    }
+}
+
+@Composable
+private fun EventRow(item: BannerItem) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.White.copy(alpha = if (item.important) 0.22f else 0.12f))
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+    ) {
+        Text(if (item.important) "⭐" else if (item.dateText == null) "📌" else "🗓️", fontSize = 16.sp)
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                item.title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+            item.dateText?.let {
+                Text(it, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
+            }
+        }
+        item.daysLeft?.let { d ->
+            Spacer(Modifier.width(8.dp))
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (d == 0L) Brand.Amber else Color.White.copy(alpha = 0.24f))
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    daysLeftLabel(d),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (d == 0L) Brand.Ink else Color.White,
+                    maxLines = 1
+                )
+            }
+        }
     }
 }
 

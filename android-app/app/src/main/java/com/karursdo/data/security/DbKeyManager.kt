@@ -73,6 +73,15 @@ class DbKeyManager @Inject constructor(private val context: Context) {
         get() = prefs.getString(KEY_LAST_USER, null)
         set(value) { prefs.edit().putString(KEY_LAST_USER, value).apply() }
 
+    /**
+     * Username of the user who is CURRENTLY signed in (survives app restarts). Set on login and
+     * cleared only on explicit logout — so the app stays unlocked across backgrounding/relaunch
+     * and never re-prompts for biometric until the user logs out.
+     */
+    var activeUsername: String?
+        get() = prefs.getString(KEY_ACTIVE_USER, null)
+        set(value) { prefs.edit().putString(KEY_ACTIVE_USER, value).apply() }
+
     /** Newest chat-message createdAt we've already notified about (0 = not seeded yet). */
     var lastNotifiedChatAt: Long
         get() = prefs.getLong(KEY_NOTIFIED_CHAT, 0L)
@@ -129,6 +138,7 @@ class DbKeyManager @Inject constructor(private val context: Context) {
         const val KEY_LOCK = "app_lock_enabled"
         const val KEY_LAST_SYNC = "last_sync_at"
         const val KEY_LAST_USER = "last_username"
+        const val KEY_ACTIVE_USER = "active_username"
         const val KEY_NOTIFIED_CHAT = "last_notified_chat_at"
         const val KEY_NOTIFIED_PROG = "last_notified_prog_at"
         const val KEY_PIN_SALT = "login_pin_salt_v1"

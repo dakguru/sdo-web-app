@@ -39,24 +39,32 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karursdo.ui.theme.Brand
 
-/** Pill badge (web .tag / .badge / .type-badge). */
+/**
+ * Pill badge (web .tag / .badge / .type-badge). The palette pairs (bg, fg) are tuned for LIGHT
+ * mode; in dark mode we derive a readable variant — a lightened saturated label on a subtle
+ * tinted chip — so badge text never renders as dark-on-dark.
+ */
 @Composable
 fun Pill(text: String, bg: Color, fg: Color, modifier: Modifier = Modifier) {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val fgc = if (dark) androidx.compose.ui.graphics.lerp(fg, Color.White, 0.55f) else fg
+    val bgc = if (dark) fgc.copy(alpha = 0.18f) else bg
     Text(
         text = text,
-        color = fg,
+        color = fgc,
         style = MaterialTheme.typography.labelMedium,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier
             .clip(CircleShape)
-            .background(bg)
+            .background(bgc)
             .padding(horizontal = 10.dp, vertical = 4.dp)
     )
 }

@@ -24,9 +24,12 @@ import androidx.room.RoomDatabase
         ChatReadEntity::class,
         ChatReactionEntity::class,
         PresenceEntity::class,
-        DatasetSnapshotEntity::class
+        DatasetSnapshotEntity::class,
+        OfficeEditEntity::class,
+        StaffEditEntity::class,
+        EventEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 abstract class KarurDatabase : RoomDatabase() {
@@ -46,4 +49,7 @@ abstract class KarurDatabase : RoomDatabase() {
     abstract fun chatReactionDao(): ChatReactionDao
     abstract fun presenceDao(): PresenceDao
     abstract fun datasetSnapshotDao(): DatasetSnapshotDao
+    abstract fun officeEditDao(): OfficeEditDao
+    abstract fun staffEditDao(): StaffEditDao
+    abstract fun eventDao(): EventDao
 }

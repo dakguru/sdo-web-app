@@ -1,7 +1,9 @@
 package com.karursdo.ui.offices
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,39 +14,63 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.karursdo.data.db.EmployeeEntity
 import com.karursdo.data.db.OfficeMasterEntity
+import com.karursdo.data.db.StaffEditEntity
 import com.karursdo.data.repo.DirectoryRepository
+import com.karursdo.data.repo.EventsRepository
+import com.karursdo.data.repo.SessionManager
+import com.karursdo.data.repo.UserDataRepository
+import com.karursdo.data.sync.SyncEngine
 import com.karursdo.ui.components.EmptyState
 import com.karursdo.ui.components.FieldRow
+import com.karursdo.ui.components.InitialsAvatar
 import com.karursdo.ui.components.KsdSearchField
 import com.karursdo.ui.components.Pill
 import com.karursdo.ui.components.PressableCard
 import com.karursdo.ui.components.SectionCard
 import com.karursdo.ui.components.StatCard
+import com.karursdo.ui.components.StatusChip
 import com.karursdo.ui.components.TypePill
 import com.karursdo.ui.theme.Brand
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -83,10 +109,55 @@ fun officeCategory(type: String?): String = when (type?.uppercase()) {
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class OfficeMgmtViewModel @Inject constructor(
-    val repo: DirectoryRepository
+    val repo: DirectoryRepository,
+    private val session: SessionManager,
+    private val userRepo: UserDataRepository,
+    private val syncEngine: SyncEngine
 ) : ViewModel() {
     val search = MutableStateFlow("")
     val category = MutableStateFlow("All")
+
+    /** employeeId -> mobile number, so each staff card can show a call button. */
+    val phones: StateFlow<Map<String, String>> = repo.mobileDao.map()
+        .map { rows -> rows.associate { it.employeeId to it.phone } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    /** Whether this user may add staff, set exit details and edit working hours (Admin/ASP/PA). */
+    val canManage: StateFlow<Boolean> = session.current.flatMapLatest { u ->
+        if (u == null) flowOf(false)
+        else userRepo.designationFlow(u.username).map { EventsRepository.canManage(u, it?.value) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    /** Live overlay (exit marks / manual additions) for the currently open office. */
+    fun staffEditsForOffice(officeId: String) = repo.staffEditsForOffice(officeId)
+
+    /** Live office master row for the open office (reflects working-hours edits). */
+    fun officeFlow(officeId: String) = repo.officeFlow(officeId)
+
+    fun saveOfficeHours(officeId: String, days: String, from: String, to: String) = viewModelScope.launch {
+        repo.setOfficeHours(officeId, days, from, to)
+        runCatching { syncEngine.syncOfficeHours() }
+    }
+
+    fun addStaff(
+        type: String, employeeId: String, name: String, designation: String,
+        officeId: String, officeName: String?, gender: String,
+        dateOfBirth: String, dateOfJoin: String, mobile: String
+    ) = viewModelScope.launch {
+        repo.addStaff(
+            type = type, employeeId = employeeId.trim(), name = name.trim(),
+            designation = designation.trim().ifBlank { null }, officeId = officeId, officeName = officeName,
+            gender = gender.trim().ifBlank { null }, dateOfBirth = dateOfBirth.trim().ifBlank { null },
+            dateOfJoin = dateOfJoin.trim().ifBlank { null }, mobile = mobile.trim().ifBlank { null }
+        )
+        runCatching { syncEngine.syncStaffEdits() }
+        runCatching { syncEngine.syncPhones() }
+    }
+
+    fun setStaffExit(type: String, employeeId: String, exitDate: String, exitReason: String) = viewModelScope.launch {
+        repo.setStaffExit(type, employeeId, exitDate.trim().ifBlank { null }, exitReason.trim().ifBlank { null })
+        runCatching { syncEngine.syncStaffEdits() }
+    }
 
     private val allOffices: StateFlow<List<OfficeMasterEntity>> =
         repo.officeMasterDao.all()
@@ -109,11 +180,6 @@ class OfficeMgmtViewModel @Inject constructor(
                 mq && mc
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val detail = MutableStateFlow<OfficeMasterEntity?>(null)
-    fun loadDetail(officeId: String) = viewModelScope.launch {
-        detail.value = repo.officeMasterDao.byId(officeId)
-    }
 }
 
 private fun typePill(type: String?): Pair<Color, Color> = when (type?.uppercase()) {
@@ -225,15 +291,53 @@ fun OfficeMasterDetailScreen(
     onOpenOffice: (String) -> Unit = {},
     vm: OfficeMgmtViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(officeId) { vm.loadDetail(officeId) }
-    val o by vm.detail.collectAsState()
+    val o by vm.officeFlow(officeId).collectAsState(initial = null)
     val staff by vm.repo.employeeDao.byOffice(officeId).collectAsState(initial = emptyList())
+    val staffEdits by vm.staffEditsForOffice(officeId).collectAsState(initial = emptyList())
+    val phones by vm.phones.collectAsState()
+    val canManage by vm.canManage.collectAsState()
     val context = LocalContext.current
     val office = o ?: return
     // Branch Offices reporting to this office (relevant for SPO / HPO parents).
     val branchOffices by vm.repo.officeMasterDao
         .childBranchOffices(office.officeName, office.officeId)
         .collectAsState(initial = emptyList())
+
+    // Overlay (exit marks / manual additions) keyed by staff for quick lookup on the cards.
+    val exitByStaff = remember(staffEdits) { staffEdits.associateBy { it.type to it.employeeId } }
+
+    var addingStaff by remember { mutableStateOf(false) }
+    var exitFor by remember { mutableStateOf<EmployeeEntity?>(null) }
+    var editingHours by remember { mutableStateOf(false) }
+
+    if (addingStaff) {
+        AddStaffDialog(
+            onDismiss = { addingStaff = false },
+            onSave = { type, id, name, desig, gender, dob, doj, mobile ->
+                vm.addStaff(type, id, name, desig, office.officeId, office.officeName, gender, dob, doj, mobile)
+                addingStaff = false
+            }
+        )
+    }
+    exitFor?.let { emp ->
+        val existing = exitByStaff[emp.type to emp.employeeId]
+        ExitDetailsDialog(
+            staffName = emp.name,
+            currentDate = existing?.exitDate,
+            currentReason = existing?.exitReason,
+            onDismiss = { exitFor = null },
+            onSave = { date, reason -> vm.setStaffExit(emp.type, emp.employeeId, date, reason); exitFor = null }
+        )
+    }
+    if (editingHours) {
+        WorkingHoursDialog(
+            days = office.workingDays.orEmpty(),
+            from = office.workingHoursFrom.orEmpty(),
+            to = office.workingHoursTo.orEmpty(),
+            onDismiss = { editingHours = false },
+            onSave = { d, f, t -> vm.saveOfficeHours(office.officeId, d, f, t); editingHours = false }
+        )
+    }
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -265,6 +369,49 @@ fun OfficeMasterDetailScreen(
                 }
             }
         }
+
+        // ---- Staff at this office (moved to the TOP, with call buttons & full details) ----
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Staff at this office (${staff.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                if (canManage) {
+                    Button(
+                        onClick = { addingStaff = true },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                    ) { Text("＋ Add staff") }
+                }
+            }
+        }
+        if (staff.isEmpty()) {
+            item {
+                Text(
+                    "No staff mapped to this office in the employee directory.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        items(staff, key = { "${it.type}-${it.employeeId}" }) { e ->
+            StaffCard(
+                e = e,
+                phone = phones[e.employeeId],
+                exit = exitByStaff[e.type to e.employeeId],
+                canManage = canManage,
+                onOpen = { onOpenEmployee(e.type, e.employeeId) },
+                onCall = { p ->
+                    context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$p")))
+                },
+                onExit = { exitFor = e }
+            )
+        }
+
         item {
             SectionCard("Identity & Hierarchy") {
                 FieldRow("Office name", office.officeName)
@@ -306,6 +453,11 @@ fun OfficeMasterDetailScreen(
                         .filter { it.isNotBlank() }
                         .joinToString(" – ").ifBlank { null }
                 )
+                if (canManage) {
+                    TextButton(onClick = { editingHours = true }) {
+                        Text("✏️ Edit working days & hours")
+                    }
+                }
                 FieldRow("SOL ID", office.solId)
                 FieldRow("CSI facility ID", office.csiFacilityId)
                 FieldRow("PLI ID", office.pliId)
@@ -322,40 +474,6 @@ fun OfficeMasterDetailScreen(
                             )
                         )
                     }) { Text("📍 Open location in Maps") }
-                }
-            }
-        }
-        item {
-            SectionCard("Staff at this office (${staff.size})") {
-                if (staff.isEmpty()) {
-                    Text(
-                        "No staff mapped to this office in the employee directory.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                staff.forEach { e ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp)
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            TextButton(
-                                onClick = { onOpenEmployee(e.type, e.employeeId) },
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-                            ) {
-                                Text(e.name, fontWeight = FontWeight.SemiBold)
-                            }
-                            Text(
-                                "${e.employeeId} · ${e.designation ?: "—"}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        TypePill(e.type)
-                    }
                 }
             }
         }
@@ -387,4 +505,215 @@ fun OfficeMasterDetailScreen(
         }
         item { Spacer(Modifier.height(28.dp)) }
     }
+}
+
+/**
+ * A rich staff card for the Office Management screen: avatar, full details, an exit banner when
+ * the person has exited/retired, and a prominent round call button that opens the dialer prefilled.
+ * Tapping the card opens the complete staff profile.
+ */
+@Composable
+private fun StaffCard(
+    e: EmployeeEntity,
+    phone: String?,
+    exit: StaffEditEntity?,
+    canManage: Boolean,
+    onOpen: () -> Unit,
+    onCall: (String) -> Unit,
+    onExit: () -> Unit
+) {
+    PressableCard(onClick = onOpen) {
+        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                InitialsAvatar(e.name, size = 46)
+                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                    Text(e.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        e.designation ?: "—",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TypePill(e.type)
+                        Spacer(Modifier.width(6.dp))
+                        StatusChip(exit?.status ?: e.status)
+                    }
+                }
+                // Round call button — opens the dialer with the number filled in.
+                if (!phone.isNullOrBlank()) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(Brand.Emerald)
+                            .clickable { onCall(phone) }
+                    ) {
+                        Icon(Icons.Filled.Call, contentDescription = "Call ${e.name}", tint = Color.White, modifier = Modifier.size(22.dp))
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            // Complete-details grid.
+            DetailLine("Employee ID", e.employeeId)
+            DetailLine("Mobile", phone ?: "—")
+            DetailLine("Date of birth", e.dateOfBirth ?: "—")
+            DetailLine("Date of joining", e.dateOfJoin ?: "—")
+            e.gender?.takeIf { it.isNotBlank() }?.let { DetailLine("Gender", it) }
+            e.level?.takeIf { it.isNotBlank() }?.let { DetailLine("Level", it) }
+            e.estDescription?.takeIf { it.isNotBlank() }?.let { DetailLine("Establishment", it) }
+
+            // Exit / retirement banner when recorded.
+            if (exit?.exitDate != null || exit?.exitReason != null) {
+                Spacer(Modifier.height(8.dp))
+                Column(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                        .background(Brand.Rose.copy(alpha = 0.10f)).padding(10.dp)
+                ) {
+                    Text("🚪 Exit / Retirement", style = MaterialTheme.typography.labelMedium, color = Brand.Rose, fontWeight = FontWeight.Bold)
+                    exit.exitDate?.let { Text("Date: $it", style = MaterialTheme.typography.bodySmall) }
+                    exit.exitReason?.let { Text("Reason: $it", style = MaterialTheme.typography.bodySmall) }
+                }
+            }
+
+            if (canManage) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(onClick = onExit) {
+                        Text(if (exit?.exitDate != null || exit?.exitReason != null) "Edit exit details" else "＋ Exit details")
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Compact label/value line used inside the staff card. */
+@Composable
+private fun DetailLine(label: String, value: String) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(120.dp)
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+/** Add a staff member manually to the current office (Admin/ASP/PA only). */
+@Composable
+private fun AddStaffDialog(
+    onDismiss: () -> Unit,
+    onSave: (type: String, id: String, name: String, desig: String, gender: String, dob: String, doj: String, mobile: String) -> Unit
+) {
+    var type by remember { mutableStateOf("DS") }
+    var id by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var desig by remember { mutableStateOf("") }
+    var gender by remember { mutableStateOf("") }
+    var dob by remember { mutableStateOf("") }
+    var doj by remember { mutableStateOf("") }
+    var mobile by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add staff") },
+        text = {
+            Column {
+                Text("Staff type", style = MaterialTheme.typography.labelMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = type == "DS", onClick = { type = "DS" }, label = { Text("Departmental") })
+                    FilterChip(selected = type == "GDS", onClick = { type = "GDS" }, label = { Text("GDS") })
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(id, { id = it.trim().take(24) }, label = { Text("Employee ID") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(name, { name = it.take(80) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(desig, { desig = it.take(60) }, label = { Text("Designation") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(mobile, { mobile = it.filter { c -> c.isDigit() || c in "+ -" }.take(20) }, label = { Text("Mobile (optional)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(gender, { gender = it.take(12) }, label = { Text("Gender (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(dob, { dob = it.take(20) }, label = { Text("Date of birth (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(doj, { doj = it.take(20) }, label = { Text("Date of joining (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(type, id, name, desig, gender, dob, doj, mobile) },
+                enabled = id.isNotBlank() && name.isNotBlank()
+            ) { Text("Add") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+/** Record / edit a staff member's exit or retirement details (Admin/ASP/PA only). */
+@Composable
+private fun ExitDetailsDialog(
+    staffName: String,
+    currentDate: String?,
+    currentReason: String?,
+    onDismiss: () -> Unit,
+    onSave: (date: String, reason: String) -> Unit
+) {
+    var date by remember { mutableStateOf(currentDate.orEmpty()) }
+    var reason by remember { mutableStateOf(currentReason.orEmpty()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Exit / Retirement details") },
+        text = {
+            Column {
+                Text(staffName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(date, { date = it.take(20) }, label = { Text("Exit date (e.g. 30 Jun 2026)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(reason, { reason = it.take(80) }, label = { Text("Reason (retirement / transfer …)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(6.dp))
+                Text("Leave both blank and save to clear the exit and restore the staff as working.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(date, reason) }) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+/** Edit an office's working days/hours (Admin/ASP/PA only); syncs to every user. */
+@Composable
+private fun WorkingHoursDialog(
+    days: String,
+    from: String,
+    to: String,
+    onDismiss: () -> Unit,
+    onSave: (days: String, from: String, to: String) -> Unit
+) {
+    var d by remember { mutableStateOf(days) }
+    var f by remember { mutableStateOf(from) }
+    var t by remember { mutableStateOf(to) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Working days & hours") },
+        text = {
+            Column {
+                OutlinedTextField(d, { d = it.take(40) }, label = { Text("Working days (e.g. Mon–Sat)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(f, { f = it.take(16) }, label = { Text("From (e.g. 09:00)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(t, { t = it.take(16) }, label = { Text("To (e.g. 17:00)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(d, f, t) }) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }

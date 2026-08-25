@@ -179,6 +179,38 @@ private val MIGRATION_9_10 = object : Migration(9, 10) {
     }
 }
 
+/**
+ * v11 -> v12: adds the office working-hours edit overlay, the staff add/exit overlay, and the
+ * dashboard events/announcements table. All additive; file scope for the KSP/Hilt reason above.
+ */
+private val MIGRATION_11_12 = object : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `office_edits` (" +
+                "`officeId` TEXT NOT NULL, `workingDays` TEXT, `workingHoursFrom` TEXT, " +
+                "`workingHoursTo` TEXT, `updatedBy` TEXT, `updatedAt` INTEGER NOT NULL, " +
+                "`syncState` TEXT NOT NULL, PRIMARY KEY(`officeId`))"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `staff_edits` (" +
+                "`type` TEXT NOT NULL, `employeeId` TEXT NOT NULL, `added` INTEGER NOT NULL, " +
+                "`name` TEXT, `designation` TEXT, `officeId` TEXT, `officeName` TEXT, " +
+                "`gender` TEXT, `dateOfBirth` TEXT, `dateOfJoin` TEXT, `mobile` TEXT, " +
+                "`exitDate` TEXT, `exitReason` TEXT, `status` TEXT, `updatedBy` TEXT, " +
+                "`updatedAt` INTEGER NOT NULL, `syncState` TEXT NOT NULL, " +
+                "PRIMARY KEY(`type`, `employeeId`))"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `events` (" +
+                "`id` TEXT NOT NULL, `date` TEXT NOT NULL, `title` TEXT NOT NULL, " +
+                "`important` INTEGER NOT NULL, `author` TEXT, `createdAt` INTEGER NOT NULL, " +
+                "`updatedAt` INTEGER NOT NULL, `deleted` INTEGER NOT NULL, `syncState` TEXT NOT NULL, " +
+                "PRIMARY KEY(`id`))"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_events_date` ON `events` (`date`)")
+    }
+}
+
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
@@ -198,7 +230,7 @@ object AppModule {
         val factory = SupportOpenHelperFactory(keyManager.dbPassphrase())
         return Room.databaseBuilder(context, KarurDatabase::class.java, "karursdo.db")
             .openHelperFactory(factory)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_11_12)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -219,4 +251,7 @@ object AppModule {
     @Provides fun chatReactionDao(db: KarurDatabase) = db.chatReactionDao()
     @Provides fun presenceDao(db: KarurDatabase) = db.presenceDao()
     @Provides fun datasetSnapshotDao(db: KarurDatabase) = db.datasetSnapshotDao()
+    @Provides fun officeEditDao(db: KarurDatabase) = db.officeEditDao()
+    @Provides fun staffEditDao(db: KarurDatabase) = db.staffEditDao()
+    @Provides fun eventDao(db: KarurDatabase) = db.eventDao()
 }

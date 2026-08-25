@@ -18,6 +18,14 @@ app runs 100% offline exactly as before.
 3. Confirm four tables now exist under **Table Editor**: `app_favorites`,
    `app_notes`, `app_prefs`, `app_activity`.
 
+### Later migrations
+Each app feature that adds a synced table ships its own `migration_vN_*.sql`. Run every one
+that you haven't yet, in order, in the SQL Editor. The latest is
+[`migration_v16_office_staff_events.sql`](migration_v16_office_staff_events.sql), which adds
+`app_office_hours` (office working-hours edits), `app_staff_edits` (manual staff add + exit
+details), and `app_events` (dashboard Events & Announcements). Until it is run, those features
+work locally on each device but do not sync across users.
+
 ## 3. Get the keys
 In **Project Settings → API**, copy:
 - **Project URL** — e.g. `https://abcdxyz.supabase.co`
