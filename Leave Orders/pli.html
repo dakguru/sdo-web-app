@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>PLI / RPLI Mega Mela — Premium Procurement · Karur Sub Division</title>
+<meta name="description" content="Live premium procurement tracker for the PLI / RPLI Mega Mela (10 September 2026) — Department of Posts, Karur Sub Division. Staff log their policies, sum assured and premium; everyone sees the live leaderboard." />
+<meta name="theme-color" content="#0a1834" />
+<!-- PUBLIC page: no auth-guard, no links to internal modules. Staff open the
+     shared link, pick their office/name and log their Mega Mela procurement. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0f172a; --ink2:#1e293b; --muted:#64748b; --faint:#94a3b8;
+    --line:#e6eaf2; --card:#ffffff; --card2:#f8fafc;
+    --brand:#4f46e5; --brand2:#7c3aed;
+    --gold:#c9962f; --gold2:#f0c04a; --gold-ink:#7a5310;
+    --good:#059669; --bad:#dc2626; --amber:#d97706;
+    --grad-bg:radial-gradient(1200px 620px at -10% -20%,#e6ecff 0%,transparent 60%),
+              radial-gradient(1000px 520px at 112% -4%,#fde7d0 0%,transparent 55%),
+              radial-gradient(900px 640px at 50% 128%,#e5f7ee 0%,transparent 60%),
+              linear-gradient(180deg,#eef1fb 0%,#f6f8fd 100%);
+    --shadow-lg:0 22px 50px rgba(15,23,42,.13),0 6px 16px rgba(15,23,42,.06);
+    --shadow-md:0 12px 30px rgba(15,23,42,.10),0 3px 8px rgba(15,23,42,.05);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;padding:0;color:var(--ink);font:15px/1.55 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--grad-bg);background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto}
+
+  /* ===== Government header ===== */
+  header{position:relative;overflow:hidden;color:#fff;box-shadow:0 16px 38px rgba(9,20,40,.30)}
+  header::before{content:"";position:absolute;inset:0;z-index:0;background:
+    radial-gradient(900px 440px at 4% -60%, rgba(129,140,248,.50), transparent 60%),
+    radial-gradient(820px 440px at 104% -20%, rgba(240,192,74,.30), transparent 55%),
+    radial-gradient(760px 520px at 62% 150%, rgba(13,148,136,.30), transparent 60%),
+    linear-gradient(120deg,#0a1834 0%,#16307a 44%,#4f46e5 80%,#7c3aed 100%)}
+  header::after{content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;background:linear-gradient(90deg,#FF9933 0 33.33%,#ffffff 33.33% 66.66%,#138808 66.66% 100%)}
+  .hdr-grain{position:absolute;inset:0;z-index:0;opacity:.5;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 0);background-size:22px 22px}
+  .header-inner{position:relative;z-index:1;padding:15px 22px 12px}
+  .gov-band{display:flex;align-items:center;gap:16px}
+  .gov-crest{height:56px;width:56px;flex:0 0 auto;border-radius:15px;background:#fff;padding:5px;object-fit:contain;box-shadow:0 8px 22px rgba(0,0,0,.30),0 0 0 1px rgba(255,255,255,.35)}
+  .gov-post{width:auto;max-width:132px;padding:7px 12px}
+  .gov-titles{flex:1 1 auto;min-width:0;text-align:center}
+  .gov-l1{font:800 11px/1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:3.4px;text-transform:uppercase;background:linear-gradient(90deg,#fde68a,#fcd34d,#fbbf24);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .gov-l2{font:800 clamp(18px,2.4vw,24px)/1.1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:.3px;margin-top:4px;background:linear-gradient(180deg,#fff 0%,#d7e1ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .gov-l3{font:600 12px/1.35 'Inter',sans-serif;color:rgba(255,255,255,.84);margin-top:5px}
+  .gov-l3 b{color:#fff;font-weight:800}
+  .gov-underline{width:76px;height:3px;margin:9px auto 0;border-radius:3px;background:linear-gradient(90deg,#FF9933,#fff,#138808);box-shadow:0 0 10px rgba(255,255,255,.25)}
+  @media(max-width:640px){.gov-crest{height:46px;width:46px}.gov-l1{letter-spacing:2px;font-size:10px}.gov-l3{font-size:11px}.gov-band{gap:11px}.gov-post{max-width:104px}}
+
+  /* ===== Mela hero / title ===== */
+  .hero{position:relative;z-index:1;padding:6px 20px 20px;text-align:center}
+  .hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 15px;border-radius:999px;font:800 11px/1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:2.2px;text-transform:uppercase;color:#3d2a06;background:linear-gradient(90deg,#f0c04a,#fcd34d 45%,#e8b53a);box-shadow:0 6px 18px rgba(201,150,47,.4),inset 0 1px 0 rgba(255,255,255,.5)}
+  .hero h1{font:800 clamp(22px,5.4vw,33px)/1.08 'Sora','Plus Jakarta Sans',sans-serif;margin:12px 0 4px;letter-spacing:.2px}
+  .hero h1 .g{background:linear-gradient(90deg,#fde08a,#f6c453,#fbbf24);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero .tag{font:600 13px/1.4 'Inter',sans-serif;color:rgba(255,255,255,.86);max-width:520px;margin:0 auto}
+
+  /* ===== Countdown ===== */
+  .countdown{position:relative;z-index:1;margin:2px 16px 20px;display:flex;align-items:stretch;gap:12px;justify-content:center;flex-wrap:wrap}
+  .cd-date{flex:1 1 200px;max-width:300px;display:flex;flex-direction:column;justify-content:center;padding:14px 18px;border-radius:16px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.20);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .cd-date .k{font:700 10.5px/1 'Inter',sans-serif;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.7)}
+  .cd-date .v{font:800 18px/1.15 'Sora','Plus Jakarta Sans',sans-serif;margin-top:6px;color:#fff}
+  .cd-date .v small{display:block;font:600 11.5px/1.3 'Inter',sans-serif;color:rgba(255,255,255,.7);margin-top:3px}
+  .cd-days{flex:1 1 200px;max-width:300px;text-align:center;padding:14px 16px;border-radius:16px;color:#3d2a06;background:linear-gradient(135deg,#f6c453,#fcd34d 50%,#eab63b);box-shadow:0 12px 30px rgba(201,150,47,.45),inset 0 1px 0 rgba(255,255,255,.55)}
+  .cd-days .num{font:800 46px/1 'Sora','Plus Jakarta Sans',sans-serif;letter-spacing:-1px;display:block;font-variant-numeric:tabular-nums}
+  .cd-days .lbl{font:800 11px/1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:2.6px;text-transform:uppercase;margin-top:6px;opacity:.85}
+  .cd-days.over{background:linear-gradient(135deg,#34d399,#10b981);color:#053d2b}
+  @media(max-width:520px){.cd-days .num{font-size:38px}}
+
+  /* ===== Tabs ===== */
+  .tabs{position:sticky;top:0;z-index:20;background:rgba(246,248,253,.86);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line);padding:9px 16px}
+  .tabs-inner{max-width:860px;margin:0 auto;display:flex;gap:8px;background:#eceff7;padding:5px;border-radius:14px}
+  .tab{flex:1;border:none;background:transparent;color:var(--muted);font:800 13.5px/1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:.2px;padding:12px 10px;border-radius:10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px}
+  .tab.active{background:#fff;color:var(--brand);box-shadow:0 4px 12px rgba(15,23,42,.10)}
+  .tab .ic{font-size:15px}
+
+  main{padding:22px 16px 60px}
+  .view{display:none}
+  .view.show{display:block;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow-md);padding:24px 22px 26px}
+  .card + .card{margin-top:16px}
+  .lead{font-size:13.5px;color:var(--muted);margin:0 0 20px;text-align:center}
+
+  /* ===== Form ===== */
+  .field{margin-bottom:16px}
+  label{display:block;font:800 11.5px/1.2 'Inter',sans-serif;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px}
+  label .req{color:var(--bad)}
+  label .opt{color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0}
+  .step-n{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:800;margin-right:7px;vertical-align:1px}
+  select,input{width:100%;padding:14px 14px;font:600 15px/1.2 "Inter",sans-serif;color:var(--ink);background:#f8fafc;border:1.5px solid var(--line);border-radius:13px;outline:none;transition:border-color .18s,box-shadow .18s,background .18s}
+  select:disabled,input:disabled{opacity:.5;cursor:not-allowed;background:#f1f5f9}
+  select:focus,input:focus{border-color:#a5b4fc;background:#fff;box-shadow:0 0 0 4px rgba(129,140,248,.16)}
+  .field.hide{display:none}
+  .metrics{display:grid;grid-template-columns:1fr;gap:14px;margin-top:4px}
+  .rupee{position:relative}
+  .rupee input{padding-left:34px}
+  .rupee::before{content:"₹";position:absolute;left:15px;top:50%;transform:translateY(-50%);font-weight:800;color:var(--muted);pointer-events:none}
+  .hint{font:500 12px/1.4 'Inter',sans-serif;color:var(--faint);margin-top:6px;min-height:1px}
+  .hint b{color:var(--brand);font-weight:700}
+  .btn{width:100%;margin-top:20px;padding:16px;border:none;border-radius:14px;font:800 15.5px/1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:.3px;color:#fff;cursor:pointer;background:linear-gradient(135deg,#4f46e5,#7c3aed 55%,#a855f7);box-shadow:0 8px 22px rgba(99,102,241,.38);transition:transform .15s,box-shadow .3s,opacity .2s}
+  .btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 12px 30px rgba(99,102,241,.5)}
+  .btn:active:not(:disabled){transform:translateY(0)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+
+  .msg{display:none;margin-bottom:18px;padding:13px 16px;border-radius:12px;font-size:13.5px;font-weight:600;align-items:center;gap:9px}
+  .msg.show{display:flex}
+  .msg.ok{background:rgba(5,150,105,.1);color:#047857;border:1px solid rgba(5,150,105,.2)}
+  .msg.err{background:rgba(220,38,38,.08);color:#b91c1c;border:1px solid rgba(220,38,38,.18)}
+  .msg.info{background:rgba(79,70,229,.08);color:#4338ca;border:1px solid rgba(79,70,229,.16)}
+
+  /* existing-entry banner */
+  .exist{display:none;margin:2px 0 18px;padding:13px 15px;border-radius:14px;background:linear-gradient(135deg,#fff8ea,#fef3d7);border:1px solid #f3dCa0}
+  .exist.show{display:block;animation:fade .3s ease}
+  .exist .t{font:800 12px/1 'Inter',sans-serif;text-transform:uppercase;letter-spacing:.8px;color:var(--gold-ink)}
+  .exist .row{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px}
+  .exist .row div{font-size:12.5px;color:var(--ink2)}
+  .exist .row b{display:block;font:800 16px/1.1 'Sora','Inter',sans-serif;color:var(--ink);margin-top:2px}
+
+  /* success */
+  .done{display:none;text-align:center;padding:12px 6px 4px}
+  .done.show{display:block;animation:pop .45s cubic-bezier(.22,1,.36,1)}
+  @keyframes pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+  .done .tick{width:78px;height:78px;margin:0 auto 15px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:40px;color:#fff;box-shadow:0 12px 30px rgba(5,150,105,.4)}
+  .done h2{font:800 23px/1.2 'Sora','Plus Jakarta Sans',sans-serif;margin:0 0 6px}
+  .done p{color:var(--muted);margin:0 0 8px;font-size:14px}
+  .done .who{font-weight:800;color:var(--ink)}
+  .done .rankchip{display:inline-flex;align-items:center;gap:8px;margin:8px 0 20px;padding:9px 16px;border-radius:999px;font:800 13px/1 'Plus Jakarta Sans','Inter',sans-serif;background:linear-gradient(135deg,#eef2ff,#faf5ff);color:var(--brand);border:1px solid #e3e6fb}
+  .done .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .link-btn{background:#fff;border:1.5px solid var(--line);color:var(--brand);border-radius:12px;padding:12px 20px;font:800 14px/1 'Plus Jakarta Sans','Inter',sans-serif;cursor:pointer;transition:background .15s}
+  .link-btn:hover{background:#f8fafc}
+  .link-btn.solid{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none}
+
+  /* ===== Leaderboard ===== */
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 16px;box-shadow:var(--shadow-md);position:relative;overflow:hidden}
+  .stat::after{content:"";position:absolute;right:-18px;top:-18px;width:60px;height:60px;border-radius:50%;opacity:.12}
+  .stat.p::after{background:#4f46e5}.stat.s::after{background:#c9962f}.stat.n::after{background:#059669}.stat.u::after{background:#0ea5e9}
+  .stat .k{font:700 10.5px/1 'Inter',sans-serif;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted)}
+  .stat .v{font:800 22px/1.1 'Sora','Plus Jakarta Sans',sans-serif;margin-top:8px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .stat .v small{font-size:13px;font-weight:700;color:var(--muted)}
+  @media(min-width:560px){.stats{grid-template-columns:repeat(4,1fr)}}
+
+  .lb-controls{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .search{flex:1 1 200px;position:relative}
+  .search input{padding-left:38px;font-weight:500}
+  .search::before{content:"🔍";position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.6}
+  .sortsel{flex:0 0 auto}
+  .sortsel select{width:auto;padding:12px 34px 12px 14px;font-size:13.5px;font-weight:700}
+  .btn-refresh{flex:0 0 auto;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:12px 15px;cursor:pointer;font-size:16px;line-height:1;transition:transform .3s}
+  .btn-refresh:active{transform:rotate(180deg)}
+
+  .lb-list{display:flex;flex-direction:column;gap:10px}
+  .lb-row{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:0 4px 14px rgba(15,23,42,.05);transition:transform .15s,box-shadow .2s}
+  .lb-row:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+  .lb-rank{flex:0 0 auto;width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:800 16px/1 'Sora','Inter',sans-serif;background:#f1f5f9;color:var(--muted);font-variant-numeric:tabular-nums}
+  .lb-row.top1 .lb-rank{background:linear-gradient(135deg,#f6c453,#e8a91e);color:#5a3d05;box-shadow:0 6px 16px rgba(201,150,47,.4)}
+  .lb-row.top2 .lb-rank{background:linear-gradient(135deg,#dfe6ee,#b9c4d1);color:#42505f}
+  .lb-row.top3 .lb-rank{background:linear-gradient(135deg,#f0c39a,#d99a68);color:#6a3b18}
+  .lb-row.top1{border-color:#f0d79a;background:linear-gradient(180deg,#fffdf6,#fff)}
+  .lb-row.zero{opacity:.72;box-shadow:none}
+  .lb-row.zero .lb-prem{color:var(--faint)}
+  .lb-row.zero .lb-rank{font-size:13px}
+  .lb-main{flex:1 1 auto;min-width:0}
+  .lb-name{font:800 15px/1.25 'Plus Jakarta Sans','Inter',sans-serif;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lb-sub{font:600 11.5px/1.35 'Inter',sans-serif;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lb-sub .cat{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:6px;background:#eef2ff;color:#4f46e5;margin-right:6px;vertical-align:1px}
+  .lb-sub .cat.gds{background:#ecfdf5;color:#059669}
+  .lb-metrics{flex:0 0 auto;text-align:right}
+  .lb-prem{font:800 17px/1 'Sora','Plus Jakarta Sans',sans-serif;color:var(--brand);font-variant-numeric:tabular-nums}
+  .lb-mini{font:600 11px/1.3 'Inter',sans-serif;color:var(--muted);margin-top:4px;white-space:nowrap}
+  .lb-mini b{color:var(--ink2);font-weight:800}
+  .lb-empty{text-align:center;padding:46px 20px;color:var(--muted)}
+  .lb-empty .em{font-size:40px;margin-bottom:10px}
+  .lb-empty h3{font:800 17px/1.3 'Plus Jakarta Sans','Inter',sans-serif;color:var(--ink2);margin:0 0 6px}
+  .skel{height:70px;border-radius:16px;background:linear-gradient(100deg,#eef1f7 30%,#f6f8fc 50%,#eef1f7 70%);background-size:200% 100%;animation:sh 1.2s infinite}
+  @keyframes sh{to{background-position:-200% 0}}
+  .lb-updated{text-align:center;font-size:11.5px;color:var(--faint);margin-top:16px}
+
+  .foot{margin:26px auto 0;text-align:center;font-size:11.5px;color:var(--muted);padding:0 18px 8px}
+  .tricolour-mini{display:inline-block;width:34px;height:3px;border-radius:3px;vertical-align:middle;margin:0 6px;background:linear-gradient(90deg,#FF9933 0 33%,#cfcfcf 33% 66%,#138808 66%)}
+  .foot .credit{margin-top:7px;font-size:12px;font-weight:600;background:linear-gradient(135deg,#4f46e5,#7c3aed,#ec4899);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .foot .credit b{font-weight:800}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-grain"></div>
+  <div class="wrap">
+    <div class="header-inner">
+      <div class="gov-band">
+        <img class="gov-crest" src="/assets/app-logo.jpg" alt="Government of India — Karur Sub Division" />
+        <div class="gov-titles">
+          <div class="gov-l1">Government of India</div>
+          <div class="gov-l2">Department of Posts</div>
+          <div class="gov-l3">O/o the Asst. Superintendent of Post Offices<br><b>Karur Sub Division, Karur &mdash; 639001</b></div>
+          <div class="gov-underline"></div>
+        </div>
+        <img class="gov-crest gov-post" src="/assets/india-post-logo.png" alt="India Post" />
+      </div>
+    </div>
+
+    <div class="hero">
+      <span class="hero-badge">&#9733; Mega Mela 2026 &#9733;</span>
+      <h1><span class="g">PLI &middot; RPLI</span> Premium Procurement</h1>
+      <div class="tag">Log your Mega Mela procurement and watch the Sub Division climb the leaderboard in real time.</div>
+    </div>
+
+    <div class="countdown">
+      <div class="cd-date">
+        <div class="k">&#128197; Mega Mela On</div>
+        <div class="v">10 September 2026<small>Wednesday &middot; across all offices</small></div>
+      </div>
+      <div class="cd-days" id="cdDays">
+        <span class="num" id="cdNum">—</span>
+        <span class="lbl" id="cdLbl">Days Left</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tabs-inner">
+    <button class="tab active" id="tabSubmit"><span class="ic">&#9998;</span> Submit / Update</button>
+    <button class="tab" id="tabBoard"><span class="ic">&#127942;</span> Live Leaderboard</button>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- ============ SUBMIT VIEW ============ -->
+  <section class="view show" id="viewSubmit">
+    <div class="card">
+      <p class="lead" id="lead">Select your office and name, then enter your procurement. You can update your figures any number of times before the Mela.</p>
+
+      <div class="msg" id="msg"></div>
+
+      <!-- FORM -->
+      <div id="form">
+        <div class="field">
+          <label for="fOffice"><span class="step-n">1</span>Your Office <span class="req">*</span></label>
+          <select id="fOffice" disabled><option value="">Loading offices…</option></select>
+        </div>
+
+        <div class="field hide" id="boWrap">
+          <label for="fBo"><span class="step-n">2</span>Branch / Sub Office <span class="req">*</span></label>
+          <select id="fBo" disabled><option value="">— Select branch —</option></select>
+        </div>
+
+        <div class="field">
+          <label for="fEmp"><span class="step-n" id="stepEmp">3</span>Your Name <span class="opt">(Departmental &amp; GDS)</span> <span class="req">*</span></label>
+          <select id="fEmp" disabled><option value="">— Select your office first —</option></select>
+        </div>
+
+        <div class="exist" id="exist">
+          <div class="t">&#9998; You have already logged — editing your entry</div>
+          <div class="row">
+            <div>Policies<b id="exN">—</b></div>
+            <div>Sum Assured<b id="exS">—</b></div>
+            <div>Premium<b id="exP">—</b></div>
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div class="field" style="margin:0">
+            <label for="fPolicies"><span class="step-n" id="stepMetric">4</span>No. of Policies <span class="req">*</span></label>
+            <input id="fPolicies" type="text" inputmode="numeric" placeholder="e.g. 12" disabled autocomplete="off" />
+          </div>
+          <div class="field" style="margin:0">
+            <label for="fSum">Total Sum Assured <span class="req">*</span></label>
+            <div class="rupee"><input id="fSum" type="text" inputmode="numeric" placeholder="e.g. 2500000" disabled autocomplete="off" /></div>
+            <div class="hint" id="hintSum"></div>
+          </div>
+          <div class="field" style="margin:0">
+            <label for="fPrem">Total Premium Procured <span class="req">*</span></label>
+            <div class="rupee"><input id="fPrem" type="text" inputmode="numeric" placeholder="e.g. 180000" disabled autocomplete="off" /></div>
+            <div class="hint" id="hintPrem"></div>
+          </div>
+        </div>
+
+        <button class="btn" id="btnSave" disabled>Save My Procurement</button>
+      </div>
+
+      <!-- SUCCESS -->
+      <div class="done" id="done">
+        <div class="tick">&#10003;</div>
+        <h2>Procurement Saved</h2>
+        <p>Well done, <span class="who" id="doneName">—</span>.<br>Your figures are now live on the leaderboard.</p>
+        <div class="rankchip" id="doneRank">&#127942; Calculating your rank…</div>
+        <div class="actions">
+          <button class="link-btn solid" id="btnViewBoard">View Leaderboard</button>
+          <button class="link-btn" id="btnAnother">Update / Add another</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LEADERBOARD VIEW ============ -->
+  <section class="view" id="viewBoard">
+    <div class="stats" id="stats">
+      <div class="stat p"><div class="k">Participants</div><div class="v" id="stP">—</div></div>
+      <div class="stat n"><div class="k">Policies</div><div class="v" id="stN">—</div></div>
+      <div class="stat s"><div class="k">Sum Assured</div><div class="v" id="stS">—</div></div>
+      <div class="stat u"><div class="k">Premium</div><div class="v" id="stU">—</div></div>
+    </div>
+
+    <div class="lb-controls">
+      <div class="search"><input id="lbSearch" type="text" placeholder="Search name or office…" autocomplete="off" /></div>
+      <div class="sortsel"><select id="lbSort">
+        <option value="premium">Sort: Premium</option>
+        <option value="policies">Sort: Policies</option>
+        <option value="sum">Sort: Sum Assured</option>
+      </select></div>
+      <button class="btn-refresh" id="lbRefresh" title="Refresh">&#8635;</button>
+    </div>
+
+    <div class="lb-list" id="lbList"></div>
+    <div class="lb-updated" id="lbUpdated"></div>
+  </section>
+
+  <div class="foot">
+    <span class="tricolour-mini"></span> Department of Posts, Karur Sub Division <span class="tricolour-mini"></span>
+    <div>PLI / RPLI Mega Mela &middot; 10 September 2026</div>
+    <div class="credit">Developed by <b>Arun Selvaraj</b>, Karur Division</div>
+  </div>
+</main>
+
+<script src="/leave-orders/supabase-sync.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
+<script>
+(function(){
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const cln = v => (v==null?'':String(v)).trim();
+  const MELA = new Date(2026, 8, 10);           // 10 Sep 2026 (month is 0-based)
+
+  // ---------- Countdown ----------
+  (function tickDays(){
+    const today = new Date(); today.setHours(0,0,0,0);
+    const target = new Date(MELA); target.setHours(0,0,0,0);
+    const days = Math.round((target - today) / 86400000);
+    const box = $('cdDays');
+    if(days > 0){ $('cdNum').textContent = days; $('cdLbl').textContent = days===1?'Day Left':'Days Left'; }
+    else if(days === 0){ $('cdNum').textContent = '0'; $('cdLbl').textContent = 'It’s Today!'; box.classList.add('over'); }
+    else { $('cdNum').textContent = '✓'; $('cdLbl').textContent = 'Mela Concluded'; box.classList.add('over'); }
+  })();
+
+  // ---------- Number helpers (Indian) ----------
+  const inr = new Intl.NumberFormat('en-IN');
+  const digits = s => cln(s).replace(/[^0-9]/g,'');
+  const parseNum = s => { const d = digits(s); return d ? parseInt(d,10) : 0; };
+  const fmtGroup = n => inr.format(n);
+  function fmtRupee(n){ return '₹' + inr.format(Math.round(n||0)); }
+  function fmtCompact(n){
+    n = Math.round(n||0);
+    if(n >= 10000000) return '₹' + (n/10000000).toFixed(n%10000000?2:0).replace(/\.00$/,'') + ' Cr';
+    if(n >= 100000)   return '₹' + (n/100000).toFixed(n%100000?2:0).replace(/\.00$/,'') + ' L';
+    if(n >= 1000)     return '₹' + (n/1000).toFixed(n%1000?1:0).replace(/\.0$/,'') + ' K';
+    return '₹' + inr.format(n);
+  }
+  function words(n){ // short Indian words for hint under amount inputs
+    n = parseNum(n); if(!n) return '';
+    if(n >= 10000000) return (n/10000000).toFixed(2).replace(/\.?0+$/,'') + ' Crore';
+    if(n >= 100000)   return (n/100000).toFixed(2).replace(/\.?0+$/,'') + ' Lakh';
+    if(n >= 1000)     return (n/1000).toFixed(1).replace(/\.0$/,'') + ' Thousand';
+    return inr.format(n);
+  }
+
+  // ---------- Data stores ----------
+  let PARENTS = [];                 // [{id,name,type,group}]  HO + SOs
+  let BOS_BY_SO = new Map();        // soName(lower) -> [{id,name}]
+  let STAFF_BY_OFFICE = new Map();  // officeId -> [{id,name,desig,cat}]
+  let OFFICE_INFO = new Map();      // officeId -> {name,parent,bo,type}
+  let ROSTER = [];                  // every HO/SO/BO staff member (for the full board)
+  let ENTRIES = new Map();          // employee_id -> procurement row
+  let ready = false;
+
+  const isProcOffice = t => ['HPO','HO','SO','SPO','BPO','BO'].includes(cln(t).toUpperCase());
+
+  const els = {
+    office:$('fOffice'), boWrap:$('boWrap'), bo:$('fBo'), emp:$('fEmp'),
+    pol:$('fPolicies'), sum:$('fSum'), prem:$('fPrem'), save:$('btnSave'),
+    msg:$('msg'), form:$('form'), done:$('done'), exist:$('exist')
+  };
+
+  function showMsg(t,k){ els.msg.className='msg show '+k; els.msg.textContent=t; }
+  function hideMsg(){ els.msg.className='msg'; }
+  function reset(sel,ph){ sel.innerHTML = '<option value="">'+ph+'</option>'; }
+
+  function groupOf(type){
+    const t = cln(type).toUpperCase();
+    if(t==='HPO'||t==='HO') return 'Head Office';
+    if(t==='SO'||t==='SPO') return 'Sub Offices';
+    return 'Divisional / Administrative Offices';
+  }
+  const isSO = type => { const t=cln(type).toUpperCase(); return t==='SO'||t==='SPO'; };
+  const normName = s => cln(s).toLowerCase().replace(/\s+/g,' ');
+
+  async function loadData(){
+    showMsg('Loading offices and staff…','info');
+    try{
+      await SB.init();
+      if(!SB.ready) throw new Error('Cannot reach the server. Please check your internet connection.');
+      try{ await KarurScope.load(); }catch(e){}
+
+      const [offDs, dsDs, gdsDs] = await Promise.all([
+        SB.getDataset('OFFICES'), SB.getDataset('DS'), SB.getDataset('GDS')
+      ]);
+
+      const offices = KarurScope.filterOffices((offDs && offDs.data) || []).filter(o=>cln(o.office_name));
+
+      // parents = every non-branch office; BOs grouped under their S.O by name.
+      // OFFICE_INFO resolves any office id -> its display name, parent S.O/H.O and B.O.
+      PARENTS = []; BOS_BY_SO = new Map(); OFFICE_INFO = new Map();
+      for(const o of offices){
+        const type = cln(o.office_type).toUpperCase();
+        const id = cln(o.office_id), nm = cln(o.office_name);
+        if(type==='BPO'||type==='BO'){
+          const so = normName(o.so_name);
+          if(!BOS_BY_SO.has(so)) BOS_BY_SO.set(so,[]);
+          BOS_BY_SO.get(so).push({ id, name:nm });
+          OFFICE_INFO.set(id, { name:nm, parent:cln(o.so_name)||nm, bo:nm, type });
+        } else {
+          PARENTS.push({ id, name:nm, type, group:groupOf(type) });
+          OFFICE_INFO.set(id, { name:nm, parent:nm, bo:'', type });
+        }
+      }
+      for(const list of BOS_BY_SO.values()) list.sort((a,b)=>a.name.localeCompare(b.name));
+
+      // staff grouped by their actual office id
+      const staff = [...(((dsDs&&dsDs.data)||[])), ...(((gdsDs&&gdsDs.data)||[]))]
+        .filter(e => KarurScope.inScope(e));
+      STAFF_BY_OFFICE = new Map();
+      for(const e of staff){
+        const oid = cln(e.Office_id);
+        const rec = { id:cln(e.Employee_id), name:cln(e.Employee_name), desig:cln(e.Post_desc), cat: e._type==='GDS'?'GDS':'DS' };
+        if(!rec.id || !rec.name) continue;
+        if(!STAFF_BY_OFFICE.has(oid)) STAFF_BY_OFFICE.set(oid,[]);
+        STAFF_BY_OFFICE.get(oid).push(rec);
+      }
+      for(const list of STAFF_BY_OFFICE.values())
+        list.sort((a,b)=>a.name.localeCompare(b.name));
+
+      // full roster (HO / SO / BO staff) — everyone appears on the leaderboard
+      ROSTER = [];
+      for(const e of staff){
+        const oid = cln(e.Office_id);
+        const info = OFFICE_INFO.get(oid);
+        if(!info || !isProcOffice(info.type)) continue;   // skip admin-office staff
+        const id = cln(e.Employee_id), name = cln(e.Employee_name);
+        if(!id || !name) continue;
+        ROSTER.push({ id, name, desig:cln(e.Post_desc), cat: e._type==='GDS'?'GDS':'DS',
+          office_name:info.name, parent_office:info.parent, bo_name:info.bo });
+      }
+
+      await loadEntries();
+
+      buildOfficeSelect();
+      ready = true;
+      hideMsg();
+      els.office.disabled = false;
+    }catch(err){
+      showMsg(err.message || 'Could not load data. Please try again later.','err');
+    }
+  }
+
+  async function loadEntries(){
+    try{
+      const rows = await SB.select('app_pli', 'select=*&order=premium.desc');
+      ENTRIES = new Map();
+      for(const r of rows) ENTRIES.set(cln(r.employee_id), r);
+    }catch(e){ /* table may be empty / not migrated yet */ ENTRIES = new Map(); }
+  }
+
+  function buildOfficeSelect(){
+    // Only Head Office + Sub Offices are shown; divisional/administrative
+    // units (SDO, BPC, PDN, LPC, WCTC) are excluded from procurement entry.
+    const order = ['Head Office','Sub Offices'];
+    reset(els.office, '— Select your office —');
+    for(const g of order){
+      const inGroup = PARENTS.filter(p=>p.group===g).sort((a,b)=>a.name.localeCompare(b.name));
+      if(!inGroup.length) continue;
+      const og = document.createElement('optgroup'); og.label = g;
+      for(const p of inGroup){
+        const opt = document.createElement('option');
+        opt.value = p.id; opt.textContent = p.name;
+        opt.dataset.type = p.type; opt.dataset.name = p.name;
+        og.appendChild(opt);
+      }
+      els.office.appendChild(og);
+    }
+  }
+
+  // ----- Office change -----
+  els.office.addEventListener('change', ()=>{
+    hideMsg(); clearMetrics(); hideExist();
+    reset(els.emp,'— Select your name —'); els.emp.disabled = true;
+    const opt = els.office.options[els.office.selectedIndex];
+    const id = els.office.value;
+    const type = opt ? opt.dataset.type : '';
+    const name = opt ? opt.dataset.name : '';
+    if(!id){ hideBo(); return; }
+
+    const bos = isSO(type) ? (BOS_BY_SO.get(normName(name)) || []) : [];
+    if(isSO(type) && bos.length){
+      // show BO step: main office (S.O) + branches
+      reset(els.bo,'— Select branch —');
+      const optMain = document.createElement('option');
+      optMain.value = 'MAIN:'+id; optMain.textContent = name + '  (A.O)';
+      els.bo.appendChild(optMain);
+      for(const b of bos){
+        const o = document.createElement('option');
+        o.value = b.id; o.textContent = b.name;
+        els.bo.appendChild(o);
+      }
+      els.bo.disabled = false;
+      showBo();
+      $('stepEmp').textContent='3'; $('stepMetric').textContent='4';
+    } else {
+      hideBo();
+      $('stepEmp').textContent='2'; $('stepMetric').textContent='3';
+      fillStaff(id);
+    }
+  });
+
+  // ----- BO change -----
+  els.bo.addEventListener('change', ()=>{
+    hideMsg(); clearMetrics(); hideExist();
+    const v = els.bo.value;
+    if(!v){ reset(els.emp,'— Select branch first —'); els.emp.disabled=true; return; }
+    const oid = v.indexOf('MAIN:')===0 ? v.slice(5) : v;
+    fillStaff(oid);
+  });
+
+  function fillStaff(officeId){
+    const list = STAFF_BY_OFFICE.get(officeId) || [];
+    reset(els.emp, list.length ? '— Select your name —' : 'No staff listed for this office');
+    for(const e of list){
+      const opt = document.createElement('option');
+      opt.value = e.id;
+      opt.textContent = e.name + '  ·  ' + (e.desig || (e.cat==='GDS'?'GDS':'Departmental'));
+      opt.dataset.cat = e.cat; opt.dataset.name = e.name; opt.dataset.desig = e.desig;
+      els.emp.appendChild(opt);
+    }
+    els.emp.disabled = list.length===0;
+  }
+
+  // ----- Employee change: prefill existing -----
+  els.emp.addEventListener('change', ()=>{
+    hideMsg();
+    const id = els.emp.value;
+    if(!id){ clearMetrics(); hideExist(); return; }
+    els.pol.disabled=false; els.sum.disabled=false; els.prem.disabled=false; els.save.disabled=false;
+    const ex = ENTRIES.get(id);
+    if(ex){
+      els.pol.value  = fmtGroup(parseInt(ex.num_policies||0,10));
+      els.sum.value  = String(Math.round(parseFloat(ex.sum_assured||0)));
+      els.prem.value = String(Math.round(parseFloat(ex.premium||0)));
+      $('exN').textContent = inr.format(parseInt(ex.num_policies||0,10));
+      $('exS').textContent = fmtCompact(parseFloat(ex.sum_assured||0));
+      $('exP').textContent = fmtCompact(parseFloat(ex.premium||0));
+      showExist();
+      els.save.textContent = 'Update My Procurement';
+      updateHints();
+    } else {
+      // new entry — clear the values but keep the fields enabled for input
+      els.pol.value=''; els.sum.value=''; els.prem.value='';
+      $('hintSum').textContent=''; $('hintPrem').textContent='';
+      hideExist();
+      els.save.textContent = 'Save My Procurement';
+      els.pol.focus();
+    }
+  });
+
+  function clearMetrics(){
+    els.pol.value=''; els.sum.value=''; els.prem.value='';
+    els.pol.disabled=true; els.sum.disabled=true; els.prem.disabled=true; els.save.disabled=true;
+    $('hintSum').textContent=''; $('hintPrem').textContent='';
+  }
+  function showExist(){ els.exist.classList.add('show'); }
+  function hideExist(){ els.exist.classList.remove('show'); }
+  function showBo(){ els.boWrap.classList.remove('hide'); }
+  function hideBo(){ els.boWrap.classList.add('hide'); els.bo.disabled=true; reset(els.bo,'— Select branch —'); }
+
+  // ----- live grouping + word hints on amount fields -----
+  function liveGroup(inp){
+    const pos = inp.selectionStart, before = inp.value.length;
+    const d = digits(inp.value);
+    inp.value = d ? fmtGroup(parseInt(d,10)) : '';
+    const after = inp.value.length;
+    try{ inp.setSelectionRange(pos + (after-before), pos + (after-before)); }catch(e){}
+  }
+  function updateHints(){
+    const w1 = words(els.sum.value); $('hintSum').textContent = w1 ? '₹ '+w1 : '';
+    const w2 = words(els.prem.value); $('hintPrem').textContent = w2 ? '₹ '+w2 : '';
+  }
+  els.pol.addEventListener('input', ()=>{ els.pol.value = digits(els.pol.value) ? fmtGroup(parseNum(els.pol.value)) : ''; });
+  // Sum Assured / Premium: digits only, no comma grouping (word hint shown below)
+  [els.sum, els.prem].forEach(inp => inp.addEventListener('input', ()=>{ inp.value = digits(inp.value); updateHints(); }));
+
+  // ----- Save -----
+  els.save.addEventListener('click', async ()=>{
+    hideMsg();
+    const id = els.emp.value;
+    if(!id){ showMsg('Please select your name.','err'); return; }
+    const empOpt = els.emp.options[els.emp.selectedIndex];
+    const name = empOpt.dataset.name || empOpt.textContent.split('  ·  ')[0];
+    const desig = empOpt.dataset.desig || '';
+    const cat = empOpt.dataset.cat || 'DS';
+
+    const nPol = parseNum(els.pol.value);
+    const nSum = parseNum(els.sum.value);
+    const nPrem = parseNum(els.prem.value);
+    if(nPol <= 0){ showMsg('Please enter the number of policies (at least 1).','err'); els.pol.focus(); return; }
+    if(nSum <= 0){ showMsg('Please enter the total sum assured.','err'); els.sum.focus(); return; }
+    if(nPrem <= 0){ showMsg('Please enter the total premium procured.','err'); els.prem.focus(); return; }
+    if(nPrem > nSum){ showMsg('Premium is greater than the sum assured — please re-check the figures.','err'); els.prem.focus(); return; }
+
+    // resolve office context
+    const offOpt = els.office.options[els.office.selectedIndex];
+    const parentName = offOpt.dataset.name || '';
+    let officeId, officeName, boName = '';
+    if(!els.boWrap.classList.contains('hide') && els.bo.value){
+      const bv = els.bo.value;
+      if(bv.indexOf('MAIN:')===0){ officeId = bv.slice(5); officeName = parentName; }
+      else { officeId = bv; officeName = els.bo.options[els.bo.selectedIndex].textContent; boName = officeName; }
+    } else { officeId = els.office.value; officeName = parentName; }
+
+    els.save.disabled = true; const oldTxt = els.save.textContent; els.save.textContent = 'Saving…';
+    try{
+      const row = {
+        employee_id: id, employee_name: name, designation: desig, category: cat,
+        office_id: officeId, office_name: officeName, parent_office: parentName,
+        bo_name: boName, num_policies: nPol, sum_assured: nSum, premium: nPrem,
+        updated_by: 'self-service', updated_at_ms: Date.now()
+      };
+      await SB.upsert('app_pli', row);
+      ENTRIES.set(id, row);
+
+      // rank chip
+      const rank = rankOf(id);
+      $('doneName').textContent = name;
+      const totalStaff = ROSTER.length || ENTRIES.size;
+      $('doneRank').innerHTML = '&#127942; Rank <b style="margin:0 4px">#'+rank+'</b> of '+totalStaff+' staff &middot; '+fmtCompact(nPrem)+' premium';
+      els.form.style.display='none'; hideMsg();
+      els.done.classList.add('show');
+      window.scrollTo({top:0,behavior:'smooth'});
+    }catch(err){
+      let m = err.message||'please try again.';
+      if(/app_pli/.test(m) && /(404|does not exist|schema cache)/i.test(m)) m = 'The procurement table is not set up yet. Please ask the administrator to run migration_v17.';
+      showMsg('Could not save: '+m,'err');
+      els.save.disabled=false; els.save.textContent=oldTxt;
+    }
+  });
+
+  function rankOf(id){
+    const arr = combinedRows().sort((a,b)=> b.prem-a.prem || a.name.localeCompare(b.name));
+    return arr.findIndex(r=>cln(r.id)===cln(id)) + 1;
+  }
+
+  // ----- success actions -----
+  $('btnAnother').addEventListener('click', ()=>{
+    els.done.classList.remove('show'); els.form.style.display='';
+    els.office.value=''; hideBo();
+    reset(els.emp,'— Select your office first —'); els.emp.disabled=true;
+    clearMetrics(); hideExist();
+    els.save.textContent='Save My Procurement';
+    $('stepEmp').textContent='2'; $('stepMetric').textContent='3';
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+  $('btnViewBoard').addEventListener('click', ()=>{ switchTab('board'); });
+
+  // ========== Tabs ==========
+  let boardTimer = null;
+  function startPoll(){
+    stopPoll();
+    boardTimer = setInterval(async ()=>{
+      if(!$('viewBoard').classList.contains('show')) return;
+      await loadEntries(); renderBoard(); stampUpdated();
+    }, 20000);   // live auto-refresh every 20s while the board is open
+  }
+  function stopPoll(){ if(boardTimer){ clearInterval(boardTimer); boardTimer=null; } }
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stopPoll(); else if($('viewBoard').classList.contains('show')) startPoll(); });
+
+  function switchTab(which){
+    const sub = which==='submit';
+    $('tabSubmit').classList.toggle('active', sub);
+    $('tabBoard').classList.toggle('active', !sub);
+    $('viewSubmit').classList.toggle('show', sub);
+    $('viewBoard').classList.toggle('show', !sub);
+    window.scrollTo({top:0,behavior:'smooth'});
+    if(!sub){ refreshBoard(); startPoll(); } else { stopPoll(); }
+  }
+  $('tabSubmit').addEventListener('click', ()=>switchTab('submit'));
+  $('tabBoard').addEventListener('click', ()=>switchTab('board'));
+
+  // ========== Leaderboard ==========
+  let lbSort = 'premium', lbSearch = '';
+  $('lbSort').addEventListener('change', e=>{ lbSort = e.target.value; renderBoard(); });
+  $('lbSearch').addEventListener('input', e=>{ lbSearch = cln(e.target.value).toLowerCase(); renderBoard(); });
+  $('lbRefresh').addEventListener('click', ()=>refreshBoard());
+
+  function stampUpdated(){
+    const now = new Date();
+    $('lbUpdated').textContent = 'Live from the Karur SDO cloud · auto-refreshes every 20s · updated ' +
+      now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  }
+  async function refreshBoard(){
+    if(!ROSTER.length) $('lbList').innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>';
+    await loadEntries();
+    renderBoard();
+    stampUpdated();
+  }
+
+  // Merge the full roster with logged entries -> one row per staff member.
+  function combinedRows(){
+    const byId = new Map();
+    for(const m of ROSTER){
+      byId.set(m.id, { id:m.id, name:m.name, desig:m.desig, cat:m.cat,
+        office_name:m.office_name, parent_office:m.parent_office, bo_name:m.bo_name,
+        policies:0, sum:0, prem:0, logged:false });
+    }
+    for(const [id,r] of ENTRIES){
+      let row = byId.get(id);
+      if(!row){ // logged but not in roster (safety) — build from the stored entry
+        row = { id, name:cln(r.employee_name), desig:cln(r.designation), cat:cln(r.category)||'DS',
+          office_name:cln(r.office_name), parent_office:cln(r.parent_office), bo_name:cln(r.bo_name),
+          policies:0, sum:0, prem:0, logged:false };
+        byId.set(id, row);
+      }
+      row.policies = parseInt(r.num_policies||0,10);
+      row.sum = parseFloat(r.sum_assured||0);
+      row.prem = parseFloat(r.premium||0);
+      row.logged = true;
+    }
+    return [...byId.values()];
+  }
+
+  function renderBoard(){
+    const all = combinedRows();
+    const logged = all.filter(r=>r.logged);
+    // headline stats reflect actual procurement so far
+    $('stP').textContent = inr.format(logged.length);
+    $('stN').textContent = inr.format(all.reduce((s,r)=>s+r.policies,0));
+    $('stS').innerHTML = fmtCompact(all.reduce((s,r)=>s+r.sum,0));
+    $('stU').innerHTML = fmtCompact(all.reduce((s,r)=>s+r.prem,0));
+
+    const key = lbSort==='policies' ? (r=>r.policies)
+              : lbSort==='sum' ? (r=>r.sum)
+              : (r=>r.prem);
+    // auto-sorted highest -> lowest; zeros fall to the bottom, alphabetical
+    let rows = all.slice().sort((a,b)=> key(b)-key(a) || b.prem-a.prem || a.name.localeCompare(b.name));
+    rows = rows.map((r,i)=>({r,rank:i+1}));
+    if(lbSearch){
+      rows = rows.filter(({r})=>
+        r.name.toLowerCase().includes(lbSearch) ||
+        cln(r.parent_office).toLowerCase().includes(lbSearch) ||
+        cln(r.office_name).toLowerCase().includes(lbSearch));
+    }
+
+    const list = $('lbList');
+    if(!all.length){
+      list.innerHTML = '<div class="lb-empty"><div class="em">&#127775;</div><h3>Loading the roster…</h3><div>Staff names will appear here shortly.</div></div>';
+      return;
+    }
+    if(!rows.length){ list.innerHTML = '<div class="lb-empty"><div class="em">&#128269;</div><h3>No matches</h3><div>Try a different name or office.</div></div>'; return; }
+
+    list.innerHTML = rows.map(({r,rank})=>{
+      const scored = key(r) > 0;                       // medals/highlight only for real procurement
+      const top = (scored && rank<=3) ? ' top'+rank : '';
+      const zero = r.prem<=0 && r.policies<=0 ? ' zero' : '';
+      const medal = (scored && rank===1)?'&#129351;':(scored && rank===2)?'&#129352;':(scored && rank===3)?'&#129353;':rank;
+      const off = cln(r.bo_name) || cln(r.office_name) || cln(r.parent_office);
+      const catCls = r.cat==='GDS' ? 'gds' : '';
+      const catTxt = r.cat==='GDS' ? 'GDS' : 'DEPT';
+      return '<div class="lb-row'+top+zero+'">'
+        + '<div class="lb-rank">'+medal+'</div>'
+        + '<div class="lb-main">'
+          + '<div class="lb-name">'+esc(r.name)+'</div>'
+          + '<div class="lb-sub"><span class="cat '+catCls+'">'+catTxt+'</span>'+esc(off)+(r.desig?' · '+esc(r.desig):'')+'</div>'
+        + '</div>'
+        + '<div class="lb-metrics">'
+          + '<div class="lb-prem">'+fmtCompact(r.prem)+'</div>'
+          + '<div class="lb-mini"><b>'+inr.format(r.policies)+'</b> pol · <b>'+fmtCompact(r.sum)+'</b> SA</div>'
+        + '</div>'
+      + '</div>';
+    }).join('');
+  }
+  function esc(s){ return cln(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  // Enter-to-advance on amount fields
+  els.prem.addEventListener('keydown', ev=>{ if(ev.key==='Enter' && !els.save.disabled){ ev.preventDefault(); els.save.click(); } });
+
+  loadData();
+})();
+</script>
+</body>
+</html>
