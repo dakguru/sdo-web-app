@@ -23,14 +23,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -62,15 +67,15 @@ import com.karursdo.data.repo.EventsRepository
 import com.karursdo.data.repo.SessionManager
 import com.karursdo.data.repo.UserDataRepository
 import com.karursdo.data.sync.SyncEngine
+import androidx.compose.ui.graphics.Brush
 import com.karursdo.ui.components.EmptyState
 import com.karursdo.ui.components.FieldRow
-import com.karursdo.ui.components.InitialsAvatar
+import com.karursdo.ui.components.initialsOf
 import com.karursdo.ui.components.KsdSearchField
 import com.karursdo.ui.components.Pill
 import com.karursdo.ui.components.PressableCard
 import com.karursdo.ui.components.SectionCard
 import com.karursdo.ui.components.StatCard
-import com.karursdo.ui.components.StatusChip
 import com.karursdo.ui.components.TypePill
 import com.karursdo.ui.theme.Brand
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -508,9 +513,10 @@ fun OfficeMasterDetailScreen(
 }
 
 /**
- * A rich staff card for the Office Management screen: avatar, full details, an exit banner when
- * the person has exited/retired, and a prominent round call button that opens the dialer prefilled.
- * Tapping the card opens the complete staff profile.
+ * A clean, colourful staff card for Office Management: a type-tinted gradient, a gradient initials
+ * avatar, the staff name · Employee ID · designation · DS/GDS badge, and a prominent round call
+ * button that opens the dialer prefilled. Tapping the card opens the full staff profile; Admin/ASP/PA
+ * users get an overflow menu to record exit / retirement details.
  */
 @Composable
 private fun StaffCard(
@@ -522,89 +528,102 @@ private fun StaffCard(
     onCall: (String) -> Unit,
     onExit: () -> Unit
 ) {
-    PressableCard(onClick = onOpen) {
-        Column(Modifier.fillMaxWidth().padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                InitialsAvatar(e.name, size = 46)
-                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                    Text(e.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        e.designation ?: "—",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis
+    val gds = e.type.equals("GDS", ignoreCase = true)
+    val accent = if (gds) Brand.Emerald else Brand.Indigo
+    val exited = exit?.exitDate != null || exit?.exitReason != null
+    var menuOpen by remember { mutableStateOf(false) }
+
+    Surface(
+        onClick = onOpen,
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 2.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.22f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .background(
+                    Brush.horizontalGradient(
+                        0f to accent.copy(alpha = 0.14f),
+                        0.6f to accent.copy(alpha = 0.03f),
+                        1f to Color.Transparent
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TypePill(e.type)
-                        Spacer(Modifier.width(6.dp))
-                        StatusChip(exit?.status ?: e.status)
-                    }
-                }
-                // Round call button — opens the dialer with the number filled in.
-                if (!phone.isNullOrBlank()) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(Brand.Emerald)
-                            .clickable { onCall(phone) }
-                    ) {
-                        Icon(Icons.Filled.Call, contentDescription = "Call ${e.name}", tint = Color.White, modifier = Modifier.size(22.dp))
+                )
+                .padding(horizontal = 12.dp, vertical = 12.dp)
+        ) {
+            // Gradient initials avatar, tinted to the staff type.
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(Brush.linearGradient(listOf(accent, accent.copy(alpha = 0.72f))))
+            ) {
+                Text(initialsOf(e.name), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+
+            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                Text(
+                    e.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    e.designation ?: "—",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(7.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TypePill(e.type)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "ID ${e.employeeId}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                    if (exited) {
+                        Spacer(Modifier.width(8.dp))
+                        Pill("Exited", Brand.TpHpoBg, Brand.TpHpoFg)
                     }
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            // Complete-details grid.
-            DetailLine("Employee ID", e.employeeId)
-            DetailLine("Mobile", phone ?: "—")
-            DetailLine("Date of birth", e.dateOfBirth ?: "—")
-            DetailLine("Date of joining", e.dateOfJoin ?: "—")
-            e.gender?.takeIf { it.isNotBlank() }?.let { DetailLine("Gender", it) }
-            e.level?.takeIf { it.isNotBlank() }?.let { DetailLine("Level", it) }
-            e.estDescription?.takeIf { it.isNotBlank() }?.let { DetailLine("Establishment", it) }
 
-            // Exit / retirement banner when recorded.
-            if (exit?.exitDate != null || exit?.exitReason != null) {
-                Spacer(Modifier.height(8.dp))
-                Column(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
-                        .background(Brand.Rose.copy(alpha = 0.10f)).padding(10.dp)
-                ) {
-                    Text("🚪 Exit / Retirement", style = MaterialTheme.typography.labelMedium, color = Brand.Rose, fontWeight = FontWeight.Bold)
-                    exit.exitDate?.let { Text("Date: $it", style = MaterialTheme.typography.bodySmall) }
-                    exit.exitReason?.let { Text("Reason: $it", style = MaterialTheme.typography.bodySmall) }
-                }
-            }
-
+            // Overflow (exit / retirement details) for authorised users.
             if (canManage) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    TextButton(onClick = onExit) {
-                        Text(if (exit?.exitDate != null || exit?.exitReason != null) "Edit exit details" else "＋ Exit details")
+                Box {
+                    IconButton(onClick = { menuOpen = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text(if (exited) "Edit exit / retirement" else "Exit / retirement details") },
+                            onClick = { menuOpen = false; onExit() }
+                        )
+                    }
+                }
+            }
+
+            // Round call button — opens the dialer with the number filled in.
+            if (!phone.isNullOrBlank()) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(listOf(Brand.Good, Brand.Emerald)))
+                        .clickable { onCall(phone) }
+                ) {
+                    Icon(Icons.Filled.Call, contentDescription = "Call ${e.name}", tint = Color.White, modifier = Modifier.size(23.dp))
                 }
             }
         }
-    }
-}
-
-/** Compact label/value line used inside the staff card. */
-@Composable
-private fun DetailLine(label: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
-        Text(
-            label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(120.dp)
-        )
-        Text(
-            value,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
     }
 }
 

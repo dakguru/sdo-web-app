@@ -1,13 +1,30 @@
 package com.karursdo.ui.cpv
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,11 +33,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.PictureAsPdf
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -416,6 +439,27 @@ fun CpvDetailScreen(
                     }
                 }
             }
+        },
+        // Bulk action bar pinned to the bottom so Verify all / Unverify / Clear stay reachable
+        // no matter how far the account list is scrolled.
+        bottomBar = {
+            CpvBulkBar(
+                visible = selection.isNotEmpty(),
+                count = selection.size,
+                remark = bulkRemark,
+                onRemarkChange = { bulkRemark = it },
+                onVerify = {
+                    val sel = accounts.filter { it.record.acct in selection }
+                    vm.verify(sel, true, bulkRemark.trim().ifBlank { null })
+                    selection.clear(); bulkRemark = ""
+                },
+                onUnverify = {
+                    val sel = accounts.filter { it.record.acct in selection }
+                    vm.verify(sel, false, null)
+                    selection.clear()
+                },
+                onClear = { selection.clear(); bulkRemark = "" }
+            )
         }
     ) { pad ->
         when {
@@ -505,44 +549,7 @@ fun CpvDetailScreen(
                         }) { Text(if (filtered.isNotEmpty() && selection.containsAll(filtered.map { it.record.acct })) "Clear all" else "Select all shown") }
                     }
                 }
-                // Bulk bar
-                if (selection.isNotEmpty()) {
-                    item {
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = Brand.Teal.copy(alpha = 0.12f),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(Modifier.padding(12.dp)) {
-                                Text("${selection.size} selected", fontWeight = FontWeight.Bold, color = Brand.Teal)
-                                Spacer(Modifier.height(8.dp))
-                                OutlinedTextField(
-                                    value = bulkRemark, onValueChange = { bulkRemark = it },
-                                    placeholder = { Text("Remark for selected (optional)") },
-                                    singleLine = false, modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(
-                                        onClick = {
-                                            val sel = accounts.filter { it.record.acct in selection }
-                                            vm.verify(sel, true, bulkRemark.trim().ifBlank { null })
-                                            selection.clear(); bulkRemark = ""
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Brand.Teal)
-                                    ) { Text("✓ Verify") }
-                                    OutlinedButton(onClick = {
-                                        val sel = accounts.filter { it.record.acct in selection }
-                                        vm.verify(sel, false, null)
-                                        selection.clear()
-                                    }) { Text("Unverify") }
-                                    OutlinedButton(onClick = { selection.clear(); bulkRemark = "" }) { Text("Clear") }
-                                }
-                            }
-                        }
-                    }
-                }
+                // (Bulk action bar is pinned to the bottom of the screen — see Scaffold bottomBar.)
                 // Accounts
                 if (filtered.isEmpty()) {
                     item { EmptyState("🔍", "No accounts match the current filters.") }
@@ -617,6 +624,23 @@ private fun StatusDropdown(statuses: List<String>, selected: String?, onSelect: 
     }
 }
 
+/** Strong accent colour for the status: green active · amber dormant · red frozen · grey other. */
+private fun statusAccent(status: String?): Color {
+    val t = (status ?: "").lowercase()
+    return when {
+        t.contains("active") -> Brand.Emerald
+        t.contains("dorm") -> Brand.Amber
+        t.contains("freez") || t.contains("froz") || t.contains("pledg") || t.contains("discont") -> Brand.Rose
+        else -> Brand.Muted
+    }
+}
+
+/**
+ * The Cent-Percent-Verification account card — compact, clean and colourful. A status-coloured
+ * accent rail and a single-select checkbox + CIF bulk-select sit on the left; the body shows
+ * Account No · Amount, Name · Type, a status/CIF/date meta line and a compact remark, with the
+ * Verify control anchored in the bottom-right corner. Selection & verify transitions animate.
+ */
 @Composable
 private fun AccountCard(
     a: CpvAccount,
@@ -626,97 +650,257 @@ private fun AccountCard(
     onSelectCif: () -> Unit,
     onEditRemark: () -> Unit
 ) {
-    val (bg, fg) = statusColors(a.record.status)
+    val (stBg, stFg) = statusColors(a.record.status)
+    val accent = statusAccent(a.record.status)
+
+    val container by animateColorAsState(
+        when {
+            selected -> Brand.Teal.copy(alpha = 0.12f)
+            a.verified -> Brand.Emerald.copy(alpha = 0.06f)
+            else -> MaterialTheme.colorScheme.surface
+        }, tween(240), label = "cardBg"
+    )
+    val borderColor by animateColorAsState(
+        when {
+            selected -> Brand.Teal
+            a.verified -> Brand.Emerald.copy(alpha = 0.5f)
+            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+        }, tween(240), label = "cardBorder"
+    )
+    val elevation by animateDpAsState(if (selected) 5.dp else 1.5.dp, tween(200), label = "cardElev")
+
+    val txn = fmtTxn(a.record.date, a.record.dateRaw)
+    val meta = listOfNotNull(
+        a.record.type.ifBlank { null },
+        a.record.cif.ifBlank { null }?.let { "CIF $it" }
+    ).joinToString(" · ")
+
     Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = if (selected) Brand.Teal.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surface,
-        shadowElevation = 1.dp,
+        onClick = onToggleSelect,
+        shape = RoundedCornerShape(16.dp),
+        color = container,
+        shadowElevation = elevation,
+        border = BorderStroke(if (selected) 1.5.dp else 1.dp, borderColor),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(Modifier.padding(10.dp)) {
-            Checkbox(checked = selected, onCheckedChange = { onToggleSelect() })
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(a.record.acct, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                    Text(inr(a.record.balance), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
-                }
-                Text(
-                    a.record.name.ifBlank { "—" },
-                    style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis
+        Row(Modifier.height(IntrinsicSize.Min)) {
+            // Status accent rail down the left edge.
+            Box(Modifier.fillMaxHeight().width(4.dp).background(accent))
+
+            // Left control rail: single-select checkbox + CIF bulk-select.
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(start = 2.dp, end = 2.dp)
+            ) {
+                Checkbox(
+                    checked = selected,
+                    onCheckedChange = { onToggleSelect() },
+                    colors = androidx.compose.material3.CheckboxDefaults.colors(checkedColor = Brand.Teal)
                 )
-                if (a.record.type.isNotBlank() || a.record.cif.isNotBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        val meta = listOfNotNull(
-                            a.record.type.ifBlank { null },
-                            a.record.cif.ifBlank { null }?.let { "CIF $it" }
-                        ).joinToString(" · ")
-                        Text(meta, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f, fill = false))
-                        if (a.record.cif.isNotBlank()) {
-                            TextButton(onClick = onSelectCif, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) {
-                                Text("⧉ CIF", style = MaterialTheme.typography.labelSmall)
+                if (a.record.cif.isNotBlank()) {
+                    CifBulkButton(onClick = onSelectCif)
+                    Spacer(Modifier.height(6.dp))
+                }
+            }
+
+            // Main content — tight vertical rhythm, no wasted space.
+            Column(Modifier.weight(1f).padding(start = 6.dp, end = 10.dp, top = 9.dp, bottom = 9.dp)) {
+                // Account No + Amount.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        a.record.acct,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 15.sp,
+                        letterSpacing = 0.3.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        inr(a.record.balance),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
+                        color = Brand.Emerald,
+                        maxLines = 1
+                    )
+                }
+                Spacer(Modifier.height(2.dp))
+
+                // Name + Account Type.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        a.record.name.ifBlank { "—" },
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (a.record.type.isNotBlank()) {
+                        Spacer(Modifier.width(8.dp))
+                        Pill(a.record.type, Brand.BadgeDsBg, Brand.BadgeDsFg)
+                    }
+                }
+
+                // Meta line (CIF · type already carried in the type pill → show CIF only) + verifier.
+                val cifLine = buildString {
+                    a.record.cif.ifBlank { null }?.let { append("CIF $it") }
+                    if (a.verified && a.verifiedBy.isNotBlank()) {
+                        if (isNotEmpty()) append("  ·  ")
+                        append("✓ ${a.verifiedBy}")
+                        a.verifiedAtMs?.let { append(" · ${fmtVerAt(it)}") }
+                    }
+                }
+                if (cifLine.isNotBlank()) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        cifLine,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (a.verified) Brand.Emerald else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(Modifier.height(6.dp))
+
+                // Bottom row: status + date on the left, Verify anchored bottom-right.
+                Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Pill(a.record.status.ifBlank { "—" }, stBg, stFg, Modifier.weight(1f, fill = false))
+                            if (txn.isNotBlank()) {
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    txn,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(3.dp))
+                        // Compact remark with inline edit.
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                a.remarks.ifBlank { "No remark" },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (a.remarks.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else Brand.Warn,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            TextButton(
+                                onClick = onEditRemark,
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                modifier = Modifier.height(24.dp)
+                            ) {
+                                Text(
+                                    if (a.remarks.isBlank()) "＋ Remark" else "Edit",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
                         }
                     }
-                }
-                Spacer(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    // Status + transaction date share the remaining space. The status pill
-                    // shrinks and ellipsizes so a long "FREEZED/PLEDGED/DISCONTINUED" never
-                    // crowds out the date or the Verify control on the right.
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        val txn = fmtTxn(a.record.date, a.record.dateRaw)
-                        Pill(a.record.status.ifBlank { "—" }, bg, fg, Modifier.weight(1f, fill = false))
-                        if (txn.isNotBlank()) {
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                txn,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1
+                    Spacer(Modifier.width(8.dp))
+                    AnimatedContent(
+                        targetState = a.verified,
+                        transitionSpec = {
+                            (scaleIn(spring()) + fadeIn(tween(180))) togetherWith
+                                (scaleOut(tween(140)) + fadeOut(tween(120)))
+                        },
+                        label = "verifyToggle"
+                    ) { isVerified ->
+                        if (isVerified) {
+                            AssistChip(
+                                onClick = onToggleVerify,
+                                label = { Text("Verified", fontWeight = FontWeight.Bold) },
+                                leadingIcon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = Brand.ChipPaidBg, labelColor = Brand.ChipPaidFg, leadingIconContentColor = Brand.Emerald
+                                )
                             )
+                        } else {
+                            Button(
+                                onClick = onToggleVerify,
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Brand.Teal)
+                            ) { Text("Verify", fontWeight = FontWeight.Bold, maxLines = 1) }
                         }
                     }
-                    Spacer(Modifier.width(10.dp))
-                    // Verify toggle — kept at its natural width so the label is always legible.
-                    if (a.verified) {
-                        AssistChip(
-                            onClick = onToggleVerify,
-                            label = { Text("Verified") },
-                            leadingIcon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = Brand.ChipPaidBg, labelColor = Brand.ChipPaidFg, leadingIconContentColor = Brand.ChipPaidFg)
-                        )
-                    } else {
-                        Button(
-                            onClick = onToggleVerify,
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Brand.Teal)
-                        ) { Text("Verify", style = MaterialTheme.typography.labelMedium, maxLines = 1) }
-                    }
-                }
-                // Remark row
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        a.remarks.ifBlank { "No remark" },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (a.remarks.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else Brand.Amber,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
-                    )
-                    TextButton(onClick = onEditRemark, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
-                        Text(if (a.remarks.isBlank()) "＋ Remark" else "Edit", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-                if (a.verified && (a.verifiedBy.isNotBlank() || a.verifiedAtMs != null)) {
-                    Text(
-                        "by ${a.verifiedBy}${a.verifiedAtMs?.let { " · ${fmtVerAt(it)}" } ?: ""}",
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
         }
+    }
+}
+
+/**
+ * Bulk action bar pinned to the bottom of the detail screen. Slides in whenever at least one
+ * account is selected so Verify all / Unverify / Clear stay reachable regardless of scroll.
+ */
+@Composable
+private fun CpvBulkBar(
+    visible: Boolean,
+    count: Int,
+    remark: String,
+    onRemarkChange: (String) -> Unit,
+    onVerify: () -> Unit,
+    onUnverify: () -> Unit,
+    onClear: () -> Unit
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInVertically { it } + fadeIn(tween(180)),
+        exit = slideOutVertically { it } + fadeOut(tween(140))
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 12.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+        ) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("$count selected", fontWeight = FontWeight.Bold, color = Brand.Teal, modifier = Modifier.weight(1f))
+                    TextButton(onClick = onClear) { Text("Clear") }
+                }
+                Spacer(Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = remark, onValueChange = onRemarkChange,
+                    placeholder = { Text("Remark for selected (optional)") },
+                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = onVerify,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Brand.Teal)
+                    ) { Text("✓ Verify $count") }
+                    OutlinedButton(onClick = onUnverify, modifier = Modifier.weight(1f)) { Text("Unverify") }
+                }
+            }
+        }
+    }
+}
+
+/** The "CIF" bulk-select control on the card's left rail — selects every account sharing this CIF. */
+@Composable
+private fun CifBulkButton(onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(Brand.Indigo.copy(alpha = 0.12f))
+            .border(1.dp, Brand.Indigo.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 5.dp)
+    ) {
+        Icon(Icons.Rounded.Groups, contentDescription = "Select all accounts with this CIF", tint = Brand.Indigo, modifier = Modifier.size(18.dp))
+        Text("CIF", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Brand.Indigo)
     }
 }
 
