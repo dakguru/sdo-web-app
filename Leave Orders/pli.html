@@ -120,6 +120,10 @@
   .exist .row{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px}
   .exist .row div{font-size:12.5px;color:var(--ink2)}
   .exist .row b{display:block;font:800 16px/1.1 'Sora','Inter',sans-serif;color:var(--ink);margin-top:2px}
+  .btn-del{margin-top:13px;width:100%;padding:11px;border:1.5px solid #f3c6c6;background:#fff5f5;color:#c0392b;border-radius:11px;font:800 13px/1 'Plus Jakarta Sans','Inter',sans-serif;cursor:pointer;transition:background .15s,transform .1s}
+  .btn-del:hover:not(:disabled){background:#fee2e2}
+  .btn-del:active:not(:disabled){transform:translateY(1px)}
+  .btn-del:disabled{opacity:.55;cursor:not-allowed}
 
   /* success */
   .done{display:none;text-align:center;padding:12px 6px 4px}
@@ -264,6 +268,7 @@
             <div>Sum Assured<b id="exS">—</b></div>
             <div>Premium<b id="exP">—</b></div>
           </div>
+          <button class="btn-del" id="btnDelete" type="button">&#128465; Delete my entry &amp; start over</button>
         </div>
 
         <div class="metrics">
@@ -385,8 +390,9 @@
   const els = {
     office:$('fOffice'), boWrap:$('boWrap'), bo:$('fBo'), emp:$('fEmp'),
     pol:$('fPolicies'), sum:$('fSum'), prem:$('fPrem'), save:$('btnSave'),
-    msg:$('msg'), form:$('form'), done:$('done'), exist:$('exist')
+    del:$('btnDelete'), msg:$('msg'), form:$('form'), done:$('done'), exist:$('exist')
   };
+  const DEL_LABEL = '🗑 Delete my entry & start over';
 
   function showMsg(t,k){ els.msg.className='msg show '+k; els.msg.textContent=t; }
   function hideMsg(){ els.msg.className='msg'; }
@@ -565,6 +571,7 @@
       $('exS').textContent = fmtCompact(parseFloat(ex.sum_assured||0));
       $('exP').textContent = fmtCompact(parseFloat(ex.premium||0));
       showExist();
+      els.del.disabled = false; els.del.textContent = DEL_LABEL;
       els.save.textContent = 'Update My Procurement';
       updateHints();
     } else {
@@ -655,6 +662,32 @@
       if(/app_pli/.test(m) && /(404|does not exist|schema cache)/i.test(m)) m = 'The procurement table is not set up yet. Please ask the administrator to run migration_v17.';
       showMsg('Could not save: '+m,'err');
       els.save.disabled=false; els.save.textContent=oldTxt;
+    }
+  });
+
+  // ----- Delete a wrongly-entered record -----
+  els.del.addEventListener('click', async ()=>{
+    const id = els.emp.value;
+    if(!id) return;
+    const empOpt = els.emp.options[els.emp.selectedIndex];
+    const name = (empOpt && empOpt.dataset.name) || 'this staff member';
+    if(!window.confirm('Delete the saved procurement for '+name+'?\n\nThis removes the figures from the leaderboard. You can enter fresh figures and save again any time.')) return;
+    hideMsg();
+    els.del.disabled = true; els.del.textContent = 'Deleting…';
+    try{
+      await SB.del('app_pli', 'employee_id=eq.'+encodeURIComponent(id));
+      ENTRIES.delete(id);
+      hideExist();
+      // clear the fields but keep them enabled for a fresh, correct entry
+      els.pol.value=''; els.sum.value=''; els.prem.value='';
+      $('hintSum').textContent=''; $('hintPrem').textContent='';
+      els.save.textContent = 'Save My Procurement';
+      els.save.disabled = false;
+      showMsg('Your previous entry was deleted. Enter the correct figures and press Save, or leave this office.','ok');
+      els.pol.focus();
+    }catch(err){
+      showMsg('Could not delete: '+(err.message||'please try again.'),'err');
+      els.del.disabled = false; els.del.textContent = DEL_LABEL;
     }
   });
 
