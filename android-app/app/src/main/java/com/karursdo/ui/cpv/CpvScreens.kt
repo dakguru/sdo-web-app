@@ -125,6 +125,22 @@ private fun fmtTxn(iso: String, raw: String): String {
     return if (m != null) "${m.groupValues[3]}-${m.groupValues[2]}-${m.groupValues[1]}" else raw
 }
 
+/** PLI / RPLI insurance lists render a different column set than bank schemes. */
+private fun isPliScheme(scheme: String?): Boolean {
+    val s = (scheme ?: "").uppercase()
+    return s == "PLI" || s == "RPLI"
+}
+private val MONTHS_ABBR = arrayOf("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
+/** MMM-YYYY (e.g. "Jun-2026") from an iso yyyy-mm-dd, falling back to a stored label/raw. */
+private fun monYear(iso: String, label: String, raw: String): String {
+    val m = Regex("^(\\d{4})-(\\d{2})").find(iso)
+    return when {
+        label.isNotBlank() -> label
+        m != null -> "${MONTHS_ABBR[m.groupValues[2].toInt() - 1]}-${m.groupValues[1]}"
+        else -> raw
+    }
+}
+
 // ═════════════════════════════════════════════════════════════
 //  LIST SCREEN
 // ═════════════════════════════════════════════════════════════
@@ -278,7 +294,7 @@ private fun SchemeRow(b: CpvBatchDto, onClick: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    "${b.total_accounts} accounts",
+                    "${b.total_accounts} ${if (isPliScheme(b.scheme)) "policies" else "accounts"}",
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -375,6 +391,7 @@ fun CpvDetailScreen(
     LaunchedEffect(officeKey) { query = ""; statusFilter = null; verFilter = VerFilter.ALL; selection.clear(); bulkRemark = "" }
 
     val accounts = state.accounts
+    val pli = isPliScheme(state.meta?.scheme)
     val statuses = remember(accounts) { accounts.mapNotNull { it.record.status.ifBlank { null } }.distinct().sorted() }
     val q = query.trim().lowercase()
     val filtered = remember(accounts, q, statusFilter, verFilter) {
@@ -427,7 +444,7 @@ fun CpvDetailScreen(
                                 val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                     CpvReportPdf.generate(
                                         context,
-                                        CpvReportMeta(meta.office_name, meta.scheme_label ?: meta.scheme, meta.sol_id, meta.branch_id),
+                                        CpvReportMeta(meta.office_name, meta.scheme_label ?: meta.scheme, meta.sol_id, meta.branch_id, meta.scheme),
                                         snapshot
                                     )
                                 }
@@ -496,15 +513,20 @@ fun CpvDetailScreen(
                         )
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Pill("Total ${accounts.size}", Brand.BadgeDsBg, Brand.BadgeDsFg)
+                            Pill("${if (pli) "Policies" else "Total"} ${accounts.size}", Brand.BadgeDsBg, Brand.BadgeDsFg)
                             Pill("✓ Verified $verifiedCount", Brand.ChipPaidBg, Brand.ChipPaidFg)
                             Pill("Unverified ${accounts.size - verifiedCount}", Brand.TpOthBg, Brand.TpOthFg)
+                        }
+                        if (pli) {
+                            val sa = accounts.sumOf { it.record.sumAssured ?: 0.0 }
+                            Spacer(Modifier.height(6.dp))
+                            Pill("Sum Assured ${inr(sa)}", Brand.TpOthBg, Brand.TpOthFg)
                         }
                     }
                 }
                 // Filters
                 item {
-                    KsdSearchField(query, { query = it }, "Account no / name / address")
+                    KsdSearchField(query, { query = it }, if (pli) "Policy no / name / address" else "Account no / name / address")
                 }
                 item {
                     Row(
@@ -531,7 +553,8 @@ fun CpvDetailScreen(
                             label = { Text("Unverified") },
                             colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Brand.Violet, selectedLabelColor = Color.White)
                         )
-                        StatusDropdown(statuses, statusFilter) { statusFilter = it }
+                        // Account status doesn't apply to insurance policies.
+                        if (!pli) StatusDropdown(statuses, statusFilter) { statusFilter = it }
                     }
                 }
                 // Count + select-all
@@ -555,19 +578,40 @@ fun CpvDetailScreen(
                     item { EmptyState("🔍", "No accounts match the current filters.") }
                 } else {
                     items(filtered, key = { it.record.acct }) { a ->
-                        AccountCard(
-                            a = a,
-                            selected = a.record.acct in selection,
-                            onToggleSelect = {
-                                if (a.record.acct in selection) selection.remove(a.record.acct) else selection.add(a.record.acct)
-                            },
-                            onToggleVerify = { vm.verify(listOf(a), !a.verified, null) },
-                            onSelectCif = {
-                                val cif = a.record.cif
-                                if (cif.isNotBlank()) filtered.filter { it.record.cif == cif }.forEach { if (it.record.acct !in selection) selection.add(it.record.acct) }
-                            },
-                            onEditRemark = { remarkDialogFor = a }
-                        )
+                        if (pli) {
+                            // Policies of one customer share the insured name (no CIF) → allow
+                            // bulk-selecting all of a customer's policies, like the CIF group in bank lists.
+                            val nameKey = a.record.name.trim().uppercase()
+                            val groupable = nameKey.isNotBlank() && accounts.count { it.record.name.trim().uppercase() == nameKey } > 1
+                            PliPolicyCard(
+                                a = a,
+                                selected = a.record.acct in selection,
+                                groupable = groupable,
+                                onToggleSelect = {
+                                    if (a.record.acct in selection) selection.remove(a.record.acct) else selection.add(a.record.acct)
+                                },
+                                onSelectCustomer = {
+                                    filtered.filter { it.record.name.trim().uppercase() == nameKey }
+                                        .forEach { if (it.record.acct !in selection) selection.add(it.record.acct) }
+                                },
+                                onToggleVerify = { vm.verify(listOf(a), !a.verified, null) },
+                                onEditRemark = { remarkDialogFor = a }
+                            )
+                        } else {
+                            AccountCard(
+                                a = a,
+                                selected = a.record.acct in selection,
+                                onToggleSelect = {
+                                    if (a.record.acct in selection) selection.remove(a.record.acct) else selection.add(a.record.acct)
+                                },
+                                onToggleVerify = { vm.verify(listOf(a), !a.verified, null) },
+                                onSelectCif = {
+                                    val cif = a.record.cif
+                                    if (cif.isNotBlank()) filtered.filter { it.record.cif == cif }.forEach { if (it.record.acct !in selection) selection.add(it.record.acct) }
+                                },
+                                onEditRemark = { remarkDialogFor = a }
+                            )
+                        }
                     }
                 }
                 item { Spacer(Modifier.height(24.dp)) }
@@ -838,6 +882,205 @@ private fun AccountCard(
 }
 
 /**
+ * PLI / RPLI policy card — the insurance counterpart of [AccountCard]. Shows
+ * Policy No · Sum Assured, Insured Name · Premium, the address, and a
+ * Date-of-entry · Paid-upto · Months-paid meta line, with the same select /
+ * verify / remark controls (verification is keyed on the policy number).
+ */
+@Composable
+private fun PliPolicyCard(
+    a: CpvAccount,
+    selected: Boolean,
+    groupable: Boolean,
+    onToggleSelect: () -> Unit,
+    onSelectCustomer: () -> Unit,
+    onToggleVerify: () -> Unit,
+    onEditRemark: () -> Unit
+) {
+    val accent = if (a.verified) Brand.Emerald else Brand.Teal
+
+    val container by animateColorAsState(
+        when {
+            selected -> Brand.Teal.copy(alpha = 0.12f)
+            a.verified -> Brand.Emerald.copy(alpha = 0.06f)
+            else -> MaterialTheme.colorScheme.surface
+        }, tween(240), label = "cardBg"
+    )
+    val borderColor by animateColorAsState(
+        when {
+            selected -> Brand.Teal
+            a.verified -> Brand.Emerald.copy(alpha = 0.5f)
+            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+        }, tween(240), label = "cardBorder"
+    )
+    val elevation by animateDpAsState(if (selected) 5.dp else 1.5.dp, tween(200), label = "cardElev")
+
+    val doe = fmtTxn(a.record.doeIso, a.record.doeRaw)
+    val paid = monYear(a.record.paidIso, a.record.paidUpto, a.record.paidRaw)
+    val metaLine = buildString {
+        if (doe.isNotBlank()) append("Entry $doe")
+        if (paid.isNotBlank()) { if (isNotEmpty()) append("  ·  "); append("Paid upto $paid") }
+        a.record.monthsPaid?.let { if (isNotEmpty()) append("  ·  "); append("$it mo") }
+    }
+
+    Surface(
+        onClick = onToggleSelect,
+        shape = RoundedCornerShape(16.dp),
+        color = container,
+        shadowElevation = elevation,
+        border = BorderStroke(if (selected) 1.5.dp else 1.dp, borderColor),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(Modifier.height(IntrinsicSize.Min)) {
+            Box(Modifier.fillMaxHeight().width(4.dp).background(accent))
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(start = 2.dp, end = 2.dp)
+            ) {
+                Checkbox(
+                    checked = selected,
+                    onCheckedChange = { onToggleSelect() },
+                    colors = androidx.compose.material3.CheckboxDefaults.colors(checkedColor = Brand.Teal)
+                )
+                if (groupable) {
+                    CustomerBulkButton(onClick = onSelectCustomer)
+                    Spacer(Modifier.height(6.dp))
+                }
+            }
+            Column(Modifier.weight(1f).padding(start = 6.dp, end = 10.dp, top = 9.dp, bottom = 9.dp)) {
+                // Policy No + Sum Assured.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        a.record.policy.ifBlank { a.record.acct },
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 15.sp,
+                        letterSpacing = 0.3.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        inr(a.record.sumAssured),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
+                        color = Brand.Emerald,
+                        maxLines = 1
+                    )
+                }
+                Spacer(Modifier.height(2.dp))
+
+                // Insured name + Premium.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        a.record.name.ifBlank { "—" },
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    a.record.premium?.let {
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Prem ${inr(it)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                // Address.
+                if (a.record.address.isNotBlank()) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        a.record.address,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // Entry · Paid upto · Months + verifier.
+                val line = buildString {
+                    append(metaLine)
+                    if (a.verified && a.verifiedBy.isNotBlank()) {
+                        if (isNotEmpty()) append("  ·  ")
+                        append("✓ ${a.verifiedBy}")
+                        a.verifiedAtMs?.let { append(" · ${fmtVerAt(it)}") }
+                    }
+                }
+                if (line.isNotBlank()) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        line,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (a.verified) Brand.Emerald else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(Modifier.height(6.dp))
+
+                // Remark + Verify.
+                Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Text(
+                            a.remarks.ifBlank { "No remark" },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (a.remarks.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else Brand.Warn,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        TextButton(
+                            onClick = onEditRemark,
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                            modifier = Modifier.height(24.dp)
+                        ) {
+                            Text(
+                                if (a.remarks.isBlank()) "＋ Remark" else "Edit",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    AnimatedContent(
+                        targetState = a.verified,
+                        transitionSpec = {
+                            (scaleIn(spring()) + fadeIn(tween(180))) togetherWith
+                                (scaleOut(tween(140)) + fadeOut(tween(120)))
+                        },
+                        label = "verifyToggle"
+                    ) { isVerified ->
+                        if (isVerified) {
+                            AssistChip(
+                                onClick = onToggleVerify,
+                                label = { Text("Verified", fontWeight = FontWeight.Bold) },
+                                leadingIcon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = Brand.ChipPaidBg, labelColor = Brand.ChipPaidFg, leadingIconContentColor = Brand.Emerald
+                                )
+                            )
+                        } else {
+                            Button(
+                                onClick = onToggleVerify,
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Brand.Teal)
+                            ) { Text("Verify", fontWeight = FontWeight.Bold, maxLines = 1) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
  * Bulk action bar pinned to the bottom of the detail screen. Slides in whenever at least one
  * account is selected so Verify all / Unverify / Clear stay reachable regardless of scroll.
  */
@@ -901,6 +1144,23 @@ private fun CifBulkButton(onClick: () -> Unit) {
     ) {
         Icon(Icons.Rounded.Groups, contentDescription = "Select all accounts with this CIF", tint = Brand.Indigo, modifier = Modifier.size(18.dp))
         Text("CIF", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Brand.Indigo)
+    }
+}
+
+/** PLI counterpart of [CifBulkButton] — selects every policy sharing this insured name. */
+@Composable
+private fun CustomerBulkButton(onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(Brand.Indigo.copy(alpha = 0.12f))
+            .border(1.dp, Brand.Indigo.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 5.dp)
+    ) {
+        Icon(Icons.Rounded.Groups, contentDescription = "Select all policies of this customer", tint = Brand.Indigo, modifier = Modifier.size(18.dp))
+        Text("Cust", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Brand.Indigo)
     }
 }
 

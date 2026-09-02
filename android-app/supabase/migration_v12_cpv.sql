@@ -2,9 +2,10 @@
 -- Cent Percent Verification (CPV) module — Karur Sub Division web app.
 -- Run this once in the Supabase SQL editor (project hfzbvqpxraeoqmvhtjto).
 --
--- Storage for cleaned "Last Balance Report" account lists. The user uploads a
--- messy CSV/XLSX per office + scheme (SB, RD, SSA, TD 1/2/3/5 yr); the web app
--- cleans it and stores ONE row per office+scheme batch here:
+-- Storage for cleaned "Last Balance Report" account lists and PLI/RPLI policy
+-- lists. The user uploads a messy CSV/XLSX per office + scheme (SB, RD, SSA,
+-- TD 1/2/3/5 yr) or a PLI/RPLI verification sheet; the web app cleans it and
+-- stores ONE row per office+scheme batch here:
 --   * office/sol/branch metadata + scheme
 --   * total accounts and a status-wise count map (for the dashboard, read cheaply)
 --   * the full cleaned account records as JSON (loaded only when viewing detail)
@@ -20,7 +21,7 @@ create table if not exists public.app_cpv (
   office_name     text not null,                -- e.g. "EMUR KARUR COLLECTORATE S.O"
   sol_id          text,                         -- e.g. "63900701"
   branch_id       text,                         -- e.g. "F1971"
-  scheme          text not null,                -- SB | RD | SSA | TD1 | TD2 | TD3 | TD5
+  scheme          text not null,                -- SB | RD | SSA | TD1 | TD2 | TD3 | TD5 | PLI | RPLI
   scheme_label    text,                         -- human label, e.g. "Savings Bank (SB)"
   total_accounts  integer not null default 0,
   status_counts   jsonb  not null default '{}'::jsonb,  -- { "Active": 210, "Dormant": 30, ... }

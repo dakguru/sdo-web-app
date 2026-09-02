@@ -223,6 +223,14 @@ html.light .field input,html.light .field select{background:#f7f8fb}
 .footer{text-align:center;padding:34px 20px 8px;color:var(--text-muted);font-size:12px}
 .footer .credit{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:700;margin-top:5px;background:linear-gradient(135deg,var(--teal),var(--cyan));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .hidden{display:none!important}
+
+/* PLI office picker */
+.op-list{display:flex;flex-direction:column;gap:7px;max-height:230px;overflow-y:auto;padding:2px}
+.op-item{display:flex;flex-direction:column;gap:2px;text-align:left;width:100%;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:11px;padding:10px 13px;cursor:pointer;font-family:inherit;transition:all .18s}
+.op-item:hover{background:var(--glass-bg-hover);border-color:var(--glass-border-hover)}
+.op-item.sel{border-color:var(--teal);background:rgba(45,212,191,.14);box-shadow:0 0 0 1px rgba(45,212,191,.35)}
+.op-item .op-name{font-weight:700;font-size:13.5px}
+.op-item .op-meta{font-size:11px;color:var(--text-muted);font-weight:600}
 </style>
 </head>
 <body>
@@ -242,7 +250,7 @@ html.light .field input,html.light .field select{background:#f7f8fb}
       <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,text/csv" style="display:none">
       <span class="di">📥</span>
       <b>Drop a CSV / Excel file here, or click to choose</b>
-      <small>Accepts the SO/BO "Last Balance Report" export — SB, RD, SSA, TD (1/2/3/5 yr) &amp; more</small>
+      <small>Accepts the SO/BO "Last Balance Report" (SB, RD, SSA, TD 1/2/3/5 yr) &amp; the PLI / RPLI verification sheet</small>
     </div>
   </div>
 
@@ -301,11 +309,11 @@ html.light .field input,html.light .field select{background:#f7f8fb}
         <label>Search</label>
         <input type="text" id="fSearch" placeholder="Account no / name / address">
       </div>
-      <div class="fg">
+      <div class="fg" id="fTypeWrap">
         <label>Account type</label>
         <select id="fType"><option value="">All types</option></select>
       </div>
-      <div class="fg">
+      <div class="fg" id="fStatusWrap">
         <label>Status</label>
         <select id="fStatus"><option value="">All statuses</option></select>
       </div>
@@ -317,16 +325,16 @@ html.light .field input,html.light .field select{background:#f7f8fb}
           <option value="no">Unverified</option>
         </select>
       </div>
-      <div class="fg">
-        <label>Last txn from</label>
+      <div class="fg" id="fDateFromWrap">
+        <label id="fDateFromLbl">Last txn from</label>
         <input type="date" id="fDateFrom">
       </div>
-      <div class="fg">
-        <label>Last txn to</label>
+      <div class="fg" id="fDateToWrap">
+        <label id="fDateToLbl">Last txn to</label>
         <input type="date" id="fDateTo">
       </div>
-      <div class="fg">
-        <label>Balance</label>
+      <div class="fg" id="fBalModeWrap">
+        <label id="fBalModeLbl">Balance</label>
         <select id="fBalMode">
           <option value="">Any</option>
           <option value="below">Below</option>
@@ -386,6 +394,30 @@ html.light .field input,html.light .field select{background:#f7f8fb}
   </div>
 </div>
 
+<!-- PLI office picker modal -->
+<div class="modal-overlay" id="opOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title">🏤 Which office is this PLI list for?</div>
+    <div class="modal-desc">A PLI verification sheet has no office name in it. Pick the office it belongs to (it will be mapped in alongside that office's SB / RD / SSA / TD lists), or type a new office name. <b id="opCount">—</b>.</div>
+    <div class="field">
+      <label>Scheme</label>
+      <select id="opScheme"><option value="PLI">Postal Life Insurance (PLI)</option><option value="RPLI">Rural Postal Life Insurance (RPLI)</option></select>
+    </div>
+    <div class="field">
+      <label>Choose an existing office</label>
+      <div class="op-list" id="opList"></div>
+    </div>
+    <div class="field">
+      <label>…or type a new office name</label>
+      <input type="text" id="opNew" placeholder="Office name" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="opCancel">✕ Cancel</button>
+      <button class="btn" id="opConfirm">Continue →</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -411,9 +443,19 @@ const SCHEMES=[
   {code:'MIS',label:'Monthly Income Scheme (MIS)'},
   {code:'SCSS',label:'Sr. Citizen Savings (SCSS)'},
   {code:'PPF',label:'Public Provident Fund (PPF)'},
+  {code:'PLI',label:'Postal Life Insurance (PLI)'},
+  {code:'RPLI',label:'Rural Postal Life Insurance (RPLI)'},
   {code:'OTHER',label:'Other'}
 ];
 const schemeLabel=code=>{const s=SCHEMES.find(x=>x.code===code);return s?s.label:code;};
+// PLI / RPLI lists carry insurance policies, not bank accounts — they use a
+// different column layout, filters and exports throughout this module.
+const PLI_SCHEMES=['PLI','RPLI'];
+const isPliScheme=code=>PLI_SCHEMES.includes(code);
+// True when the list currently open (stored or preview) is an insurance list.
+function isPli(){return state.current&&isPliScheme(state.current.scheme);}
+// Bank schemes offered when previewing a Last Balance Report (PLI is picked via the office flow).
+const BANK_SCHEMES=SCHEMES.filter(s=>!isPliScheme(s.code));
 
 const state={list:[],dq:'',mode:'stored',current:null,detail:null,editKey:null,preview:null,delKey:null,busy:false,
   verif:{},        // acct -> {verified, remarks, verified_by, verified_at_ms}  (stored lists only)
@@ -639,6 +681,104 @@ function guessScheme(raw){
 function statusCountsOf(records){
   const c={};for(const r of records){const k=r.status||'—';c[k]=(c[k]||0)+1;}return c;
 }
+// PLI lists have no account status → no status pills; bank lists keep the status breakdown.
+function computeStatusCounts(scheme,records){return isPliScheme(scheme)?{}:statusCountsOf(records);}
+
+// ─────────────────────────────────────────────────────────────
+//  PLI / RPLI report extraction
+//  Source: the "PLI Verification" export — Serial No | Policy Number |
+//  Insured Name | Address | Date of Entry | Sum Assured | Premium |
+//  Paid To Date | No_Months_Paid | (signatures) | Remarks.
+//  The export drops the Address cell when it is blank, sliding the Date of
+//  Entry into the Address column; we disambiguate address vs date by content.
+// ─────────────────────────────────────────────────────────────
+// A policy number is either a 13-digit PLI number or an alphanumeric RPLI id
+// (e.g. "R-TN-EA-1177279"). Used only as a fallback anchor when a row is shifted.
+const POLICY_RE=/^(\d{10,}|[A-Z]{1,3}-[A-Z0-9-]*\d)/i;
+function isPliHeaderRow(low){
+  return low.some(c=>/policy\s*(number|no)/.test(c)) &&
+    low.some(c=>/insured\s*name|sum\s*assured|paid\s*to\s*date/.test(c));
+}
+function makePliColMap(low){
+  const find=re=>{for(let i=0;i<low.length;i++)if(re.test(low[i]))return i;return -1;};
+  return {
+    sno:find(/serial|^\s*s\.?\s*no|^sl/),
+    policy:find(/policy\s*(number|no)/),
+    name:find(/insured\s*name|^name$/),
+    addr:find(/address/),
+    doe:find(/date\s*of\s*entry|^doe/),
+    sum:find(/sum\s*assured/),
+    prem:find(/premium/),
+    paid:find(/paid\s*to\s*date|paid\s*up?\s*to|paid\s*upto/),
+    months:find(/months?\s*paid|no[_\s]*months?/),
+    remarks:find(/^remark|remarks/)
+  };
+}
+function policyCellIndex(row){
+  for(let i=0;i<row.length;i++){const v=cclean(row[i]).replace(/\s+/g,'');if(POLICY_RE.test(v))return i;}
+  return -1;
+}
+const looksLikeDate=s=>{const t=cclean(s);
+  return /^\d{1,2}[-\/ ]\d{1,2}[-\/ ]\d{2,4}$/.test(t)||/^\d{1,2}[-\/ ][A-Za-z]{3}/.test(t)||/^\d{4}-\d{2}-\d{2}/.test(t);};
+const MONTHS_ABBR=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// Paid-upto in MMM-YYYY (e.g. "Jun-2026") from an ISO yyyy-mm-dd.
+function fmtMonYear(iso){
+  const m=String(iso||'').match(/^(\d{4})-(\d{2})/);
+  if(!m)return '';
+  return `${MONTHS_ABBR[(+m[2])-1]||''}-${m[1]}`;
+}
+function parseInt0(raw){const s=cclean(raw).replace(/[,\s]/g,'');if(s===''||s==='-')return null;const n=parseInt(s,10);return isNaN(n)?null:n;}
+function extractPli(rows){
+  let hIdx=-1;
+  for(let r=0;r<rows.length;r++){
+    if(isPliHeaderRow(rows[r].map(c=>cclean(c).toLowerCase()))){hIdx=r;break;}
+  }
+  if(hIdx<0)throw new Error('Could not find the PLI header (Policy Number / Insured Name columns).');
+  const readAt=(row,headerCol,offset)=>{const i=headerCol<0?-1:headerCol+offset;return (i>=0&&i<row.length)?row[i]:'';};
+  const records=[];let col=null;
+  for(let r=hIdx;r<rows.length;r++){
+    const row=rows[r];
+    const low=row.map(c=>cclean(c).toLowerCase());
+    if(isPliHeaderRow(low)){col=makePliColMap(low);continue;}
+    if(!col||col.policy<0)continue;
+    // A data row has a serial number in the S.No column and a value in the policy
+    // column. Policy ids vary (13-digit PLI or alphanumeric RPLI), so we anchor on
+    // the header position; only if that cell is empty do we fall back to scanning.
+    const sno=cclean(readAt(row,col.sno,0)).replace(/\s+/g,'');
+    let pi=col.policy;
+    if(!cclean(row[pi])){pi=policyCellIndex(row);if(pi<0)continue;}
+    const policyVal=cclean(row[pi]).replace(/\s+/g,'');
+    if(!policyVal||/policy/i.test(policyVal))continue;   // header/blank → skip
+    if(!/^\d{1,6}$/.test(sno)&&!POLICY_RE.test(policyVal))continue;   // guard stray rows
+    const offset=pi-col.policy;
+    const policy=policyVal;
+    // Address vs Date-of-Entry: the export may put the date in either cell; pick by content.
+    const cAddr=cclean(readAt(row,col.addr,offset));
+    const cDoe =cclean(readAt(row,col.doe,offset));
+    const cand=[cAddr,cDoe].filter(x=>x!=='');
+    const doeRaw=cand.find(looksLikeDate)||'';
+    const address=cleanAddress(cand.find(x=>!looksLikeDate(x))||'');
+    const paidRaw=cclean(readAt(row,col.paid,offset));
+    const paidIso=parseTxnDate(paidRaw);
+    const doeIso=parseTxnDate(doeRaw);
+    records.push({
+      acct:policy,                                      // reuse `acct` as the verification key
+      policy,
+      name:cclean(readAt(row,col.name,offset)).replace(/\s+/g,' '),
+      address,
+      doeIso, doeRaw,
+      sumAssured:parseBalance(readAt(row,col.sum,offset)),
+      premium:parseBalance(readAt(row,col.prem,offset)),
+      paidIso, paidRaw, paidUpto:fmtMonYear(paidIso),
+      monthsPaid:parseInt0(readAt(row,col.months,offset)),
+      srcRemarks:cclean(readAt(row,col.remarks,offset)),
+      // Kept blank so any bank-oriented code path stays safe.
+      cif:'', type:'PLI', balance:null, date:'', status:'—'
+    });
+  }
+  if(!records.length)throw new Error('No policy rows were detected in this file.');
+  return {records};
+}
 
 // ─────────────────────────────────────────────────────────────
 //  Upload → preview flow  (view temporarily → store / cancel)
@@ -646,14 +786,73 @@ function statusCountsOf(records){
 async function handleFile(file){
   if(!file)return;
   toast('Reading '+file.name+'…');
+  let rows;
+  try{ rows=await readFileRows(file); }
+  catch(e){ toast('Could not read file: '+(e.message||''),'err'); return; }
+  // Detect the layout: a PLI verification sheet has no office name, so we ask
+  // the officer which office it belongs to before mapping it in like SB/RD/TD.
+  const isPliFile=rows.some(r=>isPliHeaderRow(r.map(c=>cclean(c).toLowerCase())));
+  if(isPliFile){
+    let rep;
+    try{ rep=extractPli(rows); }
+    catch(e){ toast('Could not read PLI file: '+(e.message||''),'err'); return; }
+    openOfficePicker(rep.records, file.name);
+    return;
+  }
   let rep;
-  try{ rep=extractReport(await readFileRows(file)); }
+  try{ rep=extractReport(rows); }
   catch(e){ toast('Could not read file: '+(e.message||''),'err'); return; }
   openPreview({
     office:rep.officeName||file.name.replace(/\.[^.]+$/,''),
     sol:rep.solId||'', branch:rep.branchId||'', scheme:rep.scheme,
     records:rep.records, sourceName:file.name
   }, null);
+}
+
+// ── PLI office picker ── PLI sheets carry no office identity, so match them to an
+// office already known to this module (same grouping as its SB/RD/TD lists), or
+// let the officer type a new one. The filename often names the office — pre-select it.
+function distinctOffices(){
+  const seen=new Map();
+  for(const o of state.list){
+    const key=((o.branch_id||'')+'|'+(o.office_name||'')).toLowerCase();
+    if(!seen.has(key)&&o.office_name)seen.set(key,{office:o.office_name,sol:o.sol_id||'',branch:o.branch_id||''});
+  }
+  return [...seen.values()].sort((a,b)=>a.office.localeCompare(b.office));
+}
+function openOfficePicker(records,sourceName){
+  state._pliRecords=records;
+  state._pliSource=sourceName||'';
+  const offs=distinctOffices();
+  state._pliOffs=offs;
+  // Guess the office from the filename token (e.g. PLI_Verification_KATHALAPATTI → KATHALAPATTI).
+  const token=String(sourceName||'').replace(/\.[^.]+$/,'').split(/[_\s\-]+/).filter(Boolean).pop()||'';
+  const guess=offs.find(o=>o.office.toUpperCase().includes(token.toUpperCase())&&token.length>=3);
+  const list=$('#opList');
+  let html=offs.map((o,i)=>`<button class="op-item${guess&&guess.office===o.office?' sel':''}" data-opidx="${i}">
+      <span class="op-name">🏤 ${esc(o.office)}</span>
+      <span class="op-meta">${o.sol?'SOL '+esc(o.sol):''}${o.sol&&o.branch?' · ':''}${o.branch?'Branch '+esc(o.branch):''}</span>
+    </button>`).join('');
+  if(!offs.length)html=`<div style="color:var(--text-muted);font-size:12.5px;padding:6px 2px">No offices stored yet — type the office name below.</div>`;
+  list.innerHTML=html;
+  $('#opNew').value=guess?'':token;                       // manual box; prefilled only if no match
+  $('#opScheme').value='PLI';
+  $('#opCount').textContent=`${records.length} ${records.length===1?'policy':'policies'} detected`;
+  state._pliPick=guess?{office:guess.office,sol:guess.sol,branch:guess.branch}:null;
+  $('#opOverlay').classList.add('show');
+}
+function officePickerConfirm(){
+  const scheme=$('#opScheme').value;
+  const manual=$('#opNew').value.trim();
+  let pick=state._pliPick;
+  if(manual)pick={office:manual,sol:'',branch:''};
+  if(!pick||!pick.office){toast('Select an office or type an office name.','err');return;}
+  $('#opOverlay').classList.remove('show');
+  openPreview({
+    office:pick.office, sol:pick.sol||'', branch:pick.branch||'', scheme,
+    records:state._pliRecords, sourceName:state._pliSource
+  }, null);
+  state._pliRecords=null;state._pliPick=null;
 }
 
 // Open the detail view in PREVIEW mode (unstored upload) or EDIT mode (editKey set),
@@ -667,17 +866,21 @@ function openPreview(data, editKey){
   $('#pvOffice').value=data.office||'';
   $('#pvSol').value=data.sol||'';
   $('#pvBranch').value=data.branch||'';
-  const sel=$('#pvScheme');sel.innerHTML=SCHEMES.map(s=>`<option value="${s.code}">${esc(s.label)}</option>`).join('');
-  sel.value=SCHEMES.some(s=>s.code===data.scheme)?data.scheme:'OTHER';
+  // Offer only schemes of the same kind so PLI data can't be relabelled as a bank
+  // scheme (their columns differ). PLI data → PLI/RPLI only; bank data → bank schemes.
+  const pliKind=isPliScheme(data.scheme);
+  const opts=pliKind?SCHEMES.filter(s=>isPliScheme(s.code)):BANK_SCHEMES;
+  const sel=$('#pvScheme');sel.innerHTML=opts.map(s=>`<option value="${s.code}">${esc(s.label)}</option>`).join('');
+  sel.value=opts.some(s=>s.code===data.scheme)?data.scheme:(pliKind?'PLI':'OTHER');
   $('#pvTag').innerHTML=editKey
     ? '✎ Editing stored list — change details below, then update'
-    : '👁 Preview — <b>'+state.detail.length+'</b> accounts detected · not stored yet';
+    : '👁 Preview — <b>'+state.detail.length+'</b> '+(pliKind?'policies':'accounts')+' detected · not stored yet';
   $('#pvStore').textContent=editKey?'💾 Update list':'💾 Store list';
   $('#previewBar').classList.remove('hidden');
   $('#backToDash').classList.add('hidden');
+  syncPreviewHeader();          // sets state.current first so isPli() is correct below
   buildDetailFilters();
   clearFilters(true);
-  syncPreviewHeader();
   $('#dashView').classList.add('hidden');
   $('#detailView').classList.remove('hidden');
   window.scrollTo(0,0);
@@ -691,7 +894,7 @@ function syncPreviewHeader(){
     office_name:$('#pvOffice').value.trim()||'(unnamed office)',
     sol_id:$('#pvSol').value.trim(), branch_id:$('#pvBranch').value.trim(),
     scheme, scheme_label:schemeLabel(scheme),
-    total_accounts:state.detail.length, status_counts:statusCountsOf(state.detail)
+    total_accounts:state.detail.length, status_counts:computeStatusCounts(scheme,state.detail)
   };
   renderDetailHeader();
 }
@@ -711,7 +914,7 @@ async function storePreview(){
   const row={
     office_key:key, office_name:office, sol_id:sol, branch_id:branch,
     scheme, scheme_label:schemeLabel(scheme),
-    total_accounts:recs.length, status_counts:statusCountsOf(recs),
+    total_accounts:recs.length, status_counts:computeStatusCounts(scheme,recs),
     records:recs, source_name:(state.preview&&state.preview.sourceName)||'',
     uploaded_by:(state.editKey&&state.preview&&state.preview.uploadedBy)||who(),
     uploaded_at_ms:(state.editKey&&state.preview&&state.preview.uploadedAtMs)||Date.now()
@@ -875,8 +1078,14 @@ function renderDetailHeader(){
   if(row.sol_id)meta.push(`<span class="meta-chip">SOL <b>${esc(row.sol_id)}</b></span>`);
   if(row.branch_id)meta.push(`<span class="meta-chip">Branch <b>${esc(row.branch_id)}</b></span>`);
   meta.push(`<span class="meta-chip">Scheme <b>${esc(row.scheme_label||schemeLabel(row.scheme))}</b></span>`);
-  meta.push(`<span class="meta-chip">Total <b>${(+row.total_accounts||0).toLocaleString('en-IN')}</b></span>`);
-  const sc=row.status_counts||{};Object.keys(sc).sort().forEach(s=>meta.push(`<span class="meta-chip">${esc(s)} <b>${sc[s]}</b></span>`));
+  const pli=isPli();
+  meta.push(`<span class="meta-chip">${pli?'Policies':'Total'} <b>${(+row.total_accounts||0).toLocaleString('en-IN')}</b></span>`);
+  if(pli){
+    const recs=state.detail||[];let sa=0;for(const r of recs)if(r.sumAssured!=null)sa+=r.sumAssured;
+    meta.push(`<span class="meta-chip">Sum Assured <b>₹ ${fmtAmt(sa)}</b></span>`);
+  }else{
+    const sc=row.status_counts||{};Object.keys(sc).sort().forEach(s=>meta.push(`<span class="meta-chip">${esc(s)} <b>${sc[s]}</b></span>`));
+  }
   if(canVerify()){
     const recs=state.detail||[];const v=verifiedCount(recs);const u=recs.length-v;
     meta.push(`<span class="meta-chip" style="border-color:rgba(52,211,153,.4)">✓ Verified <b style="color:var(--em)">${v}</b></span>`);
@@ -885,6 +1094,16 @@ function renderDetailHeader(){
   $('#dhMeta').innerHTML=meta.join('');
 }
 function buildDetailFilters(){
+  const pli=isPli();
+  // Account type & status don't apply to insurance policies — hide them for PLI.
+  $('#fTypeWrap').classList.toggle('hidden',pli);
+  $('#fStatusWrap').classList.toggle('hidden',pli);
+  // Repurpose the date range and the numeric range for PLI (Paid-upto / Sum Assured).
+  $('#fDateFromLbl').textContent=pli?'Paid upto from':'Last txn from';
+  $('#fDateToLbl').textContent  =pli?'Paid upto to'  :'Last txn to';
+  $('#fBalModeLbl').textContent =pli?'Sum Assured'   :'Balance';
+  $('#fSearch').placeholder=pli?'Policy no / name / address':'Account no / name / address';
+  if(pli)return;                                        // no type/status options for PLI
   const types=[...new Set(state.detail.map(r=>r.type).filter(Boolean))].sort();
   const sts=[...new Set(state.detail.map(r=>r.status).filter(Boolean))].sort();
   $('#fType').innerHTML='<option value="">All types</option>'+types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
@@ -914,15 +1133,19 @@ function currentFilters(){
 }
 function filteredRecords(){
   const f=currentFilters();
+  const pli=isPli();
+  // For PLI the date range means Paid-upto and the numeric range means Sum Assured.
+  const dateOf=r=>pli?r.paidIso:r.date;
+  const amtOf =r=>pli?r.sumAssured:r.balance;
   return state.detail.filter(r=>{
     if(f.q){const hay=(r.acct+' '+r.name+' '+r.address).toLowerCase();if(!hay.includes(f.q))return false;}
-    if(f.type&&r.type!==f.type)return false;
-    if(f.status&&r.status!==f.status)return false;
+    if(!pli&&f.type&&r.type!==f.type)return false;
+    if(!pli&&f.status&&r.status!==f.status)return false;
     if(f.verify){const isV=vOf(r.acct).verified;if(f.verify==='yes'&&!isV)return false;if(f.verify==='no'&&isV)return false;}
-    if(f.from&&(!r.date||r.date<f.from))return false;
-    if(f.to&&(!r.date||r.date>f.to))return false;
+    if(f.from){const d=dateOf(r);if(!d||d<f.from)return false;}
+    if(f.to){const d=dateOf(r);if(!d||d>f.to)return false;}
     if(f.balMode){
-      const b=r.balance;if(b==null)return false;
+      const b=amtOf(r);if(b==null)return false;
       if(f.balMode==='below'&&!(f.bal1!=null&&b<f.bal1))return false;
       if(f.balMode==='above'&&!(f.bal1!=null&&b>=f.bal1))return false;
       if(f.balMode==='between'){if(f.bal1==null||f.bal2==null)return false;const lo=Math.min(f.bal1,f.bal2),hi=Math.max(f.bal1,f.bal2);if(b<lo||b>hi)return false;}
@@ -939,8 +1162,10 @@ function renderDetail(){
   // Prune the selection to accounts still visible under the current filters.
   if(v){const shown=new Set(rows.map(r=>r.acct));[...state.sel].forEach(a=>{if(!shown.has(a))state.sel.delete(a);});}
   const vShown=v?rows.filter(r=>vOf(r.acct).verified).length:0;
-  $('#filterCount').innerHTML=`Showing <b>${rows.length.toLocaleString('en-IN')}</b> of ${total.toLocaleString('en-IN')} accounts`
+  const unit=isPli()?'policies':'accounts';
+  $('#filterCount').innerHTML=`Showing <b>${rows.length.toLocaleString('en-IN')}</b> of ${total.toLocaleString('en-IN')} ${unit}`
     +(v?` · <b style="color:var(--em)">${vShown}</b> verified · <b>${rows.length-vShown}</b> unverified`:'');
+  if(isPli()){buildPliTable(rows,v);updateBulkBar();return;}
   const scheme=state.current?state.current.scheme:'';
   // Account Type & Status are intentionally hidden from this table view (they remain in the
   // filters and in the PDF/Excel reports). This keeps room for the verification columns.
@@ -983,6 +1208,56 @@ function renderDetail(){
   body+='</tbody>';
   $('#detailTable').innerHTML=body;
   updateBulkBar();
+}
+// Insurance (PLI/RPLI) table — its own column set:
+// Sl.No | Policy No | Name | Address | Date of Entry | Sum Assured | Premium | Paid upto | Months Paid | [Verified | Remarks]
+function buildPliTable(rows,v){
+  const scheme=state.current?state.current.scheme:'PLI';
+  const totCols=v?12:9;                                  // +checkbox +Verified +Remarks
+  const allSel=v&&rows.length&&rows.every(r=>state.sel.has(r.acct));
+  let body=`<thead><tr>
+    ${v?`<th style="width:26px"><input type="checkbox" class="vchk" id="selAll" ${allSel?'checked':''} title="Select all shown"></th>`:''}
+    <th>Sl.No</th><th>Policy No.</th><th>Insured Name</th><th>Address</th><th>Date of Entry</th>
+    <th style="text-align:right">Sum Assured ₹</th><th style="text-align:right">Premium ₹</th><th>Paid upto</th><th style="text-align:right">Months Paid</th>
+    ${v?'<th>Verified</th><th style="min-width:150px">Remarks</th>':''}
+  </tr></thead><tbody>`;
+  if(!rows.length){
+    body+=`<tr><td colspan="${totCols}" style="text-align:center;padding:40px;color:var(--text-muted)">No policies match the current filters.</td></tr>`;
+  }else{
+    let sumSA=0,sumPrem=0;
+    // Policies of one customer share the insured name (PLI has no CIF) → offer a
+    // "select all of this customer" group button, mirroring the CIF group in bank lists.
+    const nameCount={};for(const r of state.detail){const k=(r.name||'').trim().toUpperCase();if(k)nameCount[k]=(nameCount[k]||0)+1;}
+    rows.forEach((r,i)=>{
+      if(r.sumAssured!=null)sumSA+=r.sumAssured;
+      if(r.premium!=null)sumPrem+=r.premium;
+      const rec=vOf(r.acct);const sel=state.sel.has(r.acct);
+      const nameKey=(r.name||'').trim().toUpperCase();
+      const nameCell=v&&nameKey&&nameCount[nameKey]>1
+        ? `${esc(r.name)} <button class="cifgrp" data-namegrp="${esc(r.name)}" title="Select all policies of this customer">⧉</button>`
+        : esc(r.name||'—');
+      body+=`<tr${sel?' style="background:rgba(45,212,191,.07)"':''}>
+        ${v?`<td><input type="checkbox" class="vchk" data-selacct="${esc(r.acct)}" ${sel?'checked':''}></td>`:''}
+        <td class="mono">${i+1}</td>
+        <td class="mono">${esc(r.policy||r.acct)}</td>
+        <td class="nm">${nameCell}</td>
+        <td class="addr">${esc(r.address||'—')}</td>
+        <td class="mono">${esc(fmtTxnDate(r.doeIso)||r.doeRaw||'—')}</td>
+        <td class="num">${r.sumAssured==null?'—':fmtAmt(r.sumAssured)}</td>
+        <td class="num">${r.premium==null?'—':fmtAmt(r.premium)}</td>
+        <td class="mono">${esc(r.paidUpto||fmtMonYear(r.paidIso)||r.paidRaw||'—')}</td>
+        <td class="num">${r.monthsPaid==null?'—':r.monthsPaid}</td>
+        ${v?`<td><button class="vbtn ${rec.verified?'on':''}" data-vtoggle="${esc(r.acct)}">${rec.verified?'✓ Verified':'Verify'}</button>${rec.verified&&(rec.verified_by||rec.verified_at_ms)?`<div class="vbtn-prov">${esc(rec.verified_by||'')}${rec.verified_at_ms?' · '+fmtVerAt(rec.verified_at_ms):''}</div>`:''}</td>
+        <td><input type="text" class="rmk-in ${rec.remarks?'has':''}" data-rmk="${esc(r.acct)}" value="${esc(rec.remarks||'')}" placeholder="Note discrepancy…"></td>`:''}
+      </tr>`;
+    });
+    const spanBefore=v?6:5;                              // cols up to (and incl.) Date of Entry
+    const spanAfter=totCols-spanBefore-2;                // cols after Premium
+    body+=`<tr class="totrow"><td colspan="${spanBefore}" style="text-align:right">Total (${rows.length} ${rows.length===1?'policy':'policies'})</td>
+      <td class="num">₹ ${fmtAmt(sumSA)}</td><td class="num">₹ ${fmtAmt(sumPrem)}</td><td colspan="${spanAfter}"></td></tr>`;
+  }
+  body+='</tbody>';
+  $('#detailTable').innerHTML=body;
 }
 // ── selection + bulk bar ──
 function updateBulkBar(){
@@ -1054,6 +1329,17 @@ function exportBaseName(){
 }
 function exportRows(){
   const rows=filteredRecords();const scheme=state.current.scheme;const v=canVerify();
+  if(isPli()){
+    return rows.map((r,i)=>{
+      const base=[
+        String(i+1),r.policy||r.acct,r.name||'',r.address||'',fmtTxnDate(r.doeIso)||r.doeRaw||'',
+        r.sumAssured==null?'':fmtAmt(r.sumAssured),r.premium==null?'':fmtAmt(r.premium),
+        r.paidUpto||fmtMonYear(r.paidIso)||r.paidRaw||'',r.monthsPaid==null?'':String(r.monthsPaid)
+      ];
+      if(v){const rec=vOf(r.acct);base.push(rec.verified?'Yes':'No',rec.remarks||'',rec.verified_by||'',fmtVerAt(rec.verified_at_ms)||'');}
+      return base;
+    });
+  }
   return rows.map((r,i)=>{
     const base=[
       String(i+1),scheme,r.acct,r.name||'',r.cif||'',r.address||'',r.type||'',
@@ -1064,12 +1350,14 @@ function exportRows(){
   });
 }
 const XLS_HEAD_BASE=['Sl.No','Scheme','Account No.','Customer Name','Cust1 CIF ID','Address','Account Type','Balance After Transaction','Date of Last Transaction','Status'];
+const XLS_HEAD_PLI=['Sl.No','Policy No.','Insured Name','Address','Date of Entry','Sum Assured','Premium','Paid Upto','Months Paid'];
 const XLS_HEAD_VER=['Verified','Remarks','Verified By','Verified On'];
 function exportExcel(){
   if(!window.XLSXLite){toast('Excel engine unavailable.','err');return;}
   const data=exportRows();
   if(!data.length){toast('Nothing to export with the current filters.','err');return;}
-  const head=canVerify()?XLS_HEAD_BASE.concat(XLS_HEAD_VER):XLS_HEAD_BASE;
+  const baseHead=isPli()?XLS_HEAD_PLI:XLS_HEAD_BASE;
+  const head=canVerify()?baseHead.concat(XLS_HEAD_VER):baseHead;
   const bytes=XLSXLite.build(head,data);
   dl(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),exportBaseName()+'.xlsx');
   toast('Excel downloaded ✓','ok');
@@ -1089,6 +1377,7 @@ async function exportPdf(){
   await loadPdf();const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
   const o=state.current;const v=canVerify();
+  if(isPliScheme(o.scheme))return buildPliPdf(doc,rows,o,v);
   const W=doc.internal.pageSize.getWidth();
   let grand=0,vCount=0;
   const body=rows.map((r,i)=>{if(r.balance!=null)grand+=r.balance;
@@ -1136,6 +1425,52 @@ async function exportPdf(){
   doc.save(exportBaseName()+'.pdf');
   toast('PDF downloaded ✓','ok');
 }
+// PLI verification report PDF — insurance columns with a tricolour header.
+function buildPliPdf(doc,rows,o,v){
+  const W=doc.internal.pageSize.getWidth();
+  let sumSA=0,sumPrem=0,vCount=0;
+  const body=rows.map((r,i)=>{
+    if(r.sumAssured!=null)sumSA+=r.sumAssured;
+    if(r.premium!=null)sumPrem+=r.premium;
+    const row=[i+1,r.policy||r.acct,r.name||'',r.address||'',fmtTxnDate(r.doeIso)||r.doeRaw||'—',
+      r.sumAssured==null?'—':fmtAmt(r.sumAssured),r.premium==null?'—':fmtAmt(r.premium),
+      r.paidUpto||fmtMonYear(r.paidIso)||r.paidRaw||'—',r.monthsPaid==null?'—':String(r.monthsPaid)];
+    if(v){const rec=vOf(r.acct);if(rec.verified)vCount++;
+      const vt=rec.verified?('Yes'+(rec.verified_by?' · '+rec.verified_by:'')+(rec.verified_at_ms?' · '+fmtVerAt(rec.verified_at_ms):'')):'—';
+      row.push(vt,rec.remarks||'—');}
+    return row;});
+  const header=()=>{
+    doc.setFillColor(...CLR.green);doc.rect(0,0,W,58,'F');
+    const t=W/3;doc.setFillColor(...CLR.saffron);doc.rect(0,58,t,4,'F');doc.setFillColor(...CLR.white);doc.rect(t,58,t,4,'F');doc.setFillColor(...CLR.ind);doc.rect(2*t,58,t,4,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('Cent Percent Verification — '+o.office_name,32,25);
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text(`Department of Posts · Karur Sub Division   |   ${o.scheme_label||schemeLabel(o.scheme)}${o.sol_id?'  ·  SOL '+o.sol_id:''}${o.branch_id?'  ·  Branch '+o.branch_id:''}`,32,42);
+    doc.setFontSize(8.5);doc.text('Policies: '+rows.length+(v?'   ·   Verified: '+vCount+' / '+rows.length:''),W-32,25,{align:'right'});
+    doc.text('Generated: '+new Date().toLocaleString('en-IN'),W-32,42,{align:'right'});
+  };
+  const footer=()=>{const H=doc.internal.pageSize.getHeight();doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(150);
+    doc.text('O/o the Assistant Superintendent of Post Offices, Karur Sub Division',32,H-14);
+    doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber,W-32,H-14,{align:'right'});};
+  const head=['Sl','Policy No.','Insured Name','Address','Date of Entry','Sum Assured','Premium','Paid upto','Months'];
+  const colStyles=v
+    ?{0:{halign:'center',cellWidth:18},1:{cellWidth:74,fontStyle:'bold'},2:{cellWidth:86},4:{halign:'center',cellWidth:52},5:{halign:'right',cellWidth:56,fontStyle:'bold'},6:{halign:'right',cellWidth:46},7:{halign:'center',cellWidth:48},8:{halign:'center',cellWidth:38},9:{cellWidth:76},10:{cellWidth:92}}
+    :{0:{halign:'center',cellWidth:24},1:{cellWidth:96,fontStyle:'bold'},2:{cellWidth:120},4:{halign:'center',cellWidth:66},5:{halign:'right',cellWidth:74,fontStyle:'bold'},6:{halign:'right',cellWidth:60},7:{halign:'center',cellWidth:64},8:{halign:'center',cellWidth:50}};
+  if(v)head.push('Verified','Remarks');
+  doc.autoTable({
+    head:[head],body,startY:74,margin:{top:70,left:24,right:24},
+    styles:{font:'helvetica',fontSize:v?7.2:8,cellPadding:v?2.8:3.5,overflow:'linebreak',lineColor:[214,230,228],lineWidth:.5},
+    headStyles:{fillColor:CLR.green,textColor:255,fontStyle:'bold',halign:'center',fontSize:v?7.6:8.4},
+    alternateRowStyles:{fillColor:[240,250,248]},
+    columnStyles:colStyles,
+    didParseCell:d=>{if(v&&d.section==='body'&&d.column.index===9){d.cell.styles.fontStyle='bold';if(String(d.cell.raw||'').startsWith('Yes'))d.cell.styles.textColor=[16,120,80];else d.cell.styles.textColor=[150,150,150];}},
+    didDrawPage:()=>{header();footer();}
+  });
+  const finalY=doc.lastAutoTable.finalY||90;
+  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(13,148,136);
+  doc.text(`Total for ${rows.length} policy(ies):  Sum Assured Rs. ${fmtAmt(sumSA)}   ·   Premium Rs. ${fmtAmt(sumPrem)}`,W-24,Math.min(finalY+20,doc.internal.pageSize.getHeight()-24),{align:'right'});
+  doc.save(exportBaseName()+'.pdf');
+  toast('PDF downloaded ✓','ok');
+}
 function runExport(btn,fn){const old=btn.textContent;btn.disabled=true;btn.textContent='⏳ Building…';
   Promise.resolve().then(fn).catch(e=>toast('Could not build: '+(e.message||''),'err')).finally(()=>{btn.disabled=false;btn.textContent=old;});}
 
@@ -1162,6 +1497,20 @@ $('#dupKeep').addEventListener('click',()=>resolveDuplicate('keep'));
 // delete-confirm modal
 $('#delCancel').addEventListener('click',()=>{$('#delOverlay').classList.remove('show');state.delKey=null;});
 $('#delConfirm').addEventListener('click',confirmDelete);
+// PLI office picker modal
+$('#opList').addEventListener('click',e=>{
+  const it=e.target.closest('[data-opidx]');if(!it)return;
+  const o=(state._pliOffs||[])[+it.dataset.opidx];if(!o)return;
+  state._pliPick={office:o.office,sol:o.sol,branch:o.branch};
+  $('#opNew').value='';                                  // choosing a list clears the manual box
+  [...$('#opList').querySelectorAll('.op-item')].forEach(el=>el.classList.remove('sel'));
+  it.classList.add('sel');
+});
+$('#opNew').addEventListener('input',()=>{                // typing a new name clears the list selection
+  if($('#opNew').value.trim()){state._pliPick=null;[...$('#opList').querySelectorAll('.op-item')].forEach(el=>el.classList.remove('sel'));}
+});
+$('#opConfirm').addEventListener('click',officePickerConfirm);
+$('#opCancel').addEventListener('click',()=>{$('#opOverlay').classList.remove('show');state._pliRecords=null;state._pliPick=null;});
 
 let dqt;$('#dq').addEventListener('input',e=>{clearTimeout(dqt);dqt=setTimeout(()=>{state.dq=e.target.value.trim();renderDashboard();},130);});
 $('#refreshBtn').addEventListener('click',()=>loadDashboard());
@@ -1195,6 +1544,8 @@ $('#detailTable').addEventListener('click',e=>{
   if(vt){const a=vt.dataset.vtoggle;applyVerif([a],{verified:!vOf(a).verified});return;}
   const cg=e.target.closest('[data-cifgrp]');
   if(cg){const cif=cg.dataset.cifgrp;let n=0;filteredRecords().forEach(r=>{if(r.cif===cif){state.sel.add(r.acct);n++;}});renderDetail();toast(`Selected ${n} account${n===1?'':'s'} of CIF ${cif}`);return;}
+  const ng=e.target.closest('[data-namegrp]');
+  if(ng){const nm=ng.dataset.namegrp;const key=nm.trim().toUpperCase();let n=0;filteredRecords().forEach(r=>{if((r.name||'').trim().toUpperCase()===key){state.sel.add(r.acct);n++;}});renderDetail();toast(`Selected ${n} polic${n===1?'y':'ies'} of ${nm}`);return;}
 });
 // bulk bar actions
 $('#bkVerify').addEventListener('click',async()=>{
@@ -1214,10 +1565,10 @@ $('#clearFilters').addEventListener('click',()=>clearFilters(false));
 $('#pdfBtn').addEventListener('click',e=>runExport(e.currentTarget,exportPdf));
 $('#xlsBtn').addEventListener('click',e=>runExport(e.currentTarget,exportExcel));
 
-[['dupOverlay',()=>{$('#dupOverlay').classList.remove('show');}],['delOverlay',()=>{$('#delOverlay').classList.remove('show');state.delKey=null;}]].forEach(([id,fn])=>{
+[['dupOverlay',()=>{$('#dupOverlay').classList.remove('show');}],['delOverlay',()=>{$('#delOverlay').classList.remove('show');state.delKey=null;}],['opOverlay',()=>{$('#opOverlay').classList.remove('show');state._pliRecords=null;state._pliPick=null;}]].forEach(([id,fn])=>{
   const o=document.getElementById(id);o.addEventListener('click',e=>{if(e.target===o)fn();});
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#dupOverlay').classList.remove('show');$('#delOverlay').classList.remove('show');}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#dupOverlay').classList.remove('show');$('#delOverlay').classList.remove('show');$('#opOverlay').classList.remove('show');}});
 
 // init
 loadDashboard();

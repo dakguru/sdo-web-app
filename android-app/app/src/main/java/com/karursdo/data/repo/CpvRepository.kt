@@ -25,7 +25,13 @@ data class CpvBatchDto(
     val uploaded_at_ms: Long? = null
 )
 
-/** One cleaned account row inside a batch's `records` JSON array. */
+/**
+ * One cleaned row inside a batch's `records` JSON array.
+ *
+ * Bank schemes (SB/RD/SSA/TD…) use acct/cif/balance/date/status. PLI & RPLI lists
+ * reuse `acct` as the policy number (so verification keying is unchanged) and carry
+ * the extra insurance fields below; bank rows simply leave them at their defaults.
+ */
 @Serializable
 data class CpvRecordDto(
     val acct: String = "",
@@ -36,7 +42,17 @@ data class CpvRecordDto(
     val balance: Double? = null,
     val date: String = "",
     val dateRaw: String = "",
-    val status: String = "—"
+    val status: String = "—",
+    // ── PLI / RPLI only ──
+    val policy: String = "",
+    val doeIso: String = "",
+    val doeRaw: String = "",
+    val sumAssured: Double? = null,
+    val premium: Double? = null,
+    val paidUpto: String = "",       // MMM-YYYY, e.g. "Jun-2026"
+    val paidIso: String = "",
+    val paidRaw: String = "",
+    val monthsPaid: Int? = null
 )
 
 /** Full batch row including the account records (loaded when a list is opened). */
