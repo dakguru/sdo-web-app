@@ -224,7 +224,7 @@ fun ProfileScreen(
                 Button(
                     onClick = { pwMsg = null; changingPassword = true },
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Change my password") }
                 if (canManageEvents) {
@@ -232,7 +232,7 @@ fun ProfileScreen(
                     Button(
                         onClick = onOpenEvents,
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("🗓️ Manage events & announcements") }
                 }
@@ -241,7 +241,7 @@ fun ProfileScreen(
                     Button(
                         onClick = onOpenUserAdmin,
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Brand.Violet),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("👥 Manage users") }
                 }
@@ -273,7 +273,7 @@ fun ProfileScreen(
                         onClick = { vm.syncNow() },
                         enabled = !syncing,
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                         modifier = Modifier.fillMaxWidth()
                     ) { Text(if (syncing) "Syncing…" else "☁ Sync now") }
                 } else {
@@ -519,7 +519,7 @@ fun NotesSection(
         Button(
             onClick = { adding = true },
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Brand.Violet)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
         ) { Text("＋ Add note") }
     }
 }
@@ -733,7 +733,7 @@ fun UserAdminScreen(
                 Button(
                     onClick = { banner = null; adding = true },
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                 ) { Text("＋ Add user") }
             }
         }

@@ -70,6 +70,7 @@ import com.karursdo.ui.components.SectionCard
 import com.karursdo.report.MoReportPdf
 import com.karursdo.report.MoReportRow
 import com.karursdo.ui.theme.Brand
+import com.karursdo.ui.theme.LocalHeaderBrush
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -443,7 +444,7 @@ private fun ProgrammeSection(beat: String, vm: MoViewModel, boOptions: List<BoOp
         Button(
             onClick = { showAdd = true },
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
             modifier = Modifier.fillMaxWidth()
         ) { Text("＋ Add programme") }
     }
@@ -571,7 +572,7 @@ private fun ProgrammeDialog(
                             onClick = { kind = k },
                             label = { Text(k.label) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Brand.Indigo, selectedLabelColor = Color.White
+                                selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                             )
                         )
                     }
@@ -743,7 +744,7 @@ private fun ReportCard(vm: MoViewModel) {
                     onClick = { beat = b; lastFile = null },
                     label = { Text(lbl) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Brand.Indigo, selectedLabelColor = Color.White
+                        selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                     )
                 )
             }
@@ -774,7 +775,7 @@ private fun ReportCard(vm: MoViewModel) {
             },
             enabled = !generating,
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Brand.PrimaryDark),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
             modifier = Modifier.fillMaxWidth().height(50.dp)
         ) { Text(if (generating) "Generating…" else "📄  Generate PDF report", fontWeight = FontWeight.SemiBold) }
 
@@ -940,7 +941,7 @@ fun MoOfficeDetailScreen(
         item {
             Box(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
-                    .background(Brand.HeroGradient).padding(18.dp)
+                    .background(LocalHeaderBrush.current).padding(18.dp)
             ) {
                 Column {
                     Text("🏤 ${o.officeName}", style = MaterialTheme.typography.headlineSmall, color = Color.White)
@@ -1004,7 +1005,7 @@ fun MoOfficeDetailScreen(
                 Button(
                     onClick = { showPicker = true },
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("＋ Add visit date") }
                 row.nextDue?.let {

@@ -112,7 +112,7 @@ fun EventsAdminScreen(
                 Button(
                     onClick = { adding = true },
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                 ) { Text("＋ Add") }
             }
         }

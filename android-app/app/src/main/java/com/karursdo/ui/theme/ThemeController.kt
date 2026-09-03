@@ -26,5 +26,17 @@ class ThemeController @Inject constructor(@ApplicationContext context: Context) 
         prefs.edit().putString(KEY, mode.name).apply()
     }
 
-    private companion object { const val KEY = "theme_mode" }
+    private val _palette = MutableStateFlow(
+        runCatching { AppPalette.valueOf(prefs.getString(KEY_PAL, AppPalette.ROYAL_NAVY.name)!!) }
+            .getOrDefault(AppPalette.ROYAL_NAVY)
+    )
+    /** The selected premium colour palette, applied on top of the light/dark [mode]. */
+    val palette: StateFlow<AppPalette> = _palette
+
+    fun setPalette(p: AppPalette) {
+        _palette.value = p
+        prefs.edit().putString(KEY_PAL, p.name).apply()
+    }
+
+    private companion object { const val KEY = "theme_mode"; const val KEY_PAL = "theme_palette" }
 }

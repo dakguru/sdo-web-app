@@ -64,6 +64,7 @@ import com.karursdo.ui.components.SectionCard
 import com.karursdo.ui.components.StatusChip
 import com.karursdo.ui.components.TypePill
 import com.karursdo.ui.theme.Brand
+import com.karursdo.ui.theme.LocalHeaderBrush
 import com.karursdo.ui.user.NotesSection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -249,7 +250,7 @@ fun EmployeeDetailScreen(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
-                    .background(Brand.HeroGradient)
+                    .background(LocalHeaderBrush.current)
                     .padding(18.dp)
             ) {
                 Column {
@@ -402,7 +403,7 @@ fun OutsiderDetailScreen(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
-                    .background(Brand.HeroGradient)
+                    .background(LocalHeaderBrush.current)
                     .padding(18.dp)
             ) {
                 Column {

@@ -187,6 +187,7 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             val themeMode by themeController.mode.collectAsState()
+            val palette by themeController.palette.collectAsState()
             val dark = when (themeMode) {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
                 ThemeMode.LIGHT -> false
@@ -200,7 +201,7 @@ class MainActivity : FragmentActivity() {
                     else SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
                 )
             }
-            KarurSdoTheme(darkTheme = dark) {
+            KarurSdoTheme(darkTheme = dark, palette = palette) {
                 val reduceMotion = android.provider.Settings.Global.getFloat(
                     contentResolver,
                     android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
@@ -463,7 +464,7 @@ private fun LoginGate(
                         onClick = { onSubmit(username, password) },
                         enabled = !loggingIn && username.isNotBlank() && password.isNotEmpty(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Brand.PrimaryDark),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                         modifier = Modifier.fillMaxWidth().height(50.dp)
                     ) { Text(if (loggingIn) "Signing in…" else "Sign in", fontWeight = FontWeight.SemiBold) }
                     if (biometricAvailable) {
@@ -595,7 +596,7 @@ private fun ForceChangePassword(onSave: (String) -> Unit) {
                         }
                     },
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Brand.PrimaryDark),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                     modifier = Modifier.fillMaxWidth().height(50.dp)
                 ) { Text("Save & continue", fontWeight = FontWeight.SemiBold) }
             }

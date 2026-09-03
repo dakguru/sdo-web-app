@@ -1,6 +1,7 @@
 package com.karursdo.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +16,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -47,6 +52,7 @@ import com.karursdo.ui.mo.moBeatShort
 import com.karursdo.ui.mo.moOverdueCount
 import androidx.lifecycle.viewModelScope
 import com.karursdo.ui.theme.Brand
+import com.karursdo.ui.theme.LocalHeaderBrush
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -135,7 +141,7 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .padding(top = 8.dp)
                     .clip(RoundedCornerShape(18.dp))
-                    .background(Brand.HeaderGradient)
+                    .background(LocalHeaderBrush.current)
                     .padding(18.dp)
             ) {
                 Text(
@@ -231,6 +237,7 @@ fun HomeScreen(
         }
         item {
             val mode by vm.themeController.mode.collectAsState()
+            val palette by vm.themeController.palette.collectAsState()
             SectionCard("Appearance") {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
@@ -243,10 +250,59 @@ fun HomeScreen(
                             onClick = { vm.themeController.setMode(m) },
                             label = { Text(label) },
                             colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Brand.Indigo,
-                                selectedLabelColor = Color.White
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                             )
                         )
+                    }
+                }
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    "Theme",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    com.karursdo.ui.theme.AppPalette.values().forEach { p ->
+                        val selected = palette == p
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { vm.themeController.setPalette(p) }
+                                .padding(vertical = 4.dp, horizontal = 2.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(p.swatch)
+                                    .border(
+                                        width = if (selected) 3.dp else 1.dp,
+                                        color = if (selected) MaterialTheme.colorScheme.onSurface
+                                                else MaterialTheme.colorScheme.outline,
+                                        shape = CircleShape
+                                    )
+                            ) {
+                                if (selected) Icon(
+                                    Icons.Rounded.Check,
+                                    contentDescription = "Selected",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                p.label,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (selected) MaterialTheme.colorScheme.onSurface
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
@@ -306,7 +362,7 @@ private fun EventsBanner(events: List<com.karursdo.data.db.EventEntity>) {
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(Brand.HeroGradient)
+            .background(LocalHeaderBrush.current)
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

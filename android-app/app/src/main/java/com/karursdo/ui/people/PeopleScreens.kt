@@ -49,6 +49,7 @@ import com.karursdo.ui.components.KsdSearchField
 import com.karursdo.ui.components.Pill
 import com.karursdo.ui.components.initialsOf
 import com.karursdo.ui.theme.Brand
+import com.karursdo.ui.theme.LocalHeaderBrush
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -92,7 +93,7 @@ private fun catBadge(cat: String): Triple<String, Color, Color> = when (cat) {
 
 @Composable
 private fun HeaderBand(logo: String, title: String, subtitle: String, onBack: () -> Unit) {
-    Column(Modifier.fillMaxWidth().background(Brand.HeaderGradient).padding(16.dp)) {
+    Column(Modifier.fillMaxWidth().background(LocalHeaderBrush.current).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = Color.White)
@@ -143,7 +144,7 @@ private fun CatChips(options: List<Pair<String, String>>, selected: String, onSe
                 onClick = { onSelect(key) },
                 label = { Text(label) },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Brand.Indigo, selectedLabelColor = Color.White
+                    selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }

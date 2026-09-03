@@ -78,6 +78,7 @@ import com.karursdo.ui.components.SectionCard
 import com.karursdo.ui.components.StatCard
 import com.karursdo.ui.components.TypePill
 import com.karursdo.ui.theme.Brand
+import com.karursdo.ui.theme.LocalHeaderBrush
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -247,8 +248,8 @@ fun OfficeManagementScreen(
                             onClick = { vm.category.value = key },
                             label = { Text(label) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Brand.Indigo,
-                                selectedLabelColor = Color.White
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                             )
                         )
                     }
@@ -354,7 +355,7 @@ fun OfficeMasterDetailScreen(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
-                    .background(Brand.HeroGradient)
+                    .background(LocalHeaderBrush.current)
                     .padding(18.dp)
             ) {
                 Column {
@@ -388,7 +389,7 @@ fun OfficeMasterDetailScreen(
                     Button(
                         onClick = { addingStaff = true },
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                     ) { Text("＋ Add staff") }
                 }

@@ -157,7 +157,7 @@ fun ArrangementsScreen(
                         onClick = { showPrevious = false },
                         label = { Text("This month") },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Brand.Indigo, selectedLabelColor = Color.White
+                            selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                         )
                     )
                     FilterChip(
@@ -165,7 +165,7 @@ fun ArrangementsScreen(
                         onClick = { showPrevious = true },
                         label = { Text("Previous month") },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Brand.Indigo, selectedLabelColor = Color.White
+                            selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                         )
                     )
                 }
@@ -188,7 +188,7 @@ fun ArrangementsScreen(
                     Button(
                         onClick = onOpenImport,
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("📤 Upload arrangements export (.xls / .xlsx)") }
                 }

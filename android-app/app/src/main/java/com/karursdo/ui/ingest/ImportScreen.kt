@@ -145,7 +145,7 @@ fun ImportScreen(vm: ImportViewModel = hiltViewModel()) {
                         )
                     },
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Choose files…") }
             }
@@ -216,7 +216,7 @@ fun ImportScreen(vm: ImportViewModel = hiltViewModel()) {
                                 onClick = { if (replace) confirmReplace = true else vm.save() },
                                 enabled = s.files.isNotEmpty(),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo)
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                             ) { Text("💾 Save & update directory") }
                             OutlinedButton(
                                 onClick = { vm.discard() },

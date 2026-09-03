@@ -93,6 +93,7 @@ import com.karursdo.ui.components.Pill
 import com.karursdo.ui.components.SectionCard
 import com.karursdo.ui.components.inr
 import com.karursdo.ui.theme.Brand
+import com.karursdo.ui.theme.LocalHeaderBrush
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -141,6 +142,19 @@ private fun monYear(iso: String, label: String, raw: String): String {
     }
 }
 
+/**
+ * Long CBS account-type labels are shortened for the card's type pill so they never crowd the
+ * holder's name. "MINOR A/C OPERATED BY GUARDIAN" → "Minor Ac OPG" (small letters); any other
+ * type passes through unchanged.
+ */
+private fun shortAcctType(type: String): String {
+    val low = type.trim().lowercase()
+    return when {
+        low.contains("minor") && low.contains("guardian") -> "Minor Ac OPG"
+        else -> type.trim()
+    }
+}
+
 // ═════════════════════════════════════════════════════════════
 //  LIST SCREEN
 // ═════════════════════════════════════════════════════════════
@@ -186,7 +200,7 @@ fun CpvListScreen(
     Column(Modifier.fillMaxSize()) {
         // Header band
         Column(
-            Modifier.fillMaxWidth().background(Brand.HeaderGradient).padding(16.dp)
+            Modifier.fillMaxWidth().background(LocalHeaderBrush.current).padding(16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
@@ -227,7 +241,7 @@ fun CpvListScreen(
             when {
                 state.loading -> item {
                     Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Brand.Teal)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 state.error != null -> item {
@@ -240,7 +254,7 @@ fun CpvListScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(Modifier.height(12.dp))
-                        Button(onClick = { vm.load() }, colors = ButtonDefaults.buttonColors(containerColor = Brand.Teal)) {
+                        Button(onClick = { vm.load() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)) {
                             Text("Retry")
                         }
                     }
@@ -426,7 +440,7 @@ fun CpvDetailScreen(
     androidx.compose.material3.Scaffold(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackHost) },
         topBar = {
-            Column(Modifier.fillMaxWidth().background(Brand.HeaderGradient).padding(12.dp)) {
+            Column(Modifier.fillMaxWidth().background(LocalHeaderBrush.current).padding(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = Color.White)
@@ -481,7 +495,7 @@ fun CpvDetailScreen(
     ) { pad ->
         when {
             state.loading -> Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Brand.Teal)
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
             state.error != null -> Column(
                 Modifier.fillMaxSize().padding(pad).padding(24.dp),
@@ -492,7 +506,7 @@ fun CpvDetailScreen(
                 Spacer(Modifier.height(8.dp))
                 Text(state.error ?: "", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = { vm.load(officeKey) }, colors = ButtonDefaults.buttonColors(containerColor = Brand.Teal)) { Text("Retry") }
+                Button(onClick = { vm.load(officeKey) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)) { Text("Retry") }
             }
             else -> LazyColumn(
                 contentPadding = PaddingValues(12.dp),
@@ -539,19 +553,19 @@ fun CpvDetailScreen(
                             selected = verFilter == VerFilter.ALL,
                             onClick = { verFilter = VerFilter.ALL },
                             label = { Text("All") },
-                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Brand.Indigo, selectedLabelColor = Color.White)
+                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary)
                         )
                         FilterChip(
                             selected = verFilter == VerFilter.VERIFIED,
                             onClick = { verFilter = VerFilter.VERIFIED },
                             label = { Text("Verified") },
-                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Brand.Teal, selectedLabelColor = Color.White)
+                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Brand.Emerald, selectedLabelColor = Color.White)
                         )
                         FilterChip(
                             selected = verFilter == VerFilter.UNVERIFIED,
                             onClick = { verFilter = VerFilter.UNVERIFIED },
                             label = { Text("Unverified") },
-                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Brand.Violet, selectedLabelColor = Color.White)
+                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary)
                         )
                         // Account status doesn't apply to insurance policies.
                         if (!pli) StatusDropdown(statuses, statusFilter) { statusFilter = it }
@@ -699,14 +713,14 @@ private fun AccountCard(
 
     val container by animateColorAsState(
         when {
-            selected -> Brand.Teal.copy(alpha = 0.12f)
+            selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
             a.verified -> Brand.Emerald.copy(alpha = 0.06f)
             else -> MaterialTheme.colorScheme.surface
         }, tween(240), label = "cardBg"
     )
     val borderColor by animateColorAsState(
         when {
-            selected -> Brand.Teal
+            selected -> MaterialTheme.colorScheme.primary
             a.verified -> Brand.Emerald.copy(alpha = 0.5f)
             else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
         }, tween(240), label = "cardBorder"
@@ -740,7 +754,7 @@ private fun AccountCard(
                 Checkbox(
                     checked = selected,
                     onCheckedChange = { onToggleSelect() },
-                    colors = androidx.compose.material3.CheckboxDefaults.colors(checkedColor = Brand.Teal)
+                    colors = androidx.compose.material3.CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary, checkmarkColor = MaterialTheme.colorScheme.onPrimary)
                 )
                 if (a.record.cif.isNotBlank()) {
                     CifBulkButton(onClick = onSelectCif)
@@ -773,18 +787,20 @@ private fun AccountCard(
                 }
                 Spacer(Modifier.height(2.dp))
 
-                // Name + Account Type.
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // Name + Account Type. The full holder name takes priority; long CBS type
+                // labels (e.g. "MINOR A/C OPERATED BY GUARDIAN") are shortened to a compact
+                // tag so they never crowd or truncate the account holder's name.
+                Row(verticalAlignment = Alignment.Top) {
                     Text(
                         a.record.name.ifBlank { "—" },
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
                     if (a.record.type.isNotBlank()) {
                         Spacer(Modifier.width(8.dp))
-                        Pill(a.record.type, Brand.BadgeDsBg, Brand.BadgeDsFg)
+                        Pill(shortAcctType(a.record.type), Brand.BadgeDsBg, Brand.BadgeDsFg, Modifier.padding(top = 1.dp))
                     }
                 }
 
@@ -871,7 +887,7 @@ private fun AccountCard(
                                 onClick = onToggleVerify,
                                 shape = RoundedCornerShape(12.dp),
                                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Brand.Teal)
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                             ) { Text("Verify", fontWeight = FontWeight.Bold, maxLines = 1) }
                         }
                     }
@@ -897,18 +913,18 @@ private fun PliPolicyCard(
     onToggleVerify: () -> Unit,
     onEditRemark: () -> Unit
 ) {
-    val accent = if (a.verified) Brand.Emerald else Brand.Teal
+    val accent = if (a.verified) Brand.Emerald else MaterialTheme.colorScheme.primary
 
     val container by animateColorAsState(
         when {
-            selected -> Brand.Teal.copy(alpha = 0.12f)
+            selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
             a.verified -> Brand.Emerald.copy(alpha = 0.06f)
             else -> MaterialTheme.colorScheme.surface
         }, tween(240), label = "cardBg"
     )
     val borderColor by animateColorAsState(
         when {
-            selected -> Brand.Teal
+            selected -> MaterialTheme.colorScheme.primary
             a.verified -> Brand.Emerald.copy(alpha = 0.5f)
             else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
         }, tween(240), label = "cardBorder"
@@ -917,9 +933,10 @@ private fun PliPolicyCard(
 
     val doe = fmtTxn(a.record.doeIso, a.record.doeRaw)
     val paid = monYear(a.record.paidIso, a.record.paidUpto, a.record.paidRaw)
+    // Entry date + months-paid stay in the small meta line; Premium & Paid-upto get their
+    // own prominent labelled row below so the MO can check them at a glance while verifying.
     val metaLine = buildString {
         if (doe.isNotBlank()) append("Entry $doe")
-        if (paid.isNotBlank()) { if (isNotEmpty()) append("  ·  "); append("Paid upto $paid") }
         a.record.monthsPaid?.let { if (isNotEmpty()) append("  ·  "); append("$it mo") }
     }
 
@@ -941,7 +958,7 @@ private fun PliPolicyCard(
                 Checkbox(
                     checked = selected,
                     onCheckedChange = { onToggleSelect() },
-                    colors = androidx.compose.material3.CheckboxDefaults.colors(checkedColor = Brand.Teal)
+                    colors = androidx.compose.material3.CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary, checkmarkColor = MaterialTheme.colorScheme.onPrimary)
                 )
                 if (groupable) {
                     CustomerBulkButton(onClick = onSelectCustomer)
@@ -972,26 +989,13 @@ private fun PliPolicyCard(
                 }
                 Spacer(Modifier.height(2.dp))
 
-                // Insured name + Premium.
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        a.record.name.ifBlank { "—" },
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    a.record.premium?.let {
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Prem ${inr(it)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1
-                        )
-                    }
-                }
+                // Insured name.
+                Text(
+                    a.record.name.ifBlank { "—" },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
 
                 // Address.
                 if (a.record.address.isNotBlank()) {
@@ -1002,6 +1006,17 @@ private fun PliPolicyCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2, overflow = TextOverflow.Ellipsis
                     )
+                }
+
+                // Premium & Paid-upto — the two figures the MO checks against the policy bond,
+                // shown as clear labelled facts (Paid upto in MMM-YYYY, e.g. "Jun-2026").
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    PliFact("Premium", a.record.premium?.let { inr(it) } ?: "—", Modifier.weight(1f))
+                    PliFact("Paid upto", paid.ifBlank { "—" }, Modifier.weight(1f))
                 }
 
                 // Entry · Paid upto · Months + verifier.
@@ -1070,13 +1085,43 @@ private fun PliPolicyCard(
                                 onClick = onToggleVerify,
                                 shape = RoundedCornerShape(12.dp),
                                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Brand.Teal)
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                             ) { Text("Verify", fontWeight = FontWeight.Bold, maxLines = 1) }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * A single labelled figure on a PLI card (Premium / Paid upto) — a small tinted box with a
+ * muted caption over a bold value, so the number the MO must check stands out on the card.
+ */
+@Composable
+private fun PliFact(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(Brand.BadgeDsBg.copy(alpha = 0.5f))
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        Text(
+            label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 0.4.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -1106,7 +1151,7 @@ private fun CpvBulkBar(
         ) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("$count selected", fontWeight = FontWeight.Bold, color = Brand.Teal, modifier = Modifier.weight(1f))
+                    Text("$count selected", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
                     TextButton(onClick = onClear) { Text("Clear") }
                 }
                 Spacer(Modifier.height(6.dp))
@@ -1121,7 +1166,7 @@ private fun CpvBulkBar(
                     Button(
                         onClick = onVerify,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Brand.Teal)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                     ) { Text("✓ Verify $count") }
                     OutlinedButton(onClick = onUnverify, modifier = Modifier.weight(1f)) { Text("Unverify") }
                 }
@@ -1137,13 +1182,13 @@ private fun CifBulkButton(onClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clip(RoundedCornerShape(10.dp))
-            .background(Brand.Indigo.copy(alpha = 0.12f))
-            .border(1.dp, Brand.Indigo.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 6.dp, vertical = 5.dp)
     ) {
-        Icon(Icons.Rounded.Groups, contentDescription = "Select all accounts with this CIF", tint = Brand.Indigo, modifier = Modifier.size(18.dp))
-        Text("CIF", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Brand.Indigo)
+        Icon(Icons.Rounded.Groups, contentDescription = "Select all accounts with this CIF", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+        Text("CIF", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
     }
 }
 
@@ -1154,13 +1199,13 @@ private fun CustomerBulkButton(onClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clip(RoundedCornerShape(10.dp))
-            .background(Brand.Indigo.copy(alpha = 0.12f))
-            .border(1.dp, Brand.Indigo.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 6.dp, vertical = 5.dp)
     ) {
-        Icon(Icons.Rounded.Groups, contentDescription = "Select all policies of this customer", tint = Brand.Indigo, modifier = Modifier.size(18.dp))
-        Text("Cust", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Brand.Indigo)
+        Icon(Icons.Rounded.Groups, contentDescription = "Select all policies of this customer", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+        Text("Cust", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
     }
 }
 

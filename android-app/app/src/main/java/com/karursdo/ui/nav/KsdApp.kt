@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Villa
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -91,9 +92,9 @@ fun KsdApp(onLogout: () -> Unit = {}) {
                         icon = { Icon(dest.icon, contentDescription = dest.label) },
                         label = { Text(dest.label) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Brand.Indigo,
-                            selectedTextColor = Brand.Indigo,
-                            indicatorColor = Brand.BadgeDsBg
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primary
                         )
                     )
                 }
