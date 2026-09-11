@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>PLI / RPLI Mega Mela — Premium Procurement · Karur Sub Division</title>
-<meta name="description" content="Live premium procurement tracker for the PLI / RPLI Mega Mela (10 September 2026) — Department of Posts, Karur Sub Division. Staff log their policies, sum assured and premium; everyone sees the live leaderboard." />
+<title>Premium Procured Details — 10.09.2026 PLI / RPLI Mela · Karur Sub Division</title>
+<meta name="description" content="Premium Procured Details on the 10.09.2026 PLI / RPLI Mela — Department of Posts, Karur Sub Division. Officials log their policies, sum assured and premium procured at the Mela; everyone sees the leaderboard." />
 <meta name="theme-color" content="#0a1834" />
 <!-- PUBLIC page: no auth-guard, no links to internal modules. Staff open the
      shared link, pick their office/name and log their Mega Mela procurement. -->
@@ -69,6 +69,21 @@
   .cd-days .lbl{font:800 11px/1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:2.6px;text-transform:uppercase;margin-top:6px;opacity:.85}
   .cd-days.over{background:linear-gradient(135deg,#34d399,#10b981);color:#053d2b}
   @media(max-width:520px){.cd-days .num{font-size:38px}}
+
+  /* ===== Karur Sub Division — Special Drive highlight ===== */
+  .karur-stat{position:relative;z-index:1;margin:0 16px 22px;padding:16px 18px 14px;border-radius:18px;text-align:center;
+    background:linear-gradient(135deg,rgba(246,196,83,.20),rgba(255,255,255,.07));
+    border:1px solid rgba(240,192,74,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    box-shadow:0 12px 32px rgba(9,20,40,.28),inset 0 1px 0 rgba(255,255,255,.18)}
+  .karur-stat .ks-head{font:800 11px/1.3 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:1.8px;text-transform:uppercase;
+    background:linear-gradient(90deg,#fde68a,#fcd34d,#fbbf24);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .karur-stat .ks-grid{display:flex;align-items:stretch;justify-content:center;gap:14px;margin:13px 0 11px}
+  .karur-stat .ks-item{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:5px}
+  .karur-stat .ks-num{font:800 clamp(22px,5.4vw,31px)/1 'Sora','Plus Jakarta Sans',sans-serif;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:.3px}
+  .karur-stat .ks-lbl{font:700 9.5px/1.2 'Inter',sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.74)}
+  .karur-stat .ks-sep{width:1px;background:rgba(255,255,255,.24)}
+  .karur-stat .ks-foot{font:600 11.5px/1.4 'Inter',sans-serif;color:rgba(255,255,255,.72);border-top:1px solid rgba(255,255,255,.15);padding-top:9px}
+  .karur-stat .ks-foot b{color:#fff;font-weight:800}
 
   /* ===== Tabs ===== */
   .tabs{position:sticky;top:0;z-index:20;background:rgba(246,248,253,.86);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line);padding:9px 16px}
@@ -174,6 +189,7 @@
   .lb-sub{font:600 11.5px/1.35 'Inter',sans-serif;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .lb-sub .cat{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:6px;background:#eef2ff;color:#4f46e5;margin-right:6px;vertical-align:1px}
   .lb-sub .cat.gds{background:#ecfdf5;color:#059669}
+  .lb-sub .cat.out{background:#fef3c7;color:#b45309}
   .lb-metrics{flex:0 0 auto;text-align:right}
   .lb-prem{font:800 17px/1 'Sora','Plus Jakarta Sans',sans-serif;color:var(--brand);font-variant-numeric:tabular-nums}
   .lb-mini{font:600 11px/1.3 'Inter',sans-serif;color:var(--muted);margin-top:4px;white-space:nowrap}
@@ -210,9 +226,9 @@
     </div>
 
     <div class="hero">
-      <span class="hero-badge">&#9733; Mega Mela 2026 &#9733;</span>
-      <h1><span class="g">PLI &middot; RPLI</span> Premium Procurement</h1>
-      <div class="tag">Log your Mega Mela procurement and watch the Sub Division climb the leaderboard in real time.</div>
+      <span class="hero-badge">&#9733; Mega Mela &middot; 10.09.2026 &#9733;</span>
+      <h1><span class="g">PLI &middot; RPLI</span> Premium Procured Details</h1>
+      <div class="tag">Enter the premium you procured at the 10.09.2026 PLI / RPLI Mela. You can update your figures any time.</div>
     </div>
 
     <div class="countdown">
@@ -224,6 +240,16 @@
         <span class="num" id="cdNum">—</span>
         <span class="lbl" id="cdLbl">Days Left</span>
       </div>
+    </div>
+
+    <div class="karur-stat">
+      <div class="ks-head">&#9733; Karur Sub Division &middot; Special Drive Procurement &#9733;</div>
+      <div class="ks-grid">
+        <div class="ks-item"><span class="ks-num">418</span><span class="ks-lbl">Policies Procured</span></div>
+        <div class="ks-sep"></div>
+        <div class="ks-item"><span class="ks-num">&#8377;40,11,068</span><span class="ks-lbl">Premium Procured</span></div>
+      </div>
+      <div class="ks-foot">PLI / RPLI Special Drive on <b>10.09.2026</b> &middot; Division total <b>1,686</b> policies &middot; <b>&#8377;1,57,55,550</b></div>
     </div>
   </div>
 </header>
@@ -240,7 +266,7 @@
   <!-- ============ SUBMIT VIEW ============ -->
   <section class="view show" id="viewSubmit">
     <div class="card">
-      <p class="lead" id="lead">Select your office and name, then enter your procurement. You can update your figures any number of times before the Mela.</p>
+      <p class="lead" id="lead">Select your office and name, then enter the premium you procured on 10.09.2026. You can update your figures any number of times.</p>
 
       <div class="msg" id="msg"></div>
 
@@ -256,9 +282,15 @@
           <select id="fBo" disabled><option value="">— Select branch —</option></select>
         </div>
 
-        <div class="field">
+        <div class="field" id="empWrap">
           <label for="fEmp"><span class="step-n" id="stepEmp">3</span>Your Name <span class="opt">(Departmental &amp; GDS)</span> <span class="req">*</span></label>
           <select id="fEmp" disabled><option value="">— Select your office first —</option></select>
+        </div>
+
+        <div class="field hide" id="outWrap">
+          <label for="fOutName"><span class="step-n">2</span>Your Name <span class="opt">(Outsider)</span> <span class="req">*</span></label>
+          <input id="fOutName" type="text" placeholder="Enter your full name" autocomplete="off" />
+          <div class="hint">You&rsquo;re logging as an <b>Outsider</b> — not listed under a Karur Sub Division office.</div>
         </div>
 
         <div class="exist" id="exist">
@@ -388,7 +420,8 @@
   const isProcOffice = t => ['HPO','HO','SO','SPO','BPO','BO'].includes(cln(t).toUpperCase());
 
   const els = {
-    office:$('fOffice'), boWrap:$('boWrap'), bo:$('fBo'), emp:$('fEmp'),
+    office:$('fOffice'), boWrap:$('boWrap'), bo:$('fBo'), emp:$('fEmp'), empWrap:$('empWrap'),
+    outWrap:$('outWrap'), outName:$('fOutName'),
     pol:$('fPolicies'), sum:$('fSum'), prem:$('fPrem'), save:$('btnSave'),
     del:$('btnDelete'), msg:$('msg'), form:$('form'), done:$('done'), exist:$('exist')
   };
@@ -452,12 +485,12 @@
       for(const list of STAFF_BY_OFFICE.values())
         list.sort((a,b)=>a.name.localeCompare(b.name));
 
-      // full roster (HO / SO / BO staff) — everyone appears on the leaderboard
+      // full roster (HO / SO / BO + admin-office staff) — everyone appears on the leaderboard
       ROSTER = [];
       for(const e of staff){
         const oid = cln(e.Office_id);
         const info = OFFICE_INFO.get(oid);
-        if(!info || !isProcOffice(info.type)) continue;   // skip admin-office staff
+        if(!info) continue;   // only skip staff whose office is unknown / out of scope
         const id = cln(e.Employee_id), name = cln(e.Employee_name);
         if(!id || !name) continue;
         ROSTER.push({ id, name, desig:cln(e.Post_desc), cat: e._type==='GDS'?'GDS':'DS',
@@ -484,9 +517,10 @@
   }
 
   function buildOfficeSelect(){
-    // Only Head Office + Sub Offices are shown; divisional/administrative
-    // units (SDO, BPC, PDN, LPC, WCTC) are excluded from procurement entry.
-    const order = ['Head Office','Sub Offices'];
+    // Head Office + Sub Offices + the Divisional / Administrative offices
+    // (SDO, BPC, PDN, LPC, WTC) are all shown for data entry, plus an
+    // "Outsider" option for officials outside the Karur Sub Division.
+    const order = ['Head Office','Sub Offices','Divisional / Administrative Offices'];
     reset(els.office, '— Select your office —');
     for(const g of order){
       const inGroup = PARENTS.filter(p=>p.group===g).sort((a,b)=>a.name.localeCompare(b.name));
@@ -500,6 +534,13 @@
       }
       els.office.appendChild(og);
     }
+    // Outsider — for officials not attached to a Karur Sub Division office
+    const ogO = document.createElement('optgroup'); ogO.label = 'Other';
+    const optO = document.createElement('option');
+    optO.value = 'OUTSIDER'; optO.textContent = 'Outsider';
+    optO.dataset.type = 'OUT'; optO.dataset.name = 'Outsider';
+    ogO.appendChild(optO);
+    els.office.appendChild(ogO);
   }
 
   // ----- Office change -----
@@ -510,7 +551,19 @@
     const id = els.office.value;
     const type = opt ? opt.dataset.type : '';
     const name = opt ? opt.dataset.name : '';
-    if(!id){ hideBo(); return; }
+    if(!id){ hideBo(); showEmpField(); return; }
+
+    // ----- Outsider: type your own name, no office roster -----
+    if(id==='OUTSIDER'){
+      hideBo(); showOutField();
+      els.outName.value = '';
+      $('stepMetric').textContent = '3';
+      els.pol.disabled=false; els.sum.disabled=false; els.prem.disabled=false; els.save.disabled=false;
+      els.save.textContent = 'Save My Procurement';
+      els.outName.focus();
+      return;
+    }
+    showEmpField();
 
     const bos = isSO(type) ? (BOS_BY_SO.get(normName(name)) || []) : [];
     if(isSO(type) && bos.length){
@@ -591,6 +644,8 @@
   }
   function showExist(){ els.exist.classList.add('show'); }
   function hideExist(){ els.exist.classList.remove('show'); }
+  function showEmpField(){ els.empWrap.classList.remove('hide'); els.outWrap.classList.add('hide'); }
+  function showOutField(){ els.empWrap.classList.add('hide'); els.outWrap.classList.remove('hide'); }
   function showBo(){ els.boWrap.classList.remove('hide'); }
   function hideBo(){ els.boWrap.classList.add('hide'); els.bo.disabled=true; reset(els.bo,'— Select branch —'); }
 
@@ -613,12 +668,21 @@
   // ----- Save -----
   els.save.addEventListener('click', async ()=>{
     hideMsg();
-    const id = els.emp.value;
-    if(!id){ showMsg('Please select your name.','err'); return; }
-    const empOpt = els.emp.options[els.emp.selectedIndex];
-    const name = empOpt.dataset.name || empOpt.textContent.split('  ·  ')[0];
-    const desig = empOpt.dataset.desig || '';
-    const cat = empOpt.dataset.cat || 'DS';
+    const isOut = els.office.value==='OUTSIDER';
+    let id, name, desig = '', cat = 'DS';
+    if(isOut){
+      name = cln(els.outName.value);
+      if(!name){ showMsg('Please enter your name.','err'); els.outName.focus(); return; }
+      id = 'OUT:' + name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+      cat = 'OUT';
+    } else {
+      id = els.emp.value;
+      if(!id){ showMsg('Please select your name.','err'); return; }
+      const empOpt = els.emp.options[els.emp.selectedIndex];
+      name = empOpt.dataset.name || empOpt.textContent.split('  ·  ')[0];
+      desig = empOpt.dataset.desig || '';
+      cat = empOpt.dataset.cat || 'DS';
+    }
 
     const nPol = parseNum(els.pol.value);
     const nSum = parseNum(els.sum.value);
@@ -632,7 +696,9 @@
     const offOpt = els.office.options[els.office.selectedIndex];
     const parentName = offOpt.dataset.name || '';
     let officeId, officeName, boName = '';
-    if(!els.boWrap.classList.contains('hide') && els.bo.value){
+    if(isOut){
+      officeId = 'OUTSIDER'; officeName = 'Outsider';
+    } else if(!els.boWrap.classList.contains('hide') && els.bo.value){
       const bv = els.bo.value;
       if(bv.indexOf('MAIN:')===0){ officeId = bv.slice(5); officeName = parentName; }
       else { officeId = bv; officeName = els.bo.options[els.bo.selectedIndex].textContent; boName = officeName; }
@@ -699,7 +765,7 @@
   // ----- success actions -----
   $('btnAnother').addEventListener('click', ()=>{
     els.done.classList.remove('show'); els.form.style.display='';
-    els.office.value=''; hideBo();
+    els.office.value=''; hideBo(); showEmpField(); els.outName.value='';
     reset(els.emp,'— Select your office first —'); els.emp.disabled=true;
     clearMetrics(); hideExist();
     els.save.textContent='Save My Procurement';
@@ -809,8 +875,8 @@
       const zero = r.prem<=0 && r.policies<=0 ? ' zero' : '';
       const medal = (scored && rank===1)?'&#129351;':(scored && rank===2)?'&#129352;':(scored && rank===3)?'&#129353;':rank;
       const off = cln(r.bo_name) || cln(r.office_name) || cln(r.parent_office);
-      const catCls = r.cat==='GDS' ? 'gds' : '';
-      const catTxt = r.cat==='GDS' ? 'GDS' : 'DEPT';
+      const catCls = r.cat==='GDS' ? 'gds' : (r.cat==='OUT' ? 'out' : '');
+      const catTxt = r.cat==='GDS' ? 'GDS' : (r.cat==='OUT' ? 'GUEST' : 'DEPT');
       return '<div class="lb-row'+top+zero+'">'
         + '<div class="lb-rank">'+medal+'</div>'
         + '<div class="lb-main">'
