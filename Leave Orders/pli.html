@@ -288,9 +288,19 @@
         </div>
 
         <div class="field hide" id="outWrap">
-          <label for="fOutName"><span class="step-n">2</span>Your Name <span class="opt">(Outsider)</span> <span class="req">*</span></label>
-          <input id="fOutName" type="text" placeholder="Enter your full name" autocomplete="off" />
-          <div class="hint">You&rsquo;re logging as an <b>Outsider</b> — not listed under a Karur Sub Division office.</div>
+          <div class="field" style="margin-bottom:14px">
+            <label for="fOutName"><span class="step-n">2</span>Your Name <span class="opt">(Outsider)</span> <span class="req">*</span></label>
+            <input id="fOutName" type="text" placeholder="Enter your full name" autocomplete="off" />
+          </div>
+          <div class="field" style="margin-bottom:14px">
+            <label for="fOutId">Outsider ID <span class="req">*</span></label>
+            <input id="fOutId" type="text" placeholder="Your staff / employee ID" autocomplete="off" />
+          </div>
+          <div class="field" style="margin:0">
+            <label for="fOutOffice">Office Name <span class="req">*</span></label>
+            <input id="fOutOffice" type="text" placeholder="Enter your office name" autocomplete="off" />
+            <div class="hint">You&rsquo;re logging as an <b>Outsider</b> — not listed under a Karur Sub Division office.</div>
+          </div>
         </div>
 
         <div class="exist" id="exist">
@@ -421,7 +431,7 @@
 
   const els = {
     office:$('fOffice'), boWrap:$('boWrap'), bo:$('fBo'), emp:$('fEmp'), empWrap:$('empWrap'),
-    outWrap:$('outWrap'), outName:$('fOutName'),
+    outWrap:$('outWrap'), outName:$('fOutName'), outId:$('fOutId'), outOffice:$('fOutOffice'),
     pol:$('fPolicies'), sum:$('fSum'), prem:$('fPrem'), save:$('btnSave'),
     del:$('btnDelete'), msg:$('msg'), form:$('form'), done:$('done'), exist:$('exist')
   };
@@ -556,7 +566,7 @@
     // ----- Outsider: type your own name, no office roster -----
     if(id==='OUTSIDER'){
       hideBo(); showOutField();
-      els.outName.value = '';
+      els.outName.value = ''; els.outId.value = ''; els.outOffice.value = '';
       $('stepMetric').textContent = '3';
       els.pol.disabled=false; els.sum.disabled=false; els.prem.disabled=false; els.save.disabled=false;
       els.save.textContent = 'Save My Procurement';
@@ -669,11 +679,16 @@
   els.save.addEventListener('click', async ()=>{
     hideMsg();
     const isOut = els.office.value==='OUTSIDER';
-    let id, name, desig = '', cat = 'DS';
+    let id, name, desig = '', cat = 'DS', outOffice = '';
     if(isOut){
       name = cln(els.outName.value);
+      const outId = cln(els.outId.value);
+      outOffice = cln(els.outOffice.value);
       if(!name){ showMsg('Please enter your name.','err'); els.outName.focus(); return; }
-      id = 'OUT:' + name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+      if(!outId){ showMsg('Please enter your Outsider ID.','err'); els.outId.focus(); return; }
+      if(!outOffice){ showMsg('Please enter your office name.','err'); els.outOffice.focus(); return; }
+      id = 'OUT:' + outId.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+      desig = 'ID: ' + outId;
       cat = 'OUT';
     } else {
       id = els.emp.value;
@@ -694,10 +709,10 @@
 
     // resolve office context
     const offOpt = els.office.options[els.office.selectedIndex];
-    const parentName = offOpt.dataset.name || '';
+    let parentName = offOpt.dataset.name || '';
     let officeId, officeName, boName = '';
     if(isOut){
-      officeId = 'OUTSIDER'; officeName = 'Outsider';
+      officeId = 'OUTSIDER'; officeName = outOffice; parentName = outOffice;
     } else if(!els.boWrap.classList.contains('hide') && els.bo.value){
       const bv = els.bo.value;
       if(bv.indexOf('MAIN:')===0){ officeId = bv.slice(5); officeName = parentName; }
@@ -765,7 +780,7 @@
   // ----- success actions -----
   $('btnAnother').addEventListener('click', ()=>{
     els.done.classList.remove('show'); els.form.style.display='';
-    els.office.value=''; hideBo(); showEmpField(); els.outName.value='';
+    els.office.value=''; hideBo(); showEmpField(); els.outName.value=''; els.outId.value=''; els.outOffice.value='';
     reset(els.emp,'— Select your office first —'); els.emp.disabled=true;
     clearMetrics(); hideExist();
     els.save.textContent='Save My Procurement';
