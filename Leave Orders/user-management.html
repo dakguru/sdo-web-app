@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="/leave-orders/auth-guard.js"></script>
+<title>User Management — Karur Sub Division</title>
+<meta name="description" content="Manage login accounts for the Karur Sub Division web application — Department of Posts." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CSS RESET & VARIABLES  (shared tokens with homepage)
+   ============================================================ */
+:root {
+  --bg-deep: #0a0e1a;
+  --bg-surface: #111827;
+  --glass-bg: rgba(255,255,255,0.06);
+  --glass-bg-hover: rgba(255,255,255,0.12);
+  --glass-border: rgba(255,255,255,0.12);
+  --glass-border-hover: rgba(255,255,255,0.25);
+  --glass-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  --glass-shadow-hover: 0 16px 48px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.15);
+  --glass-blur: 20px;
+  --text-primary: #f1f5f9;
+  --text-secondary: rgba(241,245,249,0.7);
+  --text-muted: rgba(241,245,249,0.45);
+  --accent-indigo: #818cf8;
+  --accent-violet: #a78bfa;
+  --accent-blue: #60a5fa;
+  --accent-teal: #2dd4bf;
+  --accent-emerald: #34d399;
+  --accent-amber: #fbbf24;
+  --accent-rose: #fb7185;
+  --accent-orange: #fb923c;
+  --radius-xl: 24px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --field-bg: rgba(255,255,255,0.04);
+  --field-border: rgba(255,255,255,0.12);
+}
+html.light {
+  --bg-deep: #f0f2f7;
+  --bg-surface: #ffffff;
+  --glass-bg: rgba(255,255,255,0.65);
+  --glass-bg-hover: rgba(255,255,255,0.85);
+  --glass-border: rgba(0,0,0,0.08);
+  --glass-border-hover: rgba(0,0,0,0.15);
+  --glass-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  --glass-shadow-hover: 0 16px 48px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
+  --text-primary: #0f172a;
+  --text-secondary: rgba(15,23,42,0.7);
+  --text-muted: rgba(15,23,42,0.45);
+  --accent-indigo: #4f46e5;
+  --accent-violet: #7c3aed;
+  --accent-blue: #2563eb;
+  --accent-teal: #0d9488;
+  --accent-emerald: #059669;
+  --accent-amber: #d97706;
+  --accent-rose: #e11d48;
+  --accent-orange: #ea580c;
+  --field-bg: rgba(0,0,0,0.03);
+  --field-border: rgba(0,0,0,0.12);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg-deep);color:var(--text-primary);min-height:100vh;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  overflow-x:hidden;transition:background 0.5s ease, color 0.4s ease;
+}
+::selection{background:rgba(129,140,248,0.3)}
+html.light ::selection{background:rgba(79,70,229,0.18)}
+
+/* ===== Background ===== */
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 900px 600px at 15% 20%, rgba(99,102,241,0.15), transparent 70%),
+    radial-gradient(ellipse 700px 500px at 85% 15%, rgba(167,139,250,0.12), transparent 65%),
+    radial-gradient(ellipse 600px 400px at 50% 85%, rgba(45,212,191,0.1), transparent 60%),
+    radial-gradient(ellipse 500px 300px at 75% 60%, rgba(251,113,133,0.08), transparent 60%),
+    linear-gradient(180deg, #0a0e1a 0%, #111827 50%, #0f1729 100%);}
+html.light .bg-mesh{
+  background:
+    radial-gradient(ellipse 900px 600px at 15% 20%, rgba(99,102,241,0.08), transparent 70%),
+    radial-gradient(ellipse 700px 500px at 85% 15%, rgba(167,139,250,0.06), transparent 65%),
+    radial-gradient(ellipse 600px 400px at 50% 85%, rgba(45,212,191,0.06), transparent 60%),
+    radial-gradient(ellipse 500px 300px at 75% 60%, rgba(251,113,133,0.04), transparent 60%),
+    linear-gradient(180deg, #f0f2f7 0%, #e8ecf4 50%, #f0f2f7 100%);}
+.orb{position:fixed;border-radius:50%;filter:blur(80px);opacity:0.4;pointer-events:none;z-index:0;animation:orbFloat 20s ease-in-out infinite}
+.orb-1{width:400px;height:400px;background:rgba(99,102,241,0.2);top:-100px;left:-50px}
+.orb-2{width:350px;height:350px;background:rgba(167,139,250,0.15);top:30%;right:-80px;animation-delay:-7s}
+.orb-3{width:300px;height:300px;background:rgba(45,212,191,0.12);bottom:-60px;left:30%;animation-delay:-14s}
+html.light .orb{opacity:0.2}
+@keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(30px,-20px) scale(1.05)}50%{transform:translate(-20px,30px) scale(0.95)}75%{transform:translate(15px,15px) scale(1.02)}}
+
+.page-wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:32px 24px 64px}
+
+/* ===== Government header ===== */
+.gov-header{display:flex;align-items:center;justify-content:center;gap:28px;padding:28px 32px;margin-bottom:28px;
+  background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);border-radius:var(--radius-xl);box-shadow:var(--glass-shadow);position:relative;overflow:hidden}
+.gov-header::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent)}
+html.light .gov-header{background:rgba(255,255,255,0.7);border-color:rgba(0,0,0,0.08)}
+.gov-logo{width:78px;height:78px;object-fit:contain;flex-shrink:0;border-radius:12px;background:rgba(255,255,255,0.95);padding:6px;box-shadow:0 4px 16px rgba(0,0,0,0.2)}
+html.light .gov-logo{box-shadow:0 4px 16px rgba(0,0,0,0.1)}
+.gov-text{text-align:center;flex:1;min-width:0}
+.gov-text .line-govt{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px}
+.gov-text .line-dept{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:21px;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,#818cf8,#a78bfa,#c084fc);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;margin-bottom:6px}
+html.light .gov-text .line-dept{background:linear-gradient(135deg,#4f46e5,#7c3aed,#a855f7);-webkit-background-clip:text;background-clip:text}
+.gov-text .line-office{font-size:13.5px;font-weight:500;color:var(--text-secondary);margin-bottom:3px}
+.gov-text .line-location{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:15px;font-weight:700;color:var(--text-primary);letter-spacing:0.5px}
+.tricolour{display:flex;justify-content:center;gap:0;margin:16px auto 0;width:120px;height:4px;border-radius:4px;overflow:hidden}
+.tricolour span{flex:1}
+.tricolour .saffron{background:#FF9933}.tricolour .white{background:#FFFFFF}.tricolour .green{background:#138808}
+
+/* ===== Top chrome (back / theme / user) ===== */
+.top-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.back-chip,.theme-toggle{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;
+  background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);color:var(--text-primary);
+  font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;transition:all 0.3s}
+.back-chip:hover{background:var(--glass-bg-hover);border-color:var(--glass-border-hover);transform:translateX(-3px)}
+.theme-toggle{width:44px;height:44px;justify-content:center;padding:0;font-size:20px}
+.theme-toggle:hover{background:var(--glass-bg-hover);transform:scale(1.08) rotate(12deg)}
+.theme-toggle .icon-sun{display:none}
+html.light .theme-toggle .icon-sun{display:inline}
+html.light .theme-toggle .icon-moon{display:none}
+.user-chip{display:inline-flex;align-items:center;gap:10px;padding:7px 14px 7px 8px;border-radius:999px;
+  background:var(--glass-bg);border:1px solid var(--glass-border);box-shadow:var(--glass-shadow)}
+.user-chip .avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#818cf8,#a78bfa);display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff}
+.user-chip .who{display:flex;flex-direction:column;line-height:1.25}
+.user-chip .who .nm{font-size:12.5px;font-weight:700}
+.user-chip .who .rl{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted)}
+.top-actions{display:flex;align-items:center;gap:10px}
+
+/* ===== Page heading + primary action ===== */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.page-head .h-left h1{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:28px;font-weight:800;letter-spacing:-0.4px;display:flex;align-items:center;gap:12px}
+.page-head .h-left h1 .ic{font-size:26px}
+.page-head .h-left p{font-size:13.5px;color:var(--text-secondary);margin-top:6px;max-width:640px;line-height:1.5}
+.btn{display:inline-flex;align-items:center;gap:8px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;
+  border-radius:var(--radius-md);padding:12px 20px;font-size:14px;letter-spacing:0.2px;transition:all 0.3s;white-space:nowrap}
+.btn-primary{color:#fff;background:linear-gradient(135deg,#4f46e5,#7c3aed 55%,#a855f7);box-shadow:0 6px 20px rgba(99,102,241,0.35)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(99,102,241,0.5)}
+.btn-ghost{background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-primary)}
+.btn-ghost:hover{background:var(--glass-bg-hover);border-color:var(--glass-border-hover)}
+.btn-danger{background:rgba(239,68,68,0.14);border:1px solid rgba(239,68,68,0.28);color:#fca5a5}
+.btn-danger:hover{background:rgba(239,68,68,0.28);color:#fff}
+html.light .btn-danger{background:rgba(220,38,38,0.1);border-color:rgba(220,38,38,0.2);color:#b91c1c}
+.btn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important}
+.btn-sm{padding:8px 12px;font-size:12.5px;border-radius:10px}
+
+/* ===== Stats ===== */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px}
+.stat{background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--glass-shadow)}
+.stat .v{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:800}
+.stat .k{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-top:2px}
+.stat.total .v{color:var(--accent-indigo)}
+.stat.active .v{color:var(--accent-emerald)}
+.stat.disabled .v{color:var(--accent-rose)}
+.stat.admins .v{color:var(--accent-amber)}
+
+/* ===== Toolbar ===== */
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:220px}
+.search-wrap .ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:0.5;font-size:15px;pointer-events:none}
+.search-input{width:100%;padding:12px 14px 12px 40px;background:var(--field-bg);border:1px solid var(--field-border);
+  border-radius:var(--radius-md);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:all 0.3s}
+.search-input:focus{border-color:rgba(129,140,248,0.5);box-shadow:0 0 0 3px rgba(129,140,248,0.12)}
+
+/* ===== User cards ===== */
+.users-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.u-card{position:relative;background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);border-radius:var(--radius-xl);padding:20px 20px 16px;box-shadow:var(--glass-shadow);
+  display:flex;flex-direction:column;gap:14px;transition:all 0.35s;overflow:hidden}
+.u-card:hover{border-color:var(--glass-border-hover);box-shadow:var(--glass-shadow-hover);transform:translateY(-3px)}
+.u-card.is-disabled{opacity:0.72}
+.u-card.is-disabled::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 12px,rgba(239,68,68,0.045) 12px,rgba(239,68,68,0.045) 24px);pointer-events:none}
+.u-top{display:flex;align-items:center;gap:14px}
+.u-avatar{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:21px;font-weight:800;color:#fff;flex-shrink:0;
+  background:linear-gradient(135deg,#818cf8,#a78bfa);box-shadow:0 4px 14px rgba(129,140,248,0.3)}
+.u-avatar.role-ADMIN{background:linear-gradient(135deg,#f59e0b,#ef4444)}
+.u-avatar.role-ASP{background:linear-gradient(135deg,#8b5cf6,#ec4899)}
+.u-avatar.role-PA{background:linear-gradient(135deg,#06b6d4,#3b82f6)}
+.u-avatar.role-MO{background:linear-gradient(135deg,#10b981,#84cc16)}
+.u-id{flex:1;min-width:0}
+.u-id .nm{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u-id .un{font-size:12.5px;color:var(--text-muted);font-weight:500;margin-top:1px}
+.u-id .un .you{color:var(--accent-indigo);font-weight:700}
+.badges{display:flex;flex-wrap:wrap;gap:7px}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.4px}
+.tag-role{background:rgba(129,140,248,0.15);color:#a5b4fc;border:1px solid rgba(129,140,248,0.25)}
+html.light .tag-role{background:rgba(79,70,229,0.1);color:#4338ca;border-color:rgba(79,70,229,0.18)}
+.tag-active{background:rgba(52,211,153,0.15);color:#6ee7b7;border:1px solid rgba(52,211,153,0.25)}
+html.light .tag-active{background:rgba(5,150,105,0.1);color:#047857;border-color:rgba(5,150,105,0.18)}
+.tag-disabled{background:rgba(239,68,68,0.14);color:#fca5a5;border:1px solid rgba(239,68,68,0.25)}
+html.light .tag-disabled{background:rgba(220,38,38,0.1);color:#b91c1c;border-color:rgba(220,38,38,0.18)}
+.tag-mcp{background:rgba(251,191,36,0.14);color:#fcd34d;border:1px solid rgba(251,191,36,0.25)}
+html.light .tag-mcp{background:rgba(217,119,6,0.1);color:#b45309;border-color:rgba(217,119,6,0.18)}
+.u-meta{font-size:11.5px;color:var(--text-muted);line-height:1.7;border-top:1px solid var(--glass-border);padding-top:10px}
+.u-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}
+.u-actions .btn-sm{flex:1;justify-content:center;min-width:calc(50% - 4px)}
+.tog{position:relative;display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.tog input{position:absolute;opacity:0;width:0;height:0}
+.tog .track{width:42px;height:24px;border-radius:999px;background:rgba(148,163,184,0.35);transition:background 0.3s;position:relative;flex-shrink:0}
+.tog .track::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.3)}
+.tog input:checked + .track{background:var(--accent-emerald)}
+.tog input:checked + .track::after{transform:translateX(18px)}
+.tog .lbl{font-size:12px;font-weight:700;color:var(--text-secondary)}
+
+/* ===== Empty / loading ===== */
+.state{grid-column:1/-1;text-align:center;padding:56px 20px;color:var(--text-muted)}
+.state .ic{font-size:44px;display:block;margin-bottom:12px}
+.state .msg{font-size:15px;font-weight:600}
+.shimmer{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.sk{height:190px;border-radius:var(--radius-xl);background:linear-gradient(100deg,var(--glass-bg) 30%,var(--glass-bg-hover) 50%,var(--glass-bg) 70%);background-size:200% 100%;animation:sh 1.4s ease-in-out infinite;border:1px solid var(--glass-border)}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ===== Modal ===== */
+.modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(3,6,15,0.6);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.25s ease}
+.modal-backdrop.open{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{width:100%;max-width:480px;max-height:92vh;overflow-y:auto;background:var(--bg-surface);
+  border:1px solid var(--glass-border);border-radius:var(--radius-xl);box-shadow:0 24px 70px rgba(0,0,0,0.5);
+  padding:26px 26px 22px;animation:pop 0.3s cubic-bezier(0.22,1,0.36,1)}
+html.light .modal{background:#fff}
+@keyframes pop{from{opacity:0;transform:translateY(16px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.modal h2{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:20px;font-weight:800;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.modal .sub{font-size:13px;color:var(--text-muted);margin-bottom:20px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:7px}
+.field input,.field select{width:100%;padding:12px 14px;background:var(--field-bg);border:1px solid var(--field-border);border-radius:var(--radius-md);
+  color:var(--text-primary);font-family:'Inter',sans-serif;font-size:14.5px;outline:none;transition:all 0.3s}
+.field input:focus,.field select:focus{border-color:rgba(129,140,248,0.5);box-shadow:0 0 0 3px rgba(129,140,248,0.12)}
+.field input:disabled{opacity:0.6;cursor:not-allowed}
+.field .hint{font-size:11.5px;color:var(--text-muted);margin-top:6px;line-height:1.5}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:44px}
+.pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:17px;opacity:0.6;padding:4px}
+.pw-toggle:hover{opacity:1}
+.check-row{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--field-bg);border:1px solid var(--field-border);border-radius:var(--radius-md);margin-bottom:16px;cursor:pointer}
+.check-row input{margin-top:2px;width:17px;height:17px;flex-shrink:0;accent-color:var(--accent-indigo);cursor:pointer}
+.check-row span{display:block}
+.check-row .ct{display:block;font-size:13px;font-weight:600}
+.check-row .cd{display:block;font-size:11.5px;color:var(--text-muted);margin-top:3px;line-height:1.45}
+.pw-strength{height:5px;border-radius:999px;background:var(--field-border);overflow:hidden;margin-top:8px}
+.pw-strength i{display:block;height:100%;width:0;border-radius:999px;transition:width 0.3s,background 0.3s}
+.modal-actions{display:flex;gap:10px;margin-top:22px}
+.modal-actions .btn{flex:1;justify-content:center}
+.modal-err{display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.22);color:#fca5a5;
+  padding:10px 14px;border-radius:12px;font-size:12.5px;font-weight:600;margin-bottom:16px}
+html.light .modal-err{background:rgba(220,38,38,0.08);color:#b91c1c;border-color:rgba(220,38,38,0.15)}
+.modal-err.show{display:block}
+.warn-box{display:flex;gap:12px;align-items:flex-start;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);
+  border-radius:var(--radius-md);padding:14px 16px;margin-bottom:18px}
+.warn-box .wi{font-size:24px;flex-shrink:0}
+.warn-box .wt{font-size:13.5px;line-height:1.55}
+.warn-box .wt b{color:var(--accent-rose)}
+
+/* ===== Toast ===== */
+.toast-wrap{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:2000;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{padding:12px 22px;border-radius:12px;font-size:13.5px;font-weight:700;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,0.3);animation:tin 0.3s cubic-bezier(0.22,1,0.36,1)}
+.toast.ok{background:linear-gradient(135deg,#059669,#0d9488)}
+.toast.err{background:linear-gradient(135deg,#dc2626,#b45309)}
+.toast.info{background:linear-gradient(135deg,#4f46e5,#7c3aed)}
+@keyframes tin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== Access denied ===== */
+.denied{position:relative;z-index:1;max-width:520px;margin:14vh auto;text-align:center;padding:40px 28px;
+  background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);box-shadow:var(--glass-shadow)}
+.denied .ic{font-size:52px;display:block;margin-bottom:14px}
+.denied h2{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px}
+.denied p{font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:22px}
+
+@media(max-width:600px){
+  .page-head h1{font-size:23px}
+  .gov-header{gap:14px;padding:20px 16px}
+  .gov-logo{width:58px;height:58px}
+  .u-actions .btn-sm{min-width:100%}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-mesh"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- ============ ACCESS DENIED (shown if not privileged) ============ -->
+<div id="deniedView" class="denied" hidden>
+  <span class="ic">🔒</span>
+  <h2>Access Restricted</h2>
+  <p>User Management is available only to <b>Admin</b>, <b>ASP</b> and <b>PA</b> accounts. Your account does not have permission to manage users.</p>
+  <a href="/" class="btn btn-primary" style="text-decoration:none">← Back to Home</a>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div class="page-wrap" id="appView" hidden>
+
+  <!-- Top chrome -->
+  <div class="top-row">
+    <a href="/" class="back-chip">← Home</a>
+    <div class="top-actions">
+      <div class="user-chip">
+        <div class="avatar" id="meAvatar">?</div>
+        <div class="who"><span class="nm" id="meName">—</span><span class="rl" id="meRole">—</span></div>
+      </div>
+      <button class="theme-toggle" id="themeToggle" title="Toggle dark / light mode">
+        <span class="icon-moon">🌙</span><span class="icon-sun">☀️</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Government header -->
+  <header class="gov-header">
+    <img src="/assets/app-logo.jpg" alt="Karur Sub Division" class="gov-logo" />
+    <div class="gov-text">
+      <div class="line-govt">Government of India</div>
+      <div class="line-dept">Department of Posts</div>
+      <div class="line-office">O/o the Assistant Superintendent of Post Offices</div>
+      <div class="line-location">Karur Sub Division · Karur — 639001</div>
+      <div class="tricolour"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
+    </div>
+    <img src="/assets/india-post-logo.png" alt="India Post" class="gov-logo" />
+  </header>
+
+  <!-- Heading -->
+  <div class="page-head">
+    <div class="h-left">
+      <h1><span class="ic">👤</span> User Management</h1>
+      <p>Manage login accounts for the Karur Sub Division portal — add or remove users, enable or disable access, edit names &amp; designations, and reset passwords.</p>
+    </div>
+    <button class="btn btn-primary" id="btnAdd">+ Add User</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat total"><div class="v" id="stTotal">—</div><div class="k">Total Users</div></div>
+    <div class="stat active"><div class="v" id="stActive">—</div><div class="k">Active</div></div>
+    <div class="stat disabled"><div class="v" id="stDisabled">—</div><div class="k">Disabled</div></div>
+    <div class="stat admins"><div class="v" id="stAdmins">—</div><div class="k">Admins</div></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="ic">🔍</span>
+      <input type="text" id="search" class="search-input" placeholder="Search by name, username or role…" autocomplete="off" />
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btnRefresh">↻ Refresh</button>
+  </div>
+
+  <!-- Users grid -->
+  <div class="users-grid" id="usersGrid">
+    <div class="shimmer"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
+  </div>
+</div>
+
+<!-- ============ USER FORM MODAL (Add / Edit) ============ -->
+<div class="modal-backdrop" id="userModal">
+  <div class="modal">
+    <h2><span id="umIcon">➕</span> <span id="umTitle">Add User</span></h2>
+    <p class="sub" id="umSub">Create a new login account for the portal.</p>
+    <div class="modal-err" id="umErr"></div>
+
+    <div class="field">
+      <label for="fUsername">Username</label>
+      <input type="text" id="fUsername" placeholder="e.g. jsmith" autocomplete="off" autocapitalize="none" spellcheck="false" />
+      <div class="hint">Lowercase letters, digits, dot, hyphen or underscore. Used to sign in and cannot be changed later.</div>
+    </div>
+
+    <div class="field">
+      <label for="fDisplay">Display Name</label>
+      <input type="text" id="fDisplay" placeholder="e.g. J. Smith" autocomplete="off" />
+    </div>
+
+    <div class="field">
+      <label for="fRole">Role / Designation</label>
+      <input type="text" id="fRole" list="roleList" placeholder="Select or type…" autocomplete="off" />
+      <datalist id="roleList">
+        <option value="ADMIN">Administrator</option>
+        <option value="ASP">Assistant Superintendent (ASP)</option>
+        <option value="PA">Postal Assistant (PA)</option>
+        <option value="MO">Mail Overseer (MO)</option>
+        <option value="SUPERVISOR">Supervisor</option>
+        <option value="USER">User</option>
+      </datalist>
+      <div class="hint">ADMIN, ASP and PA accounts can manage users. Others get normal access.</div>
+    </div>
+
+    <!-- Password block: only for Add -->
+    <div id="umPwBlock">
+      <div class="field">
+        <label for="fPw">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="fPw" placeholder="Set a password" autocomplete="new-password" />
+          <button type="button" class="pw-toggle" data-target="fPw">👁️</button>
+        </div>
+        <div class="pw-strength"><i id="fPwBar"></i></div>
+        <div class="hint">At least 6 characters. Stored only as a PBKDF2-SHA256 hash — never as plain text.</div>
+      </div>
+    </div>
+
+    <label class="check-row" for="fActive">
+      <input type="checkbox" id="fActive" checked />
+      <span><span class="ct">Account active</span><span class="cd">User can sign in. Uncheck to disable access without deleting.</span></span>
+    </label>
+
+    <label class="check-row" for="fMustChange">
+      <input type="checkbox" id="fMustChange" />
+      <span><span class="ct">Require password change at next login</span><span class="cd">Flags the account so the user is asked to set a new password.</span></span>
+    </label>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="umSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CHANGE PASSWORD MODAL ============ -->
+<div class="modal-backdrop" id="pwModal">
+  <div class="modal">
+    <h2>🔑 Change Password</h2>
+    <p class="sub" id="pwSub">Set a new password for this account.</p>
+    <div class="modal-err" id="pwErr"></div>
+
+    <div class="field">
+      <label for="pwNew">New Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="pwNew" placeholder="New password" autocomplete="new-password" />
+        <button type="button" class="pw-toggle" data-target="pwNew">👁️</button>
+      </div>
+      <div class="pw-strength"><i id="pwBar"></i></div>
+    </div>
+
+    <div class="field">
+      <label for="pwConfirm">Confirm Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="pwConfirm" placeholder="Re-enter new password" autocomplete="new-password" />
+        <button type="button" class="pw-toggle" data-target="pwConfirm">👁️</button>
+      </div>
+      <div class="hint">At least 6 characters.</div>
+    </div>
+
+    <label class="check-row" for="pwMustChange">
+      <input type="checkbox" id="pwMustChange" />
+      <span><span class="ct">Require change at next login</span><span class="cd">Ask the user to set their own password after signing in with this one.</span></span>
+    </label>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="pwSave">Update Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONFIRM (delete) MODAL ============ -->
+<div class="modal-backdrop" id="confirmModal">
+  <div class="modal" style="max-width:420px">
+    <h2>🗑️ Delete User</h2>
+    <div class="warn-box">
+      <span class="wi">⚠️</span>
+      <span class="wt" id="cfText">This will permanently remove the account.</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-danger" id="cfYes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="/leave-orders/supabase-sync.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- Theme ---------- */
+  const htmlEl = document.documentElement;
+  if(localStorage.getItem('theme') === 'light') htmlEl.classList.add('light');
+  const themeBtn = document.getElementById('themeToggle');
+  if(themeBtn) themeBtn.addEventListener('click', ()=>{
+    htmlEl.classList.toggle('light');
+    localStorage.setItem('theme', htmlEl.classList.contains('light') ? 'light' : 'dark');
+  });
+
+  /* ---------- Role gate ---------- */
+  const me = (typeof AuthSession !== 'undefined') ? AuthSession.user() : null;
+  const norm = r => String(r||'').toUpperCase().replace(/[^A-Z]/g,'');
+  const MANAGER_ROLES = ['ADMIN','ASP','PA'];
+  function canManage(role){ return MANAGER_ROLES.includes(norm(role)); }
+
+  const deniedView = document.getElementById('deniedView');
+  const appView = document.getElementById('appView');
+
+  if(!me || !canManage(me.role)){
+    deniedView.hidden = false;
+    return; // stop — no data loading, no listeners
+  }
+  appView.hidden = false;
+
+  // Fill "me" chip
+  document.getElementById('meName').textContent = me.displayName || me.username;
+  document.getElementById('meRole').textContent = me.role || 'USER';
+  document.getElementById('meAvatar').textContent = (me.displayName || me.username || '?').charAt(0).toUpperCase();
+  const MY_USERNAME = String(me.username||'').toLowerCase();
+
+  /* ---------- Toast ---------- */
+  const toastWrap = document.getElementById('toastWrap');
+  function toast(msg, kind){
+    const t = document.createElement('div');
+    t.className = 'toast ' + (kind||'info');
+    t.textContent = msg;
+    toastWrap.appendChild(t);
+    setTimeout(()=>{ t.style.transition='opacity .4s,transform .4s'; t.style.opacity='0'; t.style.transform='translateY(10px)'; setTimeout(()=>t.remove(),400); }, 2800);
+  }
+
+  /* ---------- PBKDF2 (mirrors login.html + Android AuthRepository) ---------- */
+  const ITER = 120000;
+  function bytesToB64(bytes){ let s=''; for(let i=0;i<bytes.length;i++) s+=String.fromCharCode(bytes[i]); return btoa(s); }
+  async function deriveBits(password, saltBytes, iter){
+    const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name:'PBKDF2', salt:saltBytes, iterations:iter, hash:'SHA-256' }, km, 256);
+    return new Uint8Array(bits);
+  }
+  async function hashPassword(password){
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const hash = await deriveBits(password, salt, ITER);
+    return { password_hash: bytesToB64(hash), salt: bytesToB64(salt), iterations: ITER };
+  }
+
+  /* ---------- Helpers ---------- */
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const enc = encodeURIComponent;
+  function fmtDate(ms){
+    const n = Number(ms); if(!n) return '—';
+    try { return new Date(n).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); } catch(_){ return '—'; }
+  }
+  function pwStrength(pw){
+    let s = 0;
+    if(pw.length >= 6) s++;
+    if(pw.length >= 10) s++;
+    if(/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+    if(/\d/.test(pw)) s++;
+    if(/[^A-Za-z0-9]/.test(pw)) s++;
+    return Math.min(s,4);
+  }
+  function paintStrength(bar, pw){
+    const s = pwStrength(pw);
+    const pct = [0,25,50,75,100][s];
+    const col = ['#ef4444','#ef4444','#f59e0b','#3b82f6','#10b981'][s];
+    bar.style.width = pct + '%';
+    bar.style.background = col;
+  }
+
+  /* ---------- State ---------- */
+  let USERS = [];
+  let cloudOk = false;
+
+  /* ---------- Load & render ---------- */
+  const grid = document.getElementById('usersGrid');
+  const searchEl = document.getElementById('search');
+
+  async function loadUsers(){
+    grid.innerHTML = '<div class="shimmer"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>';
+    try {
+      cloudOk = await SB.init();
+      if(!cloudOk){ showState('☁️','Cannot reach the cloud. Check your connection and refresh.'); return; }
+      USERS = await SB.select('app_users','select=username,display_name,role,active,must_change_password,created_at,updated_at_ms&order=created_at.asc') || [];
+      render();
+    } catch(e){
+      console.error('[users] load error', e);
+      showState('⚠️','Failed to load users. '+(e.message||''));
+    }
+  }
+
+  function showState(ic, msg){
+    grid.innerHTML = '<div class="state"><span class="ic">'+ic+'</span><div class="msg">'+esc(msg)+'</div></div>';
+  }
+
+  function updateStats(){
+    const total = USERS.length;
+    const active = USERS.filter(u=>u.active).length;
+    const admins = USERS.filter(u=>canManage(u.role)).length;
+    document.getElementById('stTotal').textContent = total;
+    document.getElementById('stActive').textContent = active;
+    document.getElementById('stDisabled').textContent = total - active;
+    document.getElementById('stAdmins').textContent = admins;
+  }
+
+  function render(){
+    updateStats();
+    const q = norm2(searchEl.value);
+    const list = USERS.filter(u => !q ||
+      norm2(u.display_name).includes(q) || norm2(u.username).includes(q) || norm2(u.role).includes(q));
+
+    if(!list.length){ showState(q?'🔍':'👤', q?'No users match your search.':'No user accounts yet.'); return; }
+
+    grid.innerHTML = '';
+    for(const u of list) grid.appendChild(userCard(u));
+  }
+  function norm2(s){ return String(s||'').toLowerCase().trim(); }
+
+  function userCard(u){
+    const el = document.createElement('div');
+    el.className = 'u-card' + (u.active ? '' : ' is-disabled');
+    const initial = (u.display_name || u.username || '?').charAt(0).toUpperCase();
+    const roleCls = 'role-' + norm(u.role);
+    const isMe = String(u.username||'').toLowerCase() === MY_USERNAME;
+
+    el.innerHTML =
+      '<div class="u-top">' +
+        '<div class="u-avatar '+roleCls+'">'+esc(initial)+'</div>' +
+        '<div class="u-id">' +
+          '<div class="nm">'+esc(u.display_name || u.username)+'</div>' +
+          '<div class="un">@'+esc(u.username)+ (isMe?' <span class="you">· you</span>':'') +'</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="badges">' +
+        '<span class="tag tag-role">'+esc(u.role || 'USER')+'</span>' +
+        (u.active ? '<span class="tag tag-active">● Active</span>' : '<span class="tag tag-disabled">● Disabled</span>') +
+        (u.must_change_password ? '<span class="tag tag-mcp">⟳ Must reset password</span>' : '') +
+      '</div>' +
+      '<div class="u-meta">Created '+fmtDate(u.created_at)+' · Updated '+fmtDate(u.updated_at_ms)+'</div>' +
+      '<div class="u-actions"></div>';
+
+    const actions = el.querySelector('.u-actions');
+
+    // Enable / disable toggle
+    const tog = document.createElement('label');
+    tog.className = 'tog';
+    tog.style.flex = '1';
+    tog.innerHTML = '<input type="checkbox" '+(u.active?'checked':'')+'><span class="track"></span><span class="lbl">'+(u.active?'Enabled':'Disabled')+'</span>';
+    const chk = tog.querySelector('input');
+    chk.addEventListener('change', ()=> onToggleActive(u, chk));
+    actions.appendChild(tog);
+
+    // Edit
+    const bEdit = mkBtn('✎ Edit','btn-ghost', ()=>openEdit(u));
+    actions.appendChild(bEdit);
+    // Password
+    const bPw = mkBtn('🔑 Password','btn-ghost', ()=>openPw(u));
+    actions.appendChild(bPw);
+    // Delete
+    const bDel = mkBtn('🗑 Delete','btn-danger', ()=>openDelete(u));
+    actions.appendChild(bDel);
+
+    return el;
+  }
+  function mkBtn(label, cls, fn){
+    const b = document.createElement('button');
+    b.className = 'btn btn-sm ' + cls;
+    b.textContent = label;
+    b.addEventListener('click', fn);
+    return b;
+  }
+
+  /* ---------- Enable / disable ---------- */
+  async function onToggleActive(u, chk){
+    const want = chk.checked;
+    if(!want && String(u.username||'').toLowerCase() === MY_USERNAME){
+      chk.checked = true;
+      toast("You can't disable your own account.", 'err');
+      return;
+    }
+    if(!want && u.active && canManage(u.role) && activeAdminCount() <= 1){
+      chk.checked = true;
+      toast('At least one active manager account must remain.', 'err');
+      return;
+    }
+    try {
+      await SB.patch('app_users', 'username=eq.'+enc(u.username), { active: want, updated_at_ms: Date.now() });
+      u.active = want; u.updated_at_ms = Date.now();
+      toast(want ? 'Account enabled ✓' : 'Account disabled', want?'ok':'info');
+      render();
+    } catch(e){
+      chk.checked = !want;
+      toast('Could not update: '+(e.message||'try again'), 'err');
+    }
+  }
+  function activeAdminCount(){ return USERS.filter(u=>u.active && canManage(u.role)).length; }
+
+  /* ---------- Modal plumbing ---------- */
+  function openModal(id){ document.getElementById(id).classList.add('open'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-backdrop').forEach(bd=>{
+    bd.addEventListener('click', e=>{ if(e.target === bd) bd.classList.remove('open'); });
+    bd.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click', ()=>bd.classList.remove('open')));
+  });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-backdrop.open').forEach(m=>m.classList.remove('open')); });
+  // Password visibility toggles
+  document.querySelectorAll('.pw-toggle').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const inp = document.getElementById(btn.dataset.target);
+      if(!inp) return;
+      const show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      btn.textContent = show ? '🙈' : '👁️';
+    });
+  });
+
+  /* ---------- Add / Edit user modal ---------- */
+  let editingUser = null; // null = add mode
+  const fUsername = document.getElementById('fUsername');
+  const fDisplay = document.getElementById('fDisplay');
+  const fRole = document.getElementById('fRole');
+  const fPw = document.getElementById('fPw');
+  const fPwBar = document.getElementById('fPwBar');
+  const fActive = document.getElementById('fActive');
+  const fMustChange = document.getElementById('fMustChange');
+  const umErr = document.getElementById('umErr');
+  const umPwBlock = document.getElementById('umPwBlock');
+
+  fPw.addEventListener('input', ()=> paintStrength(fPwBar, fPw.value));
+
+  function showUmErr(msg){ umErr.textContent = msg; umErr.classList.add('show'); }
+  function hideUmErr(){ umErr.classList.remove('show'); }
+
+  function openAdd(){
+    editingUser = null;
+    document.getElementById('umIcon').textContent = '➕';
+    document.getElementById('umTitle').textContent = 'Add User';
+    document.getElementById('umSub').textContent = 'Create a new login account for the portal.';
+    fUsername.disabled = false; fUsername.value = '';
+    fDisplay.value = ''; fRole.value = 'USER';
+    fPw.value = ''; fPw.type='password'; paintStrength(fPwBar,'');
+    fActive.checked = true; fMustChange.checked = false;
+    umPwBlock.style.display = '';
+    document.getElementById('umSave').textContent = 'Create User';
+    hideUmErr();
+    openModal('userModal');
+    setTimeout(()=>fUsername.focus(), 50);
+  }
+
+  function openEdit(u){
+    editingUser = u;
+    document.getElementById('umIcon').textContent = '✎';
+    document.getElementById('umTitle').textContent = 'Edit User';
+    document.getElementById('umSub').textContent = 'Update name, designation and account settings.';
+    fUsername.disabled = true; fUsername.value = u.username;
+    fDisplay.value = u.display_name || '';
+    fRole.value = u.role || 'USER';
+    fActive.checked = !!u.active;
+    fMustChange.checked = !!u.must_change_password;
+    umPwBlock.style.display = 'none'; // password handled separately
+    document.getElementById('umSave').textContent = 'Save Changes';
+    hideUmErr();
+    openModal('userModal');
+    setTimeout(()=>fDisplay.focus(), 50);
+  }
+
+  document.getElementById('btnAdd').addEventListener('click', openAdd);
+
+  document.getElementById('umSave').addEventListener('click', async ()=>{
+    hideUmErr();
+    const display = fDisplay.value.trim();
+    const role = fRole.value.trim() || 'USER';
+    const active = fActive.checked;
+    const mustChange = fMustChange.checked;
+
+    if(!display){ showUmErr('Please enter a display name.'); return; }
+
+    const saveBtn = document.getElementById('umSave');
+    const old = saveBtn.textContent; saveBtn.disabled = true; saveBtn.textContent = '⏳ Saving…';
+
+    try {
+      if(editingUser){
+        // Guard: don't strip the last manager / don't lock yourself out of management
+        const isMe = String(editingUser.username||'').toLowerCase() === MY_USERNAME;
+        if(!active && isMe){ showUmErr("You can't disable your own account."); throw '__handled__'; }
+        if(editingUser.active && canManage(editingUser.role) && !canManage(role) && activeAdminCount() <= 1){
+          showUmErr('At least one active manager (Admin / ASP / PA) must remain.'); throw '__handled__';
+        }
+        await SB.patch('app_users', 'username=eq.'+enc(editingUser.username), {
+          display_name: display, role: role, active: active,
+          must_change_password: mustChange, updated_at_ms: Date.now()
+        });
+        Object.assign(editingUser, { display_name:display, role, active, must_change_password:mustChange, updated_at_ms:Date.now() });
+        toast('User updated ✓','ok');
+      } else {
+        // Add mode
+        const username = fUsername.value.trim().toLowerCase();
+        const pw = fPw.value;
+        if(!username){ showUmErr('Please enter a username.'); throw '__handled__'; }
+        if(!/^[a-z0-9._-]{3,32}$/.test(username)){ showUmErr('Username must be 3–32 chars: lowercase letters, digits, dot, hyphen or underscore.'); throw '__handled__'; }
+        if(USERS.some(u=>String(u.username||'').toLowerCase() === username)){ showUmErr('That username already exists.'); throw '__handled__'; }
+        if(pw.length < 6){ showUmErr('Password must be at least 6 characters.'); throw '__handled__'; }
+
+        const hashed = await hashPassword(pw);
+        const now = Date.now();
+        const row = {
+          username, password_hash: hashed.password_hash, salt: hashed.salt, iterations: hashed.iterations,
+          display_name: display, role, active, must_change_password: mustChange,
+          created_at: now, updated_at_ms: now
+        };
+        await SB.upsert('app_users', row);
+        USERS.push(row);
+        toast('User created ✓','ok');
+      }
+      closeModal('userModal');
+      render();
+    } catch(e){
+      if(e !== '__handled__'){ showUmErr('Could not save: '+((e&&e.message)||'try again')); }
+    } finally {
+      saveBtn.disabled = false; saveBtn.textContent = old;
+    }
+  });
+
+  /* ---------- Change password modal ---------- */
+  let pwUser = null;
+  const pwNew = document.getElementById('pwNew');
+  const pwConfirm = document.getElementById('pwConfirm');
+  const pwBar = document.getElementById('pwBar');
+  const pwMustChange = document.getElementById('pwMustChange');
+  const pwErr = document.getElementById('pwErr');
+  pwNew.addEventListener('input', ()=> paintStrength(pwBar, pwNew.value));
+
+  function openPw(u){
+    pwUser = u;
+    document.getElementById('pwSub').textContent = 'Set a new password for @'+u.username+'.';
+    pwNew.value = ''; pwConfirm.value = ''; paintStrength(pwBar,'');
+    pwNew.type='password'; pwConfirm.type='password';
+    pwMustChange.checked = false;
+    pwErr.classList.remove('show');
+    openModal('pwModal');
+    setTimeout(()=>pwNew.focus(), 50);
+  }
+
+  document.getElementById('pwSave').addEventListener('click', async ()=>{
+    pwErr.classList.remove('show');
+    const a = pwNew.value, b = pwConfirm.value;
+    if(a.length < 6){ pwErr.textContent='Password must be at least 6 characters.'; pwErr.classList.add('show'); return; }
+    if(a !== b){ pwErr.textContent='Passwords do not match.'; pwErr.classList.add('show'); return; }
+
+    const btn = document.getElementById('pwSave'); const old = btn.textContent;
+    btn.disabled = true; btn.textContent = '⏳ Updating…';
+    try {
+      const hashed = await hashPassword(a);
+      await SB.patch('app_users', 'username=eq.'+enc(pwUser.username), {
+        password_hash: hashed.password_hash, salt: hashed.salt, iterations: hashed.iterations,
+        must_change_password: pwMustChange.checked, updated_at_ms: Date.now()
+      });
+      pwUser.must_change_password = pwMustChange.checked; pwUser.updated_at_ms = Date.now();
+      toast('Password updated ✓','ok');
+      closeModal('pwModal');
+      render();
+    } catch(e){
+      pwErr.textContent = 'Could not update: '+((e&&e.message)||'try again'); pwErr.classList.add('show');
+    } finally {
+      btn.disabled = false; btn.textContent = old;
+    }
+  });
+
+  /* ---------- Delete ---------- */
+  let delUser = null;
+  function openDelete(u){
+    const isMe = String(u.username||'').toLowerCase() === MY_USERNAME;
+    if(isMe){ toast("You can't delete your own account.", 'err'); return; }
+    if(u.active && canManage(u.role) && activeAdminCount() <= 1){
+      toast('At least one active manager account must remain.', 'err'); return;
+    }
+    delUser = u;
+    document.getElementById('cfText').innerHTML =
+      'This will permanently remove <b>'+esc(u.display_name||u.username)+'</b> (@'+esc(u.username)+'). '+
+      'They will no longer be able to sign in. This cannot be undone.';
+    openModal('confirmModal');
+  }
+  document.getElementById('cfYes').addEventListener('click', async ()=>{
+    if(!delUser) return;
+    const btn = document.getElementById('cfYes'); const old = btn.textContent;
+    btn.disabled = true; btn.textContent = '⏳ Deleting…';
+    try {
+      await SB.del('app_users', 'username=eq.'+enc(delUser.username));
+      USERS = USERS.filter(u => u.username !== delUser.username);
+      toast('User deleted','info');
+      closeModal('confirmModal');
+      render();
+    } catch(e){
+      toast('Could not delete: '+(e.message||'try again'), 'err');
+    } finally {
+      btn.disabled = false; btn.textContent = old; delUser = null;
+    }
+  });
+
+  /* ---------- Wire ---------- */
+  searchEl.addEventListener('input', render);
+  document.getElementById('btnRefresh').addEventListener('click', loadUsers);
+
+  loadUsers();
+})();
+</script>
+</body>
+</html>

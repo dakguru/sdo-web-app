@@ -301,6 +301,7 @@ html.light .gov-header::after{
 .card-icon.icon-office{background:linear-gradient(135deg,rgba(52,211,153,0.25),rgba(251,191,36,0.25));box-shadow:0 4px 16px rgba(52,211,153,0.2),inset 0 1px 0 rgba(255,255,255,0.1)}
 .card-icon.icon-arr{background:linear-gradient(135deg,rgba(251,113,133,0.25),rgba(251,146,60,0.25));box-shadow:0 4px 16px rgba(251,113,133,0.2),inset 0 1px 0 rgba(255,255,255,0.1)}
 .card-icon.icon-ir{background:linear-gradient(135deg,rgba(251,191,36,0.25),rgba(251,146,60,0.25));box-shadow:0 4px 16px rgba(251,191,36,0.2),inset 0 1px 0 rgba(255,255,255,0.1)}
+.card-icon.icon-users{background:linear-gradient(135deg,rgba(129,140,248,0.28),rgba(236,72,153,0.24));box-shadow:0 4px 16px rgba(129,140,248,0.22),inset 0 1px 0 rgba(255,255,255,0.1)}
 
 /* Card content */
 .card-title{
@@ -327,6 +328,7 @@ html.light .gov-header::after{
 .card-badge.badge-office{background:rgba(52,211,153,0.15);color:#6ee7b7;border:1px solid rgba(52,211,153,0.2)}
 .card-badge.badge-arr{background:rgba(251,113,133,0.15);color:#fda4af;border:1px solid rgba(251,113,133,0.2)}
 .card-badge.badge-ir{background:rgba(251,191,36,0.15);color:#fcd34d;border:1px solid rgba(251,191,36,0.2)}
+.card-badge.badge-users{background:rgba(129,140,248,0.15);color:#c4b5fd;border:1px solid rgba(129,140,248,0.2)}
 .nav-card:hover .card-badge{
   transform:translateX(4px);
 }
@@ -346,6 +348,7 @@ html.light .gov-header::after{
 .card-accent.accent-office{background:linear-gradient(90deg,#34d399,#fbbf24)}
 .card-accent.accent-arr{background:linear-gradient(90deg,#fb7185,#fb923c)}
 .card-accent.accent-sanctioned{background:linear-gradient(90deg,#8b5cf6,#ec4899)}
+.card-accent.accent-users{background:linear-gradient(90deg,#818cf8,#ec4899)}
 .card-accent.accent-ir{background:linear-gradient(90deg,#fbbf24,#fb923c)}
 .card-icon.icon-mo{background:linear-gradient(135deg,rgba(34,211,238,0.25),rgba(56,189,248,0.25));box-shadow:0 4px 16px rgba(34,211,238,0.2),inset 0 1px 0 rgba(255,255,255,0.1)}
 .card-icon.icon-bday{background:linear-gradient(135deg,rgba(244,114,182,0.25),rgba(167,139,250,0.25));box-shadow:0 4px 16px rgba(244,114,182,0.2),inset 0 1px 0 rgba(255,255,255,0.1)}
@@ -711,6 +714,8 @@ html.light .card-badge.badge-sanctioned{background:rgba(139,92,246,0.1);color:#6
 html.light .card-badge.badge-office{background:rgba(5,150,105,0.1);color:#047857;border-color:rgba(5,150,105,0.15)}
 html.light .card-badge.badge-arr{background:rgba(225,29,72,0.1);color:#be123c;border-color:rgba(225,29,72,0.15)}
 html.light .card-badge.badge-ir{background:rgba(217,119,6,0.1);color:#b45309;border-color:rgba(217,119,6,0.15)}
+html.light .card-icon.icon-users{background:linear-gradient(135deg,rgba(79,70,229,0.15),rgba(236,72,153,0.13));box-shadow:0 4px 16px rgba(79,70,229,0.12),inset 0 1px 0 rgba(255,255,255,0.5)}
+html.light .card-badge.badge-users{background:rgba(79,70,229,0.1);color:#6d28d9;border-color:rgba(79,70,229,0.15)}
 html.light .stat-dot{box-shadow:0 0 8px currentColor}
 html.light .footer-credit{
   background:linear-gradient(135deg,#4f46e5,#7c3aed,#e11d48);
@@ -929,6 +934,15 @@ html.light .btn-logout:hover{background:rgba(225,29,72,0.18);color:#9f1239}
   <!-- ====== NAVIGATION CARDS ====== -->
   <div class="section-title">Applications</div>
   <div class="nav-grid">
+
+    <!-- 0. User Management (Admin / ASP / PA only) -->
+    <a href="/user-management" class="nav-card" id="cardUserMgmt" hidden>
+      <div class="card-icon icon-users">👤</div>
+      <div class="card-title">User Management</div>
+      <div class="card-desc">Manage login accounts for the portal — add or remove users, enable or disable access, edit names &amp; designations, and reset passwords. Restricted to Admin, ASP &amp; PA.</div>
+      <span class="card-badge badge-users">Open Module →</span>
+      <div class="card-accent accent-users"></div>
+    </a>
 
     <!-- 1. Sub Divisional Manager (Leave Orders) -->
     <a href="/leave-orders" class="nav-card">
@@ -1395,6 +1409,13 @@ async function pliExportPdf(){
     if(nameEl) nameEl.textContent = user.displayName || user.username;
     if(roleEl) roleEl.textContent = user.role || 'USER';
     if(avatarEl) avatarEl.textContent = (user.displayName || user.username || '?').charAt(0).toUpperCase();
+
+    // Reveal User Management card for Admin / ASP / PA only.
+    const r = String(user.role || '').toUpperCase().replace(/[^A-Z]/g,'');
+    if(['ADMIN','ASP','PA'].includes(r)){
+      const umCard = document.getElementById('cardUserMgmt');
+      if(umCard) umCard.hidden = false;
+    }
   }
   document.getElementById('btnLogout').addEventListener('click', function(){
     AuthSession.logout();

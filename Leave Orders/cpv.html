@@ -62,7 +62,7 @@ html.light .bg-mesh{background:
 .drop b{color:var(--text-primary)}
 .drop small{display:block;color:var(--text-muted);font-size:12px;margin-top:6px}
 
-.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:20px 0}
 @media(max-width:820px){.summary{grid-template-columns:repeat(2,1fr)}}
 .st{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:16px 16px 14px;backdrop-filter:blur(var(--glass-blur));position:relative;overflow:hidden;transition:transform .3s}
 .st:hover{transform:translateY(-3px)}
@@ -71,8 +71,11 @@ html.light .bg-mesh{background:
 .st.s-sch::before{background:linear-gradient(180deg,var(--cyan),var(--blue))}
 .st.s-acc::before{background:linear-gradient(180deg,var(--indigo),var(--violet))}
 .st.s-bal::before{background:linear-gradient(180deg,var(--gold),var(--gold2))}
+.st.s-ver::before{background:linear-gradient(180deg,var(--em),var(--teal))}
+.st.s-pen::before{background:linear-gradient(180deg,var(--gold),var(--orange))}
 .st .n{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:28px;font-weight:900;line-height:1}
 .st.s-off .n{color:var(--teal)} .st.s-sch .n{color:var(--cyan)} .st.s-acc .n{color:var(--indigo)} .st.s-bal .n{color:var(--gold)}
+.st.s-ver .n{color:var(--em)} .st.s-pen .n{color:var(--gold)}
 .st .l{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-top:8px;color:var(--text-secondary)}
 
 .section-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin:26px 0 14px;display:flex;align-items:center;gap:10px}
@@ -231,6 +234,62 @@ html.light .field input,html.light .field select{background:#f7f8fb}
 .op-item.sel{border-color:var(--teal);background:rgba(45,212,191,.14);box-shadow:0 0 0 1px rgba(45,212,191,.35)}
 .op-item .op-name{font-weight:700;font-size:13.5px}
 .op-item .op-meta{font-size:11px;color:var(--text-muted);font-weight:600}
+
+/* role / scope banner */
+.scope-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 16px;padding:12px 16px;border-radius:var(--radius-lg);
+  background:linear-gradient(135deg,rgba(129,140,248,.12),rgba(45,212,191,.08));border:1px solid var(--glass-border);backdrop-filter:blur(var(--glass-blur));font-size:12.5px;color:var(--text-secondary)}
+.scope-bar .role-pill{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:11px;letter-spacing:.4px;padding:4px 11px;border-radius:999px;background:rgba(129,140,248,.18);color:var(--indigo);border:1px solid rgba(129,140,248,.32)}
+.scope-bar .role-pill.mo{background:rgba(45,212,191,.16);color:var(--teal);border-color:rgba(45,212,191,.32)}
+.scope-bar b{color:var(--text-primary)}
+.scope-bar .sb-spacer{flex:1}
+
+/* consolidated download */
+.dl-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 16px;padding:13px 16px;border-radius:var(--radius-lg);
+  background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(var(--glass-blur))}
+.dl-bar .dl-lbl{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:12px;letter-spacing:.3px;color:var(--text-secondary);display:flex;align-items:center;gap:7px}
+.dl-group{display:flex;align-items:center;gap:7px;padding:5px 5px 5px 12px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(255,255,255,.02)}
+.dl-group .dg-tag{font-size:11px;font-weight:800;letter-spacing:.3px}
+.dl-group.ver .dg-tag{color:var(--em)} .dl-group.pen .dg-tag{color:var(--gold)}
+.dl-bar .sp{flex:1}
+
+/* office overview additions */
+.og-prog{flex-basis:100%;display:flex;align-items:center;gap:10px;margin-top:4px}
+.og-bar{flex:1;height:8px;border-radius:999px;background:rgba(148,163,184,.22);overflow:hidden;position:relative}
+.og-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--em),var(--teal));transition:width .5s}
+.og-prog .pct{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:12px;color:var(--em);white-space:nowrap;min-width:42px;text-align:right}
+.og-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ov-chip{font-size:10.5px;font-weight:800;letter-spacing:.2px;padding:4px 10px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.ov-chip.ver{background:rgba(52,211,153,.16);color:var(--em);border-color:rgba(52,211,153,.3)}
+.ov-chip.pen{background:rgba(251,191,36,.16);color:var(--gold);border-color:rgba(251,191,36,.3)}
+.ov-chip.tot{background:rgba(129,140,248,.14);color:var(--indigo);border-color:rgba(129,140,248,.28)}
+.mo-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;padding:4px 10px;border-radius:999px;background:rgba(34,211,238,.14);color:var(--cyan);border:1px solid rgba(34,211,238,.3)}
+.mo-badge.none{background:rgba(148,163,184,.14);color:var(--text-muted);border-color:var(--glass-border)}
+.og-allot{border:1px solid rgba(129,140,248,.32);background:rgba(129,140,248,.14);color:var(--indigo);border-radius:10px;padding:7px 12px;font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
+.og-allot:hover{background:rgba(129,140,248,.26)}
+
+/* per-office consolidated download row */
+.og-dl{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;padding-top:12px;border-top:1px dashed var(--glass-border)}
+.og-dl .og-dl-lbl{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:11px;letter-spacing:.3px;color:var(--text-muted);margin-right:2px}
+
+/* scheme card verified mini-bar + per-category verified/pending */
+.sc-ver{margin-top:9px;display:flex;align-items:center;gap:8px}
+.sc-ver .scb{flex:1;height:6px;border-radius:999px;background:rgba(148,163,184,.22);overflow:hidden}
+.sc-ver .scb i{display:block;height:100%;background:linear-gradient(90deg,var(--em),var(--teal))}
+.sc-ver .scv{font-size:10px;font-weight:800;color:var(--em);white-space:nowrap}
+.sc-vchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+
+/* allotment modal — MO checklist */
+.mo-list{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;padding:2px;margin-bottom:6px}
+.mo-row{display:flex;align-items:center;gap:12px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:12px;padding:11px 14px;cursor:pointer;transition:all .18s}
+.mo-row:hover{background:var(--glass-bg-hover);border-color:var(--glass-border-hover)}
+.mo-row.on{border-color:var(--teal);background:rgba(45,212,191,.12);box-shadow:0 0 0 1px rgba(45,212,191,.3)}
+.mo-row input{width:18px;height:18px;accent-color:var(--teal);cursor:pointer;flex-shrink:0}
+.mo-row .mr-nm{font-weight:700;font-size:14px;color:var(--text-primary)}
+.mo-row .mr-un{font-size:11.5px;color:var(--text-muted);font-weight:600}
+.mo-row .mr-sp{flex:1}
+.mo-row .mr-dis{font-size:10px;font-weight:800;color:var(--rose)}
+.mo-empty{text-align:center;padding:26px 16px;color:var(--text-muted);font-size:13px;line-height:1.6}
+.mo-empty a{color:var(--teal);font-weight:700;text-decoration:none}
 </style>
 </head>
 <body>
@@ -260,11 +319,16 @@ html.light .field input,html.light .field select{background:#f7f8fb}
       <div class="st s-off"><div class="n" id="sOff">—</div><div class="l">Offices</div></div>
       <div class="st s-sch"><div class="n" id="sSch">—</div><div class="l">Scheme Lists</div></div>
       <div class="st s-acc"><div class="n" id="sAcc">—</div><div class="l">Total Accounts</div></div>
-      <div class="st s-bal"><div class="n" id="sBal">—</div><div class="l">Total Balance ₹</div></div>
+      <div class="st s-ver"><div class="n" id="sVer">—</div><div class="l">✓ Verified</div></div>
+      <div class="st s-pen"><div class="n" id="sPen">—</div><div class="l">Yet to Verify</div></div>
     </div>
+
+    <!-- Role / scope banner (who is viewing, what they can see) -->
+    <div id="scopeBar" class="scope-bar hidden"></div>
 
     <div class="toolbar">
       <div class="search"><span>🔍</span><input id="dq" type="text" placeholder="Search office, SOL ID, branch…" autocomplete="off"></div>
+      <button class="btn ghost sm" id="manageAllotBtn" style="display:none">👥 Manage allotments</button>
       <button class="btn ghost sm" id="refreshBtn">↻ Refresh</button>
     </div>
 
@@ -418,6 +482,19 @@ html.light .field input,html.light .field select{background:#f7f8fb}
   </div>
 </div>
 
+<!-- ============ ALLOTMENT MODAL ============ -->
+<div class="modal-overlay" id="allotOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title">👥 Allot office to Mail Overseers</div>
+    <div class="modal-desc" id="allotDesc">Choose which Mail Overseer(s) may see and verify this office. Only the allotted Mail Overseers will see it; managers always see every office.</div>
+    <div class="mo-list" id="allotList"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="allotCancel">✕ Cancel</button>
+      <button class="btn" id="allotSave">💾 Save allotment</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -428,6 +505,24 @@ html.light .field input,html.light .field select{background:#f7f8fb}
 
 const $=s=>document.querySelector(s);
 const who=()=>{try{const u=window.AuthSession&&AuthSession.user();return u?(u.displayName||u.username):'web';}catch{return 'web';}};
+
+// ── roles & visibility ──
+const meUser=()=>{try{return (window.AuthSession&&AuthSession.user())||null;}catch{return null;}};
+const roleNorm=r=>String(r||'').toUpperCase().replace(/[^A-Z]/g,'');
+const _ME=meUser();
+const MY_ROLE=roleNorm(_ME&&_ME.role);
+const MY_USERNAME=String((_ME&&_ME.username)||'').toLowerCase();
+const SEEALL_ROLES=['ADMIN','ASP','IP','PA'];   // see every office
+const ALLOT_ROLES =['ADMIN','ASP','PA'];        // may allot offices to Mail Overseers
+const isManager=()=>SEEALL_ROLES.includes(MY_ROLE);
+const canAllot =()=>ALLOT_ROLES.includes(MY_ROLE);
+const isMO=()=>MY_ROLE==='MO';
+// A Mail Overseer sees & verifies only offices allotted to them; everyone else (managers
+// and ordinary USER accounts) keeps the full view. Guards are client-side, matching the
+// rest of this app's login-gated posture.
+function branchAllottedToMe(branch){ return !isMO() || state.myAllot.has(String(branch||'')); }
+// The subset of stored scheme-lists the current user is allowed to see.
+function visibleList(){ return isMO()? state.list.filter(o=>state.myAllot.has(String(o.branch_id||''))) : state.list.slice(); }
 function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');clearTimeout(toast._t);toast._t=setTimeout(()=>t.className='toast',3800);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
@@ -459,9 +554,19 @@ const BANK_SCHEMES=SCHEMES.filter(s=>!isPliScheme(s.code));
 
 const state={list:[],dq:'',mode:'stored',current:null,detail:null,editKey:null,preview:null,delKey:null,busy:false,
   verif:{},        // acct -> {verified, remarks, verified_by, verified_at_ms}  (stored lists only)
-  sel:new Set()};  // selected account numbers for bulk verification
-// True only when the open list is a stored batch that can be verified (not an unstored preview).
-function canVerify(){return state.mode==='stored'&&state.current&&!!state.current.office_key;}
+  sel:new Set(),   // selected account numbers for bulk verification
+  vCounts:{},      // office_key -> number of VERIFIED accounts (dashboard overview)
+  allot:{},        // branch_id -> Set(mo_username)  (all allotments)
+  myAllot:new Set(),// branch_ids allotted to the current MO
+  moUsers:[],      // [{username,display_name,active}] users with role MO
+  allotBranch:null // branch currently open in the allotment modal
+};
+// True only when the open list is a stored batch that can be verified (not an unstored preview),
+// AND — for a Mail Overseer — the office is allotted to them. Managers & USER accounts: always.
+function canVerify(){
+  if(!(state.mode==='stored'&&state.current&&state.current.office_key))return false;
+  return branchAllottedToMe(state.current.branch_id);
+}
 
 // ─────────────────────────────────────────────────────────────
 //  CSV / XLSX parsing
@@ -960,11 +1065,56 @@ async function openEditStored(key){
 // ─────────────────────────────────────────────────────────────
 //  Dashboard
 // ─────────────────────────────────────────────────────────────
+// PostgREST caps each response (typically 1000 rows), so page through with limit/offset
+// until a short page comes back. Used wherever the row count can exceed the cap.
+async function selectAllRows(table,selectAndFilter){
+  const page=1000; let from=0,out=[];
+  while(true){
+    const rows=await SB.select(table,`${selectAndFilter}&limit=${page}&offset=${from}`);
+    if(!rows||!rows.length)break;
+    out=out.concat(rows);
+    if(rows.length<page)break;
+    from+=page;
+  }
+  return out;
+}
+// Verified-account counts per office_key (one lightweight row per verified acct).
+async function loadVerifiedCounts(){
+  try{
+    const rows=await selectAllRows('app_cpv_verification','verified=eq.true&select=office_key');
+    const m={}; (rows||[]).forEach(r=>{const k=r.office_key; m[k]=(m[k]||0)+1;});
+    state.vCounts=m;
+  }catch(e){ state.vCounts={}; }
+}
+// Office → Mail Overseer allotments (branch_id -> Set of mo_username).
+async function loadAllotments(){
+  try{
+    const rows=await SB.select('app_cpv_allotments','select=branch_id,mo_username,office_name,sol_id');
+    const m={},mine=new Set();
+    (rows||[]).forEach(r=>{
+      const b=String(r.branch_id||''); if(!b)return;
+      (m[b]=m[b]||new Set()).add(String(r.mo_username||'').toLowerCase());
+      if(String(r.mo_username||'').toLowerCase()===MY_USERNAME) mine.add(b);
+    });
+    state.allot=m; state.myAllot=mine;
+  }catch(e){ state.allot={}; state.myAllot=new Set(); }
+}
+// Users with role MO — candidates for allotment (managers only need this).
+async function loadMoUsers(){
+  if(!canAllot()){ state.moUsers=[]; return; }
+  try{
+    const rows=await SB.select('app_users','select=username,display_name,role,active&order=display_name.asc');
+    state.moUsers=(rows||[]).filter(u=>roleNorm(u.role)==='MO');
+  }catch(e){ state.moUsers=[]; }
+}
 async function loadDashboard(){
   try{await SB.init();}catch{}
   try{
     const rows=await SB.select('app_cpv','select=office_key,office_name,sol_id,branch_id,scheme,scheme_label,total_accounts,status_counts,uploaded_by,uploaded_at_ms&order=office_name.asc,scheme.asc');
     state.list=Array.isArray(rows)?rows:[];
+    await Promise.all([loadVerifiedCounts(),loadAllotments(),loadMoUsers()]);
+    renderScopeBar();
+    const mab=$('#manageAllotBtn'); if(mab) mab.style.display=canAllot()?'':'none';
     renderDashboard();
   }catch(e){
     $('#dashboard').innerHTML=`<div class="empty"><span class="ei">🛠️</span><b>Storage not set up yet.</b><br><br>
@@ -973,23 +1123,52 @@ async function loadDashboard(){
     $('#sOff').textContent=$('#sSch').textContent=$('#sAcc').textContent=$('#sBal').textContent='0';
   }
 }
+// Verified accounts for one stored list (office_key), clamped to its total.
+function verifiedForKey(o){ return Math.min(+state.vCounts[o.office_key]||0, +o.total_accounts||0); }
+
+function renderScopeBar(){
+  const bar=$('#scopeBar'); if(!bar)return;
+  const roleLbl=MY_ROLE||'USER';
+  if(isMO()){
+    const n=state.myAllot.size;
+    bar.className='scope-bar';
+    bar.innerHTML=`<span class="role-pill mo">Mail Overseer</span>`+
+      `<span>You can see &amp; verify <b>${n}</b> office${n===1?'':'s'} allotted to you. Offices not allotted to you are hidden.</span>`;
+  }else if(isManager()){
+    bar.className='scope-bar';
+    bar.innerHTML=`<span class="role-pill">${esc(roleLbl)}</span>`+
+      `<span>You can see <b>all offices</b>${canAllot()?' and allot them to Mail Overseers':''}.</span>`+
+      `<span class="sb-spacer"></span>`;
+  }else{
+    // ordinary USER — keep full view, no banner clutter
+    bar.className='scope-bar hidden'; bar.innerHTML='';
+  }
+}
+
 function renderDashboard(){
   const q=state.dq.toLowerCase();
-  const list=state.list.filter(o=>{
+  const base=visibleList();
+  const list=base.filter(o=>{
     if(!q)return true;
     return (o.office_name+' '+(o.sol_id||'')+' '+(o.branch_id||'')+' '+o.scheme).toLowerCase().includes(q);
   });
-  // summary
-  const offSet=new Set(state.list.map(o=>o.branch_id||o.office_name));
-  const totAcc=state.list.reduce((a,o)=>a+(+o.total_accounts||0),0);
+  // summary (over everything this user may see)
+  const offSet=new Set(base.map(o=>o.branch_id||o.office_name));
+  const totAcc=base.reduce((a,o)=>a+(+o.total_accounts||0),0);
+  const totVer=base.reduce((a,o)=>a+verifiedForKey(o),0);
   $('#sOff').textContent=offSet.size;
-  $('#sSch').textContent=state.list.length;
+  $('#sSch').textContent=base.length;
   $('#sAcc').textContent=totAcc.toLocaleString('en-IN');
-  $('#sBal').textContent='—'; // balances live inside records; shown per-list
+  $('#sVer').textContent=totVer.toLocaleString('en-IN');
+  $('#sPen').textContent=Math.max(0,totAcc-totVer).toLocaleString('en-IN');
+  const dlScope=$('#dlScope'); if(dlScope) dlScope.textContent=isMO()?`your ${offSet.size} allotted office${offSet.size===1?'':'s'}`:'all offices';
   // group by office
   const box=$('#dashboard');
   if(!list.length){
-    box.innerHTML=`<div class="empty"><span class="ei">🗂️</span>${state.list.length?'No lists match your search.':'No lists stored yet. Upload a Last Balance Report above to begin.'}</div>`;
+    const emptyMsg=base.length?'No lists match your search.'
+      :(isMO()?'No offices have been allotted to you yet. Please contact your Sub Divisional office.'
+              :'No lists stored yet. Upload a Last Balance Report above to begin.');
+    box.innerHTML=`<div class="empty"><span class="ei">🗂️</span>${emptyMsg}</div>`;
     return;
   }
   const groups={};
@@ -998,27 +1177,66 @@ function renderDashboard(){
   Object.keys(groups).sort((a,b)=>a.split('|')[1].localeCompare(b.split('|')[1])).forEach(k=>{
     const items=groups[k].slice().sort((a,b)=>a.scheme.localeCompare(b.scheme));
     const g=items[0];
+    const branch=String(g.branch_id||'');
     const totAccG=items.reduce((a,o)=>a+(+o.total_accounts||0),0);
+    const totVerG=items.reduce((a,o)=>a+verifiedForKey(o),0);
+    const penG=Math.max(0,totAccG-totVerG);
+    const pct=totAccG?Math.round(totVerG/totAccG*100):0;
+    // allotted MO badge / button (managers only)
+    const moSet=state.allot[branch]||new Set();
+    let allotHtml='';
+    if(canAllot()){
+      const names=[...moSet].map(un=>{const u=state.moUsers.find(x=>String(x.username).toLowerCase()===un);return u?(u.display_name||u.username):un;});
+      allotHtml=`<span class="mo-badge ${moSet.size?'':'none'}">👤 ${moSet.size?esc(names.join(', ')):'Not allotted'}</span>`+
+        `<button class="og-allot" data-allot="${esc(branch)}" data-off="${esc(g.office_name)}" data-sol="${esc(g.sol_id||'')}">👥 Allot</button>`;
+    }
     html+=`<div class="office-group">
       <div class="og-head">
         <div class="og-badge">🏤</div>
-        <div>
+        <div style="flex:1;min-width:180px">
           <div class="og-title">${esc(g.office_name)}</div>
-          <div class="og-sub">${g.sol_id?`SOL <b>${esc(g.sol_id)}</b> · `:''}${g.branch_id?`Branch <b>${esc(g.branch_id)}</b> · `:''}<b>${items.length}</b> scheme list${items.length===1?'':'s'} · <b>${totAccG.toLocaleString('en-IN')}</b> accounts</div>
+          <div class="og-sub">${g.sol_id?`SOL <b>${esc(g.sol_id)}</b> · `:''}${branch?`Branch <b>${esc(branch)}</b> · `:''}<b>${items.length}</b> scheme list${items.length===1?'':'s'} · <b>${totAccG.toLocaleString('en-IN')}</b> accounts</div>
+        </div>
+        <div class="og-chips">
+          <span class="ov-chip ver">✓ ${totVerG.toLocaleString('en-IN')} verified</span>
+          <span class="ov-chip pen">${penG.toLocaleString('en-IN')} pending</span>
+          ${allotHtml}
+        </div>
+        <div class="og-prog">
+          <div class="og-bar"><i style="width:${pct}%"></i></div>
+          <span class="pct">${pct}%</span>
+        </div>
+        <div class="og-dl">
+          <span class="og-dl-lbl">⬇ Consolidated · all categories</span>
+          <div class="dl-group ver"><span class="dg-tag">✓ Verified</span>
+            <button class="btn blue sm" data-dl="Verified|xlsx" data-branch="${esc(branch)}" data-off="${esc(g.office_name)}">Excel</button>
+            <button class="btn gold sm" data-dl="Verified|pdf" data-branch="${esc(branch)}" data-off="${esc(g.office_name)}">PDF</button>
+          </div>
+          <div class="dl-group pen"><span class="dg-tag">Yet to verify</span>
+            <button class="btn blue sm" data-dl="Pending|xlsx" data-branch="${esc(branch)}" data-off="${esc(g.office_name)}">Excel</button>
+            <button class="btn gold sm" data-dl="Pending|pdf" data-branch="${esc(branch)}" data-off="${esc(g.office_name)}">PDF</button>
+          </div>
         </div>
       </div>
       <div class="scheme-grid">`;
     for(const o of items){
       const sc=o.status_counts||{};
       const pills=Object.keys(sc).sort().map(s=>`<span class="pill ${statusClass(s)}">${esc(s)} ${sc[s]}</span>`).join('');
+      const tot=+o.total_accounts||0, ver=verifiedForKey(o), pen=Math.max(0,tot-ver), vp=tot?Math.round(ver/tot*100):0;
+      const canEdit=isManager()||!isMO(); // MOs verify but don't edit/delete stored lists
       html+=`<div class="scheme-card" data-key="${esc(o.office_key)}">
-        <div class="sc-tools">
+        ${canEdit?`<div class="sc-tools">
           <button class="sc-tool sc-edit" data-edit="${esc(o.office_key)}" title="Edit / rename this list">✎</button>
           <button class="sc-tool sc-del" data-del="${esc(o.office_key)}" title="Delete this list">🗑</button>
-        </div>
-        <div class="sc-top"><span class="sc-chip">${esc(o.scheme)}</span><span class="sc-count">${(+o.total_accounts||0).toLocaleString('en-IN')}</span></div>
+        </div>`:''}
+        <div class="sc-top"><span class="sc-chip">${esc(o.scheme)}</span><span class="sc-count">${tot.toLocaleString('en-IN')}</span></div>
         <div class="sc-label">${esc(o.scheme_label||schemeLabel(o.scheme))}</div>
         <div class="sc-stats">${pills}</div>
+        <div class="sc-ver"><div class="scb"><i style="width:${vp}%"></i></div><span class="scv">${vp}%</span></div>
+        <div class="sc-vchips">
+          <span class="ov-chip ver">✓ ${ver.toLocaleString('en-IN')} verified</span>
+          <span class="ov-chip pen">⏳ ${pen.toLocaleString('en-IN')} pending</span>
+        </div>
         <div class="sc-foot">${fmtUploaded(o.uploaded_at_ms)}</div>
       </div>`;
     }
@@ -1038,6 +1256,7 @@ async function openDetail(key){
     row=rows&&rows[0];
   }catch(e){toast('Could not load: '+(e.message||''),'err');return;}
   if(!row){toast('List not found.','err');return;}
+  if(isMO()&&!branchAllottedToMe(row.branch_id)){toast('This office is not allotted to you.','err');return;}
   state.mode='stored';
   state.current=row;
   state.detail=Array.isArray(row.records)?row.records:[];
@@ -1517,6 +1736,7 @@ $('#refreshBtn').addEventListener('click',()=>loadDashboard());
 $('#backToDash').addEventListener('click',exitToDash);
 
 document.addEventListener('click',e=>{
+  const al=e.target.closest('[data-allot]');if(al){e.stopPropagation();openAllot(al.dataset.allot,al.dataset.off,al.dataset.sol);return;}
   const ed=e.target.closest('[data-edit]');if(ed){e.stopPropagation();openEditStored(ed.dataset.edit);return;}
   const del=e.target.closest('[data-del]');if(del){e.stopPropagation();openDelete(del.dataset.del);return;}
   const card=e.target.closest('.scheme-card');if(card){openDetail(card.dataset.key);return;}
@@ -1568,7 +1788,167 @@ $('#xlsBtn').addEventListener('click',e=>runExport(e.currentTarget,exportExcel))
 [['dupOverlay',()=>{$('#dupOverlay').classList.remove('show');}],['delOverlay',()=>{$('#delOverlay').classList.remove('show');state.delKey=null;}],['opOverlay',()=>{$('#opOverlay').classList.remove('show');state._pliRecords=null;state._pliPick=null;}]].forEach(([id,fn])=>{
   const o=document.getElementById(id);o.addEventListener('click',e=>{if(e.target===o)fn();});
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#dupOverlay').classList.remove('show');$('#delOverlay').classList.remove('show');$('#opOverlay').classList.remove('show');}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#dupOverlay').classList.remove('show');$('#delOverlay').classList.remove('show');$('#opOverlay').classList.remove('show');$('#allotOverlay').classList.remove('show');}});
+
+// ─────────────────────────────────────────────────────────────
+//  Allotment (office → Mail Overseers) — managers only
+// ─────────────────────────────────────────────────────────────
+function openAllot(branch,officeName,sol){
+  if(!canAllot()){toast('Only Admin / ASP / PA can allot offices.','err');return;}
+  branch=String(branch||'');
+  state.allotBranch=branch; state._allotOff=officeName||''; state._allotSol=sol||'';
+  $('#allotDesc').innerHTML=`Choose which Mail Overseer(s) may see and verify <b>${esc(officeName||branch)}</b>${branch?` (Branch ${esc(branch)})`:''}. Only the allotted Mail Overseers will see it; managers always see every office.`;
+  renderAllotList();
+  $('#allotOverlay').classList.add('show');
+}
+function renderAllotList(){
+  const box=$('#allotList');
+  const cur=state.allot[state.allotBranch]||new Set();
+  if(!state.moUsers.length){
+    box.innerHTML=`<div class="mo-empty">No Mail Overseer accounts found.<br>Create users with the role <b>MO</b> in <a href="/user-management">User Management</a>, then allot offices here.</div>`;
+    return;
+  }
+  box.innerHTML=state.moUsers.map(u=>{
+    const un=String(u.username).toLowerCase();
+    const on=cur.has(un);
+    return `<label class="mo-row ${on?'on':''}" data-mo="${esc(un)}">
+      <input type="checkbox" ${on?'checked':''}>
+      <span><span class="mr-nm">${esc(u.display_name||u.username)}</span> <span class="mr-un">@${esc(u.username)}</span></span>
+      <span class="mr-sp"></span>
+      ${u.active?'':'<span class="mr-dis">Disabled</span>'}
+    </label>`;
+  }).join('');
+  box.querySelectorAll('.mo-row').forEach(r=>{
+    const cb=r.querySelector('input');
+    cb.addEventListener('change',()=>r.classList.toggle('on',cb.checked));
+  });
+}
+async function saveAllot(){
+  if(state.busy)return;
+  const branch=state.allotBranch;
+  const chosen=new Set([...$('#allotList').querySelectorAll('.mo-row')].filter(r=>r.querySelector('input').checked).map(r=>r.dataset.mo));
+  const prev=state.allot[branch]||new Set();
+  const toAdd=[...chosen].filter(u=>!prev.has(u));
+  const toDel=[...prev].filter(u=>!chosen.has(u));
+  if(!toAdd.length&&!toDel.length){$('#allotOverlay').classList.remove('show');return;}
+  const btn=$('#allotSave');state.busy=true;btn.disabled=true;btn.textContent='Saving…';
+  try{
+    if(toAdd.length){
+      const now=Date.now(),by=who();
+      const rows=toAdd.map(un=>({branch_id:branch,mo_username:un,office_name:state._allotOff||null,sol_id:state._allotSol||null,allotted_by:by,allotted_at_ms:now}));
+      await SB.upsert('app_cpv_allotments',rows);
+    }
+    for(const un of toDel){
+      await SB.del('app_cpv_allotments',`branch_id=eq.${encodeURIComponent(branch)}&mo_username=eq.${encodeURIComponent(un)}`);
+    }
+    state.allot[branch]=chosen;
+    $('#allotOverlay').classList.remove('show');
+    toast('Allotment saved ✓','ok');
+    renderDashboard();
+  }catch(e){
+    toast('Could not save: '+(e.message||''),'err');
+    if(/app_cpv_allotments|PGRST205|42P01/.test(String(e.message||'')))toast('Run migration_v18_cpv_allotments.sql in Supabase first.','err');
+  }finally{state.busy=false;btn.disabled=false;btn.textContent='💾 Save allotment';}
+}
+$('#manageAllotBtn').addEventListener('click',()=>{
+  // Pick the first visible office to start; managers can switch by clicking "Allot" on any office.
+  const first=visibleList()[0];
+  if(!first){toast('No offices stored yet.','err');return;}
+  openAllot(first.branch_id,first.office_name,first.sol_id);
+});
+$('#allotCancel').addEventListener('click',()=>$('#allotOverlay').classList.remove('show'));
+$('#allotSave').addEventListener('click',saveAllot);
+$('#allotOverlay').addEventListener('click',e=>{if(e.target===$('#allotOverlay'))$('#allotOverlay').classList.remove('show');});
+
+// ─────────────────────────────────────────────────────────────
+//  Consolidated download — PER OFFICE, all categories, verified / not-verified
+// ─────────────────────────────────────────────────────────────
+const CONS_HEAD=['Sl.No','Scheme','Account / Policy No','Name','Address','Type','Balance / Sum Assured ₹','Last Txn / Entry','Status'];
+const CONS_HEAD_VER=CONS_HEAD.concat(['Verified By','Verified On','Remarks']);
+// Build verified & pending rows for ONE office (branch) across all its scheme categories.
+async function gatherOffice(branch){
+  const full=await SB.select('app_cpv',`branch_id=eq.${encodeURIComponent(branch)}&select=office_key,office_name,sol_id,branch_id,scheme,scheme_label,records&order=scheme.asc`);
+  const keys=(full||[]).map(o=>o.office_key);
+  let vmap={};
+  if(keys.length){
+    const inList=keys.map(k=>`"${k.replace(/"/g,'""')}"`).join(',');
+    const ver=await selectAllRows('app_cpv_verification',`office_key=in.(${encodeURIComponent(inList)})&select=office_key,acct,verified,remarks,verified_by,verified_at_ms`);
+    (ver||[]).forEach(r=>{(vmap[r.office_key]=vmap[r.office_key]||{})[String(r.acct)]=r;});
+  }
+  const verified=[],pending=[]; let officeName='',sol='';
+  (full||[]).forEach(o=>{
+    officeName=o.office_name||officeName; sol=o.sol_id||sol;
+    const recs=Array.isArray(o.records)?o.records:[];
+    const vm=vmap[o.office_key]||{};
+    recs.forEach(r=>{
+      const acct=String(r.acct||r.policy||'');
+      const vrec=vm[acct];
+      const bal=(r.balance!=null)?r.balance:(r.sumAssured!=null?r.sumAssured:null);
+      const dt=fmtTxnDate(r.date)||r.dateRaw||fmtTxnDate(r.doeIso)||r.doeRaw||'';
+      const base=[o.scheme||'',acct,r.name||'',r.address||'',r.type||'',bal==null?'':fmtAmt(bal),dt,r.status||''];
+      if(vrec&&vrec.verified) verified.push(base.concat([vrec.verified_by||'',fmtVerAt(vrec.verified_at_ms)||'',vrec.remarks||'']));
+      else pending.push(base);
+    });
+  });
+  return {verified,pending,officeName,sol,branch};
+}
+function consBaseName(kind,officeName){ return `CPV ${kind} Accounts — ${officeName||'Office'}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim(); }
+async function officeExcel(kind,data){
+  if(!window.XLSXLite){toast('Excel engine unavailable.','err');return;}
+  const isVer=kind==='Verified';
+  const src=isVer?data.verified:data.pending;
+  if(!src.length){toast(`No ${kind.toLowerCase()} accounts in ${data.officeName||'this office'}.`,'err');return;}
+  const rows=src.map((row,i)=>[String(i+1)].concat(row));
+  const head=isVer?CONS_HEAD_VER:CONS_HEAD;
+  const bytes=XLSXLite.build(head,rows);
+  dl(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),consBaseName(kind,data.officeName)+'.xlsx');
+  toast(`${kind}: ${data.officeName} — Excel ✓`,'ok');
+}
+async function officePdf(kind,data){
+  const isVer=kind==='Verified';
+  const src=isVer?data.verified:data.pending;
+  if(!src.length){toast(`No ${kind.toLowerCase()} accounts in ${data.officeName||'this office'}.`,'err');return;}
+  await loadPdf();const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  const W=doc.internal.pageSize.getWidth();
+  const head=isVer?CONS_HEAD_VER:CONS_HEAD;
+  const body=src.map((row,i)=>[i+1].concat(row.map(c=>c===''?'—':c)));
+  const header=()=>{
+    doc.setFillColor(...CLR.green);doc.rect(0,0,W,58,'F');
+    const t=W/3;doc.setFillColor(...CLR.saffron);doc.rect(0,58,t,4,'F');doc.setFillColor(...CLR.white);doc.rect(t,58,t,4,'F');doc.setFillColor(...CLR.ind);doc.rect(2*t,58,t,4,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(14);
+    doc.text('Cent Percent Verification — '+kind+' Accounts',32,25);
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text(`${data.officeName||''}  ·  All categories${data.sol?'  ·  SOL '+data.sol:''}${data.branch?'  ·  Branch '+data.branch:''}`,32,42);
+    doc.setFontSize(8.5);doc.text(kind+' accounts: '+src.length,W-32,25,{align:'right'});
+    doc.text('Generated: '+new Date().toLocaleString('en-IN'),W-32,42,{align:'right'});
+  };
+  const footer=()=>{const H=doc.internal.pageSize.getHeight();doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(150);
+    doc.text('O/o the Assistant Superintendent of Post Offices, Karur Sub Division',32,H-14);
+    doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber,W-32,H-14,{align:'right'});};
+  doc.autoTable({head:[head],body,startY:74,margin:{top:70,left:22,right:22},
+    styles:{font:'helvetica',fontSize:7.2,cellPadding:2.8,overflow:'linebreak',lineColor:[214,230,228],lineWidth:.4},
+    headStyles:{fillColor:CLR.green,textColor:255,fontStyle:'bold',halign:'center',fontSize:7.4},
+    alternateRowStyles:{fillColor:[240,250,248]},
+    columnStyles:{0:{halign:'center',cellWidth:24},6:{halign:'right'}},
+    didDrawPage:()=>{header();footer();}});
+  doc.save(consBaseName(kind,data.officeName)+'.pdf');
+  toast(`${kind}: ${data.officeName} — PDF ✓`,'ok');
+}
+async function runOfficeDl(btn){
+  const [kind,fmt]=String(btn.dataset.dl).split('|');
+  const branch=btn.dataset.branch;
+  const old=btn.textContent;btn.disabled=true;btn.textContent='⏳';
+  try{
+    const data=await gatherOffice(branch);
+    if(fmt==='xlsx') await officeExcel(kind,data); else await officePdf(kind,data);
+  }catch(e){ toast('Could not build report: '+(e.message||''),'err'); }
+  finally{ btn.disabled=false;btn.textContent=old; }
+}
+// Delegate the per-office download button clicks.
+$('#dashboard').addEventListener('click',e=>{
+  const b=e.target.closest('[data-dl]'); if(b){ e.stopPropagation(); runOfficeDl(b); }
+});
 
 // init
 loadDashboard();
