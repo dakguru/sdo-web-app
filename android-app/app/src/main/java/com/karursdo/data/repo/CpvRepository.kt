@@ -69,6 +69,54 @@ private data class CpvFullDto(
     val records: List<CpvRecordDto> = emptyList()
 )
 
+/** One office → Mail Overseer allotment row in app_cpv_allotments. */
+@Serializable
+data class CpvAllotmentDto(
+    val branch_id: String = "",
+    val mo_username: String = "",
+    val office_name: String? = null,
+    val sol_id: String? = null,
+    val allotted_by: String? = null,
+    val allotted_at_ms: Long? = null
+)
+
+/** A user account (subset), used to pick Mail Overseers for allotment. */
+@Serializable
+data class CpvUserDto(
+    val username: String = "",
+    val display_name: String = "",
+    val role: String = "",
+    val active: Boolean = true
+)
+
+/** Minimal projection for counting verifications without pulling whole rows. */
+@Serializable
+private data class OfficeKeyDto(val office_key: String = "")
+
+/** One flattened account row for a consolidated (all-categories) office report. */
+data class CpvConsRow(
+    val scheme: String,
+    val acct: String,
+    val name: String,
+    val address: String,
+    val type: String,
+    val balance: Double?,
+    val date: String,
+    val status: String,
+    val verifiedBy: String = "",
+    val verifiedAtMs: Long? = null,
+    val remarks: String = ""
+)
+
+/** Verified + pending rows for one office, across all its scheme categories. */
+data class CpvOfficeConsolidated(
+    val officeName: String,
+    val sol: String,
+    val branch: String,
+    val verified: List<CpvConsRow>,
+    val pending: List<CpvConsRow>
+)
+
 /** One per-account verification row in app_cpv_verification. */
 @Serializable
 data class CpvVerifDto(
@@ -187,6 +235,125 @@ class CpvRepository @Inject constructor(
         val ok = client.upsert("app_cpv_verification", body)
         if (!ok) throw CpvException(client.lastError ?: "Could not save verification.")
         true
+    }
+
+    // ── Office → Mail Overseer allotment ────────────────────────────────
+
+    /** All office→MO allotments. Empty (not an error) if the table isn't set up yet. */
+    suspend fun listAllotments(): List<CpvAllotmentDto> = withContext(Dispatchers.IO) {
+        val txt = client.selectAll(
+            "app_cpv_allotments",
+            "select=branch_id,mo_username,office_name,sol_id"
+        ) ?: return@withContext emptyList()
+        runCatching { json.decodeFromString<List<CpvAllotmentDto>>(txt) }.getOrElse { emptyList() }
+    }
+
+    /** User accounts whose role is MO — candidates for allotment. */
+    suspend fun listMoUsers(): List<CpvUserDto> = withContext(Dispatchers.IO) {
+        val txt = client.selectAll(
+            "app_users",
+            "select=username,display_name,role,active&order=display_name.asc"
+        ) ?: return@withContext emptyList()
+        val all = runCatching { json.decodeFromString<List<CpvUserDto>>(txt) }.getOrElse { emptyList() }
+        all.filter { it.role.trim().uppercase().replace(Regex("[^A-Z]"), "") == "MO" }
+    }
+
+    /**
+     * Set the Mail Overseers allotted to one office (branch). Adds newly-selected MOs and removes
+     * de-selected ones — never touches app_cpv or app_cpv_verification, so verified data is safe.
+     */
+    suspend fun setAllotments(
+        branch: String, officeName: String?, sol: String?,
+        selected: Set<String>, previous: Set<String>, by: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        val add = selected - previous
+        val remove = previous - selected
+        if (add.isEmpty() && remove.isEmpty()) return@withContext true
+        val now = System.currentTimeMillis()
+        if (add.isNotEmpty()) {
+            val rows = add.map { CpvAllotmentDto(branch, it, officeName, sol, by, now) }
+            if (!client.upsert("app_cpv_allotments", json.encodeToString(rows)))
+                throw CpvException(client.lastError ?: "Could not save allotment.")
+        }
+        val encBranch = java.net.URLEncoder.encode(branch, "UTF-8")
+        for (mo in remove) {
+            val encMo = java.net.URLEncoder.encode(mo, "UTF-8")
+            if (!client.delete("app_cpv_allotments", "branch_id=eq.$encBranch&mo_username=eq.$encMo"))
+                throw CpvException(client.lastError ?: "Could not update allotment.")
+        }
+        true
+    }
+
+    // ── Dashboard overview: verified counts per office_key (paginated) ───
+
+    /** Number of VERIFIED accounts per office_key. Pages past PostgREST's 1000-row cap. */
+    suspend fun verifiedCountsByOffice(): Map<String, Int> = withContext(Dispatchers.IO) {
+        val counts = HashMap<String, Int>()
+        val page = 1000; var from = 0
+        while (true) {
+            val txt = client.selectAll(
+                "app_cpv_verification",
+                "verified=eq.true&select=office_key&limit=$page&offset=$from"
+            ) ?: break
+            val rows = runCatching { json.decodeFromString<List<OfficeKeyDto>>(txt) }.getOrElse { emptyList() }
+            if (rows.isEmpty()) break
+            rows.forEach { counts[it.office_key] = (counts[it.office_key] ?: 0) + 1 }
+            if (rows.size < page) break
+            from += page
+        }
+        counts
+    }
+
+    // ── Per-office consolidated download (all categories) ───────────────
+
+    /** Build verified & pending rows for one office (branch) across all its scheme categories. */
+    suspend fun loadOfficeConsolidated(branch: String): CpvOfficeConsolidated = withContext(Dispatchers.IO) {
+        val enc = java.net.URLEncoder.encode(branch, "UTF-8")
+        val fullTxt = client.selectAll(
+            "app_cpv",
+            "branch_id=eq.$enc&select=office_key,office_name,sol_id,branch_id,scheme,scheme_label,records&order=scheme.asc"
+        ) ?: throw CpvException(client.lastError ?: "Could not reach the server.")
+        val batches = runCatching { json.decodeFromString<List<CpvFullDto>>(fullTxt) }.getOrElse { emptyList() }
+        if (batches.isEmpty()) return@withContext CpvOfficeConsolidated("", "", branch, emptyList(), emptyList())
+
+        // Verifications for all of this office's scheme lists (paged, keyed by office_key+acct).
+        val vmap = HashMap<String, MutableMap<String, CpvVerifDto>>()
+        val page = 1000; var from = 0
+        val keysFilter = batches.joinToString(",") { "\"" + it.office_key.replace("\"", "\"\"") + "\"" }
+        val keysEnc = java.net.URLEncoder.encode(keysFilter, "UTF-8")
+        while (true) {
+            val vTxt = client.selectAll(
+                "app_cpv_verification",
+                "office_key=in.($keysEnc)&select=office_key,acct,verified,remarks,verified_by,verified_at_ms&limit=$page&offset=$from"
+            ) ?: break
+            val vr = runCatching { json.decodeFromString<List<CpvVerifDto>>(vTxt) }.getOrElse { emptyList() }
+            if (vr.isEmpty()) break
+            vr.forEach { vmap.getOrPut(it.office_key) { HashMap() }[it.acct] = it }
+            if (vr.size < page) break
+            from += page
+        }
+
+        val verified = ArrayList<CpvConsRow>()
+        val pending = ArrayList<CpvConsRow>()
+        var officeName = ""; var sol = ""
+        for (b in batches) {
+            officeName = b.office_name.ifBlank { officeName }
+            sol = (b.sol_id ?: "").ifBlank { sol }
+            val vm = vmap[b.office_key] ?: emptyMap()
+            for (r in b.records) {
+                val acct = r.acct.ifBlank { r.policy }
+                val v = vm[acct]
+                val bal = r.balance ?: r.sumAssured
+                val dt = r.date.ifBlank { r.dateRaw }.ifBlank { r.doeIso }.ifBlank { r.doeRaw }
+                if (v != null && v.verified) {
+                    verified.add(CpvConsRow(b.scheme, acct, r.name, r.address, r.type, bal, dt, r.status,
+                        v.verified_by ?: "", v.verified_at_ms, v.remarks ?: ""))
+                } else {
+                    pending.add(CpvConsRow(b.scheme, acct, r.name, r.address, r.type, bal, dt, r.status))
+                }
+            }
+        }
+        CpvOfficeConsolidated(officeName, sol, branch, verified, pending)
     }
 }
 

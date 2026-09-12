@@ -44,6 +44,17 @@ class SupabaseClient @Inject constructor() {
         ) != null
     }
 
+    /** DELETE rows of [table] matched by a raw PostgREST [query] filter (e.g. "branch_id=eq.A1872"). Returns true on 2xx. */
+    suspend fun delete(table: String, query: String): Boolean = withContext(Dispatchers.IO) {
+        if (!enabled) return@withContext false
+        request(
+            method = "DELETE",
+            path = "/rest/v1/$table?$query",
+            body = null,
+            extraHeaders = mapOf("Prefer" to "return=minimal")
+        ) != null
+    }
+
     /** GET all rows of [table] (optionally filtered by a raw PostgREST query). Returns the JSON array text, or null on failure. */
     suspend fun selectAll(table: String, query: String = "select=*"): String? = withContext(Dispatchers.IO) {
         if (!enabled) return@withContext null

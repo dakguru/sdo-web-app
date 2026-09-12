@@ -17,6 +17,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +60,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -82,8 +86,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.karursdo.data.repo.CpvAccount
+import com.karursdo.data.repo.CpvAllotmentDto
 import com.karursdo.data.repo.CpvBatchDto
+import com.karursdo.data.repo.CpvConsRow
+import com.karursdo.data.repo.CpvOfficeConsolidated
 import com.karursdo.data.repo.CpvRepository
+import com.karursdo.data.repo.CpvUserDto
 import com.karursdo.data.repo.SessionManager
 import com.karursdo.report.CpvReportMeta
 import com.karursdo.report.CpvReportPdf
@@ -159,15 +167,32 @@ private fun shortAcctType(type: String): String {
 //  LIST SCREEN
 // ═════════════════════════════════════════════════════════════
 
+// ── CPV role logic (mirrors the web cpv.html) ──
+private fun cpvRoleNorm(r: String?): String = (r ?: "").uppercase().replace(Regex("[^A-Z]"), "")
+private val CPV_MANAGER_ROLES = setOf("ADMIN", "ASP", "IP", "PA")  // see every office
+private val CPV_ALLOT_ROLES = setOf("ADMIN", "ASP", "PA")          // may allot offices to MOs
+fun isCpvManager(role: String?): Boolean = cpvRoleNorm(role) in CPV_MANAGER_ROLES
+fun canCpvAllot(role: String?): Boolean = cpvRoleNorm(role) in CPV_ALLOT_ROLES
+fun isCpvMo(role: String?): Boolean = cpvRoleNorm(role) == "MO"
+
 data class CpvListState(
     val loading: Boolean = true,
     val error: String? = null,
-    val batches: List<CpvBatchDto> = emptyList()
+    val batches: List<CpvBatchDto> = emptyList(),   // already visibility-filtered for the user
+    val role: String = "USER",
+    val isManager: Boolean = false,
+    val canAllot: Boolean = false,
+    val isMO: Boolean = false,
+    val allot: Map<String, Set<String>> = emptyMap(), // branch_id -> lowercase MO usernames
+    val vCounts: Map<String, Int> = emptyMap(),        // office_key -> verified account count
+    val moUsers: List<CpvUserDto> = emptyList(),
+    val message: String? = null
 )
 
 @HiltViewModel
 class CpvListViewModel @Inject constructor(
-    private val repo: CpvRepository
+    private val repo: CpvRepository,
+    private val session: SessionManager
 ) : ViewModel() {
     private val _state = MutableStateFlow(CpvListState())
     val state = _state.asStateFlow()
@@ -176,16 +201,52 @@ class CpvListViewModel @Inject constructor(
     init { load() }
 
     fun load() {
-        _state.value = _state.value.copy(loading = true, error = null)
+        val user = session.current.value
+        val role = user?.role ?: "USER"
+        val manager = isCpvManager(role); val allotAble = canCpvAllot(role); val mo = isCpvMo(role)
+        _state.value = _state.value.copy(
+            loading = true, error = null, role = role, isManager = manager, canAllot = allotAble, isMO = mo
+        )
         viewModelScope.launch {
             try {
-                val b = repo.listBatches()
-                _state.value = CpvListState(false, null, b)
+                val all = repo.listBatches()
+                val allotMap = repo.listAllotments()
+                    .filter { it.branch_id.isNotBlank() }
+                    .groupBy({ it.branch_id }, { it.mo_username.lowercase() })
+                    .mapValues { it.value.toSet() }
+                val vCounts = repo.verifiedCountsByOffice()
+                val moUsers = if (allotAble) repo.listMoUsers() else emptyList()
+                val myName = (user?.username ?: "").lowercase()
+                val visible = if (mo) all.filter { (allotMap[it.branch_id ?: ""] ?: emptySet()).contains(myName) } else all
+                _state.value = _state.value.copy(
+                    loading = false, error = null, batches = visible,
+                    allot = allotMap, vCounts = vCounts, moUsers = moUsers
+                )
             } catch (e: Exception) {
-                _state.value = CpvListState(false, e.message ?: "Could not load lists.", emptyList())
+                _state.value = _state.value.copy(loading = false, error = e.message ?: "Could not load lists.")
             }
         }
     }
+
+    /** Managers: set the MOs allotted to one office, then reload. */
+    fun saveAllotment(branch: String, officeName: String?, sol: String?, selected: Set<String>) {
+        val prev = _state.value.allot[branch] ?: emptySet()
+        val by = session.authorName() ?: "web"
+        viewModelScope.launch {
+            try {
+                repo.setAllotments(branch, officeName, sol, selected, prev, by)
+                _state.value = _state.value.copy(message = "Allotment saved ✓")
+                load()
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(message = e.message ?: "Could not save allotment.")
+            }
+        }
+    }
+
+    /** Fetch one office's verified+pending rows across all categories (for the consolidated download). */
+    suspend fun consolidated(branch: String): CpvOfficeConsolidated = repo.loadOfficeConsolidated(branch)
+
+    fun clearMessage() { _state.value = _state.value.copy(message = null) }
 }
 
 @Composable
@@ -196,48 +257,73 @@ fun CpvListScreen(
 ) {
     val state by vm.state.collectAsState()
     var query by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScopeCompat()
+    val snackHost = remember { androidx.compose.material3.SnackbarHostState() }
+    var allotFor by remember { mutableStateOf<Triple<String, String, String>?>(null) }
+    var downloading by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize()) {
-        // Header band
-        Column(
-            Modifier.fillMaxWidth().background(LocalHeaderBrush.current).padding(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = Color.White)
+    LaunchedEffect(state.message) {
+        state.message?.let { snackHost.showSnackbar(it); vm.clearMessage() }
+    }
+
+    fun runDownload(branch: String, office: String, sol: String, kind: String) {
+        if (downloading) return
+        downloading = true
+        scope.launch {
+            runCatching {
+                val data = vm.consolidated(branch)
+                val rows = if (kind == "Verified") data.verified else data.pending
+                if (rows.isEmpty()) { snackHost.showSnackbar("No ${kind.lowercase()} accounts in $office."); return@runCatching }
+                val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    CpvReportPdf.generateConsolidated(context, data.officeName.ifBlank { office }, data.sol.ifBlank { sol }, branch, kind, rows)
                 }
-                Spacer(Modifier.width(4.dp))
-                Column {
-                    Text("Cent Percent Verification", style = MaterialTheme.typography.titleLarge, color = Color.White)
-                    Text(
-                        "Verify accounts during field visits · Karur Sub Division",
-                        style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.85f)
-                    )
+                CpvReportPdf.open(context, file)
+            }.onFailure { snackHost.showSnackbar("Could not build report: ${it.message}") }
+            downloading = false
+        }
+    }
+
+    val q = query.trim().lowercase()
+    val filtered = remember(state.batches, q) {
+        if (q.isEmpty()) state.batches
+        else state.batches.filter {
+            (it.office_name + " " + (it.sol_id ?: "") + " " + (it.branch_id ?: "") + " " + it.scheme)
+                .lowercase().contains(q)
+        }
+    }
+    val groups = remember(filtered) { filtered.groupBy { (it.branch_id ?: "") + "|" + it.office_name } }
+
+    androidx.compose.material3.Scaffold(
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackHost) },
+        topBar = {
+            Column(Modifier.fillMaxWidth().background(LocalHeaderBrush.current).padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    }
+                    Spacer(Modifier.width(4.dp))
+                    Column {
+                        Text("Cent Percent Verification", style = MaterialTheme.typography.titleLarge, color = Color.White)
+                        Text(
+                            "Verify accounts during field visits · Karur Sub Division",
+                            style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.85f)
+                        )
+                    }
                 }
             }
         }
-
-        val q = query.trim().lowercase()
-        val filtered = remember(state.batches, q) {
-            if (q.isEmpty()) state.batches
-            else state.batches.filter {
-                (it.office_name + " " + (it.sol_id ?: "") + " " + (it.branch_id ?: "") + " " + it.scheme)
-                    .lowercase().contains(q)
-            }
-        }
-        // Group by office (branch|office), preserving office order.
-        val groups = remember(filtered) {
-            filtered.groupBy { (it.branch_id ?: "") + "|" + it.office_name }
-        }
-
+    ) { pad ->
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().padding(pad)
         ) {
-            item {
-                KsdSearchField(query, { query = it }, "Search office, SOL ID, branch…")
+            if (!state.loading && state.error == null) {
+                item { CpvScopeBanner(state) }
+                item { CpvOverviewCard(state) }
             }
+            item { KsdSearchField(query, { query = it }, "Search office, SOL ID, branch…") }
             when {
                 state.loading -> item {
                     Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
@@ -248,37 +334,84 @@ fun CpvListScreen(
                     Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("🛠️", style = MaterialTheme.typography.headlineMedium)
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            state.error ?: "Could not load.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text(state.error ?: "Could not load.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(12.dp))
-                        Button(onClick = { vm.load() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)) {
-                            Text("Retry")
-                        }
+                        Button(onClick = { vm.load() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)) { Text("Retry") }
                     }
                 }
                 filtered.isEmpty() -> item {
-                    EmptyState("🗂️", if (state.batches.isEmpty()) "No account lists stored yet. Upload a Last Balance Report from the web app to begin." else "No lists match your search.")
+                    EmptyState("🗂️", when {
+                        state.isMO -> "No offices have been allotted to you yet. Please contact your Sub Divisional office."
+                        state.batches.isEmpty() -> "No account lists stored yet. Upload a Last Balance Report from the web app to begin."
+                        else -> "No lists match your search."
+                    })
                 }
                 else -> groups.forEach { (_, items) ->
                     val g = items.first()
+                    val branch = g.branch_id ?: ""
                     val totAcc = items.sumOf { it.total_accounts }
+                    val totVer = items.sumOf { cpvVerifiedFor(it, state.vCounts) }
+                    val pending = (totAcc - totVer).coerceAtLeast(0)
+                    val pct = if (totAcc > 0) totVer * 100 / totAcc else 0
                     item {
                         SectionCard(g.office_name) {
                             Text(
                                 buildString {
                                     g.sol_id?.takeIf { it.isNotBlank() }?.let { append("SOL $it · ") }
-                                    g.branch_id?.takeIf { it.isNotBlank() }?.let { append("Branch $it · ") }
+                                    if (branch.isNotBlank()) append("Branch $branch · ")
                                     append("$totAcc accounts")
                                 },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(Modifier.height(8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Pill("✓ $totVer verified", Brand.ChipPaidBg, Brand.ChipPaidFg)
+                                Pill("$pending pending", Brand.TpOthBg, Brand.TpOthFg)
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                LinearProgressIndicator(
+                                    progress = { pct / 100f },
+                                    modifier = Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(999.dp)),
+                                    color = Brand.Emerald,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Text("$pct%", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Brand.Emerald)
+                            }
+                            // Allotment (managers only)
+                            if (state.canAllot) {
+                                Spacer(Modifier.height(10.dp))
+                                val moSet = state.allot[branch] ?: emptySet()
+                                val names = moSet.mapNotNull { un -> state.moUsers.firstOrNull { it.username.lowercase() == un }?.display_name ?: un }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        if (names.isEmpty()) "👤 Not allotted" else "👤 " + names.joinToString(", "),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = if (names.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else Brand.Emerald,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    OutlinedButton(onClick = { allotFor = Triple(branch, g.office_name, g.sol_id ?: "") }) {
+                                        Icon(Icons.Rounded.Groups, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(Modifier.width(6.dp)); Text("Allot")
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(8.dp))
                             items.sortedBy { it.scheme }.forEach { b ->
-                                SchemeRow(b) { onOpenBatch(b.office_key, "${b.office_name} · ${b.scheme}") }
+                                SchemeRow(b, cpvVerifiedFor(b, state.vCounts)) { onOpenBatch(b.office_key, "${b.office_name} · ${b.scheme}") }
+                            }
+                            // Per-office consolidated download (all categories)
+                            HorizontalDivider(Modifier.padding(vertical = 10.dp))
+                            Text("⬇ Consolidated · all categories", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.height(6.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(onClick = { runDownload(branch, g.office_name, g.sol_id ?: "", "Verified") }, enabled = !downloading, modifier = Modifier.weight(1f)) {
+                                    Icon(Icons.Rounded.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Verified")
+                                }
+                                OutlinedButton(onClick = { runDownload(branch, g.office_name, g.sol_id ?: "", "Pending") }, enabled = !downloading, modifier = Modifier.weight(1f)) {
+                                    Icon(Icons.Rounded.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Pending")
+                                }
                             }
                         }
                     }
@@ -287,34 +420,134 @@ fun CpvListScreen(
             item { Spacer(Modifier.height(24.dp)) }
         }
     }
+
+    // Allotment dialog (managers)
+    allotFor?.let { (branch, office, sol) ->
+        CpvAllotDialog(
+            office = office, branch = branch,
+            moUsers = state.moUsers,
+            current = state.allot[branch] ?: emptySet(),
+            onDismiss = { allotFor = null },
+            onSave = { selected -> vm.saveAllotment(branch, office, sol, selected); allotFor = null }
+        )
+    }
+}
+
+/** verified accounts for one stored list, clamped to its total. */
+private fun cpvVerifiedFor(b: CpvBatchDto, vCounts: Map<String, Int>): Int =
+    (vCounts[b.office_key] ?: 0).coerceAtMost(b.total_accounts)
+
+@Composable
+private fun CpvScopeBanner(state: CpvListState) {
+    when {
+        state.isMO -> InfoBanner("Mail Overseer", "You can see & verify ${state.batches.map { it.branch_id }.distinct().size} office(s) allotted to you. Others are hidden.", Brand.ChipPaidBg, Brand.ChipPaidFg)
+        state.isManager -> InfoBanner(state.role, "You can see all offices" + (if (state.canAllot) " and allot them to Mail Overseers." else "."), Brand.BadgeDsBg, Brand.BadgeDsFg)
+        else -> {}
+    }
 }
 
 @Composable
-private fun SchemeRow(b: CpvBatchDto, onClick: () -> Unit) {
+private fun InfoBanner(tag: String, text: String, bg: Color, fg: Color) {
+    Surface(shape = RoundedCornerShape(12.dp), color = bg.copy(alpha = 0.5f), modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Pill(tag, bg, fg)
+            Spacer(Modifier.width(10.dp))
+            Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+        }
+    }
+}
+
+@Composable
+private fun CpvOverviewCard(state: CpvListState) {
+    val offices = state.batches.map { it.branch_id ?: it.office_name }.distinct().size
+    val lists = state.batches.size
+    val totAcc = state.batches.sumOf { it.total_accounts }
+    val totVer = state.batches.sumOf { cpvVerifiedFor(it, state.vCounts) }
+    val pending = (totAcc - totVer).coerceAtLeast(0)
+    SectionCard("Overview") {
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Pill("Offices $offices", Brand.BadgeDsBg, Brand.BadgeDsFg)
+            Pill("Lists $lists", Brand.BadgeDsBg, Brand.BadgeDsFg)
+            Pill("Accounts $totAcc", Brand.TpOthBg, Brand.TpOthFg)
+            Pill("✓ Verified $totVer", Brand.ChipPaidBg, Brand.ChipPaidFg)
+            Pill("Yet to verify $pending", Brand.TpOthBg, Brand.TpOthFg)
+        }
+    }
+}
+
+@Composable
+private fun SchemeRow(b: CpvBatchDto, verified: Int, onClick: () -> Unit) {
+    val pending = (b.total_accounts - verified).coerceAtLeast(0)
+    val pct = if (b.total_accounts > 0) verified * 100 / b.total_accounts else 0
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable(onClick = onClick)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(12.dp)
-        ) {
-            Pill(b.scheme, Brand.BadgeDsBg, Brand.BadgeDsFg)
-            Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    b.scheme_label ?: b.scheme,
-                    style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    "${b.total_accounts} ${if (isPliScheme(b.scheme)) "policies" else "accounts"}",
-                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        Column(Modifier.fillMaxWidth().padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Pill(b.scheme, Brand.BadgeDsBg, Brand.BadgeDsFg)
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(b.scheme_label ?: b.scheme, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    Text("${b.total_accounts} ${if (isPliScheme(b.scheme)) "policies" else "accounts"}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text("$pct%", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Brand.Emerald)
+                Spacer(Modifier.width(8.dp))
+                Text("›", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             }
-            Text("›", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Pill("✓ $verified verified", Brand.ChipPaidBg, Brand.ChipPaidFg)
+                Pill("⏳ $pending pending", Brand.TpOthBg, Brand.TpOthFg)
+            }
         }
     }
+}
+
+@Composable
+private fun CpvAllotDialog(
+    office: String,
+    branch: String,
+    moUsers: List<CpvUserDto>,
+    current: Set<String>,
+    onDismiss: () -> Unit,
+    onSave: (Set<String>) -> Unit
+) {
+    val selected = remember { mutableStateListOf<String>().apply { addAll(current) } }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Allot — $office") },
+        text = {
+            if (moUsers.isEmpty()) {
+                Text("No Mail Overseer accounts found. Create users with the role MO in the web User Management, then allot offices here.", style = MaterialTheme.typography.bodyMedium)
+            } else {
+                Column {
+                    Text("Choose the Mail Overseer(s) who may see and verify this office (Branch $branch).", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    Column(Modifier.verticalScroll(rememberScrollState())) {
+                        moUsers.forEach { u ->
+                            val un = u.username.lowercase()
+                            val on = selected.contains(un)
+                            Row(
+                                Modifier.fillMaxWidth().clickable { if (on) selected.remove(un) else selected.add(un) }.padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(checked = on, onCheckedChange = { if (on) selected.remove(un) else selected.add(un) })
+                                Spacer(Modifier.width(6.dp))
+                                Column {
+                                    Text(u.display_name.ifBlank { u.username }, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                    Text("@${u.username}" + if (!u.active) " · disabled" else "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(selected.toSet()) }, enabled = moUsers.isNotEmpty()) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }
 
 // ═════════════════════════════════════════════════════════════

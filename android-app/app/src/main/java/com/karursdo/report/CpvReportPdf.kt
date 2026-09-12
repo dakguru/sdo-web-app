@@ -380,6 +380,149 @@ object CpvReportPdf {
     }
 
     /** dd-MM-yyyy from an iso yyyy-mm-dd, else the raw text. */
+    // ── Consolidated per-office report — ALL categories, split Verified / Pending.
+    //    kind = "Verified" | "Pending". Columns: # · Scheme · Account/Policy · Name · Type ·
+    //    Balance/SA · Status · (Verified by·on + Remarks) OR (Last txn) depending on kind.
+    fun generateConsolidated(
+        context: Context,
+        officeName: String,
+        sol: String,
+        branch: String,
+        kind: String,
+        rows: List<com.karursdo.data.repo.CpvConsRow>
+    ): File {
+        val verified = kind.equals("Verified", true)
+        val serif = loadFont(context, "fonts/pala.ttf") ?: Typeface.SERIF
+        val serifBold = loadFont(context, "fonts/palab.ttf") ?: Typeface.create(Typeface.SERIF, Typeface.BOLD)
+        val money = NumberFormat.getNumberInstance(Locale("en", "IN")).apply { minimumFractionDigits = 2; maximumFractionDigits = 2 }
+        val doc = PdfDocument()
+
+        val titlePaint = paint(Color.WHITE, 16f, serifBold)
+        val subPaint = paint(0xFFDCEFEC.toInt(), 9.5f, serif)
+        val kicker = paint(0xFFB9E4DD.toInt(), 8f, serifBold).apply { letterSpacing = 0.12f }
+        val metaRight = paint(0xFFDCEFEC.toInt(), 9f, serif)
+        val thHead = paint(Color.WHITE, 8.5f, serifBold)
+        val tdBody = paint(INK, BODY_SIZE, serif)
+        val tdBold = paint(INK, BODY_SIZE, serifBold)
+        val tdGreen = paint(GREEN, BODY_SIZE, serifBold)
+        val tdMuted = paint(MUTED, BODY_SIZE, serif)
+        val footPaint = paint(MUTED, 8f, serif)
+
+        val right = PAGE_W - MARGIN
+        val wSl = 24f; val wSch = 52f; val wAcct = 90f; val wName = 140f; val wType = 64f; val wBal = 76f; val wStatus = 84f
+        val xSl = MARGIN
+        val xSch = xSl + wSl
+        val xAcct = xSch + wSch
+        val xName = xAcct + wAcct
+        val xType = xName + wName
+        val xBal = xType + wType
+        val xStatus = xBal + wBal
+        val xExtra = xStatus + wStatus
+        val wExtra = right - xExtra
+        val wVer = if (verified) 130f else wExtra
+        val xRmk = xExtra + wVer
+        val wRmk = right - xRmk
+
+        var pageNo = 0
+        var page: PdfDocument.Page? = null
+        var canvas: Canvas? = null
+        var y = 0f
+
+        fun footer(c: Canvas) {
+            c.drawLine(MARGIN, PAGE_H - 26f, right, PAGE_H - 26f, stroke(LINE, 0.8f))
+            c.drawText("O/o the Assistant Superintendent of Post Offices, Karur Sub Division", MARGIN, PAGE_H - 14f, footPaint)
+            val pg = "Page $pageNo"; c.drawText(pg, right - footPaint.measureText(pg), PAGE_H - 14f, footPaint)
+        }
+        fun header(c: Canvas) {
+            val bandH = 58f
+            c.drawRect(0f, 0f, PAGE_W.toFloat(), bandH, fill(NAVY))
+            val t = PAGE_W / 3f
+            c.drawRect(0f, bandH, t, bandH + 3f, fill(0xFFFF9933.toInt()))
+            c.drawRect(t, bandH, 2 * t, bandH + 3f, fill(Color.WHITE))
+            c.drawRect(2 * t, bandH, PAGE_W.toFloat(), bandH + 3f, fill(0xFF138808.toInt()))
+            c.drawText("DEPARTMENT OF POSTS  ·  KARUR SUB DIVISION", MARGIN, 20f, kicker)
+            c.drawText("Cent Percent Verification — $kind Accounts", MARGIN, 40f, titlePaint)
+            val sub = buildString {
+                append(officeName); append("   ·   All categories")
+                if (sol.isNotBlank()) append("   ·   SOL $sol")
+                if (branch.isNotBlank()) append("   ·   Branch $branch")
+            }
+            c.drawText(sub, MARGIN, 53f, subPaint)
+            val r1 = "$kind accounts: ${rows.size}"
+            val r2 = "Generated: ${LocalDateTime.now().format(STAMP)}"
+            c.drawText(r1, right - metaRight.measureText(r1), 26f, metaRight)
+            c.drawText(r2, right - metaRight.measureText(r2), 44f, metaRight)
+        }
+        fun tableHeader(c: Canvas, top: Float): Float {
+            val h = 20f
+            c.drawRect(xSl, top, right, top + h, fill(NAVY_DEEP))
+            val by = top + h / 2f + (-thHead.fontMetrics.ascent - thHead.fontMetrics.descent) / 2f
+            c.drawText("#", xSl + CELL_PAD, by, thHead)
+            c.drawText("SCHEME", xSch + CELL_PAD, by, thHead)
+            c.drawText("ACCOUNT / POLICY", xAcct + CELL_PAD, by, thHead)
+            c.drawText("NAME", xName + CELL_PAD, by, thHead)
+            c.drawText("TYPE", xType + CELL_PAD, by, thHead)
+            c.drawText("BALANCE / SA", xBal + CELL_PAD, by, thHead)
+            c.drawText("STATUS", xStatus + CELL_PAD, by, thHead)
+            if (verified) {
+                c.drawText("VERIFIED", xExtra + CELL_PAD, by, thHead)
+                c.drawText("REMARKS", xRmk + CELL_PAD, by, thHead)
+            } else {
+                c.drawText("LAST TXN / ENTRY", xExtra + CELL_PAD, by, thHead)
+            }
+            return top + h
+        }
+        fun newPage() {
+            page?.let { doc.finishPage(it) }
+            pageNo++
+            page = doc.startPage(PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageNo).create())
+            canvas = page!!.canvas
+            header(canvas!!); footer(canvas!!)
+            y = tableHeader(canvas!!, 66f)
+        }
+        newPage()
+
+        rows.forEachIndexed { idx, r ->
+            val nameLines = wrap(r.name.ifBlank { "—" }, tdBold, wName - 2 * CELL_PAD)
+            val statusLines = wrap(r.status.ifBlank { "—" }, tdMuted, wStatus - 2 * CELL_PAD)
+            val extraText = if (verified) {
+                buildString {
+                    append("Yes")
+                    if (r.verifiedBy.isNotBlank()) append(" · ${r.verifiedBy}")
+                    if (r.verifiedAtMs != null) append(" · ${fmtDate(r.verifiedAtMs)}")
+                }
+            } else r.date.ifBlank { "—" }
+            val extraLines = wrap(extraText, if (verified) tdGreen else tdMuted, wVer - 2 * CELL_PAD)
+            val rmkLines = if (verified) wrap(r.remarks.ifBlank { "—" }, tdBody, wRmk - 2 * CELL_PAD) else emptyList()
+            val lines = maxOf(nameLines.size, statusLines.size, extraLines.size, rmkLines.size, 1)
+            val rowH = lines * LINE_H + 6f
+            if (y + rowH > PAGE_H - 32f) newPage()
+            val c = canvas!!
+            if (idx % 2 == 1) c.drawRect(xSl, y, right, y + rowH, fill(ROW_ALT))
+            val baseY = y + LINE_H
+            c.drawText("${idx + 1}", xSl + CELL_PAD, baseY, tdMuted)
+            c.drawText(r.scheme, xSch + CELL_PAD, baseY, tdMuted)
+            c.drawText(r.acct.ifBlank { "—" }, xAcct + CELL_PAD, baseY, tdBold)
+            nameLines.forEachIndexed { i, ln -> c.drawText(ln, xName + CELL_PAD, baseY + i * LINE_H, tdBold) }
+            c.drawText(r.type.ifBlank { "—" }, xType + CELL_PAD, baseY, tdMuted)
+            val bal = r.balance?.let { money.format(it) } ?: "—"
+            c.drawText(bal, xBal + wBal - CELL_PAD - tdBody.measureText(bal), baseY, tdBody)
+            statusLines.forEachIndexed { i, ln -> c.drawText(ln, xStatus + CELL_PAD, baseY + i * LINE_H, tdMuted) }
+            extraLines.forEachIndexed { i, ln -> c.drawText(ln, xExtra + CELL_PAD, baseY + i * LINE_H, if (verified) tdGreen else tdMuted) }
+            rmkLines.forEachIndexed { i, ln -> c.drawText(ln, xRmk + CELL_PAD, baseY + i * LINE_H, tdBody) }
+            y += rowH
+            c.drawLine(xSl, y, right, y, stroke(LINE, 0.5f))
+        }
+
+        page?.let { doc.finishPage(it) }
+        val dir = File(context.cacheDir, "reports").apply { mkdirs() }
+        val safe = "CPV_${kind}_${officeName}".replace(Regex("[^A-Za-z0-9]+"), "_").trim('_').take(60)
+        val file = File(dir, "$safe.pdf")
+        FileOutputStream(file).use { doc.writeTo(it) }
+        doc.close()
+        return file
+    }
+
     private fun fmtTxnIso(iso: String, raw: String): String {
         val m = Regex("^(\\d{4})-(\\d{2})-(\\d{2})$").find(iso)
         return if (m != null) "${m.groupValues[3]}-${m.groupValues[2]}-${m.groupValues[1]}" else raw
