@@ -40,29 +40,73 @@
     '<div class="muted" style="font-size:12px;margin-top:8px">Sl. No &middot; Name of the Official &middot; Designation &middot; Name of their Office &middot; BO/SO &middot; Office ID &middot; Account Office &middot; Mobile Number &mdash; sorted by Account Office, then office, then designation (BPM &middot; ABPM &middot; Dak Sevak); grouped sub-division-wise. Pay details are never included.</div>';
   const subSel=host.querySelector('#dx-sub'), typeSel=host.querySelector('#dx-type'), xlsBtn=host.querySelector('#dx-xlsx'), pdfBtn=host.querySelector('#dx-pdf');
 
-  // Populate the sub-division picker from the office master (best effort).
-  fetch('/api/offices-master',{cache:'no-store'}).then(r=>r.json()).then(d=>{
-    const subs=new Set();
-    // Only the Karur Sub Division is served here, so the picker lists Karur only.
-    const offs = window.KarurScope ? KarurScope.filterOffices(d.offices||[]) : (d.offices||[]);
-    for(const o of offs) subs.add(cln(o.sub_division)||'(Head / Admin)');
-    for(const s of [...subs].sort((a,b)=>a.localeCompare(b))){
-      const opt=document.createElement('option'); opt.value=s; opt.textContent=s; subSel.append(opt);
+  // ---- Data sources: Supabase first (the app's real store), /api/* only as a
+  // guarded fallback. The /api/* endpoints are NOT deployed as functions, so
+  // fetching them blindly returns Vercel's 404 HTML page and r.json() throws
+  // ("Unexpected token 'T', \"The page c\"..."). Mirror the Employee Directory's
+  // own loader so downloads always reflect the live cloud data.
+  const sbReady=async()=>{ try{ if(typeof SB==='undefined') return false; await SB.init(); return !!SB.ready; }catch(e){ return false; } };
+  async function fetchJson(url){ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(url+' '+r.status); return r.json(); }
+
+  // Office master: Supabase OFFICES → /api/offices-master → /data/office_master.json
+  async function loadOffices(){
+    if(await sbReady()){ try{ const ds=await SB.getDataset('OFFICES'); if(ds&&ds.data&&ds.data.length) return ds.data; }catch(e){} }
+    for(const u of ['/api/offices-master','/data/office_master.json']){
+      try{ const j=await fetchJson(u); const offs=j.offices||j||[]; if(offs.length) return offs; }catch(e){}
     }
-  }).catch(()=>{});
+    return [];
+  }
+  // Staff: Supabase DS + GDS + OUT datasets → /api/employees
+  async function loadEmployees(){
+    if(await sbReady()){
+      try{
+        const [ds,gs,out]=await Promise.all([SB.getDataset('DS'),SB.getDataset('GDS'),SB.getDataset('OUT')]);
+        if(ds||gs||out) return [].concat((ds&&ds.data)||[],(gs&&gs.data)||[],(out&&out.data)||[]);
+      }catch(e){}
+    }
+    try{ const d=await fetchJson('/api/employees'); return Array.isArray(d.employees)?d.employees:[]; }catch(e){ return []; }
+  }
+  // Mobile numbers: Supabase TEL + individual phone edits → /api/mobiles. Phone
+  // edits also overlay outsiders' own mobile_no, matching the directory display.
+  async function loadMobiles(emps){
+    if(await sbReady()){
+      try{
+        const tel=await SB.getDataset('TEL');
+        const map=Object.assign({},(tel&&tel.data)||{});
+        const edits=await SB.getPhoneEdits();
+        for(const ed of (edits||[])){
+          const id=cln(ed.target_id);
+          if(ed.target_type==='OUTSIDER'){ const o=(emps||[]).find(e=>e._type==='OUT'&&cln(e.resource_id)===id); if(o) o.mobile_no=ed.phone; }
+          else if(ed.target_type==='EMPLOYEE'){ if(ed.phone) map[id]=ed.phone; else delete map[id]; }
+        }
+        return map;
+      }catch(e){}
+    }
+    try{ const m=await fetchJson('/api/mobiles'); return (m&&m.map)||{}; }catch(e){ return {}; }
+  }
+
+  // Populate the sub-division picker from the office master (best effort). Deferred
+  // to a macrotask so supabase-sync.js (loaded just after this script) has defined SB.
+  setTimeout(async()=>{
+    try{
+      const offsAll=await loadOffices();
+      const offs=window.KarurScope?KarurScope.filterOffices(offsAll):offsAll;
+      const subs=new Set();
+      for(const o of offs) subs.add(cln(o.sub_division)||'(Head / Admin)');
+      for(const s of [...subs].sort((a,b)=>a.localeCompare(b))){
+        const opt=document.createElement('option'); opt.value=s; opt.textContent=s; subSel.append(opt);
+      }
+    }catch(e){}
+  },0);
 
   /* ---------- data assembly (always fetched fresh) ---------- */
   async function buildRows(){
     if(window.KarurScope){ try{ await KarurScope.load(); }catch(e){} }
-    const [ed,md,od]=await Promise.all([
-      fetch('/api/employees',{cache:'no-store'}).then(r=>r.json()),
-      fetch('/api/mobiles',{cache:'no-store'}).then(r=>r.json()),
-      fetch('/api/offices-master',{cache:'no-store'}).then(r=>r.json()).catch(()=>({offices:[]})),
-    ]);
+    const [rawEmps,offsAll]=await Promise.all([loadEmployees(),loadOffices()]);
+    const mobiles=await loadMobiles(rawEmps);
     // Only Karur Sub Division staff and offices are exported.
-    const emps=(Array.isArray(ed.employees)?ed.employees:[]).filter(e=>window.KarurScope?KarurScope.inScope(e):true);
-    const mobiles=(md&&md.map)||{};
-    const masterOffs=window.KarurScope?KarurScope.filterOffices(od.offices||[]):(od.offices||[]);
+    const emps=rawEmps.filter(e=>window.KarurScope?KarurScope.inScope(e):true);
+    const masterOffs=window.KarurScope?KarurScope.filterOffices(offsAll):offsAll;
     const master=new Map(masterOffs.map(o=>[cln(o.office_id),o]));
     const rows=[];
     for(const e of emps){
