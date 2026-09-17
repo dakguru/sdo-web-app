@@ -4,7 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <script src="/leave-orders/auth-guard.js"></script>
-<script src="/xlsx-lite.js"></script>
+<link rel="stylesheet" href="/leave-orders/postal-hero.css">
+<script defer src="/leave-orders/postal-hero.js"></script>
 <title>Department of Posts — Karur Sub Division</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -408,86 +409,6 @@ html.light .card-badge.badge-fmt{background:rgba(139,92,246,0.1);color:#7c3aed;b
 .accent-fmt{background:linear-gradient(90deg,#a78bfa,#c084fc,#f472b6)}
 
 /* ============================================================
-   PLI / RPLI MEGA MELA BANNER
-   ============================================================ */
-.pli-banner{
-  position:relative;overflow:hidden;
-  display:flex;flex-wrap:wrap;align-items:center;gap:24px;
-  padding:26px 30px;margin-bottom:36px;
-  border-radius:var(--radius-xl);
-  background:linear-gradient(120deg,#7c2d12 0%,#b45309 22%,#0f766e 68%,#065f46 100%);
-  border:1px solid rgba(255,255,255,0.16);
-  box-shadow:0 18px 48px rgba(180,83,9,0.28),0 2px 0 rgba(255,255,255,0.12) inset;
-  color:#fff;isolation:isolate;
-  animation:fadeInDown 0.6s cubic-bezier(0.22,1,0.36,1) both;
-}
-.pli-banner::before{ /* tricolour top rule */
-  content:'';position:absolute;top:0;left:0;right:0;height:4px;z-index:2;
-  background:linear-gradient(90deg,#FF9933 0 33.33%,#ffffff 33.33% 66.66%,#138808 66.66% 100%);
-}
-.pli-glow{
-  position:absolute;inset:-40% -8% auto auto;width:420px;height:420px;z-index:0;
-  background:radial-gradient(circle,rgba(255,215,120,0.38),transparent 60%);
-  filter:blur(30px);pointer-events:none;animation:pliGlow 9s ease-in-out infinite;
-}
-@keyframes pliGlow{0%,100%{transform:translate(0,0) scale(1);opacity:.8}50%{transform:translate(-30px,20px) scale(1.1);opacity:1}}
-.pli-left{flex:1 1 340px;min-width:0;position:relative;z-index:1}
-.pli-right{flex:0 0 auto;display:flex;flex-direction:column;gap:14px;align-items:flex-end;position:relative;z-index:1}
-.pli-badge-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
-.pli-chip-live{
-  display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;
-  background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.25);
-  font-size:11px;font-weight:800;letter-spacing:0.6px;text-transform:uppercase;
-}
-.pli-chip-live .dot{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;animation:pulse 2s ease-in-out infinite}
-.pli-event{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:11.5px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.82)}
-.pli-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:900;letter-spacing:0.3px;line-height:1.15;margin-bottom:6px;text-shadow:0 2px 12px rgba(0,0,0,0.25)}
-.pli-sub{font-size:13.5px;font-weight:500;line-height:1.55;color:rgba(255,255,255,0.9);max-width:560px;margin-bottom:16px}
-.pli-stats{display:flex;flex-wrap:wrap;gap:10px}
-.pli-stat{
-  min-width:96px;padding:10px 14px;border-radius:14px;
-  background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.2);
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-}
-.pli-stat .v{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:19px;font-weight:900;line-height:1.1;letter-spacing:0.3px}
-.pli-stat .k{font-size:10.5px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.78);margin-top:3px}
-.pli-cta{
-  display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:999px;
-  background:#fff;color:#9a3412;text-decoration:none;white-space:nowrap;
-  font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:14px;font-weight:800;letter-spacing:0.3px;
-  box-shadow:0 8px 20px rgba(0,0,0,0.22);transition:all 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
-}
-.pli-cta:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 12px 28px rgba(0,0,0,0.3)}
-.pli-admin{display:flex;flex-direction:column;gap:7px;align-items:flex-end}
-.pli-admin-label{font-size:10.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,0.72)}
-.pli-admin-btns{display:flex;gap:8px}
-.pli-dl{
-  display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;
-  padding:8px 15px;border-radius:10px;color:#fff;border:1px solid rgba(255,255,255,0.32);
-  font-family:'Inter',sans-serif;font-size:12.5px;font-weight:800;letter-spacing:0.3px;transition:all 0.25s;
-}
-.pli-dl.xls{background:rgba(6,95,70,0.55)}
-.pli-dl.pdf{background:rgba(124,45,18,0.55)}
-.pli-dl:hover{background:rgba(255,255,255,0.95);color:#111;border-color:#fff;transform:translateY(-1px)}
-.pli-dl:disabled{opacity:0.6;cursor:progress;transform:none}
-@media(max-width:768px){
-  .pli-banner{padding:22px 20px;gap:16px}
-  .pli-right{width:100%;align-items:stretch;flex-direction:column}
-  .pli-cta{justify-content:center}
-  .pli-admin{align-items:stretch}
-  .pli-admin-btns{justify-content:stretch}
-  .pli-dl{flex:1;justify-content:center}
-  .pli-title{font-size:22px}
-}
-
-/* Homepage toast (used by PLI downloads) */
-.hp-toast-wrap{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
-.hp-toast{padding:11px 20px;border-radius:12px;font-size:13px;font-weight:700;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,0.3);animation:hpToastIn 0.3s cubic-bezier(0.22,1,0.36,1)}
-.hp-toast.ok{background:linear-gradient(135deg,#059669,#0d9488)}
-.hp-toast.err{background:linear-gradient(135deg,#dc2626,#b45309)}
-@keyframes hpToastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-
-/* ============================================================
    QUICK OVERVIEW PANELS
    ============================================================ */
 .overview-grid{
@@ -866,34 +787,7 @@ html.light .btn-logout:hover{background:rgba(225,29,72,0.18);color:#9f1239}
     <span class="dt-chip"><span class="icon">🕐</span> <span id="current-time"></span></span>
   </div>
 
-  <!-- ====== PLI / RPLI MEGA MELA BANNER ====== -->
-  <section class="pli-banner" aria-label="PLI RPLI Mega Mela premium procurement tracker">
-    <div class="pli-glow"></div>
-    <div class="pli-left">
-      <div class="pli-badge-row">
-        <span class="pli-chip-live"><span class="dot"></span> Live</span>
-        <span class="pli-event">PLI · RPLI Mega Mela</span>
-      </div>
-      <div class="pli-title">🏆 Premium Procurement Tracker</div>
-      <div class="pli-sub">Log your policies, sum assured &amp; premium and climb the live Karur Division leaderboard. Mega Mela · 10 September 2026.</div>
-      <div class="pli-stats" id="pliStats">
-        <div class="pli-stat"><div class="v" id="pliPrem">—</div><div class="k">Premium</div></div>
-        <div class="pli-stat"><div class="v" id="pliSum">—</div><div class="k">Sum Assured</div></div>
-        <div class="pli-stat"><div class="v" id="pliPol">—</div><div class="k">Policies</div></div>
-        <div class="pli-stat"><div class="v" id="pliPart">—</div><div class="k">Staff Logged</div></div>
-      </div>
-    </div>
-    <div class="pli-right">
-      <a href="/pli" class="pli-cta">Open Leaderboard →</a>
-      <div class="pli-admin" id="pliAdmin" hidden>
-        <span class="pli-admin-label">⬇ Download data</span>
-        <div class="pli-admin-btns">
-          <button class="pli-dl xls" id="pliDlXls" type="button">Excel</button>
-          <button class="pli-dl pdf" id="pliDlPdf" type="button">PDF</button>
-        </div>
-      </div>
-    </div>
-  </section>
+
 
   <!-- ====== QUICK OVERVIEW ====== -->
   <div class="section-title">Quick Overview</div>
@@ -1081,6 +975,121 @@ html.light .btn-logout:hover{background:rgba(225,29,72,0.18);color:#9f1239}
 
   </div>
 
+  <section class="postal-hero" aria-labelledby="postal-title">
+    <div class="postal-copy">
+      <span class="postal-eyebrow"><span></span> INDIA POST <b>/</b> KARUR SUB DIVISION</span>
+      <h1 id="postal-title">Every connection.<br><em>A little closer.</em></h1>
+      <p>A familiar presence. A trusted connection.<br>Serving the people and places that make Karur home.</p>
+      <nav class="postal-links" aria-label="Karur quick links"><a href="/office-management">Explore our offices <span aria-hidden="true">↗</span></a><a href="/employees">Our people <span aria-hidden="true">→</span></a></nav>
+      <div class="postal-location"><svg width="14" height="17" viewBox="0 0 16 20" fill="none" aria-hidden="true"><path d="M14 7c0 5-6 11-6 11S2 12 2 7a6 6 0 1 1 12 0Z" stroke="currentColor"/><circle cx="8" cy="7" r="2" stroke="currentColor"/></svg> KARUR, TAMIL NADU <span>639001</span></div>
+    </div>
+    <div class="postal-gallery">
+      <div class="postal-art" data-postal-scene="office" role="img" aria-label="A detailed dimensional India Post office on a landscaped platform, with floating letters and a tricolour flag."><div class="scene-heading"><span>THE NEIGHBOURHOOD</span><b>01 / 03</b></div><svg class="postal-illustration" viewBox="0 0 520 400" aria-hidden="true"><defs>
+<linearGradient id="po-red" x2=".8" y2="1"><stop stop-color="#f26c58"/><stop offset=".45" stop-color="#cf3c3e"/><stop offset="1" stop-color="#9f2639"/></linearGradient>
+<linearGradient id="po-wall" x2=".7" y2="1"><stop stop-color="#fff9ec"/><stop offset="1" stop-color="#cfc7b4"/></linearGradient>
+<linearGradient id="po-glass" x2="1" y2="1"><stop stop-color="#b6d7d5"/><stop offset=".4" stop-color="#577e87"/><stop offset="1" stop-color="#233f50"/></linearGradient>
+<linearGradient id="po-gold" x2=".8" y2="1"><stop stop-color="#f8deb0"/><stop offset="1" stop-color="#b7975d"/></linearGradient>
+<linearGradient id="po-base" x2="0" y2="1"><stop stop-color="#56706d"/><stop offset="1" stop-color="#233f42"/></linearGradient>
+<radialGradient id="po-halo"><stop stop-color="#dec492" stop-opacity=".24"/><stop offset="1" stop-color="#dec492" stop-opacity="0"/></radialGradient>
+<filter id="po-shadow" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="12"/></filter>
+</defs>
+<ellipse cx="275" cy="205" rx="240" ry="185" fill="url(#po-halo)"/>
+<g class="scene-ambient"><ellipse cx="273" cy="230" rx="215" ry="117" fill="none" stroke="#c8b383" stroke-opacity=".2"/><path d="M68 263c48 78 265 124 405-3" fill="none" stroke="#c8b383" stroke-opacity=".25" stroke-dasharray="2 8"/></g>
+<ellipse cx="268" cy="337" rx="157" ry="20" fill="#122831" opacity=".26" filter="url(#po-shadow)"/>
+<g class="office-model">
+<path d="M65 259 251 168 458 267 273 366 65 273Z" fill="url(#po-base)"/><path d="m65 259 186-91 207 99-185 91Z" fill="#b1b5a0"/><path d="m82 256 169-80 188 91-166 81Z" fill="#ced0b9"/>
+<path d="m107 267 147-71 153 73-133 71Z" fill="#ece5d6"/><path d="m103 285 76-36 157 73-61 32" fill="none" stroke="#f5efde" stroke-width="2"/>
+<g transform="translate(116 250) scale(0.86)"><ellipse cy="12" rx="19" ry="7" fill="#152f35" opacity=".15"/><path d="M-2 0v-38h5V0" fill="#826b51"/><ellipse cy="-43" rx="20" ry="30" fill="#315c52"/><ellipse cx="-5" cy="-47" rx="15" ry="25" fill="#658873"/><path d="M0-65v37m0-15-10-9m10 1 8-8" fill="none" stroke="#b8c9a0" opacity=".3"/></g><g transform="translate(399 267) scale(1)"><ellipse cy="12" rx="19" ry="7" fill="#152f35" opacity=".15"/><path d="M-2 0v-38h5V0" fill="#826b51"/><ellipse cy="-43" rx="20" ry="30" fill="#315c52"/><ellipse cx="-5" cy="-47" rx="15" ry="25" fill="#658873"/><path d="M0-65v37m0-15-10-9m10 1 8-8" fill="none" stroke="#b8c9a0" opacity=".3"/></g><g transform="translate(352 223) scale(0.64)"><ellipse cy="12" rx="19" ry="7" fill="#152f35" opacity=".15"/><path d="M-2 0v-38h5V0" fill="#826b51"/><ellipse cy="-43" rx="20" ry="30" fill="#315c52"/><ellipse cx="-5" cy="-47" rx="15" ry="25" fill="#658873"/><path d="M0-65v37m0-15-10-9m10 1 8-8" fill="none" stroke="#b8c9a0" opacity=".3"/></g>
+<path d="m169 270 108 51 92-46-108-51Z" fill="#284149" opacity=".17"/>
+<path d="m158 156 105-52 105 50-104 53Z" fill="#fbf6e8"/>
+<path d="m158 156 106 51v101l-106-52Z" fill="url(#po-wall)"/><path d="m264 207 104-53v101l-104 53Z" fill="#b8b4a8"/>
+<path d="m153 151 110-54 111 53-110 56Z" fill="#c84b44"/><path d="m153 151 111 55v12l-111-54Z" fill="url(#po-red)"/><path d="m264 206 110-56v12l-110 56Z" fill="#8d2d35"/>
+<path d="m163 148 100-47 100 48-99 49Z" fill="#e16a55"/><path d="m175 148 88-41 86 41-85 43Z" fill="#db5b4c" stroke="#ef9980" stroke-width="1"/>
+<path d="m158 246 106 52v10l-106-52Z" fill="#a6423e"/><path d="m264 298 104-52v9l-104 53Z" fill="#80323a"/>
+<g transform="matrix(1 .49 0 1 167 171)"><rect width="87" height="24" rx="1" fill="#a52c38"/><text x="43.5" y="11" text-anchor="middle" fill="#fce8b6" font-size="10" font-weight="800" letter-spacing="1">INDIA POST</text><text x="43.5" y="20" text-anchor="middle" fill="#f9e9d1" font-size="5" letter-spacing="1.3">KARUR SUB DIVISION</text></g>
+<g transform="matrix(1 .49 0 1 170 210)"><rect width="24" height="29" fill="#fff4dc"/><rect x="3" y="3" width="18" height="23" fill="url(#po-glass)"/><path d="M12 3v23M3 14h18" stroke="#d2cfbc"/><path d="m4 4 7 0-7 15" fill="#e9ffff" opacity=".25"/></g>
+<g transform="matrix(1 .49 0 1 203 224)"><rect width="27" height="53" fill="#f5ebd8"/><rect x="3" y="3" width="21" height="50" fill="url(#po-glass)"/><path d="M13 3v50" stroke="#b8b5a7"/><path d="M17 28v6" stroke="#eed2a0" stroke-width="2"/></g>
+<g transform="matrix(1 .49 0 1 237 243)"><rect width="17" height="24" fill="#f5ebd8"/><rect x="3" y="3" width="11" height="18" fill="url(#po-glass)"/></g>
+<g transform="matrix(1 -.5 0 1 278 219)"><rect width="29" height="35" fill="#dad5c5"/><rect x="3" y="3" width="23" height="29" fill="url(#po-glass)"/><path d="M14 3v29M3 18h23" stroke="#c2c6bb"/></g>
+<g transform="matrix(1 -.5 0 1 322 197)"><rect width="29" height="35" fill="#dad5c5"/><rect x="3" y="3" width="23" height="29" fill="url(#po-glass)"/><path d="M14 3v29M3 18h23" stroke="#c2c6bb"/></g>
+<path d="m198 280 34 17-14 7-34-17Z" fill="#faf0db"/><path d="m184 287 34 17v5l-34-17Z" fill="#c4b49d"/>
+<!-- Flag mounted at the front roof edge, centred above the sign. -->
+<g class="office-flag-mount" transform="translate(-58 60)">
+<path d="M266 118V48" stroke="#ddd4bb" stroke-width="3"/>
+<g class="office-flag"><path d="M267 48q14-6 35 0v8q-20-6-35 0Z" fill="#e39a52"/><path d="M267 56q14-6 35 0v8q-20-6-35 0Z" fill="#fffae9"/><path d="M267 64q14-6 35 0v8q-20-6-35 0Z" fill="#4a8568"/><circle cx="285" cy="57" r="3" fill="none" stroke="#28496d" stroke-width="1"/></g>
+</g>
+<g transform="translate(325 295)"><ellipse cy="12" rx="15" ry="7" fill="#24434b" opacity=".16"/><path d="M-10-26q0-15 18-10l5 4v40l-18 5-5-3Z" fill="url(#po-red)"/><path d="m8-36 5 4v40l-5 2Z" fill="#8e2936"/><path d="M-7-23H5" stroke="#471f2d" stroke-width="3"/><text x="-1" y="-8" text-anchor="middle" font-size="5" font-weight="700" fill="#ffe3ac">POST</text></g>
+<g transform="translate(142 285)"><path d="m0 0 20-10 23 11-20 10Z" fill="#f0cd94"/><path d="m0 0 23 11v21L0 20Z" fill="#c69760"/><path d="m23 11 20-10v21L23 32Z" fill="#aa7a4d"/><path d="m8-4 23 11 7-4L15-7Z" fill="#f8e5bc"/><path d="m31 7 7-4v9l-7 4" fill="#dfbc82"/></g>
+</g><g class="mail-float"><g transform="translate(102 146) rotate(-16) scale(0.8)"><rect x="-30" y="-18" width="60" height="40" rx="3" fill="#ad8c63"/><rect x="-30" y="-21" width="60" height="40" rx="3" fill="#fff9ec"/><path d="m-29-19 29 23 29-23M-29 17-9 0m38 17L9 0" fill="none" stroke="#cfbc99" stroke-width="1"/><rect x="18" y="-16" width="7" height="8" fill="#b74446" opacity=".8"/></g></g><g class="mail-float float-delayed"><g transform="translate(412 169) rotate(13) scale(0.66)"><rect x="-30" y="-18" width="60" height="40" rx="3" fill="#ad8c63"/><rect x="-30" y="-21" width="60" height="40" rx="3" fill="#fff9ec"/><path d="m-29-19 29 23 29-23M-29 17-9 0m38 17L9 0" fill="none" stroke="#cfbc99" stroke-width="1"/><rect x="18" y="-16" width="7" height="8" fill="#b74446" opacity=".8"/></g></g>
+<g fill="#bba16f"><circle cx="105" cy="106" r="2"/><circle cx="409" cy="116" r="2"/><path d="M443 208v8m-4-4h8" stroke="#bba16f"/></g></svg><div class="postal-caption"><span></span>At the heart of Karur.</div></div>
+      <div class="postal-art" data-postal-scene="delivery" role="img" aria-label="A dimensional red India Post delivery van on a landscaped road through Karur." hidden><div class="scene-heading"><span>THE JOURNEY</span><b>02 / 03</b></div><svg class="postal-illustration" viewBox="0 0 520 400" aria-hidden="true"><defs>
+<linearGradient id="dv-red" x2=".8" y2="1"><stop stop-color="#f26c58"/><stop offset=".45" stop-color="#cf3c3e"/><stop offset="1" stop-color="#9f2639"/></linearGradient>
+<linearGradient id="dv-wall" x2=".7" y2="1"><stop stop-color="#fff9ec"/><stop offset="1" stop-color="#cfc7b4"/></linearGradient>
+<linearGradient id="dv-glass" x2="1" y2="1"><stop stop-color="#b6d7d5"/><stop offset=".4" stop-color="#577e87"/><stop offset="1" stop-color="#233f50"/></linearGradient>
+<linearGradient id="dv-gold" x2=".8" y2="1"><stop stop-color="#f8deb0"/><stop offset="1" stop-color="#b7975d"/></linearGradient>
+<linearGradient id="dv-base" x2="0" y2="1"><stop stop-color="#56706d"/><stop offset="1" stop-color="#233f42"/></linearGradient>
+<radialGradient id="dv-halo"><stop stop-color="#dec492" stop-opacity=".24"/><stop offset="1" stop-color="#dec492" stop-opacity="0"/></radialGradient>
+<filter id="dv-shadow" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="12"/></filter>
+</defs>
+<ellipse cx="270" cy="210" rx="240" ry="180" fill="url(#dv-halo)"/>
+<circle cx="390" cy="108" r="38" fill="url(#dv-gold)" opacity=".65"/>
+<g class="landscape-cloud" fill="none" stroke="#a7b7b5" stroke-width="1"><path d="M72 127h70m-49-7h84m142 26h84m-38-8h65"/></g>
+<ellipse cx="271" cy="335" rx="180" ry="19" fill="#142d34" opacity=".22" filter="url(#dv-shadow)"/>
+<path d="m48 242 214-76 213 99-211 95-216-101Z" fill="url(#dv-base)"/><path d="m48 242 214-76 213 99-211 80Z" fill="#a3b8a0"/>
+<path d="m79 228 54-66 40 9 56 44-65 40Z" fill="#729482"/><path d="m133 162 40 9 56 44-62 21Z" fill="#55796f"/><path d="m319 225 30-64 42 16 38 75Z" fill="#8aa68b"/><path d="m349 161 42 16 38 75-53-7Z" fill="#648775"/>
+<path d="m49 250 80-29 279 129-80 30Z" fill="#ddd6be" transform="translate(0 -28)"/><path d="m49 229 73-25 283 132-73 28Z" fill="#40535b"/>
+<path class="road-dashes" d="m55 219 300 139" fill="none" stroke="#ebd8a7" stroke-width="2" stroke-dasharray="17 15"/>
+<g transform="translate(97 262) scale(0.68)"><ellipse cy="12" rx="19" ry="7" fill="#152f35" opacity=".15"/><path d="M-2 0v-38h5V0" fill="#826b51"/><ellipse cy="-43" rx="20" ry="30" fill="#315c52"/><ellipse cx="-5" cy="-47" rx="15" ry="25" fill="#658873"/><path d="M0-65v37m0-15-10-9m10 1 8-8" fill="none" stroke="#b8c9a0" opacity=".3"/></g><g transform="translate(419 274) scale(0.85)"><ellipse cy="12" rx="19" ry="7" fill="#152f35" opacity=".15"/><path d="M-2 0v-38h5V0" fill="#826b51"/><ellipse cy="-43" rx="20" ry="30" fill="#315c52"/><ellipse cx="-5" cy="-47" rx="15" ry="25" fill="#658873"/><path d="M0-65v37m0-15-10-9m10 1 8-8" fill="none" stroke="#b8c9a0" opacity=".3"/></g><g transform="translate(304 195) scale(0.6)"><ellipse cy="12" rx="19" ry="7" fill="#152f35" opacity=".15"/><path d="M-2 0v-38h5V0" fill="#826b51"/><ellipse cy="-43" rx="20" ry="30" fill="#315c52"/><ellipse cx="-5" cy="-47" rx="15" ry="25" fill="#658873"/><path d="M0-65v37m0-15-10-9m10 1 8-8" fill="none" stroke="#b8c9a0" opacity=".3"/></g>
+<g transform="translate(390 285)"><path d="M0-27v39" stroke="#65796e" stroke-width="3"/><path d="m-23-34 44 20v24l-44-20Z" fill="#f2e7c9"/><text transform="matrix(1 .45 0 1 -18 -20)" font-size="8" font-weight="800" fill="#354d4c">KARUR</text></g>
+<g class="van-model">
+<path d="m155 271 146 66 81-32-144-61Z" fill="#1c3339" opacity=".24"/>
+<path d="m154 180 61-27 123 57-60 29Z" fill="#ed7760"/><path d="m154 180 124 59v72l-124-58Z" fill="url(#dv-red)"/><path d="m278 239 60-29v71l-60 30Z" fill="#9d2e3a"/>
+<path d="m161 185 115 55" stroke="#ffa58b"/><path d="m160 246 112 52" stroke="#8f2c38" stroke-width="6"/>
+<g transform="matrix(1 .47 0 1 171 209)"><text font-size="16" font-weight="800" fill="#fff0cb" letter-spacing="1">INDIA POST</text><path d="M0 10h87l-15 6H0Z" fill="#e8bf76"/><text y="29" font-size="6" fill="#f3d9c1" letter-spacing="2">KARUR SUB DIVISION</text></g>
+<path d="m279 246 35-15 40 19 19 30v41l-38 18-56-27Z" fill="#c94342"/>
+<path d="m314 231 34-16 40 18 19 31-34 16-19-30Z" fill="#f07860"/>
+<path d="m373 280 34-16v41l-34 16Z" fill="#9d303c"/>
+<path d="m321 242 26 12 15 23-40-18Z" fill="url(#dv-glass)" stroke="#e18a71" stroke-width="2"/>
+<path d="m354 249 28-13 15 24-28 13Z" fill="url(#dv-glass)" stroke="#ed9a7d" stroke-width="2"/>
+<path d="m359 249 7 10 21-10-5-10Z" fill="#e6ffff" opacity=".22"/>
+<path d="m315 264 0 44 40 18v-46" stroke="#9c2e38" fill="none"/><path d="m321 274 8 4" stroke="#efc89b" stroke-width="3"/>
+<path d="m376 296 24-11v8l-24 11Z" fill="#293c43"/><path d="m376 284 7-3v7l-7 3Zm18-8 7-3v7l-7 3Z" fill="#ffe3a7"/>
+<path d="m369 316 40-18v8l-40 18Z" fill="#aeb5ad"/><path d="m281 303 87 41v-7l-87-42Z" fill="#6b3136"/>
+<g transform="translate(191 272) rotate(-25)"><ellipse rx="17" ry="23" fill="#142b35"/><ellipse rx="10" ry="15" fill="#84989a"/><ellipse rx="5" ry="8" fill="#314e5b"/><path class="wheel-detail" d="M0-12v24M-8 0H8" stroke="#d6dbce" stroke-width="2"/></g>
+<g transform="translate(333 323) rotate(-25)"><ellipse rx="17" ry="23" fill="#142b35"/><ellipse rx="10" ry="15" fill="#84989a"/><ellipse rx="5" ry="8" fill="#314e5b"/><path class="wheel-detail" d="M0-12v24M-8 0H8" stroke="#d6dbce" stroke-width="2"/></g>
+</g><path d="m92 192 31 14m-43-4 40 19" stroke="#b79e70" stroke-width="1.5" opacity=".55"/></svg><div class="postal-caption"><span></span>Care, in every delivery.</div></div>
+      <div class="postal-art" data-postal-scene="connections" role="img" aria-label="A dimensional globe with illuminated postal routes and a Karur location marker." hidden><div class="scene-heading"><span>THE CONNECTION</span><b>03 / 03</b></div><svg class="postal-illustration" viewBox="0 0 520 400" aria-hidden="true"><defs>
+<linearGradient id="cn-red" x2=".8" y2="1"><stop stop-color="#f26c58"/><stop offset=".45" stop-color="#cf3c3e"/><stop offset="1" stop-color="#9f2639"/></linearGradient>
+<linearGradient id="cn-wall" x2=".7" y2="1"><stop stop-color="#fff9ec"/><stop offset="1" stop-color="#cfc7b4"/></linearGradient>
+<linearGradient id="cn-glass" x2="1" y2="1"><stop stop-color="#b6d7d5"/><stop offset=".4" stop-color="#577e87"/><stop offset="1" stop-color="#233f50"/></linearGradient>
+<linearGradient id="cn-gold" x2=".8" y2="1"><stop stop-color="#f8deb0"/><stop offset="1" stop-color="#b7975d"/></linearGradient>
+<linearGradient id="cn-base" x2="0" y2="1"><stop stop-color="#56706d"/><stop offset="1" stop-color="#233f42"/></linearGradient>
+<radialGradient id="cn-halo"><stop stop-color="#dec492" stop-opacity=".24"/><stop offset="1" stop-color="#dec492" stop-opacity="0"/></radialGradient>
+<filter id="cn-shadow" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="12"/></filter>
+</defs>
+<defs><radialGradient id="cn-sphere" cx=".3" cy=".25" r=".8"><stop stop-color="#668e91"/><stop offset=".5" stop-color="#31566a"/><stop offset="1" stop-color="#102939"/></radialGradient><clipPath id="cn-clip"><circle cx="264" cy="198" r="112"/></clipPath></defs>
+<ellipse cx="265" cy="205" rx="240" ry="180" fill="url(#cn-halo)"/>
+<ellipse cx="268" cy="343" rx="115" ry="14" fill="#142d34" opacity=".25" filter="url(#cn-shadow)"/>
+<g class="globe-model"><circle cx="264" cy="198" r="126" fill="none" stroke="#bbab89" stroke-opacity=".15"/>
+<ellipse cx="264" cy="198" rx="201" ry="67" transform="rotate(-27 264 198)" fill="none" stroke="#b29663" stroke-opacity=".32"/>
+<circle cx="264" cy="198" r="112" fill="url(#cn-sphere)" stroke="#a6b5ab" stroke-opacity=".55"/>
+<g clip-path="url(#cn-clip)" fill="none" stroke="#b5cabd" stroke-opacity=".2" stroke-width=".8"><ellipse cx="264" cy="198" rx="40" ry="112"/><ellipse cx="264" cy="198" rx="81" ry="112"/><ellipse cx="264" cy="198" rx="112" ry="38"/><ellipse cx="264" cy="198" rx="112" ry="76"/><path d="M152 198h224M264 86v224"/>
+<g fill="#afbc9b" stroke="#cad2b3" stroke-opacity=".3" fill-opacity=".55"><path d="m208 123 22-15 23 8 5 16-20 14-2 18-19 6-18-17Z"/><path d="m206 171 26-10 24 15 4 28-15 24-9 29-16-18-5-26-19-21Z"/><path d="m271 122 25-15 34 14 29 13 21 27-21 15-17-11-16 19-9 21-12-22-18-11-11-23-17-4Z"/><path d="m327 237 28-12 22 16-7 24-30 2-16-14Z"/></g></g>
+<path class="network-path" d="M306 207Q284 105 222 143M306 207Q365 186 349 245M306 207Q235 173 227 210" fill="none" stroke="#f2ce8e" stroke-width="1.5" stroke-dasharray="4 5"/>
+<g fill="#ffe4a9"><circle cx="222" cy="143" r="3"/><circle cx="349" cy="245" r="3"/><circle cx="227" cy="210" r="3"/><circle cx="306" cy="207" r="4"/></g><circle class="karur-pulse" cx="306" cy="207" r="11" fill="none" stroke="#f0cd91"/>
+<path d="m316 208 27-7h73" fill="none" stroke="#ddbd85"/><rect x="362" y="175" width="91" height="45" rx="7" fill="#f5efdf" stroke="#dacaa7"/><text x="375" y="193" font-size="10" font-weight="800" letter-spacing="1.3" fill="#294652">KARUR</text><text x="375" y="208" font-size="8" fill="#677873">639001 · INDIA</text>
+<path d="M84 256c82 41 255-32 361-120" fill="none" stroke="#d4b980" stroke-width="1.2"/>
+<g class="orbit-letter"><g transform="translate(129 255) rotate(-17) scale(0.77)"><rect x="-30" y="-18" width="60" height="40" rx="3" fill="#ad8c63"/><rect x="-30" y="-21" width="60" height="40" rx="3" fill="#fff9ec"/><path d="m-29-19 29 23 29-23M-29 17-9 0m38 17L9 0" fill="none" stroke="#cfbc99" stroke-width="1"/><rect x="18" y="-16" width="7" height="8" fill="#b74446" opacity=".8"/></g></g><g class="mail-float float-delayed"><g transform="translate(393 107) rotate(16) scale(0.65)"><rect x="-30" y="-18" width="60" height="40" rx="3" fill="#ad8c63"/><rect x="-30" y="-21" width="60" height="40" rx="3" fill="#fff9ec"/><path d="m-29-19 29 23 29-23M-29 17-9 0m38 17L9 0" fill="none" stroke="#cfbc99" stroke-width="1"/><rect x="18" y="-16" width="7" height="8" fill="#b74446" opacity=".8"/></g></g>
+</g><g fill="#bca572"><circle cx="113" cy="118" r="2"/><circle cx="419" cy="288" r="2"/><circle cx="176" cy="320" r="1.5"/><path d="M406 74v8m-4-4h8" stroke="#bca572"/></g></svg><div class="postal-caption"><span></span>From here. To everywhere.</div></div>
+    </div>
+    <div class="postal-scene-controls" role="group" aria-label="Choose postal animation" hidden>
+      <div class="scene-control-label">A POSTAL PERSPECTIVE<span>Choose your scene</span></div>
+      <div class="postal-scene-options"><button type="button" data-postal-select="office" aria-pressed="true" aria-label="Post Office"><span class="scene-option-number">01</span><span class="scene-option-text">Post Office<small>Rooted in the community</small></span><span class="scene-option-icon" aria-hidden="true">⌂</span></button><button type="button" data-postal-select="delivery" aria-pressed="false" aria-label="On the Road"><span class="scene-option-number">02</span><span class="scene-option-text">On the Road<small>Delivering with care</small></span><span class="scene-option-icon" aria-hidden="true">↗</span></button><button type="button" data-postal-select="connections" aria-pressed="false" aria-label="Connections"><span class="scene-option-number">03</span><span class="scene-option-text">Connections<small>Bringing people closer</small></span><span class="scene-option-icon" aria-hidden="true">◎</span></button></div>
+      <span class="postal-scene-status" role="status" aria-live="polite"></span>
+    </div>
+    <div class="postal-bottom"><span>LETTERS <b>·</b> PARCELS <b>·</b> PEOPLE</span><button type="button" id="postal-motion" aria-pressed="false">Pause animation</button></div>
+  </section>
+
   <!-- ====== FOOTER ====== -->
   <footer class="page-footer">
     <div class="footer-line">
@@ -1143,8 +1152,6 @@ document.querySelectorAll('.nav-card').forEach(card => {
     badge.innerHTML = '<span class="dot" style="background:#4ade80;box-shadow:0 0 8px #4ade80"></span> ☁ Cloud Connected';
   }
 
-  // ========== PLI / RPLI Mega Mela banner ==========
-  initPliBanner(ok);
 
   // ========== Quick Overview: Birthdays & Retirements ==========
   const now = new Date();
@@ -1261,143 +1268,6 @@ document.querySelectorAll('.nav-card').forEach(card => {
     }
   }
 })();
-
-// ========== PLI / RPLI Mega Mela banner ==========
-// Roles allowed to download the raw procurement data.
-function pliCanDownload(){
-  const u = (typeof AuthSession !== 'undefined') && AuthSession.user();
-  if(!u) return false;
-  // Normalise the stored role so "Mail Overseer", "MAIL_OVERSEER", "MO" etc. all match.
-  const r = String(u.role || '').toUpperCase().replace(/[^A-Z]/g,'');
-  const ALLOW = ['ADMIN','PA','ASP','MO','MAILOVERSEER','OVERSEER'];
-  return ALLOW.includes(r) || /OVERSEER/.test(r);
-}
-function pliToast(msg, kind){
-  let wrap = document.querySelector('.hp-toast-wrap');
-  if(!wrap){ wrap = document.createElement('div'); wrap.className='hp-toast-wrap'; document.body.appendChild(wrap); }
-  const t = document.createElement('div'); t.className='hp-toast '+(kind==='err'?'err':'ok'); t.textContent=msg;
-  wrap.appendChild(t);
-  setTimeout(()=>{ t.style.transition='opacity .4s,transform .4s'; t.style.opacity='0'; t.style.transform='translateY(10px)'; setTimeout(()=>t.remove(),400); }, 2600);
-}
-const pliINR = new Intl.NumberFormat('en-IN');
-function pliCompact(n){
-  n = Number(n)||0;
-  if(n>=1e7) return '₹'+(n/1e7).toFixed(n>=1e8?1:2).replace(/\.0+$/,'')+' Cr';
-  if(n>=1e5) return '₹'+(n/1e5).toFixed(n>=1e6?1:2).replace(/\.0+$/,'')+' L';
-  if(n>=1e3) return '₹'+(n/1e3).toFixed(1).replace(/\.0$/,'')+' K';
-  return '₹'+pliINR.format(Math.round(n));
-}
-let PLI_ROWS = [];   // raw app_pli entries, cached for download
-
-async function initPliBanner(cloudOk){
-  const admin = document.getElementById('pliAdmin');
-  if(admin && pliCanDownload()) admin.hidden = false;
-
-  const setStat = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent = val; };
-  if(!cloudOk){ ['pliPrem','pliSum','pliPol','pliPart'].forEach(id=>setStat(id,'—')); return; }
-
-  try{
-    PLI_ROWS = await SB.select('app_pli','select=*') || [];
-  }catch(e){ PLI_ROWS = []; }
-
-  let prem=0, sum=0, pol=0;
-  for(const r of PLI_ROWS){ prem+=Number(r.premium)||0; sum+=Number(r.sum_assured)||0; pol+=parseInt(r.num_policies||0,10)||0; }
-  setStat('pliPrem', pliCompact(prem));
-  setStat('pliSum',  pliCompact(sum));
-  setStat('pliPol',  pliINR.format(pol));
-  setStat('pliPart', pliINR.format(PLI_ROWS.length));
-
-  const xls = document.getElementById('pliDlXls');
-  const pdf = document.getElementById('pliDlPdf');
-  if(xls) xls.addEventListener('click', ()=>pliRun(xls, pliExportExcel));
-  if(pdf) pdf.addEventListener('click', ()=>pliRun(pdf, pliExportPdf));
-}
-
-function pliRun(btn, fn){
-  const old = btn.textContent; btn.disabled = true; btn.textContent = '⏳ Building…';
-  Promise.resolve().then(fn).catch(e=>pliToast('Could not build: '+(e.message||'try again'),'err'))
-    .finally(()=>{ btn.disabled=false; btn.textContent=old; });
-}
-// Sorted rows + a totals footer, shared by both exporters.
-function pliSortedRows(){
-  return PLI_ROWS.slice().sort((a,b)=> (Number(b.premium)||0)-(Number(a.premium)||0) || String(a.employee_name||'').localeCompare(String(b.employee_name||'')));
-}
-const PLI_HEAD = ['Sl.No','Employee','Designation','Category','Office','Branch / BO','Policies','Sum Assured (Rs.)','Premium (Rs.)','Last Updated'];
-function pliBaseName(){ return 'PLI Premium Procurement - Karur SDO ' + new Date().toISOString().slice(0,10); }
-function pliDl(blob,name){ const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500); }
-
-function pliExportExcel(){
-  if(!window.XLSXLite) throw new Error('Excel engine unavailable');
-  const rows = pliSortedRows();
-  if(!rows.length){ pliToast('No procurement data to download yet.','err'); return; }
-  let tPol=0,tSum=0,tPrem=0;
-  const data = rows.map((r,i)=>{
-    tPol+=parseInt(r.num_policies||0,10)||0; tSum+=Number(r.sum_assured)||0; tPrem+=Number(r.premium)||0;
-    return [
-      String(i+1), r.employee_name||'', r.designation||'', r.category||'',
-      r.parent_office||r.office_name||'', r.bo_name||(r.office_name!==r.parent_office?r.office_name:'')||'',
-      String(parseInt(r.num_policies||0,10)||0), pliINR.format(Number(r.sum_assured)||0), pliINR.format(Number(r.premium)||0),
-      r.updated_at_ms ? new Date(Number(r.updated_at_ms)).toLocaleString('en-IN') : ''
-    ];
-  });
-  data.push(['','','','','','TOTAL', String(tPol), pliINR.format(tSum), pliINR.format(tPrem), '']);
-  const bytes = XLSXLite.build(PLI_HEAD, data);
-  pliDl(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), pliBaseName()+'.xlsx');
-  pliToast('Excel downloaded ✓','ok');
-}
-
-const PLI_PDF_URLS=['https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js'];
-let _pliPdfP;
-function pliLoadScript(src){ return new Promise((res,rej)=>{ if([...document.scripts].some(s=>s.src===src)) return res();
-  const s=document.createElement('script'); s.src=src; s.onload=()=>res(); s.onerror=()=>rej(new Error('Could not load the PDF engine (check your connection).')); document.head.appendChild(s); }); }
-async function pliLoadPdf(){ if(_pliPdfP) return _pliPdfP; _pliPdfP=(async()=>{ for(const u of PLI_PDF_URLS) await pliLoadScript(u); })(); return _pliPdfP; }
-const PLI_CLR={green:[13,148,136],saffron:[255,153,51],white:[255,255,255],ind:[19,136,8]};
-
-async function pliExportPdf(){
-  const rows = pliSortedRows();
-  if(!rows.length){ pliToast('No procurement data to download yet.','err'); return; }
-  await pliLoadPdf();
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
-  const W = doc.internal.pageSize.getWidth();
-  let tPol=0,tSum=0,tPrem=0;
-  const body = rows.map((r,i)=>{
-    tPol+=parseInt(r.num_policies||0,10)||0; tSum+=Number(r.sum_assured)||0; tPrem+=Number(r.premium)||0;
-    return [ i+1, r.employee_name||'', r.designation||'—', r.category||'—',
-      r.parent_office||r.office_name||'—', r.bo_name||(r.office_name!==r.parent_office?r.office_name:'')||'—',
-      parseInt(r.num_policies||0,10)||0, pliINR.format(Number(r.sum_assured)||0), pliINR.format(Number(r.premium)||0) ];
-  });
-  const header=()=>{
-    doc.setFillColor(...PLI_CLR.green); doc.rect(0,0,W,58,'F');
-    const t=W/3; doc.setFillColor(...PLI_CLR.saffron); doc.rect(0,58,t,4,'F'); doc.setFillColor(...PLI_CLR.white); doc.rect(t,58,t,4,'F'); doc.setFillColor(...PLI_CLR.ind); doc.rect(2*t,58,t,4,'F');
-    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(14);
-    doc.text('PLI / RPLI Mega Mela — Premium Procurement', 32, 25);
-    doc.setFont('helvetica','normal'); doc.setFontSize(9);
-    doc.text('Department of Posts · Karur Sub Division   |   Mega Mela 10 September 2026', 32, 42);
-    doc.setFontSize(8.5);
-    doc.text('Staff logged: '+rows.length, W-32, 25, {align:'right'});
-    doc.text('Generated: '+new Date().toLocaleString('en-IN'), W-32, 42, {align:'right'});
-  };
-  const footer=()=>{ const H=doc.internal.pageSize.getHeight(); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(150);
-    doc.text('O/o the Assistant Superintendent of Post Offices, Karur Sub Division', 32, H-14);
-    doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber, W-32, H-14, {align:'right'}); };
-  doc.autoTable({
-    head:[['Sl','Employee','Designation','Cat','Office','Branch / BO','Policies','Sum Assured Rs.','Premium Rs.']],
-    body, startY:74, margin:{top:70,left:24,right:24},
-    styles:{font:'helvetica',fontSize:8,cellPadding:3.5,overflow:'linebreak',lineColor:[214,230,228],lineWidth:.5},
-    headStyles:{fillColor:PLI_CLR.green,textColor:255,fontStyle:'bold',halign:'center',fontSize:8.4},
-    alternateRowStyles:{fillColor:[240,250,248]},
-    columnStyles:{0:{halign:'center',cellWidth:24},2:{cellWidth:80},3:{halign:'center',cellWidth:40},6:{halign:'center',cellWidth:52,fontStyle:'bold'},7:{halign:'right',cellWidth:80},8:{halign:'right',cellWidth:74,fontStyle:'bold'}},
-    didParseCell:d=>{ if(d.section==='body'&&d.column.index===8){ d.cell.styles.textColor=[13,148,136]; } },
-    didDrawPage:()=>{ header(); footer(); }
-  });
-  const finalY = doc.lastAutoTable.finalY || 90;
-  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(13,148,136);
-  doc.text('Total — Policies: '+tPol+'   ·   Sum Assured Rs. '+pliINR.format(tSum)+'   ·   Premium Rs. '+pliINR.format(tPrem),
-    W-24, Math.min(finalY+20, doc.internal.pageSize.getHeight()-24), {align:'right'});
-  doc.save(pliBaseName()+'.pdf');
-  pliToast('PDF downloaded ✓','ok');
-}
 
 // ========== User Bar ==========
 (function(){

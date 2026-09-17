@@ -1,0 +1,135 @@
+/* Postal gallery: self-contained vector scenes, no remote rendering dependencies. */
+.postal-hero {
+  --postal-gold: #dfc394;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 1fr 1.06fr;
+  overflow: hidden;
+  margin-bottom: 36px;
+  border: 1px solid #ffffff21;
+  border-radius: 24px;
+  background: #142733;
+  color: #f6f3ea;
+  box-shadow: 0 24px 60px #10263226, inset 0 1px #ffffff0a;
+}
+.postal-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(ellipse at 0 0, #59707726, transparent 60%), linear-gradient(120deg, transparent 30%, #07172245);
+  pointer-events: none;
+}
+.postal-copy { padding: 48px 24px 35px 38px; align-self: center; }
+.postal-eyebrow { display: flex; align-items: center; gap: 8px; font-size: 8px; font-weight: 700; letter-spacing: 1.7px; color: #c9d2d1; }
+.postal-eyebrow > span { width: 6px; height: 6px; border-radius: 50%; background: #cf7161; box-shadow: 0 0 0 4px #cf716114; }
+.postal-eyebrow b { margin: 0 2px; font-weight: 400; color: #6e8087; }
+.postal-copy h1 { margin: 27px 0 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: clamp(30px, 3.5vw, 44px); font-weight: 600; line-height: 1.23; letter-spacing: -1.9px; }
+.postal-copy h1 em { color: var(--postal-gold); font-style: normal; font-weight: 500; }
+.postal-copy p { max-width: 350px; font-size: 12px; line-height: 1.95; color: #bac7ca; }
+.postal-links { display: flex; align-items: center; flex-wrap: wrap; gap: 21px; margin-top: 28px; }
+.postal-links a { display: inline-flex; align-items: center; justify-content: space-between; gap: 23px; min-height: 44px; padding: 13px 17px; background: #e4cea7; border: 1px solid #f0dfbd; border-radius: 7px; color: #24353c; font-size: 11px; font-weight: 700; text-decoration: none; transition: background .2s, transform .2s; }
+.postal-links a:nth-child(2) { padding-inline: 0; background: transparent; border-color: transparent; color: #e4e9e5; gap: 13px; }
+.postal-links a:hover { background: #f4e3c4; transform: translateY(-2px); }
+.postal-links a:nth-child(2):hover { background: transparent; color: var(--postal-gold); }
+.postal-hero a:focus-visible, .postal-hero button:focus-visible { outline: 2px solid #e9c98f; outline-offset: 4px; }
+.postal-location { display: flex; align-items: center; gap: 8px; margin-top: 31px; font-size: 8px; letter-spacing: 1.5px; color: #a2b4ba; }
+.postal-location svg { color: #bba781; }
+.postal-location > span { margin-left: 4px; padding-left: 12px; border-left: 1px solid #ffffff25; color: #d2d8d3; }
+.postal-gallery { position: relative; margin: 16px 16px 16px 0; min-width: 0; border-radius: 15px; background: radial-gradient(ellipse at 45% 30%, #fffdf6, #e7e8df); box-shadow: inset 0 0 0 1px #ffffff40; overflow: hidden; }
+.postal-art { position: relative; height: 100%; min-height: 390px; color: #40545b; }
+.postal-art[hidden], .postal-scene-controls[hidden] { display: none; }
+.scene-heading { position: absolute; z-index: 1; top: 21px; left: 24px; right: 24px; display: flex; justify-content: space-between; gap: 10px; color: #64736f; font-size: 8px; font-weight: 600; letter-spacing: 1.6px; }
+.scene-heading b { font-size: 9px; font-weight: 500; letter-spacing: 1px; color: #78837b; }
+.postal-illustration { display: block; width: 100%; height: 100%; min-height: 390px; max-height: 450px; overflow: visible; }
+.postal-illustration text { font-family: 'Inter', sans-serif; }
+.postal-caption { position: absolute; left: 0; right: 0; bottom: 19px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #596b68; font-size: 10px; letter-spacing: .3px; }
+.postal-caption > span { width: 4px; height: 4px; border-radius: 50%; background: #ab8d59; }
+.postal-scene-controls { grid-column: 1 / -1; display: grid; grid-template-columns: 175px 1fr; align-items: center; gap: 20px; padding: 23px 28px 23px 38px; border-top: 1px solid #ffffff10; background: #0c1d262e; }
+.scene-control-label { color: #9baeb4; font-size: 8px; font-weight: 600; letter-spacing: 1.5px; }
+.scene-control-label > span { display: block; margin-top: 8px; color: #e0e5df; font-size: 11px; font-weight: 400; letter-spacing: 0; }
+.postal-scene-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.postal-scene-options button { position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 64px; padding: 13px 12px; font: inherit; text-align: left; color: #d1dbd9; background: #ffffff03; border: 1px solid #ffffff16; border-radius: 9px; cursor: pointer; transition: background .25s, border-color .25s, box-shadow .25s; }
+.postal-scene-options button:hover { border-color: #cfb88770; background: #ffffff08; }
+.postal-scene-options button[aria-pressed='true'] { border-color: #c8ad78a6; background: linear-gradient(115deg, #c5a7701c, #c5a77008); box-shadow: inset 0 1px #e8d1a712; color: #f0dbb6; }
+.scene-option-number { align-self: flex-start; margin-top: 2px; color: #a5aba2; font-size: 8px; font-variant-numeric: tabular-nums; }
+.scene-option-text { font-size: 11px; font-weight: 600; white-space: nowrap; }
+.scene-option-text small { display: block; margin-top: 6px; font-size: 8px; font-weight: 400; color: #9dafb5; white-space: normal; line-height: 1.5; }
+.scene-option-icon { margin-left: auto; color: #a6916f; font-size: 19px; font-weight: 400; }
+.postal-scene-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.postal-bottom { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 28px 10px 38px; border-top: 1px solid #ffffff0d; }
+.postal-bottom > span { white-space: nowrap; color: #9bafb6; font-size: 8px; letter-spacing: 1.8px; }
+.postal-bottom b { margin: 0 9px; color: #c3ac7f; }
+.postal-bottom button { white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 5px 10px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: #c4cecb; font: inherit; font-size: 9px; cursor: pointer; }
+.postal-bottom button::before { content: ''; width: 6px; height: 8px; border-inline: 2px solid #b8a078; }
+.postal-bottom button[aria-pressed='true']::before { width: 0; height: 0; border: 4px solid transparent; border-left: 6px solid #b8a078; border-right: 0; }
+.postal-bottom button:hover { border-color: #ffffff20; background: #ffffff05; }
+.postal-bottom button:disabled { cursor: default; }
+/* Small independent movements preserve the illustration's composition. */
+.office-model { animation: office-hover 9s ease-in-out infinite; }
+.office-flag { transform-origin: 267px 60px; animation: flag-breathe 5s ease-in-out infinite; }
+.mail-float { animation: letter-hover 7s ease-in-out infinite; }
+.float-delayed { animation-delay: -3.5s; }
+.van-model { animation: van-cruise 7s ease-in-out infinite; }
+.road-dashes { animation: road-travel 3s linear infinite; }
+.wheel-detail { transform-box: fill-box; transform-origin: center; animation: wheel-roll 3s linear infinite; }
+.landscape-cloud { animation: cloud-drift 12s ease-in-out infinite; }
+.globe-model { animation: globe-hover 10s ease-in-out infinite; }
+.network-path { animation: network-travel 7s linear infinite; }
+.karur-pulse { transform-box: fill-box; transform-origin: center; animation: location-pulse 4s ease-in-out infinite; }
+.orbit-letter { animation: orbit-glide 12s ease-in-out infinite; }
+@keyframes office-hover { 50% { transform: translateY(-5px); } }
+@keyframes letter-hover { 50% { transform: translate(3px, -9px); } }
+@keyframes flag-breathe { 50% { transform: skewY(3deg) scaleX(.96); } }
+@keyframes van-cruise { 50% { transform: translate(5px, 1px); } }
+@keyframes road-travel { to { stroke-dashoffset: -64; } }
+@keyframes wheel-roll { to { transform: rotate(360deg); } }
+@keyframes cloud-drift { 50% { transform: translateX(10px); } }
+@keyframes globe-hover { 50% { transform: translateY(-4px); } }
+@keyframes network-travel { to { stroke-dashoffset: -54; } }
+@keyframes location-pulse { 50% { opacity: .3; transform: scale(1.4); } }
+@keyframes orbit-glide { 50% { transform: translate(20px, -3px); } }
+.postal-hero.is-paused *, .postal-hero.is-offscreen * { animation-play-state: paused !important; }
+@media (max-width: 1050px) {
+  .postal-scene-controls { grid-template-columns: 135px 1fr; gap: 12px; padding-inline: 25px; }
+  .scene-option-icon { display: none; }
+  .postal-copy { padding-left: 28px; }
+  .postal-eyebrow { font-size: 7px; letter-spacing: 1px; }
+}
+@media (max-width: 760px) {
+  .postal-hero { grid-template-columns: 1fr; border-radius: 20px; }
+  .postal-copy { padding: 32px 26px 27px; }
+  .postal-copy h1 { font-size: 38px; margin-top: 22px; }
+  .postal-copy p { max-width: none; }
+  .postal-eyebrow { font-size: 8px; letter-spacing: 1.4px; }
+  .postal-location { margin-top: 24px; }
+  .postal-gallery { margin: 0 14px 14px; }
+  .postal-art { min-height: 0; }
+  .postal-illustration { min-height: 0; height: auto; aspect-ratio: 520 / 400; max-height: none; }
+  .scene-heading { top: 16px; left: 18px; right: 18px; font-size: 7px; }
+  .postal-caption { bottom: 14px; font-size: 9px; }
+  .postal-scene-controls { grid-template-columns: 1fr; padding: 19px 20px; gap: 14px; }
+  .scene-control-label { display: flex; justify-content: space-between; align-items: center; }
+  .scene-control-label > span { margin: 0; font-size: 10px; }
+  .postal-scene-options { gap: 7px; }
+  .postal-scene-options button { gap: 6px; padding: 12px 9px; align-items: flex-start; }
+  .scene-option-text { font-size: 10px; }
+  .scene-option-text small { font-size: 7px; }
+  .postal-bottom { padding-inline: 20px; }
+}
+@media (max-width: 380px) {
+  .postal-copy { padding-inline: 20px; }
+  .postal-copy h1 { font-size: 33px; }
+  .postal-eyebrow { letter-spacing: .8px; font-size: 7px; }
+  .postal-links { gap: 14px; }
+  .postal-links a { font-size: 10px; gap: 15px; padding-inline: 13px; }
+  .postal-scene-controls { padding-inline: 14px; }
+  .scene-option-number { display: none; }
+  .postal-bottom > span { letter-spacing: 1px; font-size: 7px; }
+  .postal-bottom b { margin-inline: 5px; }
+  .postal-bottom button { font-size: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .postal-hero *, .postal-hero *::before { animation: none !important; transition: none !important; }
+}
