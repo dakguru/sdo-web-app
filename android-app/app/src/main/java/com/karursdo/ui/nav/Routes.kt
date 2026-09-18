@@ -23,3 +23,5 @@ import kotlinx.serialization.Serializable
 @Serializable data class CpvDetailRoute(val officeKey: String, val title: String)
 @Serializable object BirthdaysRoute
 @Serializable object RetirementsRoute
+@Serializable object PerformanceRoute
+@Serializable data class PerformanceOfficeRoute(val office: String, val mode: String)

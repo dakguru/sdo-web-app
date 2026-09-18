@@ -38,6 +38,8 @@ import com.karursdo.ui.cpv.CpvListScreen
 import com.karursdo.ui.home.HomeScreen
 import com.karursdo.ui.people.BirthdaysScreen
 import com.karursdo.ui.people.RetirementsScreen
+import com.karursdo.ui.performance.PerformanceHomeScreen
+import com.karursdo.ui.performance.PerformanceOfficeScreen
 import com.karursdo.ui.ingest.ImportScreen
 import com.karursdo.ui.mo.MoBeatListScreen
 import com.karursdo.ui.mo.MoLandingScreen
@@ -126,7 +128,24 @@ fun KsdApp(onLogout: () -> Unit = {}) {
                     onOpenMoBeat = { beat -> navController.navigate(MoBeatListRoute(beat)) },
                     onOpenCpv = { navController.navigate(CpvRoute) },
                     onOpenBirthdays = { navController.navigate(BirthdaysRoute) },
-                    onOpenRetirements = { navController.navigate(RetirementsRoute) }
+                    onOpenRetirements = { navController.navigate(RetirementsRoute) },
+                    onOpenPerformance = { navController.navigate(PerformanceRoute) }
+                )
+            }
+            composable<PerformanceRoute> {
+                PerformanceHomeScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenOffice = { office, mode ->
+                        navController.navigate(PerformanceOfficeRoute(office, mode))
+                    }
+                )
+            }
+            composable<PerformanceOfficeRoute> { entry ->
+                val r = entry.toRoute<PerformanceOfficeRoute>()
+                PerformanceOfficeScreen(
+                    officeName = r.office,
+                    initialMode = r.mode,
+                    onBack = { navController.popBackStack() }
                 )
             }
             composable<BirthdaysRoute> {

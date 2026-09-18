@@ -1,0 +1,843 @@
+{
+  "months": [
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug"
+  ],
+  "monthsFull": [
+    "April 2026",
+    "May 2026",
+    "June 2026",
+    "July 2026",
+    "August 2026"
+  ],
+  "period": "April–August 2026",
+  "grand": {
+    "offices": 16,
+    "staff": 54,
+    "posbTotal": 1882,
+    "premiumTotal": 1639868
+  },
+  "offices": [
+    {
+      "office": "Andankoil S.O",
+      "staffCount": 3,
+      "posbTotal": 0,
+      "premiumTotal": 218099,
+      "staff": [
+        {
+          "name": "RAGASUDHA M",
+          "designation": "Deliver Agent",
+          "beat": "",
+          "employeeId": "50677191",
+          "agentId": "GDS01098200",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 1576
+        },
+        {
+          "name": "BHAVITHRA J",
+          "designation": "Deliver Agent",
+          "beat": "",
+          "employeeId": "50613025",
+          "agentId": "GDS00957120",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 6993
+        },
+        {
+          "name": "P NACHIMUTHU",
+          "designation": "Deliver Agent",
+          "beat": "",
+          "employeeId": "50089680",
+          "agentId": "TNGD10494",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 209530
+        }
+      ]
+    },
+    {
+      "office": "Gandhigramam S.O",
+      "staffCount": 1,
+      "posbTotal": 0,
+      "premiumTotal": 11234,
+      "staff": [
+        {
+          "name": "BOOPATHI C",
+          "designation": "Dak Sevak",
+          "beat": "",
+          "employeeId": "50695560",
+          "agentId": "GDS01234208",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 11234
+        }
+      ]
+    },
+    {
+      "office": "Kagithapuram S.O",
+      "staffCount": 1,
+      "posbTotal": 0,
+      "premiumTotal": 21105,
+      "staff": [
+        {
+          "name": "KAVIYA PRIYA S",
+          "designation": "Deliver Agent",
+          "beat": "",
+          "employeeId": "50506975",
+          "agentId": "DE00788011",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 21105
+        }
+      ]
+    },
+    {
+      "office": "Karur Collectorate S.O",
+      "staffCount": 2,
+      "posbTotal": 73,
+      "premiumTotal": 181923,
+      "staff": [
+        {
+          "name": "N.MAHESHWARAN",
+          "designation": "PM",
+          "beat": "BEAT_02",
+          "employeeId": "10301065",
+          "agentId": "DEEMP01186541",
+          "posbMonths": [
+            12,
+            11,
+            15,
+            15,
+            20
+          ],
+          "posbTotal": 73,
+          "premium": 160468
+        },
+        {
+          "name": "KALAIARASI J",
+          "designation": "Deliver Agent",
+          "beat": "",
+          "employeeId": "50475720",
+          "agentId": "DE00685557",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 21455
+        }
+      ]
+    },
+    {
+      "office": "Karur H.O",
+      "staffCount": 15,
+      "posbTotal": 466,
+      "premiumTotal": 328359,
+      "staff": [
+        {
+          "name": "Vamsikrishnan",
+          "designation": "PM",
+          "beat": "BEAT_05",
+          "employeeId": "",
+          "agentId": "",
+          "posbMonths": [
+            0,
+            0,
+            3,
+            2,
+            0
+          ],
+          "posbTotal": 5,
+          "premium": null
+        },
+        {
+          "name": "Mahalakshmi",
+          "designation": "PM",
+          "beat": "BEAT_06",
+          "employeeId": "",
+          "agentId": "",
+          "posbMonths": [
+            0,
+            0,
+            0,
+            2,
+            3
+          ],
+          "posbTotal": 5,
+          "premium": null
+        },
+        {
+          "name": "SUDHA P",
+          "designation": "PW",
+          "beat": "BEAT_10",
+          "employeeId": "10312054",
+          "agentId": "DEEMP01124654",
+          "posbMonths": [
+            0,
+            2,
+            3,
+            1,
+            0
+          ],
+          "posbTotal": 6,
+          "premium": 0
+        },
+        {
+          "name": "DEIVAMALAR T",
+          "designation": "PW",
+          "beat": "BEAT_04",
+          "employeeId": "10311993",
+          "agentId": "TNGD10453",
+          "posbMonths": [
+            4,
+            10,
+            5,
+            5,
+            4
+          ],
+          "posbTotal": 28,
+          "premium": 13675
+        },
+        {
+          "name": "NALLUSAMY K",
+          "designation": "PM",
+          "beat": "BEAT_09",
+          "employeeId": "10328038",
+          "agentId": "DEEMP01034953",
+          "posbMonths": [
+            5,
+            4,
+            10,
+            8,
+            3
+          ],
+          "posbTotal": 30,
+          "premium": 1760
+        },
+        {
+          "name": "VENKATRAMAN P",
+          "designation": "PM",
+          "beat": "BEAT_08",
+          "employeeId": "10182431",
+          "agentId": "DEEMP00932667",
+          "posbMonths": [
+            4,
+            5,
+            5,
+            20,
+            3
+          ],
+          "posbTotal": 37,
+          "premium": 5160
+        },
+        {
+          "name": "SIVAKUMAR P",
+          "designation": "PM",
+          "beat": "BEAT_07",
+          "employeeId": "10049706",
+          "agentId": "DEEMP01034940",
+          "posbMonths": [
+            10,
+            15,
+            10,
+            10,
+            10
+          ],
+          "posbTotal": 55,
+          "premium": 900
+        },
+        {
+          "name": "R.SHANMUGAM",
+          "designation": "PM",
+          "beat": "BEAT_01",
+          "employeeId": "10276290",
+          "agentId": "GDS00992182",
+          "posbMonths": [
+            15,
+            12,
+            9,
+            14,
+            7
+          ],
+          "posbTotal": 57,
+          "premium": 1390
+        },
+        {
+          "name": "PARIMALA R",
+          "designation": "PW",
+          "beat": "BEAT_03",
+          "employeeId": "10311299",
+          "agentId": "DE00475969",
+          "posbMonths": [
+            3,
+            20,
+            23,
+            22,
+            1
+          ],
+          "posbTotal": 69,
+          "premium": 4400
+        },
+        {
+          "name": "SUDHA N",
+          "designation": "PW",
+          "beat": "BEAT_02",
+          "employeeId": "10328006",
+          "agentId": "TNGD10372",
+          "posbMonths": [
+            5,
+            42,
+            23,
+            63,
+            41
+          ],
+          "posbTotal": 174,
+          "premium": 65263
+        },
+        {
+          "name": "SESURAJ L",
+          "designation": "Dak Sevak",
+          "beat": "",
+          "employeeId": "50527395",
+          "agentId": "GDS00934982",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 3815
+        },
+        {
+          "name": "RAMASWAMY M",
+          "designation": "Sorting Postman",
+          "beat": "",
+          "employeeId": "10015656",
+          "agentId": "TNDE7466",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 6950
+        },
+        {
+          "name": "MAHALAKSHMI M",
+          "designation": "Post Man",
+          "beat": "",
+          "employeeId": "10299542",
+          "agentId": "DEEMP00930862",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 10523
+        },
+        {
+          "name": "BABU A",
+          "designation": "Cash Overseer",
+          "beat": "",
+          "employeeId": "10049683",
+          "agentId": "TNDE2332",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 16080
+        },
+        {
+          "name": "SNEHA M",
+          "designation": "Dak Sevak",
+          "beat": "",
+          "employeeId": "50485678",
+          "agentId": "DE00781614",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 198443
+        }
+      ]
+    },
+    {
+      "office": "Manmangalam S.O",
+      "staffCount": 1,
+      "posbTotal": 0,
+      "premiumTotal": 28294,
+      "staff": [
+        {
+          "name": "DHIVYA M",
+          "designation": "Deliver Agent",
+          "beat": "",
+          "employeeId": "50481149",
+          "agentId": "DE00724525",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 28294
+        }
+      ]
+    },
+    {
+      "office": "Mayanur S.O",
+      "staffCount": 1,
+      "posbTotal": 0,
+      "premiumTotal": 10425,
+      "staff": [
+        {
+          "name": "V ALAGUMANI",
+          "designation": "Dak Sevak",
+          "beat": "",
+          "employeeId": "50089868",
+          "agentId": "TNGD10521",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 10425
+        }
+      ]
+    },
+    {
+      "office": "Pasupathipalayam S.O",
+      "staffCount": 6,
+      "posbTotal": 200,
+      "premiumTotal": 43716,
+      "staff": [
+        {
+          "name": "KUMARAN S",
+          "designation": "PM",
+          "beat": "BEAT_03",
+          "employeeId": "10049690",
+          "agentId": "DEEMP01291000",
+          "posbMonths": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "posbTotal": 0,
+          "premium": 0
+        },
+        {
+          "name": "SUVITHA R",
+          "designation": "PW",
+          "beat": "BEAT_02",
+          "employeeId": "10311304",
+          "agentId": "DEEMP01055542",
+          "posbMonths": [
+            10,
+            15,
+            17,
+            21,
+            25
+          ],
+          "posbTotal": 88,
+          "premium": 0
+        },
+        {
+          "name": "KARTHIKEYAN S",
+          "designation": "PM",
+          "beat": "BEAT_01",
+          "employeeId": "",
+          "agentId": "",
+          "posbMonths": [
+            14,
+            19,
+            22,
+            27,
+            30
+          ],
+          "posbTotal": 112,
+          "premium": null
+        },
+        {
+          "name": "S DHARANI",
+          "designation": "Dak Sevak",
+          "beat": "",
+          "employeeId": "50548137",
+          "agentId": "DE00873721",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 10685
+        },
+        {
+          "name": "PRAVEENKUMAR E",
+          "designation": "Post Man",
+          "beat": "",
+          "employeeId": "10349543",
+          "agentId": "DE00690368",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 15106
+        },
+        {
+          "name": "R SAMUVEL",
+          "designation": "Dak Sevak",
+          "beat": "",
+          "employeeId": "50089761",
+          "agentId": "GDS01056511",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 17925
+        }
+      ]
+    },
+    {
+      "office": "Pugalur Sugar Factory S.O",
+      "staffCount": 1,
+      "posbTotal": 84,
+      "premiumTotal": 29747,
+      "staff": [
+        {
+          "name": "INDHUMATHI P",
+          "designation": "PW",
+          "beat": "BEAT_01",
+          "employeeId": "10293648",
+          "agentId": "TNGD25547",
+          "posbMonths": [
+            8,
+            10,
+            10,
+            15,
+            41
+          ],
+          "posbTotal": 84,
+          "premium": 29747
+        }
+      ]
+    },
+    {
+      "office": "Puliyur Cement Factory S.O",
+      "staffCount": 3,
+      "posbTotal": 0,
+      "premiumTotal": 52919,
+      "staff": [
+        {
+          "name": "Kamaraj R",
+          "designation": "Deliver Agent",
+          "beat": "",
+          "employeeId": "50089666",
+          "agentId": "TNGD10497",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 4370
+        },
+        {
+          "name": "SABARINATHAN S",
+          "designation": "Deliver Agent",
+          "beat": "",
+          "employeeId": "50535499",
+          "agentId": "DE00864854",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 19758
+        },
+        {
+          "name": "UMA MAGESHWARI A",
+          "designation": "Dak Sevak",
+          "beat": "",
+          "employeeId": "50206651",
+          "agentId": "GDS00912880",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 28791
+        }
+      ]
+    },
+    {
+      "office": "Sengunthapuram S.O",
+      "staffCount": 8,
+      "posbTotal": 619,
+      "premiumTotal": 387004,
+      "staff": [
+        {
+          "name": "A MOTHILAL NEHRU",
+          "designation": "PW",
+          "beat": "BEAT_03",
+          "employeeId": "50089396",
+          "agentId": "DEEMP01291040",
+          "posbMonths": [
+            20,
+            18,
+            20,
+            20,
+            10
+          ],
+          "posbTotal": 88,
+          "premium": 0
+        },
+        {
+          "name": "MALARVIZHI S",
+          "designation": "PW",
+          "beat": "BEAT_04",
+          "employeeId": "10311298",
+          "agentId": "DE00911047",
+          "posbMonths": [
+            25,
+            25,
+            40,
+            15,
+            10
+          ],
+          "posbTotal": 115,
+          "premium": 25945
+        },
+        {
+          "name": "INDHUMATHI V",
+          "designation": "PW",
+          "beat": "BEAT_05",
+          "employeeId": "10328007",
+          "agentId": "DE00526325",
+          "posbMonths": [
+            25,
+            25,
+            45,
+            17,
+            13
+          ],
+          "posbTotal": 125,
+          "premium": 178562
+        },
+        {
+          "name": "S.RAGAVI",
+          "designation": "PW",
+          "beat": "BEAT_01",
+          "employeeId": "50662893",
+          "agentId": "GDS01093700",
+          "posbMonths": [
+            28,
+            24,
+            42,
+            20,
+            15
+          ],
+          "posbTotal": 129,
+          "premium": 115659
+        },
+        {
+          "name": "KALAIARASI J",
+          "designation": "PW",
+          "beat": "BEAT_02",
+          "employeeId": "",
+          "agentId": "",
+          "posbMonths": [
+            25,
+            25,
+            47,
+            40,
+            25
+          ],
+          "posbTotal": 162,
+          "premium": null
+        },
+        {
+          "name": "MADHUMATHI R",
+          "designation": "Dak Sevak",
+          "beat": "",
+          "employeeId": "10394462",
+          "agentId": "GDS01331835",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 2651
+        },
+        {
+          "name": "MUTHUMARIAMMAL S",
+          "designation": "Post Man",
+          "beat": "",
+          "employeeId": "10311301",
+          "agentId": "TNGD22914",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 15907
+        },
+        {
+          "name": "MADHUBALA K",
+          "designation": "Post Man",
+          "beat": "",
+          "employeeId": "10293651",
+          "agentId": "TNGD25548",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 48280
+        }
+      ]
+    },
+    {
+      "office": "Thanthonimalai S.O",
+      "staffCount": 3,
+      "posbTotal": 141,
+      "premiumTotal": 66761,
+      "staff": [
+        {
+          "name": "HARIHARAN K",
+          "designation": "PM",
+          "beat": "BEAT_01",
+          "employeeId": "10287651",
+          "agentId": "DE00854499",
+          "posbMonths": [
+            28,
+            20,
+            30,
+            41,
+            22
+          ],
+          "posbTotal": 141,
+          "premium": 14626
+        },
+        {
+          "name": "J SIVAKUMAR",
+          "designation": "Dak Sevak",
+          "beat": "",
+          "employeeId": "50089480",
+          "agentId": "TNGD10319",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 12910
+        },
+        {
+          "name": "SATHISHKUMAR M",
+          "designation": "Dak Sevak",
+          "beat": "",
+          "employeeId": "50547965",
+          "agentId": "GDS01080345",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 39225
+        }
+      ]
+    },
+    {
+      "office": "Tirumanilaiyur S.O",
+      "staffCount": 1,
+      "posbTotal": 0,
+      "premiumTotal": 9159,
+      "staff": [
+        {
+          "name": "Vignesh N",
+          "designation": "Deliver Agent",
+          "beat": "",
+          "employeeId": "50554476",
+          "agentId": "GDS00929000",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 9159
+        }
+      ]
+    },
+    {
+      "office": "Vangal S.O",
+      "staffCount": 1,
+      "posbTotal": 0,
+      "premiumTotal": 142695,
+      "staff": [
+        {
+          "name": "C PANDIYAN",
+          "designation": "Deliver Agent",
+          "beat": "",
+          "employeeId": "50089432",
+          "agentId": "TNGD10471",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 142695
+        }
+      ]
+    },
+    {
+      "office": "Velayuthampalayam S.O",
+      "staffCount": 2,
+      "posbTotal": 35,
+      "premiumTotal": 0,
+      "staff": [
+        {
+          "name": "GOKUL RAJ S",
+          "designation": "PW",
+          "beat": "BEAT_01",
+          "employeeId": "",
+          "agentId": "",
+          "posbMonths": [
+            2,
+            5,
+            9,
+            8,
+            11
+          ],
+          "posbTotal": 35,
+          "premium": null
+        },
+        {
+          "name": "T RAJAMANSINGH",
+          "designation": "Dak Sevak",
+          "beat": "",
+          "employeeId": "50089857",
+          "agentId": "GDS01290957",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 0
+        }
+      ]
+    },
+    {
+      "office": "Vengamedu S.O",
+      "staffCount": 5,
+      "posbTotal": 264,
+      "premiumTotal": 108428,
+      "staff": [
+        {
+          "name": "NIRMALA N",
+          "designation": "PW",
+          "beat": "BEAT_03",
+          "employeeId": "10311303",
+          "agentId": "TNGD10458",
+          "posbMonths": [
+            5,
+            11,
+            16,
+            17,
+            29
+          ],
+          "posbTotal": 78,
+          "premium": 7775
+        },
+        {
+          "name": "RAMYA R",
+          "designation": "PW",
+          "beat": "BEAT_02",
+          "employeeId": "10328037",
+          "agentId": "DE00570049",
+          "posbMonths": [
+            2,
+            11,
+            29,
+            26,
+            16
+          ],
+          "posbTotal": 84,
+          "premium": 66920
+        },
+        {
+          "name": "IYYAMMAL P",
+          "designation": "PW",
+          "beat": "BEAT_01",
+          "employeeId": "10283242",
+          "agentId": "TNGD24664",
+          "posbMonths": [
+            11,
+            16,
+            17,
+            33,
+            25
+          ],
+          "posbTotal": 102,
+          "premium": 32623
+        },
+        {
+          "name": "K SENTHILKUMAR",
+          "designation": "Deliver Agent",
+          "beat": "",
+          "employeeId": "50089529",
+          "agentId": "GDS01293493",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 0
+        },
+        {
+          "name": "KANIMOZHI J",
+          "designation": "Deliver Agent",
+          "beat": "",
+          "employeeId": "50653049",
+          "agentId": "GDS01088764",
+          "posbMonths": null,
+          "posbTotal": null,
+          "premium": 1110
+        }
+      ]
+    }
+  ]
+}
