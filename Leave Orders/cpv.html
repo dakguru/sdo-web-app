@@ -306,7 +306,8 @@ html.light .field input,html.light .field select{background:#f7f8fb}
 .ms-row .ms-pol{font-family:ui-monospace,monospace;font-weight:800;font-size:13px;color:var(--text-primary)}
 .ms-row .ms-nm{font-weight:700;font-size:12.5px;color:var(--text-secondary);margin-top:1px}
 .ms-row .ms-det{font-size:11.5px;color:var(--text-muted);margin-top:3px;line-height:1.5}
-.ms-row .ms-add{white-space:nowrap}
+.ms-row .ms-add{display:flex;flex-direction:column;gap:6px;white-space:nowrap;align-items:stretch}
+.ms-row .ms-add .btn{text-align:center;justify-content:center}
 .ms-empty{text-align:center;padding:20px;color:var(--text-muted);font-size:12.5px}
 .ms-hint{font-size:11.5px;color:var(--text-muted);margin-top:6px}
 /* ── Extra-policies section in a BO detail ── */
@@ -2406,7 +2407,8 @@ async function runMasterSearch(){
     if(state.msFromBo && state.current && canVerify()){
       if(inBo.has(String(r.policy))) action=`<span class="eh-badge" style="background:rgba(52,211,153,.16);color:var(--em);border-color:rgba(52,211,153,.35)">Already in list</span>`;
       else if(inExtra.has(String(r.policy))) action=`<span class="eh-badge">Added</span>`;
-      else action=`<button class="btn sm" data-addpolicy="${esc(r.policy)}">➕ Add to office</button>`;
+      else action=`<button class="btn ghost sm" data-addpolicy="${esc(r.policy)}">➕ Add to office</button>`
+        +`<button class="btn sm" data-addverify="${esc(r.policy)}" style="background:linear-gradient(135deg,#059669,#34d399)">✓ Add &amp; verify</button>`;
     }
     return `<div class="ms-row" data-msrow="${esc(r.policy)}">
       <div class="ms-main">
@@ -2421,24 +2423,25 @@ async function runMasterSearch(){
   state._msRows={}; rows.forEach(r=>{state._msRows[String(r.policy)]=r;});
 }
 // Add a master policy into the currently-open office as an EXTRA (unverified).
-async function addExtraFromMaster(policy){
+async function addExtraFromMaster(policy,verify){
   if(!state.current||!canVerify()){toast('Open an office you can verify first.','err');return;}
   const src=(state._msRows||{})[String(policy)];
   if(!src){toast('Policy details unavailable — search again.','err');return;}
   if((state.detail||[]).some(r=>String(r.acct)===String(policy))){toast('This policy is already in the office list.','err');return;}
   if((state.extras||[]).some(r=>String(r.policy)===String(policy))){toast('Already added to this office.','err');return;}
+  const now=Date.now(), by=who();
   const row={
     office_key:state.current.office_key, policy:String(policy),
     name:src.name||'', address:src.address||'', doe:src.doe||'',
     sum_assured:src.sum_assured, premium:src.premium, paid_to:src.paid_to||'',
-    months_paid:src.months_paid, verified:false, remarks:null,
-    verified_by:null, verified_at_ms:null, added_by:who(), added_at_ms:Date.now()
+    months_paid:src.months_paid, verified:!!verify, remarks:null,
+    verified_by:verify?by:null, verified_at_ms:verify?now:null, added_by:by, added_at_ms:now
   };
   try{ await SB.upsert(EXTRA_TABLE,row); }
   catch(e){ toast('Could not add: '+(e.message||''),'err'); if(/app_cpv_extra|PGRST205|42P01/.test(String(e.message||'')))toast('Run migration_v19_pli_master.sql in Supabase first.','err'); return; }
   state.extras.push(row);
   afterExtraChange();
-  toast(`Added policy ${policy} to ${state.current.office_name} ✓`,'ok');
+  toast(verify?`Added & verified policy ${policy} ✓`:`Added policy ${policy} to ${state.current.office_name} ✓`,'ok');
   runMasterSearch();          // refresh the modal so the row shows "Added"
   renderExtras();
 }
@@ -2540,7 +2543,10 @@ $('#mModeReplace').addEventListener('click',()=>runMasterUpload(true));
 $('#mUpClose').addEventListener('click',()=>$('#mUpOverlay').classList.remove('show'));
 $('#mSearchClose').addEventListener('click',()=>$('#mSearchOverlay').classList.remove('show'));
 $('#mSearchInput').addEventListener('input',e=>{clearTimeout(e.target._t);e.target._t=setTimeout(runMasterSearch,220);});
-$('#mSearchResults').addEventListener('click',e=>{const b=e.target.closest('[data-addpolicy]');if(b)addExtraFromMaster(b.dataset.addpolicy);});
+$('#mSearchResults').addEventListener('click',e=>{
+  const b=e.target.closest('[data-addpolicy]');if(b){addExtraFromMaster(b.dataset.addpolicy,false);return;}
+  const av=e.target.closest('[data-addverify]');if(av){addExtraFromMaster(av.dataset.addverify,true);return;}
+});
 [['mModeOverlay',()=>{state._masterRecs=null;}],['mUpOverlay',null],['mSearchOverlay',null]].forEach(([id,fn])=>{
   const o=document.getElementById(id);o.addEventListener('click',e=>{if(e.target===o){o.classList.remove('show');if(fn)fn();}});
 });

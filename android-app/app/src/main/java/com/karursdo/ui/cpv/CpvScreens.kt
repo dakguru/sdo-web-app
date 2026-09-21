@@ -617,8 +617,8 @@ class CpvDetailViewModel @Inject constructor(
     }
     fun clearMasterResults() { _state.value = _state.value.copy(masterResults = emptyList(), masterSearching = false) }
 
-    /** Add a master policy into this office as an unverified extra. */
-    fun addExtra(m: PliMasterDto) {
+    /** Add a master policy into this office as an extra — optionally already verified. */
+    fun addExtra(m: PliMasterDto, verify: Boolean = false) {
         val k = key ?: return
         if (_state.value.accounts.any { it.record.acct == m.policy }) { _state.value = _state.value.copy(message = "Already in this office's list."); return }
         if (_state.value.extras.any { it.policy == m.policy }) { _state.value = _state.value.copy(message = "Already added."); return }
@@ -627,12 +627,15 @@ class CpvDetailViewModel @Inject constructor(
         val row = CpvExtraDto(
             office_key = k, policy = m.policy, name = m.name, address = m.address, doe = m.doe,
             sum_assured = m.sum_assured, premium = m.premium, paid_to = m.paid_to, months_paid = m.months_paid,
-            verified = false, added_by = by, added_at_ms = now
+            verified = verify, verified_by = if (verify) by else null, verified_at_ms = if (verify) now else null,
+            added_by = by, added_at_ms = now
         )
         _state.value = _state.value.copy(extras = _state.value.extras + row)
         viewModelScope.launch {
-            try { repo.addExtra(k, m, by); _state.value = _state.value.copy(message = "Added ${m.policy} ✓") }
-            catch (e: Exception) {
+            try {
+                if (verify) repo.saveExtra(row) else repo.addExtra(k, m, by)
+                _state.value = _state.value.copy(message = if (verify) "Added & verified ${m.policy} ✓" else "Added ${m.policy} ✓")
+            } catch (e: Exception) {
                 _state.value = _state.value.copy(extras = _state.value.extras.filterNot { it.policy == m.policy }, message = "Add failed — ${e.message}")
             }
         }
@@ -1024,7 +1027,8 @@ fun CpvDetailScreen(
             inOffice = remember(accounts) { accounts.map { it.record.acct }.toSet() },
             inExtra = remember(state.extras) { state.extras.map { it.policy }.toSet() },
             onQuery = { vm.searchMaster(it) },
-            onAdd = { vm.addExtra(it) },
+            onAdd = { vm.addExtra(it, verify = false) },
+            onAddVerify = { vm.addExtra(it, verify = true) },
             onDismiss = { showMasterSearch = false; vm.clearMasterResults() }
         )
     }
@@ -1544,6 +1548,7 @@ private fun MasterSearchDialog(
     inExtra: Set<String>,
     onQuery: (String) -> Unit,
     onAdd: (PliMasterDto) -> Unit,
+    onAddVerify: (PliMasterDto) -> Unit,
     onDismiss: () -> Unit
 ) {
     var q by remember { mutableStateOf(initialQuery) }
@@ -1583,7 +1588,8 @@ private fun MasterSearchDialog(
                             MasterResultRow(
                                 m = m,
                                 state = when { inOffice.contains(m.policy) -> "in"; inExtra.contains(m.policy) -> "added"; else -> "add" },
-                                onAdd = { onAdd(m) }
+                                onAdd = { onAdd(m) },
+                                onAddVerify = { onAddVerify(m) }
                             )
                         }
                     }
@@ -1595,7 +1601,7 @@ private fun MasterSearchDialog(
 }
 
 @Composable
-private fun MasterResultRow(m: PliMasterDto, state: String, onAdd: () -> Unit) {
+private fun MasterResultRow(m: PliMasterDto, state: String, onAdd: () -> Unit, onAddVerify: () -> Unit) {
     val doe = fmtTxn("", m.doe)
     val paid = monYear("", "", m.paid_to)
     Surface(
@@ -1622,11 +1628,17 @@ private fun MasterResultRow(m: PliMasterDto, state: String, onAdd: () -> Unit) {
             when (state) {
                 "in" -> Pill("In list", Brand.ChipPaidBg, Brand.ChipPaidFg)
                 "added" -> Pill("Added", Brand.BadgeDsBg, Brand.BadgeDsFg)
-                else -> Button(
-                    onClick = onAdd, shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
-                ) { Text("＋ Add") }
+                else -> Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedButton(
+                        onClick = onAdd, shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    ) { Text("＋ Add", maxLines = 1) }
+                    Button(
+                        onClick = onAddVerify, shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Brand.Emerald, contentColor = Color.White)
+                    ) { Text("✓ Add & verify", maxLines = 1) }
+                }
             }
         }
     }
