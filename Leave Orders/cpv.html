@@ -2459,8 +2459,12 @@ async function loadExtras(key){
 function updateMasterFallback(rows){
   const el=$('#masterFallback'); if(!el)return;
   const term=$('#fSearch').value.trim();
-  if(term && (!rows||!rows.length)){
+  const noMain=!(rows&&rows.length);
+  const exMatch=term?filterRecordList(extrasAsRecords()).length:0;   // matches among the added extras
+  if(term && noMain && !exMatch){
     el.innerHTML=`Not in this office. <button class="btn sm" id="fbSearchMaster" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">🔎 Search “${esc(term)}” in all policies</button>`;
+  }else if(term && noMain && exMatch){
+    el.innerHTML=`<span style="color:var(--em)">Found in Additional policies below.</span> <button class="btn ghost sm" id="fbSearchMaster">🔎 Search all policies</button>`;
   }else{
     el.innerHTML=`<button class="btn ghost sm" id="fbSearchMaster">🔎 Search all policies (master pool)</button>`;
   }
@@ -2473,20 +2477,25 @@ function fmtExtraVerAt(ms){return fmtVerAt(ms);}
 function renderExtras(){
   const wrap=$('#extraWrap'); if(!wrap)return;
   const v=canVerify();
-  const list=state.extras||[];
-  if(!list.length){ wrap.innerHTML=''; return; }
+  const all=state.extras||[];
+  if(!all.length){ wrap.innerHTML=''; return; }
+  // The office search & filters also apply to the additional policies.
+  const okSet=new Set(filterRecordList(extrasAsRecords()).map(r=>String(r.acct)));
+  const list=all.filter(e=>okSet.has(String(e.policy)));
   const scheme=state.current?state.current.scheme:'';
-  const vCount=list.filter(x=>x.verified).length;
+  const vTotal=all.filter(x=>x.verified).length;
+  const filtered=list.length!==all.length;
   let body=`<div class="extra-head">
       <span class="eh-t">Additional policies</span>
       <span class="eh-badge">from master pool</span>
-      <span class="eh-sub"><b>${list.length}</b> added · <b style="color:var(--em)">${vCount}</b> verified · counted in this office's total &amp; verified figures and in exports</span>
+      <span class="eh-sub">${filtered?`<b>${list.length}</b> shown of `:''}<b>${all.length}</b> added · <b style="color:var(--em)">${vTotal}</b> verified · counted in this office's total &amp; verified figures and in exports</span>
     </div>
     <div class="tbl-wrap"><table class="reg"><thead><tr>
       <th>Sl.No</th><th>Policy No.</th><th>Insured Name</th><th>Address</th><th>Date of Entry</th>
       <th style="text-align:right">Sum Assured ₹</th><th style="text-align:right">Premium ₹</th><th>Paid upto</th><th style="text-align:right">Months</th>
       ${v?'<th>Verified</th><th style="min-width:150px">Remarks</th><th></th>':''}
     </tr></thead><tbody>`;
+  if(!list.length){ body+=`<tr><td colspan="${v?12:9}" style="text-align:center;padding:24px;color:var(--text-muted)">No additional policies match the current search.</td></tr></tbody></table></div>`; wrap.innerHTML=body; return; }
   list.forEach((r,i)=>{
     const doe=fmtTxnDate(parseTxnDate(r.doe))||r.doe||'—';
     const paid=fmtMonYear(parseTxnDate(r.paid_to))||r.paid_to||'—';

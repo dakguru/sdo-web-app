@@ -765,6 +765,16 @@ fun CpvDetailScreen(
     val extraVerified = extras.count { it.verified }
     val totalCount = accounts.size + extras.size
     val totalVerified = verifiedCount + extraVerified
+    // The office search & verification filter also apply to the additional policies.
+    val extrasShown = remember(extras, q, verFilter) {
+        extras.filter { e ->
+            if (q.isNotEmpty()) {
+                val hay = (e.policy + " " + e.name + " " + e.address).lowercase()
+                if (!hay.contains(q)) return@filter false
+            }
+            when (verFilter) { VerFilter.VERIFIED -> e.verified; VerFilter.UNVERIFIED -> !e.verified; VerFilter.ALL -> true }
+        }
+    }
 
     // one-shot messages
     val snackHost = remember { androidx.compose.material3.SnackbarHostState() }
@@ -988,9 +998,10 @@ fun CpvDetailScreen(
                 }
                 // Additional (extra) policies pulled from the master pool — kept separate from
                 // this office's official list and totals, but verifiable in the same way.
-                if (pli && state.extras.isNotEmpty()) {
+                if (pli && extras.isNotEmpty()) {
                     item {
-                        val vc = state.extras.count { it.verified }
+                        val vc = extras.count { it.verified }
+                        val isFiltered = extrasShown.size != extras.size
                         Column(Modifier.padding(top = 8.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("Additional policies", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
@@ -998,18 +1009,22 @@ fun CpvDetailScreen(
                                 Pill("from master pool", Brand.BadgeDsBg, Brand.BadgeDsFg)
                             }
                             Text(
-                                "${state.extras.size} added · $vc verified · counted in this office's totals & exports",
+                                (if (isFiltered) "${extrasShown.size} shown of " else "") + "${extras.size} added · $vc verified · counted in this office's totals & exports",
                                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                    items(state.extras, key = { "extra:" + it.policy }) { ex ->
-                        ExtraPolicyCard(
-                            ex = ex,
-                            onToggleVerify = { vm.toggleExtra(ex) },
-                            onEditRemark = { extraRemarkFor = ex },
-                            onRemove = { vm.removeExtra(ex) }
-                        )
+                    if (extrasShown.isEmpty()) {
+                        item { EmptyState("🔍", "No additional policies match the current search.") }
+                    } else {
+                        items(extrasShown, key = { "extra:" + it.policy }) { ex ->
+                            ExtraPolicyCard(
+                                ex = ex,
+                                onToggleVerify = { vm.toggleExtra(ex) },
+                                onEditRemark = { extraRemarkFor = ex },
+                                onRemove = { vm.removeExtra(ex) }
+                            )
+                        }
                     }
                 }
                 item { Spacer(Modifier.height(24.dp)) }
