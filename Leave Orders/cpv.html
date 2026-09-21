@@ -290,6 +290,32 @@ html.light .field input,html.light .field select{background:#f7f8fb}
 .mo-row .mr-dis{font-size:10px;font-weight:800;color:var(--rose)}
 .mo-empty{text-align:center;padding:26px 16px;color:var(--text-muted);font-size:13px;line-height:1.6}
 .mo-empty a{color:var(--teal);font-weight:700;text-decoration:none}
+/* ── Master policy pool card ── */
+.master-card{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(135deg,rgba(124,58,237,.16),rgba(45,212,191,.10));border:1px solid var(--glass-border-hover);border-radius:var(--radius-xl);padding:16px 20px;margin-bottom:18px}
+.master-card .mc-icon{font-size:30px;line-height:1;filter:drop-shadow(0 4px 10px rgba(124,58,237,.4))}
+.master-card .mc-body{flex:1;min-width:220px}
+.master-card .mc-title{font-weight:800;font-size:15px;color:var(--text-primary)}
+.master-card .mc-title .mc-sub{font-weight:600;font-size:11.5px;color:var(--text-muted);text-transform:none}
+.master-card .mc-stat{margin-top:3px;font-size:12.5px;color:var(--text-secondary)}
+.master-card .mc-stat b{color:var(--violet,#a78bfa)}
+.master-card .mc-actions{display:flex;gap:8px;flex-wrap:wrap}
+/* ── Master search results ── */
+.ms-results{margin-top:12px;max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.ms-row{display:flex;align-items:flex-start;gap:12px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:12px;padding:10px 12px}
+.ms-row .ms-main{flex:1;min-width:0}
+.ms-row .ms-pol{font-family:ui-monospace,monospace;font-weight:800;font-size:13px;color:var(--text-primary)}
+.ms-row .ms-nm{font-weight:700;font-size:12.5px;color:var(--text-secondary);margin-top:1px}
+.ms-row .ms-det{font-size:11.5px;color:var(--text-muted);margin-top:3px;line-height:1.5}
+.ms-row .ms-add{white-space:nowrap}
+.ms-empty{text-align:center;padding:20px;color:var(--text-muted);font-size:12.5px}
+.ms-hint{font-size:11.5px;color:var(--text-muted);margin-top:6px}
+/* ── Extra-policies section in a BO detail ── */
+.extra-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:22px 0 10px}
+.extra-head .eh-t{font-weight:800;font-size:14.5px;color:var(--text-primary)}
+.extra-head .eh-badge{font-size:10.5px;font-weight:800;background:rgba(124,58,237,.18);color:var(--violet,#a78bfa);border:1px solid rgba(124,58,237,.35);padding:2px 9px;border-radius:999px}
+.extra-head .eh-sub{font-size:11.5px;color:var(--text-muted)}
+.mUp-bar{height:10px;border-radius:999px;background:var(--glass-bg);overflow:hidden;margin:14px 0 6px}
+.mUp-bar i{display:block;height:100%;background:linear-gradient(90deg,#7c3aed,#2dd4bf);width:0;transition:width .2s}
 </style>
 </head>
 <body>
@@ -325,6 +351,20 @@ html.light .field input,html.light .field select{background:#f7f8fb}
 
     <!-- Role / scope banner (who is viewing, what they can see) -->
     <div id="scopeBar" class="scope-bar hidden"></div>
+
+    <!-- Division-wide master policy pool (reference only — never part of a BO's totals) -->
+    <div class="master-card" id="masterCard">
+      <div class="mc-icon">🗃️</div>
+      <div class="mc-body">
+        <div class="mc-title">Master Policy Pool <span class="mc-sub">— all PLI / RPLI policies of the division, for lookup only (not counted in any BO)</span></div>
+        <div class="mc-stat" id="mcStat">Checking…</div>
+      </div>
+      <div class="mc-actions">
+        <button class="btn ghost sm" id="mcSearchBtn">🔎 Search pool</button>
+        <button class="btn sm" id="mcUploadBtn" style="display:none;background:linear-gradient(135deg,#7c3aed,#a78bfa)">⬆ Upload / Replace</button>
+      </div>
+      <input type="file" id="masterFile" accept=".csv,.xlsx,.xls,text/csv" style="display:none">
+    </div>
 
     <div class="toolbar">
       <div class="search"><span>🔍</span><input id="dq" type="text" placeholder="Search office, SOL ID, branch…" autocomplete="off"></div>
@@ -414,7 +454,7 @@ html.light .field input,html.light .field select{background:#f7f8fb}
         <button class="btn ghost sm" id="clearFilters">✕ Clear</button>
       </div>
     </div>
-    <div style="margin-bottom:12px"><span class="fcount" id="filterCount">—</span></div>
+    <div style="margin-bottom:12px"><span class="fcount" id="filterCount">—</span> <span id="masterFallback"></span></div>
 
     <!-- Bulk verification bar (shown when one or more accounts are selected) -->
     <div class="bulkbar" id="bulkBar">
@@ -426,6 +466,9 @@ html.light .field input,html.light .field select{background:#f7f8fb}
     </div>
 
     <div class="tbl-wrap"><table class="reg" id="detailTable"></table></div>
+
+    <!-- Additional policies pulled from the master pool into THIS office (kept separate) -->
+    <div id="extraWrap"></div>
   </div>
 
   <div class="footer">
@@ -530,6 +573,43 @@ html.light .field input,html.light .field select{background:#f7f8fb}
   </div>
 </div>
 
+<!-- ============ MASTER UPLOAD — MODE PICKER ============ -->
+<div class="modal-overlay" id="mModeOverlay">
+  <div class="modal">
+    <div class="modal-title">🗃️ Upload master policies</div>
+    <div class="modal-desc" id="mModeDesc">Choose how this file should be applied to the master pool. This pool is a division-wide reference and is never counted in any Branch Office's verification totals.</div>
+    <div class="mini-stats" id="mModeSummary" style="font-size:12.5px;color:var(--text-secondary);margin-bottom:6px"></div>
+    <div class="modal-actions" style="flex-wrap:wrap">
+      <button class="btn ghost" id="mModeCancel">✕ Cancel</button>
+      <button class="btn ghost" id="mModeMerge">➕ Merge / add (keep existing)</button>
+      <button class="btn" id="mModeReplace" style="background:linear-gradient(135deg,#e11d48,#fb7185)">♻ Replace whole pool</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MASTER UPLOAD — PROGRESS ============ -->
+<div class="modal-overlay" id="mUpOverlay">
+  <div class="modal">
+    <div class="modal-title" id="mUpTitle">Uploading master policies…</div>
+    <div class="modal-desc" id="mUpDesc">Please keep this tab open until it finishes.</div>
+    <div class="mUp-bar"><i id="mUpBar"></i></div>
+    <div style="font-size:12px;color:var(--text-secondary)" id="mUpNote">Preparing…</div>
+    <div class="modal-actions"><button class="btn" id="mUpClose" style="display:none">Done</button></div>
+  </div>
+</div>
+
+<!-- ============ MASTER SEARCH ============ -->
+<div class="modal-overlay" id="mSearchOverlay">
+  <div class="modal" style="width:min(840px,100%)">
+    <div class="modal-title">🔎 Search all policies <span style="font-size:12px;font-weight:700;color:var(--text-muted)">— master pool</span></div>
+    <div class="modal-desc" id="mSearchDesc">Search the full division pool by policy number or insured name.</div>
+    <div class="field"><input type="text" id="mSearchInput" placeholder="Policy number or insured name…" autocomplete="off"></div>
+    <div class="ms-hint" id="mSearchHint">Type at least 2 characters. Leading zeros are ignored for policy numbers.</div>
+    <div class="ms-results" id="mSearchResults"></div>
+    <div class="modal-actions"><button class="btn ghost" id="mSearchClose">Close</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -594,7 +674,10 @@ const state={list:[],dq:'',mode:'stored',current:null,detail:null,editKey:null,p
   allot:{},        // branch_id -> Set(mo_username)  (all allotments)
   myAllot:new Set(),// branch_ids allotted to the current MO
   moUsers:[],      // [{username,display_name,active}] users with role MO
-  allotBranch:null // branch currently open in the allotment modal
+  allotBranch:null,// branch currently open in the allotment modal
+  extras:[],       // additional policies pulled from the master pool into the open BO (app_cpv_extra)
+  masterCount:null,// number of policies in the division master pool (dashboard card)
+  msFromBo:false   // true when the master-search modal was opened from within a BO (enables "Add")
 };
 // True only when the open list is a stored batch that can be verified (not an unstored preview),
 // AND — for a Mail Overseer — the office is allotted to them. Managers & USER accounts: always.
@@ -1151,6 +1234,7 @@ async function loadDashboard(){
     renderScopeBar();
     const mab=$('#manageAllotBtn'); if(mab) mab.style.display=canAllot()?'':'none';
     renderDashboard();
+    refreshMasterCard();
   }catch(e){
     $('#dashboard').innerHTML=`<div class="empty"><span class="ei">🛠️</span><b>Storage not set up yet.</b><br><br>
       Run <b>android-app/supabase/migration_v12_cpv.sql</b> in the Supabase SQL editor to create the <b>app_cpv</b> table, then reload.<br>
@@ -1295,8 +1379,9 @@ async function openDetail(key){
   state.mode='stored';
   state.current=row;
   state.detail=Array.isArray(row.records)?row.records:[];
-  state.verif={};state.sel.clear();
+  state.verif={};state.sel.clear();state.extras=[];
   await loadVerifications(key);
+  await loadExtras(key);
   $('#previewBar').classList.add('hidden');
   $('#backToDash').classList.remove('hidden');
   renderDetailHeader();
@@ -1422,7 +1507,8 @@ function renderDetail(){
   const unit=isPli()?'policies':'accounts';
   $('#filterCount').innerHTML=`Showing <b>${rows.length.toLocaleString('en-IN')}</b> of ${total.toLocaleString('en-IN')} ${unit}`
     +(v?` · <b style="color:var(--em)">${vShown}</b> verified · <b>${rows.length-vShown}</b> unverified`:'');
-  if(isPli()){buildPliTable(rows,v);updateBulkBar();return;}
+  if(isPli()){buildPliTable(rows,v);renderExtras();updateMasterFallback(rows);updateBulkBar();return;}
+  $('#masterFallback').innerHTML='';$('#extraWrap').innerHTML='';
   const scheme=state.current?state.current.scheme:'';
   // Account Type & Status are intentionally hidden from this table view (they remain in the
   // filters and in the PDF/Excel reports). This keeps room for the verification columns.
@@ -2134,6 +2220,284 @@ $('#ntScope').addEventListener('change',refreshNoticeSummary);
 $('#ntGenerate').addEventListener('click',e=>runExport(e.currentTarget,generateNotices));
 $('#ntLabels').addEventListener('click',sendNoticeLabels);
 $('#noticeOverlay').addEventListener('click',e=>{if(e.target===$('#noticeOverlay'))$('#noticeOverlay').classList.remove('show');});
+
+// ─────────────────────────────────────────────────────────────
+//  MASTER POLICY POOL (division-wide) + per-BO EXTRA policies
+//  app_pli_master : flat reference pool of every PLI/RPLI policy (>1 lakh),
+//                   never part of any BO's totals. Upload replaces or merges it.
+//  app_cpv_extra  : policies pulled from the pool into ONE office to verify,
+//                   kept separate from that office's official app_cpv list.
+// ─────────────────────────────────────────────────────────────
+const MASTER_TABLE='app_pli_master', EXTRA_TABLE='app_cpv_extra';
+const canManageMaster=()=>canAllot();                       // Admin / ASP / PA may upload/replace
+
+// Strip leading zeros for a zero-agnostic policy match ("0000004089682" → "4089682").
+function normPolicy(p){const s=String(p==null?'':p).trim();return s.replace(/^0+/,'')||s;}
+
+async function refreshMasterCard(){
+  const stat=$('#mcStat'), up=$('#mcUploadBtn');
+  if(up)up.style.display=canManageMaster()?'':'none';
+  try{
+    const n=await SB.count(MASTER_TABLE,null,'policy');
+    state.masterCount=n;
+    stat.innerHTML=n
+      ? `<b>${n.toLocaleString('en-IN')}</b> policies in the pool.` + (canManageMaster()?' Re-upload to replace or add.':' Use “Search pool” to look up any policy.')
+      : 'No master policies uploaded yet.' + (canManageMaster()?' Upload the division-wide PLI/RPLI sheet to enable lookups.':'');
+  }catch(e){
+    state.masterCount=null;
+    if(/app_pli_master|PGRST205|42P01/.test(String(e.message||'')))
+      stat.innerHTML='<span style="color:var(--rose)">Master pool not set up — run <b>migration_v19_pli_master.sql</b> in Supabase.</span>';
+    else stat.textContent='Could not check the master pool.';
+  }
+}
+
+// ── Upload / replace the master pool ──
+async function handleMasterFile(file){
+  if(!file){return;}
+  toast('Reading '+file.name+'…');
+  let rows;
+  try{ rows=await readFileRows(file); }
+  catch(e){ toast('Could not read file: '+(e.message||''),'err'); return; }
+  const isPliFile=rows.some(r=>isPliHeaderRow(r.map(c=>cclean(c).toLowerCase())));
+  if(!isPliFile){ toast('This does not look like a PLI/RPLI policy sheet (no Policy Number / Insured Name header).','err'); return; }
+  let rep;
+  try{ rep=extractPli(rows); }
+  catch(e){ toast('Could not read policy file: '+(e.message||''),'err'); return; }
+  // Map the parsed PLI records to master-pool rows (dedupe by policy — last wins).
+  const seen=new Map();
+  rep.records.forEach((r,i)=>{
+    const policy=String(r.policy||r.acct||'').trim();
+    if(!policy)return;
+    seen.set(policy,{
+      policy, policy_norm:normPolicy(policy),
+      name:r.name||'', address:r.address||'',
+      doe:r.doeRaw||fmtTxnDate(r.doeIso)||'',
+      sum_assured:r.sumAssured, premium:r.premium,
+      paid_to:r.paidRaw||fmtTxnDate(r.paidIso)||'',
+      months_paid:r.monthsPaid, serial:i+1
+    });
+  });
+  state._masterRecs=[...seen.values()];
+  if(!state._masterRecs.length){ toast('No policies detected in this file.','err'); return; }
+  $('#mModeSummary').innerHTML=`<b>${state._masterRecs.length.toLocaleString('en-IN')}</b> policies read from <b>${esc(file.name)}</b>.`
+    + (state.masterCount?`<br>The pool currently holds <b>${state.masterCount.toLocaleString('en-IN')}</b>.`:'');
+  $('#mModeOverlay').classList.add('show');
+}
+async function runMasterUpload(replace){
+  $('#mModeOverlay').classList.remove('show');
+  const recs=state._masterRecs||[]; if(!recs.length)return;
+  const now=Date.now(), by=who();
+  recs.forEach(r=>{r.uploaded_by=by;r.uploaded_at_ms=now;});
+  const ov=$('#mUpOverlay'), bar=$('#mUpBar'), note=$('#mUpNote'), done=$('#mUpClose');
+  $('#mUpTitle').textContent=replace?'Replacing master pool…':'Adding to master pool…';
+  done.style.display='none'; bar.style.width='0%'; note.textContent='Preparing…';
+  ov.classList.add('show'); state.busy=true;
+  try{
+    if(replace){
+      note.textContent='Clearing the existing pool…';
+      await SB.del(MASTER_TABLE,'policy=not.is.null');
+    }
+    const CHUNK=2000, tot=recs.length; let done_n=0;
+    for(let i=0;i<tot;i+=CHUNK){
+      const slice=recs.slice(i,i+CHUNK);
+      await SB.upsert(MASTER_TABLE,slice);
+      done_n=Math.min(tot,i+CHUNK);
+      const pct=Math.round(done_n/tot*100);
+      bar.style.width=pct+'%';
+      note.textContent=`Uploaded ${done_n.toLocaleString('en-IN')} of ${tot.toLocaleString('en-IN')} policies (${pct}%)…`;
+    }
+    bar.style.width='100%';
+    note.innerHTML=`✅ ${replace?'Replaced':'Updated'} the master pool with <b>${tot.toLocaleString('en-IN')}</b> policies.`;
+    done.style.display='';
+    state._masterRecs=null;
+    await refreshMasterCard();
+  }catch(e){
+    note.innerHTML=`<span style="color:var(--rose)">Upload failed: ${esc(e.message||'')}</span>`;
+    done.style.display='';
+    if(/app_pli_master|PGRST205|42P01/.test(String(e.message||'')))
+      note.innerHTML+='<br>Run <b>migration_v19_pli_master.sql</b> in Supabase first.';
+  }finally{ state.busy=false; }
+}
+
+// ── Master search (usable from the dashboard, or from inside a BO to add extras) ──
+function openMasterSearch(fromBo){
+  state.msFromBo=!!fromBo;
+  $('#mSearchDesc').textContent=fromBo
+    ? `Look up a policy in the division pool and add it to “${state.current?state.current.office_name:''}” to verify.`
+    : 'Search the full division pool by policy number or insured name.';
+  $('#mSearchResults').innerHTML='';
+  $('#mSearchOverlay').classList.add('show');
+  const inp=$('#mSearchInput');
+  setTimeout(()=>{inp.focus();inp.select();},60);
+  if(inp.value.trim().length>=2)runMasterSearch();
+}
+async function runMasterSearch(){
+  const term=$('#mSearchInput').value.trim();
+  const box=$('#mSearchResults');
+  if(term.length<2){ box.innerHTML=''; return; }
+  box.innerHTML='<div class="ms-empty">Searching…</div>';
+  const enc=encodeURIComponent(term);
+  const norm=normPolicy(term), encN=encodeURIComponent(norm);
+  const q=`or=(policy.ilike.*${enc}*,policy_norm.ilike.*${encN}*,name.ilike.*${enc}*)&select=*&order=name.asc&limit=60`;
+  let rows;
+  try{ rows=await SB.select(MASTER_TABLE,q); }
+  catch(e){
+    box.innerHTML=`<div class="ms-empty" style="color:var(--rose)">Search failed: ${esc(e.message||'')}${/app_pli_master|PGRST205|42P01/.test(String(e.message||''))?'<br>Run migration_v19_pli_master.sql in Supabase.':''}</div>`;
+    return;
+  }
+  if(!rows||!rows.length){ box.innerHTML=`<div class="ms-empty">No policy in the master pool matches “${esc(term)}”.</div>`; return; }
+  const inBo=state.current?new Set((state.detail||[]).map(r=>String(r.acct))):new Set();
+  const inExtra=new Set((state.extras||[]).map(r=>String(r.policy)));
+  box.innerHTML=rows.map(r=>{
+    const doe=fmtTxnDate(parseTxnDate(r.doe))||r.doe||'—';
+    const paid=fmtMonYear(parseTxnDate(r.paid_to))||r.paid_to||'—';
+    const det=[`Entry ${doe}`,`SA ₹${r.sum_assured!=null?fmtAmt(r.sum_assured):'—'}`,`Prem ₹${r.premium!=null?fmtAmt(r.premium):'—'}`,`Paid upto ${paid}`,`${r.months_paid!=null?r.months_paid+' mths':''}`].filter(Boolean).join(' · ');
+    let action='';
+    if(state.msFromBo && state.current && canVerify()){
+      if(inBo.has(String(r.policy))) action=`<span class="eh-badge" style="background:rgba(52,211,153,.16);color:var(--em);border-color:rgba(52,211,153,.35)">Already in list</span>`;
+      else if(inExtra.has(String(r.policy))) action=`<span class="eh-badge">Added</span>`;
+      else action=`<button class="btn sm" data-addpolicy="${esc(r.policy)}">➕ Add to office</button>`;
+    }
+    return `<div class="ms-row" data-msrow="${esc(r.policy)}">
+      <div class="ms-main">
+        <div class="ms-pol">${esc(r.policy)}</div>
+        <div class="ms-nm">${esc(r.name||'—')}</div>
+        <div class="ms-det">${esc(det)}${r.address?` · ${esc(r.address)}`:''}</div>
+      </div>
+      <div class="ms-add">${action}</div>
+    </div>`;
+  }).join('');
+  // stash the fetched rows so "Add" uses full detail without a second query
+  state._msRows={}; rows.forEach(r=>{state._msRows[String(r.policy)]=r;});
+}
+// Add a master policy into the currently-open office as an EXTRA (unverified).
+async function addExtraFromMaster(policy){
+  if(!state.current||!canVerify()){toast('Open an office you can verify first.','err');return;}
+  const src=(state._msRows||{})[String(policy)];
+  if(!src){toast('Policy details unavailable — search again.','err');return;}
+  if((state.detail||[]).some(r=>String(r.acct)===String(policy))){toast('This policy is already in the office list.','err');return;}
+  if((state.extras||[]).some(r=>String(r.policy)===String(policy))){toast('Already added to this office.','err');return;}
+  const row={
+    office_key:state.current.office_key, policy:String(policy),
+    name:src.name||'', address:src.address||'', doe:src.doe||'',
+    sum_assured:src.sum_assured, premium:src.premium, paid_to:src.paid_to||'',
+    months_paid:src.months_paid, verified:false, remarks:null,
+    verified_by:null, verified_at_ms:null, added_by:who(), added_at_ms:Date.now()
+  };
+  try{ await SB.upsert(EXTRA_TABLE,row); }
+  catch(e){ toast('Could not add: '+(e.message||''),'err'); if(/app_cpv_extra|PGRST205|42P01/.test(String(e.message||'')))toast('Run migration_v19_pli_master.sql in Supabase first.','err'); return; }
+  state.extras.push(row);
+  toast(`Added policy ${policy} to ${state.current.office_name} ✓`,'ok');
+  runMasterSearch();          // refresh the modal so the row shows "Added"
+  renderExtras();
+}
+async function loadExtras(key){
+  try{
+    const rows=await SB.select(EXTRA_TABLE,`office_key=eq.${encodeURIComponent(key)}&select=*&order=added_at_ms.asc`);
+    state.extras=Array.isArray(rows)?rows:[];
+  }catch(e){
+    state.extras=[];
+    // Missing table → extras simply unavailable; the rest of the list still works.
+  }
+}
+// The master-pool fallback shown by the search box when a policy isn't in this BO.
+function updateMasterFallback(rows){
+  const el=$('#masterFallback'); if(!el)return;
+  const term=$('#fSearch').value.trim();
+  if(term && (!rows||!rows.length)){
+    el.innerHTML=`Not in this office. <button class="btn sm" id="fbSearchMaster" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">🔎 Search “${esc(term)}” in all policies</button>`;
+  }else{
+    el.innerHTML=`<button class="btn ghost sm" id="fbSearchMaster">🔎 Search all policies (master pool)</button>`;
+  }
+  const b=$('#fbSearchMaster');
+  if(b)b.addEventListener('click',()=>{ $('#mSearchInput').value=term; openMasterSearch(true); });
+}
+
+// ── Extra-policies table (separate from the official list) ──
+function fmtExtraVerAt(ms){return fmtVerAt(ms);}
+function renderExtras(){
+  const wrap=$('#extraWrap'); if(!wrap)return;
+  const v=canVerify();
+  const list=state.extras||[];
+  if(!list.length){ wrap.innerHTML=''; return; }
+  const scheme=state.current?state.current.scheme:'';
+  const vCount=list.filter(x=>x.verified).length;
+  let body=`<div class="extra-head">
+      <span class="eh-t">Additional policies</span>
+      <span class="eh-badge">from master pool</span>
+      <span class="eh-sub"><b>${list.length}</b> added · <b style="color:var(--em)">${vCount}</b> verified · not part of this office's official ${list.length===1?'count':'counts'}</span>
+    </div>
+    <div class="tbl-wrap"><table class="reg"><thead><tr>
+      <th>Sl.No</th><th>Policy No.</th><th>Insured Name</th><th>Address</th><th>Date of Entry</th>
+      <th style="text-align:right">Sum Assured ₹</th><th style="text-align:right">Premium ₹</th><th>Paid upto</th><th style="text-align:right">Months</th>
+      ${v?'<th>Verified</th><th style="min-width:150px">Remarks</th><th></th>':''}
+    </tr></thead><tbody>`;
+  list.forEach((r,i)=>{
+    const doe=fmtTxnDate(parseTxnDate(r.doe))||r.doe||'—';
+    const paid=fmtMonYear(parseTxnDate(r.paid_to))||r.paid_to||'—';
+    body+=`<tr>
+      <td class="mono">${i+1}</td>
+      <td class="mono">${esc(r.policy)}</td>
+      <td class="nm">${esc(r.name||'—')}</td>
+      <td class="addr">${esc(r.address||'—')}</td>
+      <td class="mono">${esc(doe)}</td>
+      <td class="num">${r.sum_assured==null?'—':fmtAmt(r.sum_assured)}</td>
+      <td class="num">${r.premium==null?'—':fmtAmt(r.premium)}</td>
+      <td class="mono">${esc(paid)}</td>
+      <td class="num">${r.months_paid==null?'—':r.months_paid}</td>
+      ${v?`<td><button class="vbtn ${r.verified?'on':''}" data-exvtoggle="${esc(r.policy)}">${r.verified?'✓ Verified':'Verify'}</button>${r.verified&&(r.verified_by||r.verified_at_ms)?`<div class="vbtn-prov">${esc(r.verified_by||'')}${r.verified_at_ms?' · '+fmtExtraVerAt(r.verified_at_ms):''}</div>`:''}</td>
+        <td><input type="text" class="rmk-in ${r.remarks?'has':''}" data-exrmk="${esc(r.policy)}" value="${esc(r.remarks||'')}" placeholder="Note discrepancy…"></td>
+        <td><button class="sc-tool sc-del" data-exdel="${esc(r.policy)}" title="Remove from this office">🗑</button></td>`:''}
+    </tr>`;
+  });
+  body+='</tbody></table></div>';
+  wrap.innerHTML=body;
+}
+function extraOf(policy){return (state.extras||[]).find(r=>String(r.policy)===String(policy));}
+async function toggleExtraVerify(policy){
+  const r=extraOf(policy); if(!r||!canVerify())return;
+  const next=!r.verified;
+  r.verified=next; r.verified_by=next?who():null; r.verified_at_ms=next?Date.now():null;
+  renderExtras();
+  try{ await SB.upsert(EXTRA_TABLE,r); }
+  catch(e){ toast('Could not save: '+(e.message||''),'err'); r.verified=!next; renderExtras(); }
+}
+async function saveExtraRemark(policy,val){
+  const r=extraOf(policy); if(!r||!canVerify())return;
+  r.remarks=val||null;
+  try{ await SB.upsert(EXTRA_TABLE,r); }
+  catch(e){ toast('Could not save remark: '+(e.message||''),'err'); }
+}
+async function removeExtra(policy){
+  if(!state.current||!canVerify())return;
+  try{ await SB.del(EXTRA_TABLE,`office_key=eq.${encodeURIComponent(state.current.office_key)}&policy=eq.${encodeURIComponent(policy)}`); }
+  catch(e){ toast('Could not remove: '+(e.message||''),'err'); return; }
+  state.extras=(state.extras||[]).filter(r=>String(r.policy)!==String(policy));
+  toast(`Removed policy ${policy} from this office.`,'ok');
+  renderExtras();
+}
+
+// ── wiring ──
+$('#mcUploadBtn').addEventListener('click',()=>$('#masterFile').click());
+$('#masterFile').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];e.target.value='';handleMasterFile(f);});
+$('#mcSearchBtn').addEventListener('click',()=>openMasterSearch(false));
+$('#mModeCancel').addEventListener('click',()=>{$('#mModeOverlay').classList.remove('show');state._masterRecs=null;});
+$('#mModeMerge').addEventListener('click',()=>runMasterUpload(false));
+$('#mModeReplace').addEventListener('click',()=>runMasterUpload(true));
+$('#mUpClose').addEventListener('click',()=>$('#mUpOverlay').classList.remove('show'));
+$('#mSearchClose').addEventListener('click',()=>$('#mSearchOverlay').classList.remove('show'));
+$('#mSearchInput').addEventListener('input',e=>{clearTimeout(e.target._t);e.target._t=setTimeout(runMasterSearch,220);});
+$('#mSearchResults').addEventListener('click',e=>{const b=e.target.closest('[data-addpolicy]');if(b)addExtraFromMaster(b.dataset.addpolicy);});
+[['mModeOverlay',()=>{state._masterRecs=null;}],['mUpOverlay',null],['mSearchOverlay',null]].forEach(([id,fn])=>{
+  const o=document.getElementById(id);o.addEventListener('click',e=>{if(e.target===o){o.classList.remove('show');if(fn)fn();}});
+});
+// Extra-policy verify / remark / remove (event-delegated on the detail area)
+$('#extraWrap').addEventListener('click',e=>{
+  const t=e.target.closest('[data-exvtoggle]'); if(t){toggleExtraVerify(t.dataset.exvtoggle);return;}
+  const d=e.target.closest('[data-exdel]'); if(d){removeExtra(d.dataset.exdel);return;}
+});
+$('#extraWrap').addEventListener('change',e=>{const r=e.target.closest('[data-exrmk]');if(r)saveExtraRemark(r.dataset.exrmk,r.value.trim());});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#mModeOverlay').classList.remove('show');$('#mUpOverlay').classList.remove('show');$('#mSearchOverlay').classList.remove('show');}});
 
 // init
 loadDashboard();

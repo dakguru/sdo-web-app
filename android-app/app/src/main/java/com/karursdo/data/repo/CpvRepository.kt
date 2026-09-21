@@ -128,6 +128,46 @@ data class CpvVerifDto(
     val verified_at_ms: Long? = null
 )
 
+/**
+ * One policy in the division-wide master pool (app_pli_master) — a flat reference of every
+ * PLI/RPLI policy, not tied to any office. Searched when a policy isn't in a BO's own list.
+ */
+@Serializable
+data class PliMasterDto(
+    val policy: String = "",
+    val policy_norm: String = "",
+    val name: String = "",
+    val address: String = "",
+    val doe: String = "",
+    val sum_assured: Double? = null,
+    val premium: Double? = null,
+    val paid_to: String = "",
+    val months_paid: Int? = null
+)
+
+/**
+ * One policy pulled from the master pool into a specific office (app_cpv_extra) to verify —
+ * kept apart from the office's official app_cpv list and its verification totals.
+ */
+@Serializable
+data class CpvExtraDto(
+    val office_key: String = "",
+    val policy: String = "",
+    val name: String = "",
+    val address: String = "",
+    val doe: String = "",
+    val sum_assured: Double? = null,
+    val premium: Double? = null,
+    val paid_to: String = "",
+    val months_paid: Int? = null,
+    val verified: Boolean = false,
+    val remarks: String? = null,
+    val verified_by: String? = null,
+    val verified_at_ms: Long? = null,
+    val added_by: String? = null,
+    val added_at_ms: Long? = null
+)
+
 /** An account merged with its verification state, for display. */
 data class CpvAccount(
     val record: CpvRecordDto,
@@ -354,6 +394,66 @@ class CpvRepository @Inject constructor(
             }
         }
         CpvOfficeConsolidated(officeName, sol, branch, verified, pending)
+    }
+
+    // ── Master policy pool (app_pli_master) + per-office extras (app_cpv_extra) ──
+
+    /** Number of policies in the division-wide master pool. -1 if unavailable / not set up. */
+    suspend fun masterCount(): Int = withContext(Dispatchers.IO) {
+        client.count("app_pli_master", "select=policy")
+    }
+
+    /**
+     * Search the master pool by policy number or insured name (case-insensitive, leading zeros
+     * ignored for numbers). Empty list if the pool isn't set up or nothing matches.
+     */
+    suspend fun searchMaster(term: String): List<PliMasterDto> = withContext(Dispatchers.IO) {
+        val t = term.trim()
+        if (t.length < 2) return@withContext emptyList()
+        val enc = java.net.URLEncoder.encode(t, "UTF-8")
+        val norm = t.trimStart('0').ifEmpty { t }
+        val encN = java.net.URLEncoder.encode(norm, "UTF-8")
+        val q = "or=(policy.ilike.*$enc*,policy_norm.ilike.*$encN*,name.ilike.*$enc*)" +
+            "&select=*&order=name.asc&limit=60"
+        val txt = client.selectAll("app_pli_master", q) ?: return@withContext emptyList()
+        runCatching { json.decodeFromString<List<PliMasterDto>>(txt) }.getOrElse { emptyList() }
+    }
+
+    /** Extra policies attached to an office from the master pool. */
+    suspend fun listExtras(officeKey: String): List<CpvExtraDto> = withContext(Dispatchers.IO) {
+        val enc = java.net.URLEncoder.encode(officeKey, "UTF-8")
+        val txt = client.selectAll("app_cpv_extra", "office_key=eq.$enc&select=*&order=added_at_ms.asc")
+            ?: return@withContext emptyList()
+        runCatching { json.decodeFromString<List<CpvExtraDto>>(txt) }.getOrElse { emptyList() }
+    }
+
+    /** Add a master policy to an office as an (unverified) extra. Returns true on success. */
+    suspend fun addExtra(officeKey: String, m: PliMasterDto, by: String): Boolean = withContext(Dispatchers.IO) {
+        val row = CpvExtraDto(
+            office_key = officeKey, policy = m.policy, name = m.name, address = m.address,
+            doe = m.doe, sum_assured = m.sum_assured, premium = m.premium, paid_to = m.paid_to,
+            months_paid = m.months_paid, verified = false, remarks = null,
+            added_by = by, added_at_ms = System.currentTimeMillis()
+        )
+        val ok = client.upsert("app_cpv_extra", json.encodeToString(listOf(row)))
+        if (!ok) throw CpvException(client.lastError ?: "Could not add the policy.")
+        true
+    }
+
+    /** Save (upsert) the verify state / remark of an extra policy. Returns true on success. */
+    suspend fun saveExtra(row: CpvExtraDto): Boolean = withContext(Dispatchers.IO) {
+        val ok = client.upsert("app_cpv_extra", json.encodeToString(listOf(row)))
+        if (!ok) throw CpvException(client.lastError ?: "Could not save.")
+        true
+    }
+
+    /** Remove an extra policy from an office. Returns true on success. */
+    suspend fun removeExtra(officeKey: String, policy: String): Boolean = withContext(Dispatchers.IO) {
+        val encK = java.net.URLEncoder.encode(officeKey, "UTF-8")
+        val encP = java.net.URLEncoder.encode(policy, "UTF-8")
+        val ok = client.delete("app_cpv_extra", "office_key=eq.$encK&policy=eq.$encP")
+        if (!ok) throw CpvException(client.lastError ?: "Could not remove.")
+        true
     }
 }
 

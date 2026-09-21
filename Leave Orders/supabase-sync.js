@@ -45,6 +45,20 @@ const SB = (() => {
     return true;
   }
 
+  // Exact row count for a table (optionally filtered) without pulling the rows.
+  // Uses PostgREST's `Prefer: count=exact` + Content-Range (e.g. "0-0/100067").
+  // `col` keeps the payload to a single tiny column; defaults to '*'.
+  async function count(table, filter, col) {
+    const q = `select=${col || '*'}&limit=1` + (filter ? '&' + filter : '');
+    const res = await fetch(`${REST}/${table}?${q}`, {
+      headers: headers({ 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' }),
+    });
+    if (!res.ok) throw new Error(`SB.count ${table}: ${res.status} ${await res.text()}`);
+    const cr = res.headers.get('content-range') || '';
+    const m = cr.match(/\/(\d+)\s*$/);
+    return m ? +m[1] : 0;
+  }
+
   // Partial UPDATE of existing rows matched by `filter` (e.g. `id=eq.<uuid>`).
   // Use this instead of upsert() when sending only some columns — upsert is an
   // INSERT..ON CONFLICT and would fail NOT NULL checks on the omitted columns.
@@ -236,5 +250,5 @@ const SB = (() => {
   }
   async function init() { if (_ready) return true; try { const ok = await ping(); _ready = ok; if(ok) console.log('%c☁ Supabase connected','color:#4ade80;font-weight:bold'); else console.warn('⚠ Supabase unreachable'); _updateBadge(ok); return ok; } catch(e) { _ready=false; _updateBadge(false); return false; } }
 
-  return { init, ping, get ready(){return _ready}, select, upsert, patch, del, getDataset, putDataset, getAllDatasets, getPhoneEdits, putPhoneEdit, getUsers, getNotes, getFavorites, getActivity, getMessages, postMessage, SUPABASE_URL, REST };
+  return { init, ping, get ready(){return _ready}, select, upsert, patch, del, count, getDataset, putDataset, getAllDatasets, getPhoneEdits, putPhoneEdit, getUsers, getNotes, getFavorites, getActivity, getMessages, postMessage, SUPABASE_URL, REST };
 })();

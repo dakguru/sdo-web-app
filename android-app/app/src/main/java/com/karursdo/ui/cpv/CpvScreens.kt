@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -89,9 +90,11 @@ import com.karursdo.data.repo.CpvAccount
 import com.karursdo.data.repo.CpvAllotmentDto
 import com.karursdo.data.repo.CpvBatchDto
 import com.karursdo.data.repo.CpvConsRow
+import com.karursdo.data.repo.CpvExtraDto
 import com.karursdo.data.repo.CpvOfficeConsolidated
 import com.karursdo.data.repo.CpvRepository
 import com.karursdo.data.repo.CpvUserDto
+import com.karursdo.data.repo.PliMasterDto
 import com.karursdo.data.repo.SessionManager
 import com.karursdo.report.CpvReportMeta
 import com.karursdo.report.CpvReportPdf
@@ -560,7 +563,12 @@ data class CpvDetailState(
     val meta: CpvBatchDto? = null,
     val accounts: List<CpvAccount> = emptyList(),
     val busy: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    // Extra policies pulled from the master pool into this office (kept separate).
+    val extras: List<CpvExtraDto> = emptyList(),
+    // Master-pool search (dialog) state.
+    val masterResults: List<PliMasterDto> = emptyList(),
+    val masterSearching: Boolean = false
 )
 
 @HiltViewModel
@@ -579,10 +587,83 @@ class CpvDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val b = repo.loadBatch(officeKey)
-                _state.value = CpvDetailState(false, null, b.meta, b.accounts)
+                val ex = runCatching { repo.listExtras(officeKey) }.getOrDefault(emptyList())
+                _state.value = CpvDetailState(false, null, b.meta, b.accounts, extras = ex)
             } catch (e: Exception) {
                 _state.value = CpvDetailState(false, e.message ?: "Could not load list.")
             }
+        }
+    }
+
+    // ── Master pool search + per-office extra policies ──
+
+    /** Search the division master pool (policy no / insured name). */
+    fun searchMaster(term: String) {
+        if (term.trim().length < 2) { _state.value = _state.value.copy(masterResults = emptyList(), masterSearching = false); return }
+        _state.value = _state.value.copy(masterSearching = true)
+        viewModelScope.launch {
+            val res = runCatching { repo.searchMaster(term) }.getOrDefault(emptyList())
+            _state.value = _state.value.copy(masterResults = res, masterSearching = false)
+        }
+    }
+    fun clearMasterResults() { _state.value = _state.value.copy(masterResults = emptyList(), masterSearching = false) }
+
+    /** Add a master policy into this office as an unverified extra. */
+    fun addExtra(m: PliMasterDto) {
+        val k = key ?: return
+        if (_state.value.accounts.any { it.record.acct == m.policy }) { _state.value = _state.value.copy(message = "Already in this office's list."); return }
+        if (_state.value.extras.any { it.policy == m.policy }) { _state.value = _state.value.copy(message = "Already added."); return }
+        val by = session.authorName() ?: "MO"
+        val now = System.currentTimeMillis()
+        val row = CpvExtraDto(
+            office_key = k, policy = m.policy, name = m.name, address = m.address, doe = m.doe,
+            sum_assured = m.sum_assured, premium = m.premium, paid_to = m.paid_to, months_paid = m.months_paid,
+            verified = false, added_by = by, added_at_ms = now
+        )
+        _state.value = _state.value.copy(extras = _state.value.extras + row)
+        viewModelScope.launch {
+            try { repo.addExtra(k, m, by); _state.value = _state.value.copy(message = "Added ${m.policy} ✓") }
+            catch (e: Exception) {
+                _state.value = _state.value.copy(extras = _state.value.extras.filterNot { it.policy == m.policy }, message = "Add failed — ${e.message}")
+            }
+        }
+    }
+
+    /** Verify / unverify an extra policy. */
+    fun toggleExtra(row: CpvExtraDto) {
+        val by = session.authorName() ?: "MO"
+        val next = !row.verified
+        val updated = row.copy(verified = next, verified_by = if (next) by else null, verified_at_ms = if (next) System.currentTimeMillis() else null)
+        _state.value = _state.value.copy(extras = _state.value.extras.map { if (it.policy == row.policy) updated else it })
+        viewModelScope.launch {
+            runCatching { repo.saveExtra(updated) }.onFailure {
+                _state.value = _state.value.copy(extras = _state.value.extras.map { if (it.policy == row.policy) row else it }, message = "Save failed — ${it.message}")
+            }
+        }
+    }
+
+    /** Save a remark on an extra policy (optionally also mark it verified). */
+    fun saveExtraRemark(row: CpvExtraDto, remark: String, verify: Boolean) {
+        val by = session.authorName() ?: "MO"
+        val v = verify || row.verified
+        val updated = row.copy(
+            remarks = remark.ifBlank { null }, verified = v,
+            verified_by = if (v) by else row.verified_by, verified_at_ms = if (v) System.currentTimeMillis() else row.verified_at_ms
+        )
+        _state.value = _state.value.copy(extras = _state.value.extras.map { if (it.policy == row.policy) updated else it })
+        viewModelScope.launch {
+            runCatching { repo.saveExtra(updated) }.onFailure { _state.value = _state.value.copy(message = "Save failed — ${it.message}") }
+        }
+    }
+
+    /** Remove an extra policy from this office. */
+    fun removeExtra(row: CpvExtraDto) {
+        val k = key ?: return
+        _state.value = _state.value.copy(extras = _state.value.extras.filterNot { it.policy == row.policy })
+        viewModelScope.launch {
+            runCatching { repo.removeExtra(k, row.policy) }.onFailure {
+                _state.value = _state.value.copy(extras = _state.value.extras + row, message = "Remove failed — ${it.message}")
+            }.onSuccess { _state.value = _state.value.copy(message = "Removed ${row.policy}.") }
         }
     }
 
@@ -633,6 +714,10 @@ fun CpvDetailScreen(
     val selection = remember { mutableStateListOf<String>() }
     var bulkRemark by remember { mutableStateOf("") }
     var remarkDialogFor by remember { mutableStateOf<CpvAccount?>(null) }
+    // Master pool: lookup dialog + remark dialog for an extra policy.
+    var showMasterSearch by remember { mutableStateOf(false) }
+    var masterQuery by remember { mutableStateOf("") }
+    var extraRemarkFor by remember { mutableStateOf<CpvExtraDto?>(null) }
 
     // Reset transient UI when the list changes.
     LaunchedEffect(officeKey) { query = ""; statusFilter = null; verFilter = VerFilter.ALL; selection.clear(); bulkRemark = "" }
@@ -819,10 +904,31 @@ fun CpvDetailScreen(
                         }) { Text(if (filtered.isNotEmpty() && selection.containsAll(filtered.map { it.record.acct })) "Clear all" else "Select all shown") }
                     }
                 }
+                // Master-pool lookup (PLI/RPLI only) — search every policy in the division,
+                // even ones not in this office's own list, and add them here to verify.
+                if (pli) {
+                    item {
+                        OutlinedButton(
+                            onClick = { masterQuery = query; showMasterSearch = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("🔎 Search all policies (master pool)") }
+                    }
+                }
                 // (Bulk action bar is pinned to the bottom of the screen — see Scaffold bottomBar.)
                 // Accounts
                 if (filtered.isEmpty()) {
-                    item { EmptyState("🔍", "No accounts match the current filters.") }
+                    item {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                            EmptyState("🔍", if (pli) "No policy in this office matches the search." else "No accounts match the current filters.")
+                            if (pli && query.isNotBlank()) {
+                                Spacer(Modifier.height(10.dp))
+                                Button(
+                                    onClick = { masterQuery = query; showMasterSearch = true },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+                                ) { Text("🔎 Search “${query.trim()}” in all policies") }
+                            }
+                        }
+                    }
                 } else {
                     items(filtered, key = { it.record.acct }) { a ->
                         if (pli) {
@@ -861,9 +967,76 @@ fun CpvDetailScreen(
                         }
                     }
                 }
+                // Additional (extra) policies pulled from the master pool — kept separate from
+                // this office's official list and totals, but verifiable in the same way.
+                if (pli && state.extras.isNotEmpty()) {
+                    item {
+                        val vc = state.extras.count { it.verified }
+                        Column(Modifier.padding(top = 8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Additional policies", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                Spacer(Modifier.width(8.dp))
+                                Pill("from master pool", Brand.BadgeDsBg, Brand.BadgeDsFg)
+                            }
+                            Text(
+                                "${state.extras.size} added · $vc verified · not part of this office's official count",
+                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    items(state.extras, key = { "extra:" + it.policy }) { ex ->
+                        ExtraPolicyCard(
+                            ex = ex,
+                            onToggleVerify = { vm.toggleExtra(ex) },
+                            onEditRemark = { extraRemarkFor = ex },
+                            onRemove = { vm.removeExtra(ex) }
+                        )
+                    }
+                }
                 item { Spacer(Modifier.height(24.dp)) }
             }
         }
+    }
+
+    // Master pool search dialog
+    if (showMasterSearch) {
+        MasterSearchDialog(
+            officeName = state.meta?.office_name ?: "",
+            initialQuery = masterQuery,
+            searching = state.masterSearching,
+            results = state.masterResults,
+            inOffice = remember(accounts) { accounts.map { it.record.acct }.toSet() },
+            inExtra = remember(state.extras) { state.extras.map { it.policy }.toSet() },
+            onQuery = { vm.searchMaster(it) },
+            onAdd = { vm.addExtra(it) },
+            onDismiss = { showMasterSearch = false; vm.clearMasterResults() }
+        )
+    }
+
+    // Remark dialog for an extra policy (Save remark, or Save & Verify)
+    extraRemarkFor?.let { ex ->
+        var text by remember(ex.policy) { mutableStateOf(ex.remarks ?: "") }
+        AlertDialog(
+            onDismissRequest = { extraRemarkFor = null },
+            title = { Text("Remark — Policy ${ex.policy}") },
+            text = {
+                Column {
+                    Text(ex.name.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = text, onValueChange = { text = it },
+                        placeholder = { Text("Note any discrepancy…") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { vm.saveExtraRemark(ex, text.trim(), verify = true); extraRemarkFor = null }) { Text("Save & Verify") }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.saveExtraRemark(ex, text.trim(), verify = false); extraRemarkFor = null }) { Text("Save remark") }
+            }
+        )
     }
 
     // Remark dialog
@@ -1320,6 +1493,186 @@ private fun PliPolicyCard(
                                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                             ) { Text("Verify", fontWeight = FontWeight.Bold, maxLines = 1) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Master-pool lookup dialog. Searches every policy in the division (app_pli_master) by number
+ * or insured name, and lets the officer add a match into the open office as an EXTRA to verify.
+ */
+@Composable
+private fun MasterSearchDialog(
+    officeName: String,
+    initialQuery: String,
+    searching: Boolean,
+    results: List<PliMasterDto>,
+    inOffice: Set<String>,
+    inExtra: Set<String>,
+    onQuery: (String) -> Unit,
+    onAdd: (PliMasterDto) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var q by remember { mutableStateOf(initialQuery) }
+    // Debounced search on every keystroke (and once when the dialog opens).
+    LaunchedEffect(q) { kotlinx.coroutines.delay(220); onQuery(q) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("🔎 Search all policies") },
+        text = {
+            Column(Modifier.fillMaxWidth()) {
+                Text(
+                    "Look up any policy in the division master pool and add it to “$officeName” to verify.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = q, onValueChange = { q = it }, singleLine = true,
+                    placeholder = { Text("Policy number or insured name…") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(10.dp))
+                when {
+                    searching -> Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp)); Text("Searching…", style = MaterialTheme.typography.bodySmall)
+                    }
+                    q.trim().length < 2 -> Text(
+                        "Type at least 2 characters. Leading zeros are ignored for policy numbers.",
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    results.isEmpty() -> Text("No policy in the master pool matches “${q.trim()}”.", style = MaterialTheme.typography.bodySmall)
+                    else -> LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 340.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(results, key = { it.policy }) { m ->
+                            MasterResultRow(
+                                m = m,
+                                state = when { inOffice.contains(m.policy) -> "in"; inExtra.contains(m.policy) -> "added"; else -> "add" },
+                                onAdd = { onAdd(m) }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+    )
+}
+
+@Composable
+private fun MasterResultRow(m: PliMasterDto, state: String, onAdd: () -> Unit) {
+    val doe = fmtTxn("", m.doe)
+    val paid = monYear("", "", m.paid_to)
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(m.policy, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(m.name.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    buildString {
+                        if (doe.isNotBlank()) append("Entry $doe · ")
+                        append("SA ${inr(m.sum_assured)} · Prem ${inr(m.premium)}")
+                        if (paid.isNotBlank()) append(" · Paid $paid")
+                    },
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            when (state) {
+                "in" -> Pill("In list", Brand.ChipPaidBg, Brand.ChipPaidFg)
+                "added" -> Pill("Added", Brand.BadgeDsBg, Brand.BadgeDsFg)
+                else -> Button(
+                    onClick = onAdd, shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+                ) { Text("＋ Add") }
+            }
+        }
+    }
+}
+
+/**
+ * A card for an EXTRA policy (pulled from the master pool into this office). Mirrors the PLI
+ * card's fields, with its own Verify / Remark / Remove actions — but no selection checkbox,
+ * since extras are handled individually and stay out of the office's official totals.
+ */
+@Composable
+private fun ExtraPolicyCard(ex: CpvExtraDto, onToggleVerify: () -> Unit, onEditRemark: () -> Unit, onRemove: () -> Unit) {
+    val accent = if (ex.verified) Brand.Emerald else MaterialTheme.colorScheme.primary
+    val doe = fmtTxn("", ex.doe)
+    val paid = monYear("", "", ex.paid_to)
+    val remark = ex.remarks ?: ""
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = if (ex.verified) Brand.Emerald.copy(alpha = 0.06f) else MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, if (ex.verified) Brand.Emerald.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(Modifier.height(IntrinsicSize.Min)) {
+            Box(Modifier.fillMaxHeight().width(4.dp).background(accent))
+            Column(Modifier.weight(1f).padding(start = 8.dp, end = 10.dp, top = 9.dp, bottom = 9.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(ex.policy, fontWeight = FontWeight.ExtraBold, fontFamily = FontFamily.Monospace, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    Spacer(Modifier.width(8.dp))
+                    Text(inr(ex.sum_assured), fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Brand.Emerald, maxLines = 1)
+                }
+                Spacer(Modifier.height(2.dp))
+                Text(ex.name.ifBlank { "—" }, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (ex.address.isNotBlank()) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(ex.address, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                Spacer(Modifier.height(6.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PliFact("Premium", ex.premium?.let { inr(it) } ?: "—", Modifier.weight(1f))
+                    PliFact("Paid upto", paid.ifBlank { "—" }, Modifier.weight(1f))
+                }
+                val meta = buildString {
+                    if (doe.isNotBlank()) append("Entry $doe")
+                    ex.months_paid?.let { if (isNotEmpty()) append("  ·  "); append("$it mo") }
+                    if (ex.verified && !ex.verified_by.isNullOrBlank()) {
+                        if (isNotEmpty()) append("  ·  "); append("✓ ${ex.verified_by}")
+                        ex.verified_at_ms?.let { append(" · ${fmtVerAt(it)}") }
+                    }
+                }
+                if (meta.isNotBlank()) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(meta, style = MaterialTheme.typography.labelSmall, color = if (ex.verified) Brand.Emerald else MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Text(remark.ifBlank { "No remark" }, style = MaterialTheme.typography.labelSmall, color = if (remark.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else Brand.Warn, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                        TextButton(onClick = onEditRemark, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp), modifier = Modifier.height(24.dp)) {
+                            Text(if (remark.isBlank()) "＋ Remark" else "Edit", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
+                        }
+                        TextButton(onClick = onRemove, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp), modifier = Modifier.height(24.dp)) {
+                            Text("Remove", style = MaterialTheme.typography.labelSmall, color = Brand.Warn)
+                        }
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    if (ex.verified) {
+                        AssistChip(
+                            onClick = onToggleVerify,
+                            label = { Text("Verified", fontWeight = FontWeight.Bold) },
+                            leadingIcon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = Brand.ChipPaidBg, labelColor = Brand.ChipPaidFg, leadingIconContentColor = Brand.Emerald)
+                        )
+                    } else {
+                        Button(onClick = onToggleVerify, shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)) {
+                            Text("Verify", fontWeight = FontWeight.Bold, maxLines = 1)
                         }
                     }
                 }

@@ -55,6 +55,37 @@ class SupabaseClient @Inject constructor() {
         ) != null
     }
 
+    /**
+     * Exact row count for [table] (optionally filtered) via PostgREST `Prefer: count=exact` +
+     * the Content-Range header (e.g. "0-0/100067"). Returns the total, or -1 on failure/disabled.
+     * [query] should carry a tiny `select=` (e.g. "select=policy") to keep the payload minimal.
+     */
+    suspend fun count(table: String, query: String = "select=*"): Int = withContext(Dispatchers.IO) {
+        if (!enabled) return@withContext -1
+        var conn: HttpURLConnection? = null
+        try {
+            conn = (URL("$baseUrl/rest/v1/$table?$query&limit=1").openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 15_000; readTimeout = 20_000
+                setRequestProperty("apikey", anonKey)
+                setRequestProperty("Authorization", "Bearer $anonKey")
+                setRequestProperty("Prefer", "count=exact")
+                setRequestProperty("Range", "0-0")
+            }
+            val code = conn.responseCode
+            if (code in 200..299) {
+                lastError = null
+                (conn.getHeaderField("Content-Range") ?: "").substringAfterLast('/').trim().toIntOrNull() ?: 0
+            } else {
+                lastError = "HTTP $code"; -1
+            }
+        } catch (t: Throwable) {
+            lastError = t.message ?: "network error"; -1
+        } finally {
+            conn?.disconnect()
+        }
+    }
+
     /** GET all rows of [table] (optionally filtered by a raw PostgREST query). Returns the JSON array text, or null on failure. */
     suspend fun selectAll(table: String, query: String = "select=*"): String? = withContext(Dispatchers.IO) {
         if (!enabled) return@withContext null
