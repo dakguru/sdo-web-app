@@ -144,8 +144,15 @@ html.light .fg input,html.light .fg select{background:#fff}
 .dh-badge{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:15px;color:#fff;background:linear-gradient(135deg,var(--teal),var(--cyan));flex-shrink:0}
 .dh-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:18px;line-height:1.2}
 .dh-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-.meta-chip{font-size:11px;font-weight:700;color:var(--text-secondary);background:rgba(255,255,255,.05);border:1px solid var(--glass-border);padding:4px 10px;border-radius:999px}
+.meta-chip{font-size:11px;font-weight:700;color:var(--text-secondary);background:rgba(255,255,255,.05);border:1px solid var(--glass-border);padding:4px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:4px}
 .meta-chip b{color:var(--text-primary)}
+.meta-chip.click{cursor:pointer;transition:all .15s}
+.meta-chip.click:hover{background:rgba(255,255,255,.12);border-color:var(--teal)}
+.meta-chip.active{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal) inset}
+.meta-chip.disc{border-color:rgba(245,158,11,.45)}
+.meta-chip.disc b{color:var(--gold)}
+.chip-dl{font-size:9.5px;font-weight:800;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-secondary);border-radius:6px;padding:2px 6px;cursor:pointer;font-family:inherit;line-height:1.4}
+.chip-dl:hover{color:var(--text-primary);border-color:var(--teal);background:var(--glass-bg-hover)}
 .dh-spacer{flex:1}
 
 /* preview / edit bar */
@@ -177,6 +184,8 @@ tr.totrow td{background:rgba(45,212,191,.08);font-weight:800;color:var(--text-pr
 .vbtn{border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-secondary);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:inherit;transition:all .18s;white-space:nowrap}
 .vbtn:hover{background:var(--glass-bg-hover);color:var(--text-primary)}
 .vbtn.on{background:rgba(52,211,153,.16);border-color:rgba(52,211,153,.4);color:var(--em)}
+.vbtn.disc{border-color:rgba(245,158,11,.5);color:var(--gold)}
+.vbtn.disc.on{background:rgba(245,158,11,.16);border-color:rgba(245,158,11,.5);color:var(--gold)}
 .vbtn-prov{font-size:9.5px;color:var(--text-muted);margin-top:3px;font-weight:600;line-height:1.3}
 .cifgrp{border:none;background:none;color:var(--indigo);cursor:pointer;font-size:11px;padding:1px 4px;border-radius:6px;font-weight:800}
 .cifgrp:hover{background:rgba(129,140,248,.16)}
@@ -427,7 +436,9 @@ html.light .field input,html.light .field select{background:#f7f8fb}
         <label>Verification</label>
         <select id="fVerify">
           <option value="">All</option>
-          <option value="yes">✓ Verified</option>
+          <option value="yes">✓ Verified (all)</option>
+          <option value="clean">✓ Verified — clean</option>
+          <option value="disc">⚠ Verified with discrepancies</option>
           <option value="no">Unverified</option>
         </select>
       </div>
@@ -1430,9 +1441,16 @@ async function loadVerifications(key){
 // (verifiedCount, exports) treats a verified extra exactly like a verified account.
 function vOf(acct){return state.verif[acct]||state.extraVerMap[acct]||{verified:false,remarks:'',verified_by:'',verified_at_ms:null};}
 function verifiedCount(records){let v=0;for(const r of records)if(vOf(r.acct).verified)v++;return v;}
+// Discrepancy model (remark-driven, no schema change): an account is "verified with
+// discrepancies" when it is verified AND carries a non-empty remark. A verified account
+// with no remark is "verified — clean".
+function hasRmk(rec){return !!(rec&&rec.remarks&&String(rec.remarks).trim());}
+function vState(acct){const r=vOf(acct);return !r.verified?'no':(hasRmk(r)?'disc':'clean');}
+function discrepancyCount(records){let d=0;for(const r of records){const rec=vOf(r.acct);if(rec.verified&&hasRmk(rec))d++;}return d;}
 // Rebuild the acct->verification lookup for the open BO's extras (call after any extra change).
 function syncExtraMap(){const m={};(state.extras||[]).forEach(e=>{m[String(e.policy)]={verified:!!e.verified,remarks:e.remarks||'',verified_by:e.verified_by||'',verified_at_ms:e.verified_at_ms||null};});state.extraVerMap=m;}
 function extrasVerifiedN(){return (state.extras||[]).filter(e=>e.verified).length;}
+function extrasDiscN(){return (state.extras||[]).filter(e=>e.verified&&e.remarks&&String(e.remarks).trim()).length;}
 // Keep the dashboard's per-office extra counts in step with the open BO's live extras,
 // so going Back to dashboard shows the updated total/verified without a reload.
 function syncExtraDashboard(){const k=state.current&&state.current.office_key;if(!k)return;state.extraTot[k]=(state.extras||[]).length;state.extraVer[k]=extrasVerifiedN();}
@@ -1451,6 +1469,15 @@ function extrasAsRecords(){
 // Rows for an export: the filtered office list, plus (for PLI/RPLI) the attached extra
 // policies passed through the same filters, so they're exported and counted alongside.
 function exportRowsSource(){ return isPli()? filteredRecords().concat(filterRecordList(extrasAsRecords())) : filteredRecords(); }
+// One verification pill in the detail header: a clickable count that filters the list to
+// that subset, plus Excel/PDF buttons that download a report of just that subset.
+function vChip(label,count,filterVal,cls){
+  const active=($('#fVerify')&&$('#fVerify').value)===filterVal;
+  return `<span class="meta-chip click ${cls||''} ${active?'active':''}" data-vfilter="${filterVal}" title="Show only ${esc(label)}">`
+    +`${esc(label)} <b>${count.toLocaleString('en-IN')}</b>`
+    +`<button class="chip-dl" data-vdl="${filterVal}|xlsx" title="Download ${esc(label)} — Excel">Excel</button>`
+    +`<button class="chip-dl" data-vdl="${filterVal}|pdf" title="Download ${esc(label)} — PDF">PDF</button></span>`;
+}
 function renderDetailHeader(){
   const row=state.current;if(!row)return;
   $('#dhBadge').textContent=row.scheme;
@@ -1472,9 +1499,14 @@ function renderDetailHeader(){
     const sc=row.status_counts||{};Object.keys(sc).sort().forEach(s=>meta.push(`<span class="meta-chip">${esc(s)} <b>${sc[s]}</b></span>`));
   }
   if(canVerify()){
-    const v=verifiedCount(state.detail||[])+exV;const u=Math.max(0,totalN-v);
-    meta.push(`<span class="meta-chip" style="border-color:rgba(52,211,153,.4)">✓ Verified <b style="color:var(--em)">${v}</b></span>`);
-    meta.push(`<span class="meta-chip">Unverified <b>${u}</b></span>`);
+    const v=verifiedCount(state.detail||[])+exV;
+    const d=discrepancyCount(state.detail||[])+extrasDiscN();
+    const u=Math.max(0,totalN-v);
+    // Clickable pills: click the count to filter the list to that subset; the Excel/PDF
+    // buttons download a report of just that subset (they set the filter, then export).
+    meta.push(vChip('✓ Verified',v,'yes',''));
+    meta.push(vChip('⚠ With discrepancies',d,'disc','disc'));
+    meta.push(vChip('Unverified',u,'no',''));
   }
   $('#dhMeta').innerHTML=meta.join('');
   // SB-46 notices — web only, stored bank lists only (not insurance, not unstored previews).
@@ -1534,7 +1566,12 @@ function filterRecordList(list){
     if(f.q){const hay=(r.acct+' '+r.name+' '+r.address).toLowerCase();if(!hay.includes(f.q))return false;}
     if(!pli&&f.type&&r.type!==f.type)return false;
     if(!pli&&f.status&&r.status!==f.status)return false;
-    if(f.verify){const isV=vOf(r.acct).verified;if(f.verify==='yes'&&!isV)return false;if(f.verify==='no'&&isV)return false;}
+    if(f.verify){const st=vState(r.acct);
+      if(f.verify==='yes'&&st==='no')return false;      // any verified (clean + discrepancy)
+      if(f.verify==='no'&&st!=='no')return false;       // unverified only
+      if(f.verify==='clean'&&st!=='clean')return false; // verified, no remark
+      if(f.verify==='disc'&&st!=='disc')return false;   // verified with a discrepancy remark
+    }
     if(f.from){const d=dateOf(r);if(!d||d<f.from)return false;}
     if(f.to){const d=dateOf(r);if(!d||d>f.to)return false;}
     if(f.balMode){
@@ -1555,9 +1592,10 @@ function renderDetail(){
   // Prune the selection to accounts still visible under the current filters.
   if(v){const shown=new Set(rows.map(r=>r.acct));[...state.sel].forEach(a=>{if(!shown.has(a))state.sel.delete(a);});}
   const vShown=v?rows.filter(r=>vOf(r.acct).verified).length:0;
+  const dShown=v?rows.filter(r=>vState(r.acct)==='disc').length:0;
   const unit=isPli()?'policies':'accounts';
   $('#filterCount').innerHTML=`Showing <b>${rows.length.toLocaleString('en-IN')}</b> of ${total.toLocaleString('en-IN')} ${unit}`
-    +(v?` · <b style="color:var(--em)">${vShown}</b> verified · <b>${rows.length-vShown}</b> unverified`:'');
+    +(v?` · <b style="color:var(--em)">${vShown}</b> verified · <b style="color:var(--gold)">${dShown}</b> with discrepancy · <b>${rows.length-vShown}</b> unverified`:'');
   if(isPli()){buildPliTable(rows,v);renderExtras();updateMasterFallback(rows);updateBulkBar();return;}
   $('#masterFallback').innerHTML='';$('#extraWrap').innerHTML='';
   const scheme=state.current?state.current.scheme:'';
@@ -1592,7 +1630,7 @@ function renderDetail(){
         <td class="addr">${esc(r.address||'—')}</td>
         <td class="num">${r.balance==null?'—':fmtAmt(r.balance)}</td>
         <td class="mono">${esc(fmtTxnDate(r.date)||r.dateRaw||'—')}</td>
-        ${v?`<td><button class="vbtn ${rec.verified?'on':''}" data-vtoggle="${esc(r.acct)}">${rec.verified?'✓ Verified':'Verify'}</button>${rec.verified&&(rec.verified_by||rec.verified_at_ms)?`<div class="vbtn-prov">${esc(rec.verified_by||'')}${rec.verified_at_ms?' · '+fmtVerAt(rec.verified_at_ms):''}</div>`:''}</td>
+        ${v?`<td><button class="vbtn ${rec.verified?'on ':''}${rec.remarks?'disc':''}" data-vtoggle="${esc(r.acct)}">${rec.verified?(rec.remarks?'✓ Verified ⚠':'✓ Verified'):(rec.remarks?'Verify with discrepancy':'Verify')}</button>${rec.verified&&(rec.verified_by||rec.verified_at_ms)?`<div class="vbtn-prov">${esc(rec.verified_by||'')}${rec.verified_at_ms?' · '+fmtVerAt(rec.verified_at_ms):''}</div>`:''}</td>
         <td><input type="text" class="rmk-in ${rec.remarks?'has':''}" data-rmk="${esc(r.acct)}" value="${esc(rec.remarks||'')}" placeholder="Note discrepancy…"></td>`:''}
       </tr>`;
     });
@@ -1641,7 +1679,7 @@ function buildPliTable(rows,v){
         <td class="num">${r.premium==null?'—':fmtAmt(r.premium)}</td>
         <td class="mono">${esc(r.paidUpto||fmtMonYear(r.paidIso)||r.paidRaw||'—')}</td>
         <td class="num">${r.monthsPaid==null?'—':r.monthsPaid}</td>
-        ${v?`<td><button class="vbtn ${rec.verified?'on':''}" data-vtoggle="${esc(r.acct)}">${rec.verified?'✓ Verified':'Verify'}</button>${rec.verified&&(rec.verified_by||rec.verified_at_ms)?`<div class="vbtn-prov">${esc(rec.verified_by||'')}${rec.verified_at_ms?' · '+fmtVerAt(rec.verified_at_ms):''}</div>`:''}</td>
+        ${v?`<td><button class="vbtn ${rec.verified?'on ':''}${rec.remarks?'disc':''}" data-vtoggle="${esc(r.acct)}">${rec.verified?(rec.remarks?'✓ Verified ⚠':'✓ Verified'):(rec.remarks?'Verify with discrepancy':'Verify')}</button>${rec.verified&&(rec.verified_by||rec.verified_at_ms)?`<div class="vbtn-prov">${esc(rec.verified_by||'')}${rec.verified_at_ms?' · '+fmtVerAt(rec.verified_at_ms):''}</div>`:''}</td>
         <td><input type="text" class="rmk-in ${rec.remarks?'has':''}" data-rmk="${esc(r.acct)}" value="${esc(rec.remarks||'')}" placeholder="Note discrepancy…"></td>`:''}
       </tr>`;
     });
@@ -1718,8 +1756,13 @@ async function confirmDelete(){
 //  Exports
 // ─────────────────────────────────────────────────────────────
 function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+function verifySuffix(){
+  const m={yes:'Verified',clean:'Verified (clean)',disc:'Verified with discrepancies',no:'Unverified'};
+  return ($('#fVerify')&&m[$('#fVerify').value])||'';
+}
 function exportBaseName(){
-  const o=state.current;return `CPV ${o.office_name} ${o.scheme}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim();
+  const o=state.current;const suf=verifySuffix();
+  return `CPV ${o.office_name} ${o.scheme}${suf?' - '+suf:''}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim();
 }
 function exportRows(){
   const rows=exportRowsSource();const scheme=state.current.scheme;const v=canVerify();
@@ -1922,6 +1965,25 @@ document.addEventListener('click',e=>{
   el.addEventListener(ev,()=>{if(id==='fSearch'){clearTimeout(el._t);el._t=setTimeout(renderDetail,140);}else renderDetail();});
 });
 
+// ── Header verification pills: click a count to filter to that subset; click Excel/PDF
+//    to download a report of just that subset (sets the filter, then exports). ──
+$('#dhMeta').addEventListener('click',e=>{
+  const dl=e.target.closest('[data-vdl]');
+  if(dl){
+    const [flt,fmt]=dl.dataset.vdl.split('|');
+    $('#fVerify').value=flt;renderDetail();
+    runExport(dl,fmt==='pdf'?exportPdf:exportExcel);
+    return;
+  }
+  const f=e.target.closest('[data-vfilter]');
+  if(f){
+    $('#fVerify').value=f.dataset.vfilter;renderDetail();renderDetailHeader();
+    const t=$('#detailTable');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+});
+// Keep the header pills' active highlight in sync when the Verification dropdown changes.
+$('#fVerify').addEventListener('change',()=>{if(canVerify())renderDetailHeader();});
+
 // ── verification: table interactions (selection / verify toggle / remarks / CIF group) ──
 $('#detailTable').addEventListener('change',e=>{
   const t=e.target;
@@ -1934,6 +1996,15 @@ $('#detailTable').addEventListener('change',e=>{
   }
   if(t.dataset.rmk!=null){applyVerif([t.dataset.rmk],{remarks:t.value.trim()});return;}
 });
+// Live suggestion: as a discrepancy note is typed, flip the row's Verify button to the
+// "with discrepancy" wording immediately (persisted on blur by the change handler above).
+function liveDiscHint(inp,btnSel){
+  const tr=inp.closest('tr');const btn=tr&&tr.querySelector(btnSel);if(!btn)return;
+  const has=!!inp.value.trim();const on=btn.classList.contains('on');
+  inp.classList.toggle('has',has);btn.classList.toggle('disc',has);
+  btn.textContent=on?(has?'✓ Verified ⚠':'✓ Verified'):(has?'Verify with discrepancy':'Verify');
+}
+$('#detailTable').addEventListener('input',e=>{const r=e.target.closest('[data-rmk]');if(r)liveDiscHint(r,'[data-vtoggle]');});
 $('#detailTable').addEventListener('click',e=>{
   const vt=e.target.closest('[data-vtoggle]');
   if(vt){const a=vt.dataset.vtoggle;applyVerif([a],{verified:!vOf(a).verified});return;}
@@ -2509,7 +2580,7 @@ function renderExtras(){
       <td class="num">${r.premium==null?'—':fmtAmt(r.premium)}</td>
       <td class="mono">${esc(paid)}</td>
       <td class="num">${r.months_paid==null?'—':r.months_paid}</td>
-      ${v?`<td><button class="vbtn ${r.verified?'on':''}" data-exvtoggle="${esc(r.policy)}">${r.verified?'✓ Verified':'Verify'}</button>${r.verified&&(r.verified_by||r.verified_at_ms)?`<div class="vbtn-prov">${esc(r.verified_by||'')}${r.verified_at_ms?' · '+fmtExtraVerAt(r.verified_at_ms):''}</div>`:''}</td>
+      ${v?`<td><button class="vbtn ${r.verified?'on ':''}${r.remarks?'disc':''}" data-exvtoggle="${esc(r.policy)}">${r.verified?(r.remarks?'✓ Verified ⚠':'✓ Verified'):(r.remarks?'Verify with discrepancy':'Verify')}</button>${r.verified&&(r.verified_by||r.verified_at_ms)?`<div class="vbtn-prov">${esc(r.verified_by||'')}${r.verified_at_ms?' · '+fmtExtraVerAt(r.verified_at_ms):''}</div>`:''}</td>
         <td><input type="text" class="rmk-in ${r.remarks?'has':''}" data-exrmk="${esc(r.policy)}" value="${esc(r.remarks||'')}" placeholder="Note discrepancy…"></td>
         <td><button class="sc-tool sc-del" data-exdel="${esc(r.policy)}" title="Remove from this office">🗑</button></td>`:''}
     </tr>`;
@@ -2565,6 +2636,7 @@ $('#extraWrap').addEventListener('click',e=>{
   const d=e.target.closest('[data-exdel]'); if(d){removeExtra(d.dataset.exdel);return;}
 });
 $('#extraWrap').addEventListener('change',e=>{const r=e.target.closest('[data-exrmk]');if(r)saveExtraRemark(r.dataset.exrmk,r.value.trim());});
+$('#extraWrap').addEventListener('input',e=>{const r=e.target.closest('[data-exrmk]');if(r)liveDiscHint(r,'[data-exvtoggle]');});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#mModeOverlay').classList.remove('show');$('#mUpOverlay').classList.remove('show');$('#mSearchOverlay').classList.remove('show');}});
 
 // init
