@@ -676,6 +676,9 @@ const state={list:[],dq:'',mode:'stored',current:null,detail:null,editKey:null,p
   moUsers:[],      // [{username,display_name,active}] users with role MO
   allotBranch:null,// branch currently open in the allotment modal
   extras:[],       // additional policies pulled from the master pool into the open BO (app_cpv_extra)
+  extraVerMap:{},  // policy -> verification-like record for the open BO's extras (so vOf() & exports see them)
+  extraTot:{},     // office_key -> number of extra policies (dashboard: counted in the office total)
+  extraVer:{},     // office_key -> number of VERIFIED extra policies (dashboard: counted as verified)
   masterCount:null,// number of policies in the division master pool (dashboard card)
   msFromBo:false   // true when the master-search modal was opened from within a BO (enables "Add")
 };
@@ -1204,6 +1207,14 @@ async function loadVerifiedCounts(){
     state.vCounts=m;
   }catch(e){ state.vCounts={}; }
 }
+// Extra (from-master) policies per office — counted into each office's total & verified figures.
+async function loadExtraCounts(){
+  try{
+    const rows=await selectAllRows('app_cpv_extra','select=office_key,verified');
+    const tot={},ver={}; (rows||[]).forEach(r=>{const k=r.office_key;tot[k]=(tot[k]||0)+1;if(r.verified)ver[k]=(ver[k]||0)+1;});
+    state.extraTot=tot; state.extraVer=ver;
+  }catch(e){ state.extraTot={}; state.extraVer={}; }   // table missing → simply no extras
+}
 // Office → Mail Overseer allotments (branch_id -> Set of mo_username).
 async function loadAllotments(){
   try{
@@ -1230,7 +1241,7 @@ async function loadDashboard(){
   try{
     const rows=await SB.select('app_cpv','select=office_key,office_name,sol_id,branch_id,scheme,scheme_label,total_accounts,status_counts,uploaded_by,uploaded_at_ms&order=office_name.asc,scheme.asc');
     state.list=Array.isArray(rows)?rows:[];
-    await Promise.all([loadVerifiedCounts(),loadAllotments(),loadMoUsers()]);
+    await Promise.all([loadVerifiedCounts(),loadExtraCounts(),loadAllotments(),loadMoUsers()]);
     renderScopeBar();
     const mab=$('#manageAllotBtn'); if(mab) mab.style.display=canAllot()?'':'none';
     renderDashboard();
@@ -1242,8 +1253,15 @@ async function loadDashboard(){
     $('#sOff').textContent=$('#sSch').textContent=$('#sAcc').textContent=$('#sBal').textContent='0';
   }
 }
-// Verified accounts for one stored list (office_key), clamped to its total.
-function verifiedForKey(o){ return Math.min(+state.vCounts[o.office_key]||0, +o.total_accounts||0); }
+// Verified accounts for one stored list (office_key), clamped to its total, PLUS any verified
+// extra (from-master) policies attached to it. Extras count toward the office's figures.
+function verifiedForKey(o){
+  const base=Math.min(+state.vCounts[o.office_key]||0, +o.total_accounts||0);
+  const ex=Math.min(+state.extraVer[o.office_key]||0, +state.extraTot[o.office_key]||0);
+  return base+ex;
+}
+// Total accounts/policies for one stored list — its own records plus any extras attached.
+function totalForKey(o){ return (+o.total_accounts||0)+(+state.extraTot[o.office_key]||0); }
 
 function renderScopeBar(){
   const bar=$('#scopeBar'); if(!bar)return;
@@ -1273,7 +1291,7 @@ function renderDashboard(){
   });
   // summary (over everything this user may see)
   const offSet=new Set(base.map(o=>o.branch_id||o.office_name));
-  const totAcc=base.reduce((a,o)=>a+(+o.total_accounts||0),0);
+  const totAcc=base.reduce((a,o)=>a+totalForKey(o),0);
   const totVer=base.reduce((a,o)=>a+verifiedForKey(o),0);
   $('#sOff').textContent=offSet.size;
   $('#sSch').textContent=base.length;
@@ -1297,7 +1315,7 @@ function renderDashboard(){
     const items=groups[k].slice().sort((a,b)=>a.scheme.localeCompare(b.scheme));
     const g=items[0];
     const branch=String(g.branch_id||'');
-    const totAccG=items.reduce((a,o)=>a+(+o.total_accounts||0),0);
+    const totAccG=items.reduce((a,o)=>a+totalForKey(o),0);
     const totVerG=items.reduce((a,o)=>a+verifiedForKey(o),0);
     const penG=Math.max(0,totAccG-totVerG);
     const pct=totAccG?Math.round(totVerG/totAccG*100):0;
@@ -1341,7 +1359,7 @@ function renderDashboard(){
     for(const o of items){
       const sc=o.status_counts||{};
       const pills=Object.keys(sc).sort().map(s=>`<span class="pill ${statusClass(s)}">${esc(s)} ${sc[s]}</span>`).join('');
-      const tot=+o.total_accounts||0, ver=verifiedForKey(o), pen=Math.max(0,tot-ver), vp=tot?Math.round(ver/tot*100):0;
+      const tot=totalForKey(o), ver=verifiedForKey(o), pen=Math.max(0,tot-ver), vp=tot?Math.round(ver/tot*100):0;
       const canEdit=isManager()||!isMO(); // MOs verify but don't edit/delete stored lists
       html+=`<div class="scheme-card" data-key="${esc(o.office_key)}">
         ${canEdit?`<div class="sc-tools">
@@ -1406,9 +1424,32 @@ async function loadVerifications(key){
       toast('Verification storage not set up — run migration_v15_cpv_verification.sql.','err');
   }
 }
-// One verification record for an account (defaults = unverified, no remark).
-function vOf(acct){return state.verif[acct]||{verified:false,remarks:'',verified_by:'',verified_at_ms:null};}
+// One verification record for an account (defaults = unverified, no remark). Extra (from-master)
+// policies keep their verification on their own rows — expose it here too, so shared code
+// (verifiedCount, exports) treats a verified extra exactly like a verified account.
+function vOf(acct){return state.verif[acct]||state.extraVerMap[acct]||{verified:false,remarks:'',verified_by:'',verified_at_ms:null};}
 function verifiedCount(records){let v=0;for(const r of records)if(vOf(r.acct).verified)v++;return v;}
+// Rebuild the acct->verification lookup for the open BO's extras (call after any extra change).
+function syncExtraMap(){const m={};(state.extras||[]).forEach(e=>{m[String(e.policy)]={verified:!!e.verified,remarks:e.remarks||'',verified_by:e.verified_by||'',verified_at_ms:e.verified_at_ms||null};});state.extraVerMap=m;}
+function extrasVerifiedN(){return (state.extras||[]).filter(e=>e.verified).length;}
+// Keep the dashboard's per-office extra counts in step with the open BO's live extras,
+// so going Back to dashboard shows the updated total/verified without a reload.
+function syncExtraDashboard(){const k=state.current&&state.current.office_key;if(!k)return;state.extraTot[k]=(state.extras||[]).length;state.extraVer[k]=extrasVerifiedN();}
+// Called after any change to the open BO's extras: refresh lookups, dashboard counts & header.
+function afterExtraChange(){syncExtraMap();syncExtraDashboard();renderDetailHeader();}
+// Extra policies rendered in the shared PLI record shape, so exports treat them like policies.
+function extrasAsRecords(){
+  return (state.extras||[]).map(e=>({
+    acct:String(e.policy), policy:String(e.policy), name:e.name||'', address:e.address||'',
+    doeRaw:e.doe||'', doeIso:parseTxnDate(e.doe)||'',
+    sumAssured:e.sum_assured, premium:e.premium,
+    paidRaw:e.paid_to||'', paidIso:parseTxnDate(e.paid_to)||'', paidUpto:fmtMonYear(parseTxnDate(e.paid_to))||e.paid_to||'',
+    monthsPaid:e.months_paid, cif:'', type:state.current?state.current.scheme:'', balance:null, date:'', status:'—'
+  }));
+}
+// Rows for an export: the filtered office list, plus (for PLI/RPLI) the attached extra
+// policies passed through the same filters, so they're exported and counted alongside.
+function exportRowsSource(){ return isPli()? filteredRecords().concat(filterRecordList(extrasAsRecords())) : filteredRecords(); }
 function renderDetailHeader(){
   const row=state.current;if(!row)return;
   $('#dhBadge').textContent=row.scheme;
@@ -1418,15 +1459,19 @@ function renderDetailHeader(){
   if(row.branch_id)meta.push(`<span class="meta-chip">Branch <b>${esc(row.branch_id)}</b></span>`);
   meta.push(`<span class="meta-chip">Scheme <b>${esc(row.scheme_label||schemeLabel(row.scheme))}</b></span>`);
   const pli=isPli();
-  meta.push(`<span class="meta-chip">${pli?'Policies':'Total'} <b>${(+row.total_accounts||0).toLocaleString('en-IN')}</b></span>`);
+  // Extra (from-master) policies are counted into the office's totals & verified figures.
+  const exN=(state.extras||[]).length, exV=extrasVerifiedN();
+  const totalN=(state.detail?state.detail.length:0)+exN;
+  meta.push(`<span class="meta-chip">${pli?'Policies':'Total'} <b>${totalN.toLocaleString('en-IN')}</b>${exN?`<span style="color:var(--text-muted);font-weight:600"> (+${exN})</span>`:''}</span>`);
   if(pli){
-    const recs=state.detail||[];let sa=0;for(const r of recs)if(r.sumAssured!=null)sa+=r.sumAssured;
+    let sa=0;for(const r of (state.detail||[]))if(r.sumAssured!=null)sa+=r.sumAssured;
+    for(const e of (state.extras||[]))if(e.sum_assured!=null)sa+=e.sum_assured;
     meta.push(`<span class="meta-chip">Sum Assured <b>₹ ${fmtAmt(sa)}</b></span>`);
   }else{
     const sc=row.status_counts||{};Object.keys(sc).sort().forEach(s=>meta.push(`<span class="meta-chip">${esc(s)} <b>${sc[s]}</b></span>`));
   }
   if(canVerify()){
-    const recs=state.detail||[];const v=verifiedCount(recs);const u=recs.length-v;
+    const v=verifiedCount(state.detail||[])+exV;const u=Math.max(0,totalN-v);
     meta.push(`<span class="meta-chip" style="border-color:rgba(52,211,153,.4)">✓ Verified <b style="color:var(--em)">${v}</b></span>`);
     meta.push(`<span class="meta-chip">Unverified <b>${u}</b></span>`);
   }
@@ -1459,6 +1504,8 @@ function exitToDash(){
   $('#backToDash').classList.remove('hidden');
   $('#bulkBar').classList.remove('show');
   state.mode='stored';state.current=null;state.detail=null;state.verif={};state.sel.clear();
+  state.extras=[];state.extraVerMap={};
+  renderDashboard();   // reflect any extra add/verify done in the detail view
 }
 function currentFilters(){
   return {
@@ -1473,13 +1520,16 @@ function currentFilters(){
     bal2:$('#fBal2').value===''?null:parseFloat($('#fBal2').value)
   };
 }
-function filteredRecords(){
+function filteredRecords(){ return filterRecordList(state.detail); }
+// Apply the current filter bar to an arbitrary record list (used for both the office list and,
+// for exports, the attached extra policies — so exports honour the same filters).
+function filterRecordList(list){
   const f=currentFilters();
   const pli=isPli();
   // For PLI the date range means Paid-upto and the numeric range means Sum Assured.
   const dateOf=r=>pli?r.paidIso:r.date;
   const amtOf =r=>pli?r.sumAssured:r.balance;
-  return state.detail.filter(r=>{
+  return (list||[]).filter(r=>{
     if(f.q){const hay=(r.acct+' '+r.name+' '+r.address).toLowerCase();if(!hay.includes(f.q))return false;}
     if(!pli&&f.type&&r.type!==f.type)return false;
     if(!pli&&f.status&&r.status!==f.status)return false;
@@ -1671,7 +1721,7 @@ function exportBaseName(){
   const o=state.current;return `CPV ${o.office_name} ${o.scheme}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim();
 }
 function exportRows(){
-  const rows=filteredRecords();const scheme=state.current.scheme;const v=canVerify();
+  const rows=exportRowsSource();const scheme=state.current.scheme;const v=canVerify();
   if(isPli()){
     return rows.map((r,i)=>{
       const base=[
@@ -1715,7 +1765,7 @@ function loadScriptOnce(src){return new Promise((res,rej)=>{if([...document.scri
 async function loadPdf(){if(_pdfP)return _pdfP;_pdfP=(async()=>{for(const u of PDF_URLS)await loadScriptOnce(u);})();return _pdfP;}
 const CLR={green:[13,148,136],saffron:[255,153,51],white:[255,255,255],ind:[19,136,8]};
 async function exportPdf(){
-  const rows=filteredRecords();
+  const rows=exportRowsSource();
   if(!rows.length){toast('Nothing to export with the current filters.','err');return;}
   await loadPdf();const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
@@ -2387,6 +2437,7 @@ async function addExtraFromMaster(policy){
   try{ await SB.upsert(EXTRA_TABLE,row); }
   catch(e){ toast('Could not add: '+(e.message||''),'err'); if(/app_cpv_extra|PGRST205|42P01/.test(String(e.message||'')))toast('Run migration_v19_pli_master.sql in Supabase first.','err'); return; }
   state.extras.push(row);
+  afterExtraChange();
   toast(`Added policy ${policy} to ${state.current.office_name} ✓`,'ok');
   runMasterSearch();          // refresh the modal so the row shows "Added"
   renderExtras();
@@ -2399,6 +2450,7 @@ async function loadExtras(key){
     state.extras=[];
     // Missing table → extras simply unavailable; the rest of the list still works.
   }
+  syncExtraMap();
 }
 // The master-pool fallback shown by the search box when a policy isn't in this BO.
 function updateMasterFallback(rows){
@@ -2425,7 +2477,7 @@ function renderExtras(){
   let body=`<div class="extra-head">
       <span class="eh-t">Additional policies</span>
       <span class="eh-badge">from master pool</span>
-      <span class="eh-sub"><b>${list.length}</b> added · <b style="color:var(--em)">${vCount}</b> verified · not part of this office's official ${list.length===1?'count':'counts'}</span>
+      <span class="eh-sub"><b>${list.length}</b> added · <b style="color:var(--em)">${vCount}</b> verified · counted in this office's total &amp; verified figures and in exports</span>
     </div>
     <div class="tbl-wrap"><table class="reg"><thead><tr>
       <th>Sl.No</th><th>Policy No.</th><th>Insured Name</th><th>Address</th><th>Date of Entry</th>
@@ -2458,13 +2510,13 @@ async function toggleExtraVerify(policy){
   const r=extraOf(policy); if(!r||!canVerify())return;
   const next=!r.verified;
   r.verified=next; r.verified_by=next?who():null; r.verified_at_ms=next?Date.now():null;
-  renderExtras();
+  renderExtras(); afterExtraChange();
   try{ await SB.upsert(EXTRA_TABLE,r); }
-  catch(e){ toast('Could not save: '+(e.message||''),'err'); r.verified=!next; renderExtras(); }
+  catch(e){ toast('Could not save: '+(e.message||''),'err'); r.verified=!next; renderExtras(); afterExtraChange(); }
 }
 async function saveExtraRemark(policy,val){
   const r=extraOf(policy); if(!r||!canVerify())return;
-  r.remarks=val||null;
+  r.remarks=val||null; syncExtraMap();
   try{ await SB.upsert(EXTRA_TABLE,r); }
   catch(e){ toast('Could not save remark: '+(e.message||''),'err'); }
 }
@@ -2473,6 +2525,7 @@ async function removeExtra(policy){
   try{ await SB.del(EXTRA_TABLE,`office_key=eq.${encodeURIComponent(state.current.office_key)}&policy=eq.${encodeURIComponent(policy)}`); }
   catch(e){ toast('Could not remove: '+(e.message||''),'err'); return; }
   state.extras=(state.extras||[]).filter(r=>String(r.policy)!==String(policy));
+  afterExtraChange();
   toast(`Removed policy ${policy} from this office.`,'ok');
   renderExtras();
 }

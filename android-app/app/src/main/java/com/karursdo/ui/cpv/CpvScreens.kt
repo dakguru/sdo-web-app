@@ -92,6 +92,7 @@ import com.karursdo.data.repo.CpvBatchDto
 import com.karursdo.data.repo.CpvConsRow
 import com.karursdo.data.repo.CpvExtraDto
 import com.karursdo.data.repo.CpvOfficeConsolidated
+import com.karursdo.data.repo.CpvRecordDto
 import com.karursdo.data.repo.CpvRepository
 import com.karursdo.data.repo.CpvUserDto
 import com.karursdo.data.repo.PliMasterDto
@@ -188,6 +189,8 @@ data class CpvListState(
     val isMO: Boolean = false,
     val allot: Map<String, Set<String>> = emptyMap(), // branch_id -> lowercase MO usernames
     val vCounts: Map<String, Int> = emptyMap(),        // office_key -> verified account count
+    val extraTot: Map<String, Int> = emptyMap(),       // office_key -> extra-policy count (counted in totals)
+    val extraVer: Map<String, Int> = emptyMap(),       // office_key -> verified extra-policy count
     val moUsers: List<CpvUserDto> = emptyList(),
     val message: String? = null
 )
@@ -218,12 +221,13 @@ class CpvListViewModel @Inject constructor(
                     .groupBy({ it.branch_id }, { it.mo_username.lowercase() })
                     .mapValues { it.value.toSet() }
                 val vCounts = repo.verifiedCountsByOffice()
+                val (exTot, exVer) = runCatching { repo.extraCountsByOffice() }.getOrDefault(emptyMap<String, Int>() to emptyMap<String, Int>())
                 val moUsers = if (allotAble) repo.listMoUsers() else emptyList()
                 val myName = (user?.username ?: "").lowercase()
                 val visible = if (mo) all.filter { (allotMap[it.branch_id ?: ""] ?: emptySet()).contains(myName) } else all
                 _state.value = _state.value.copy(
                     loading = false, error = null, batches = visible,
-                    allot = allotMap, vCounts = vCounts, moUsers = moUsers
+                    allot = allotMap, vCounts = vCounts, extraTot = exTot, extraVer = exVer, moUsers = moUsers
                 )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(loading = false, error = e.message ?: "Could not load lists.")
@@ -352,8 +356,8 @@ fun CpvListScreen(
                 else -> groups.forEach { (_, items) ->
                     val g = items.first()
                     val branch = g.branch_id ?: ""
-                    val totAcc = items.sumOf { it.total_accounts }
-                    val totVer = items.sumOf { cpvVerifiedFor(it, state.vCounts) }
+                    val totAcc = items.sumOf { cpvTotalFor(it, state.extraTot) }
+                    val totVer = items.sumOf { cpvVerifiedFor(it, state.vCounts, state.extraVer, state.extraTot) }
                     val pending = (totAcc - totVer).coerceAtLeast(0)
                     val pct = if (totAcc > 0) totVer * 100 / totAcc else 0
                     item {
@@ -402,7 +406,7 @@ fun CpvListScreen(
                             }
                             Spacer(Modifier.height(8.dp))
                             items.sortedBy { it.scheme }.forEach { b ->
-                                SchemeRow(b, cpvVerifiedFor(b, state.vCounts)) { onOpenBatch(b.office_key, "${b.office_name} · ${b.scheme}") }
+                                SchemeRow(b, cpvVerifiedFor(b, state.vCounts, state.extraVer, state.extraTot), cpvTotalFor(b, state.extraTot)) { onOpenBatch(b.office_key, "${b.office_name} · ${b.scheme}") }
                             }
                             // Per-office consolidated download (all categories)
                             HorizontalDivider(Modifier.padding(vertical = 10.dp))
@@ -437,8 +441,13 @@ fun CpvListScreen(
 }
 
 /** verified accounts for one stored list, clamped to its total. */
-private fun cpvVerifiedFor(b: CpvBatchDto, vCounts: Map<String, Int>): Int =
-    (vCounts[b.office_key] ?: 0).coerceAtMost(b.total_accounts)
+// Verified count for a batch (clamped to its own records), plus any verified extra policies.
+private fun cpvVerifiedFor(b: CpvBatchDto, vCounts: Map<String, Int>, extraVer: Map<String, Int> = emptyMap(), extraTot: Map<String, Int> = emptyMap()): Int =
+    (vCounts[b.office_key] ?: 0).coerceAtMost(b.total_accounts) +
+        (extraVer[b.office_key] ?: 0).coerceAtMost(extraTot[b.office_key] ?: 0)
+// Total accounts/policies for a batch — its own records plus any extras attached.
+private fun cpvTotalFor(b: CpvBatchDto, extraTot: Map<String, Int>): Int =
+    b.total_accounts + (extraTot[b.office_key] ?: 0)
 
 @Composable
 private fun CpvScopeBanner(state: CpvListState) {
@@ -464,8 +473,8 @@ private fun InfoBanner(tag: String, text: String, bg: Color, fg: Color) {
 private fun CpvOverviewCard(state: CpvListState) {
     val offices = state.batches.map { it.branch_id ?: it.office_name }.distinct().size
     val lists = state.batches.size
-    val totAcc = state.batches.sumOf { it.total_accounts }
-    val totVer = state.batches.sumOf { cpvVerifiedFor(it, state.vCounts) }
+    val totAcc = state.batches.sumOf { cpvTotalFor(it, state.extraTot) }
+    val totVer = state.batches.sumOf { cpvVerifiedFor(it, state.vCounts, state.extraVer, state.extraTot) }
     val pending = (totAcc - totVer).coerceAtLeast(0)
     SectionCard("Overview") {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -479,9 +488,9 @@ private fun CpvOverviewCard(state: CpvListState) {
 }
 
 @Composable
-private fun SchemeRow(b: CpvBatchDto, verified: Int, onClick: () -> Unit) {
-    val pending = (b.total_accounts - verified).coerceAtLeast(0)
-    val pct = if (b.total_accounts > 0) verified * 100 / b.total_accounts else 0
+private fun SchemeRow(b: CpvBatchDto, verified: Int, total: Int = b.total_accounts, onClick: () -> Unit) {
+    val pending = (total - verified).coerceAtLeast(0)
+    val pct = if (total > 0) verified * 100 / total else 0
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
@@ -493,7 +502,7 @@ private fun SchemeRow(b: CpvBatchDto, verified: Int, onClick: () -> Unit) {
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(b.scheme_label ?: b.scheme, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                    Text("${b.total_accounts} ${if (isPliScheme(b.scheme)) "policies" else "accounts"}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("$total ${if (isPliScheme(b.scheme)) "policies" else "accounts"}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text("$pct%", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Brand.Emerald)
                 Spacer(Modifier.width(8.dp))
@@ -748,6 +757,11 @@ fun CpvDetailScreen(
     }
 
     val verifiedCount = accounts.count { it.verified }
+    // Extra (from-master) policies are counted into this office's totals & verified figures.
+    val extras = if (pli) state.extras else emptyList()
+    val extraVerified = extras.count { it.verified }
+    val totalCount = accounts.size + extras.size
+    val totalVerified = verifiedCount + extraVerified
 
     // one-shot messages
     val snackHost = remember { androidx.compose.material3.SnackbarHostState() }
@@ -769,8 +783,10 @@ fun CpvDetailScreen(
                     )
                     IconButton(onClick = {
                         val meta = state.meta
-                        if (meta == null || filtered.isEmpty()) return@IconButton
-                        val snapshot = filtered.toList()
+                        // Include the attached extra policies so they're exported and counted too.
+                        val extraRows = extras.map { it.toAccount(meta?.scheme ?: "") }
+                        if (meta == null || (filtered.isEmpty() && extraRows.isEmpty())) return@IconButton
+                        val snapshot = filtered.toList() + extraRows
                         scope.launch {
                             runCatching {
                                 val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -845,12 +861,12 @@ fun CpvDetailScreen(
                         )
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Pill("${if (pli) "Policies" else "Total"} ${accounts.size}", Brand.BadgeDsBg, Brand.BadgeDsFg)
-                            Pill("✓ Verified $verifiedCount", Brand.ChipPaidBg, Brand.ChipPaidFg)
-                            Pill("Unverified ${accounts.size - verifiedCount}", Brand.TpOthBg, Brand.TpOthFg)
+                            Pill("${if (pli) "Policies" else "Total"} $totalCount" + (if (extras.isNotEmpty()) " (+${extras.size})" else ""), Brand.BadgeDsBg, Brand.BadgeDsFg)
+                            Pill("✓ Verified $totalVerified", Brand.ChipPaidBg, Brand.ChipPaidFg)
+                            Pill("Unverified ${totalCount - totalVerified}", Brand.TpOthBg, Brand.TpOthFg)
                         }
                         if (pli) {
-                            val sa = accounts.sumOf { it.record.sumAssured ?: 0.0 }
+                            val sa = accounts.sumOf { it.record.sumAssured ?: 0.0 } + extras.sumOf { it.sum_assured ?: 0.0 }
                             Spacer(Modifier.height(6.dp))
                             Pill("Sum Assured ${inr(sa)}", Brand.TpOthBg, Brand.TpOthFg)
                         }
@@ -979,7 +995,7 @@ fun CpvDetailScreen(
                                 Pill("from master pool", Brand.BadgeDsBg, Brand.BadgeDsFg)
                             }
                             Text(
-                                "${state.extras.size} added · $vc verified · not part of this office's official count",
+                                "${state.extras.size} added · $vc verified · counted in this office's totals & exports",
                                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1500,6 +1516,19 @@ private fun PliPolicyCard(
         }
     }
 }
+
+/** Render an extra policy as a CpvAccount so it flows through the shared PDF/report code. */
+private fun CpvExtraDto.toAccount(scheme: String): CpvAccount = CpvAccount(
+    record = CpvRecordDto(
+        acct = policy, policy = policy, name = name, address = address, type = scheme,
+        doeRaw = doe, sumAssured = sum_assured, premium = premium,
+        paidRaw = paid_to, monthsPaid = months_paid
+    ),
+    verified = verified,
+    remarks = remarks ?: "",
+    verifiedBy = verified_by ?: "",
+    verifiedAtMs = verified_at_ms
+)
 
 /**
  * Master-pool lookup dialog. Searches every policy in the division (app_pli_master) by number

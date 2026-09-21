@@ -419,6 +419,21 @@ class CpvRepository @Inject constructor(
         runCatching { json.decodeFromString<List<PliMasterDto>>(txt) }.getOrElse { emptyList() }
     }
 
+    /** Per-office extra-policy counts (total, verified) across all offices, for the dashboard. */
+    suspend fun extraCountsByOffice(): Pair<Map<String, Int>, Map<String, Int>> = withContext(Dispatchers.IO) {
+        val tot = HashMap<String, Int>(); val ver = HashMap<String, Int>()
+        val page = 1000; var from = 0
+        while (true) {
+            val txt = client.selectAll("app_cpv_extra", "select=office_key,verified&limit=$page&offset=$from") ?: break
+            val rows = runCatching { json.decodeFromString<List<CpvExtraDto>>(txt) }.getOrElse { emptyList() }
+            if (rows.isEmpty()) break
+            rows.forEach { tot[it.office_key] = (tot[it.office_key] ?: 0) + 1; if (it.verified) ver[it.office_key] = (ver[it.office_key] ?: 0) + 1 }
+            if (rows.size < page) break
+            from += page
+        }
+        tot to ver
+    }
+
     /** Extra policies attached to an office from the master pool. */
     suspend fun listExtras(officeKey: String): List<CpvExtraDto> = withContext(Dispatchers.IO) {
         val enc = java.net.URLEncoder.encode(officeKey, "UTF-8")
