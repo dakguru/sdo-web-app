@@ -363,6 +363,7 @@ html.light .field input,html.light .field select{background:#f7f8fb}
       </div>
       <div class="dh-spacer"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" id="noticeBtn" style="display:none;background:linear-gradient(135deg,#7c3aed,#a78bfa);box-shadow:0 4px 16px rgba(167,139,250,.28)">📜 SB-46 Notices</button>
         <button class="btn gold sm" id="pdfBtn">📄 PDF</button>
         <button class="btn blue sm" id="xlsBtn">⬇ Excel</button>
       </div>
@@ -491,6 +492,40 @@ html.light .field input,html.light .field select{background:#f7f8fb}
     <div class="modal-actions">
       <button class="btn ghost" id="allotCancel">✕ Cancel</button>
       <button class="btn" id="allotSave">💾 Save allotment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SB-46 NOTICE MODAL ============ -->
+<div class="modal-overlay" id="noticeOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title">📜 Generate SB-46 Notices <span style="font-size:12px;font-weight:700;color:var(--text-muted)">(Tamil)</span></div>
+    <div class="modal-desc" id="noticeDesc">One notice per depositor listing their unverified accounts, with a Tamil reply form and the account details. Fill the letter details below — they apply to every notice in this batch.</div>
+    <div class="field">
+      <label>Branch office name in Tamil <span style="text-transform:none;color:var(--text-muted);font-weight:600">— appears in the notice body &amp; reply form</span></label>
+      <input type="text" id="ntBoTa" placeholder="எ.கா. கோடங்கிபட்டி" autocomplete="off" lang="ta">
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Letter number</label><input type="text" id="ntLetterNo" placeholder="ASP/… CPV/2026" autocomplete="off"></div>
+      <div class="field"><label>Place</label><input type="text" id="ntPlace" placeholder="KARUR" autocomplete="off"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Notice date</label><input type="date" id="ntDate"></div>
+      <div class="field"><label>Balance as on</label><input type="date" id="ntAsOn"></div>
+    </div>
+    <div class="field">
+      <label>Accounts to include</label>
+      <select id="ntScope">
+        <option value="unverified">Unverified accounts only</option>
+        <option value="filtered">Accounts shown by current filters</option>
+        <option value="all">All accounts in this list</option>
+      </select>
+    </div>
+    <div class="mini-stats" id="ntSummary" style="font-size:12px;color:var(--text-secondary)"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="ntCancel">✕ Cancel</button>
+      <button class="btn ghost" id="ntLabels">🏷 Send recipients to Address Labels</button>
+      <button class="btn" id="ntGenerate" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">📜 Generate Word file</button>
     </div>
   </div>
 </div>
@@ -1311,6 +1346,9 @@ function renderDetailHeader(){
     meta.push(`<span class="meta-chip">Unverified <b>${u}</b></span>`);
   }
   $('#dhMeta').innerHTML=meta.join('');
+  // SB-46 notices — web only, stored bank lists only (not insurance, not unstored previews).
+  const nb=$('#noticeBtn');
+  if(nb)nb.style.display=(state.mode==='stored'&&row.office_key&&!isPli())?'':'none';
 }
 function buildDetailFilters(){
   const pli=isPli();
@@ -1788,7 +1826,7 @@ $('#xlsBtn').addEventListener('click',e=>runExport(e.currentTarget,exportExcel))
 [['dupOverlay',()=>{$('#dupOverlay').classList.remove('show');}],['delOverlay',()=>{$('#delOverlay').classList.remove('show');state.delKey=null;}],['opOverlay',()=>{$('#opOverlay').classList.remove('show');state._pliRecords=null;state._pliPick=null;}]].forEach(([id,fn])=>{
   const o=document.getElementById(id);o.addEventListener('click',e=>{if(e.target===o)fn();});
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#dupOverlay').classList.remove('show');$('#delOverlay').classList.remove('show');$('#opOverlay').classList.remove('show');$('#allotOverlay').classList.remove('show');}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#dupOverlay').classList.remove('show');$('#delOverlay').classList.remove('show');$('#opOverlay').classList.remove('show');$('#allotOverlay').classList.remove('show');$('#noticeOverlay').classList.remove('show');}});
 
 // ─────────────────────────────────────────────────────────────
 //  Allotment (office → Mail Overseers) — managers only
@@ -1949,6 +1987,153 @@ async function runOfficeDl(btn){
 $('#dashboard').addEventListener('click',e=>{
   const b=e.target.closest('[data-dl]'); if(b){ e.stopPropagation(); runOfficeDl(b); }
 });
+
+// ─────────────────────────────────────────────────────────────
+//  SB-46 Notices (Tamil) — web only
+//  One notice per depositor listing their (unverified) accounts, built from the
+//  real Word template Leave Orders/cpv/sb46-template.docx so Tamil fonts, borders
+//  and the reply form are byte-faithful. Accounts of one depositor are grouped by
+//  CIF (falling back to name+address); a continuous Sl.No runs across the batch.
+// ─────────────────────────────────────────────────────────────
+const NOTICE_TEMPLATE_URL='/leave-orders/cpv/sb46-template.docx';
+let _jszipP;
+function loadJSZip(){
+  if(window.JSZip)return Promise.resolve(window.JSZip);
+  if(_jszipP)return _jszipP;
+  _jszipP=new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    s.onload=()=>window.JSZip?res(window.JSZip):rej(new Error('document engine failed to load'));
+    s.onerror=()=>rej(new Error('Could not load the document engine (check your connection).'));
+    document.head.appendChild(s);});
+  return _jszipP;
+}
+function xmlEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function fillTpl(tpl,map){return tpl.replace(/\{\{([A-Z_]+)\}\}/g,(m,k)=>k in map?xmlEsc(map[k]):m);}
+// Amount for a notice row — plain rupees (no decimals when whole, to match the sample).
+function noticeAmt(b){if(b==null||isNaN(b))return '';return Number.isInteger(b)?String(b):fmtAmt(b);}
+function pincodeOf(addr){const m=String(addr||'').match(/(\d{6})(?!.*\d{6})/);return m?m[1]:'';}
+// Which accounts a notice batch covers, per the chosen scope.
+function noticeAccounts(scope){
+  if(scope==='all')return state.detail.slice();
+  if(scope==='filtered')return filteredRecords();
+  return state.detail.filter(r=>!vOf(r.acct).verified);   // unverified (default)
+}
+// Group accounts into depositors: CIF first, else name+address. Preserves list order within a group.
+function groupDepositors(recs){
+  const map=new Map();
+  recs.forEach(r=>{
+    const key=(r.cif&&r.cif.trim())?('cif:'+r.cif.trim()):('nm:'+(r.name||'').trim().toUpperCase()+'|'+(r.address||'').trim().toUpperCase());
+    if(!map.has(key))map.set(key,{name:r.name||'',address:r.address||'',cif:r.cif||'',accts:[]});
+    map.get(key).accts.push(r);
+  });
+  return [...map.values()].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+}
+function noticeState(){
+  const scope=$('#ntScope').value;
+  const recs=noticeAccounts(scope);
+  const groups=groupDepositors(recs);
+  return {scope,recs,groups};
+}
+function refreshNoticeSummary(){
+  const {recs,groups}=noticeState();
+  const scheme=state.current?state.current.scheme:'';
+  $('#ntSummary').innerHTML=recs.length
+    ? `<b style="color:var(--violet)">${groups.length}</b> notice${groups.length===1?'':'s'} will be generated for <b>${recs.length}</b> ${scheme} account${recs.length===1?'':'s'} across ${groups.length} depositor${groups.length===1?'':'s'}.`
+    : `<span style="color:var(--rose)">No accounts match this scope — nothing to generate.</span>`;
+}
+function openNoticeModal(){
+  if(!(state.mode==='stored'&&state.current&&!isPli())){toast('Open a stored bank list first.','err');return;}
+  const o=state.current, yr=new Date().getFullYear();
+  const officeTok=String(o.office_name||'').replace(/\b(S\.?O|B\.?O|H\.?O|SO|BO|HO)\b\.?$/i,'').trim();
+  $('#ntBoTa').value=localStorage.getItem('sdo_cpv_bota_'+(o.branch_id||o.office_name))||'';
+  $('#ntLetterNo').value=`ASP/${officeTok||o.office_name} CPV/${yr}`;
+  $('#ntPlace').value='KARUR';
+  const iso=todayIsoLocal();
+  $('#ntDate').value=iso; $('#ntAsOn').value=iso;
+  $('#ntScope').value='unverified';
+  refreshNoticeSummary();
+  $('#noticeOverlay').classList.add('show');
+}
+function todayIsoLocal(){const d=new Date(),p=x=>String(x).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;}
+function dmyDot(iso){const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}.${m[2]}.${m[1]}`:(iso||'');}
+
+async function generateNotices(){
+  if(state.busy)return;
+  const {recs,groups}=noticeState();
+  if(!recs.length){toast('No accounts to generate notices for.','err');return;}
+  const o=state.current, scheme=o.scheme;
+  const boTa=$('#ntBoTa').value.trim();
+  if(!boTa){toast('Enter the branch office name in Tamil first.','err');$('#ntBoTa').focus();return;}
+  localStorage.setItem('sdo_cpv_bota_'+(o.branch_id||o.office_name),boTa);
+  const letterNo=$('#ntLetterNo').value.trim()||`ASP/${o.office_name} CPV/${new Date().getFullYear()}`;
+  const place=$('#ntPlace').value.trim()||'KARUR';
+  const noticeDate=dmyDot($('#ntDate').value)||dmyDot(todayIsoLocal());
+  const asOn=dmyDot($('#ntAsOn').value)||dmyDot(todayIsoLocal());
+
+  let JSZip; try{JSZip=await loadJSZip();}catch(e){toast(e.message,'err');return;}
+  let zip,xml;
+  try{
+    const resp=await fetch(NOTICE_TEMPLATE_URL,{cache:'no-store'});
+    if(!resp.ok)throw new Error('template '+resp.status);
+    zip=await JSZip.loadAsync(await resp.arrayBuffer());
+    xml=await zip.file('word/document.xml').async('string');
+  }catch(e){toast('Could not load the notice template: '+(e.message||''),'err');return;}
+
+  // Slice the template into head / notice-unit / tail, and the unit into row donor pieces.
+  const uS=xml.indexOf('<!--UNIT_START-->'), uE=xml.indexOf('<!--UNIT_END-->');
+  const rS=xml.indexOf('<!--ROW_START-->'), rE=xml.indexOf('<!--ROW_END-->');
+  if(uS<0||uE<0||rS<0||rE<0){toast('Notice template is missing its markers — cannot build.','err');return;}
+  const head=xml.slice(0,uS);
+  const tail=xml.slice(uE+'<!--UNIT_END-->'.length);
+  const unitTpl=xml.slice(uS+'<!--UNIT_START-->'.length,uE);
+  const rowTpl=unitTpl.slice(rS>=0?unitTpl.indexOf('<!--ROW_START-->')+'<!--ROW_START-->'.length:0,unitTpl.indexOf('<!--ROW_END-->'));
+  const unitHead=unitTpl.slice(0,unitTpl.indexOf('<!--ROW_START-->'));
+  const unitTail=unitTpl.slice(unitTpl.indexOf('<!--ROW_END-->')+'<!--ROW_END-->'.length);
+  const pageBreak='<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>';
+
+  let sno=0;
+  const units=groups.map((g,gi)=>{
+    const rowsXml=g.accts.map(r=>{sno++;return fillTpl(rowTpl,{
+      R_SNO:String(sno), R_ACCT:r.acct||'', R_NAME:g.name||r.name||'',
+      R_AMOUNT:noticeAmt(r.balance), R_DATE:fmtTxnDate(r.date)||r.dateRaw||'', R_CAT:scheme
+    });}).join('');
+    const first=sno-g.accts.length+1, last=sno;
+    const slno=first===last?String(first):`${first}-${last}`;
+    const unit=fillTpl(unitHead,{
+      NAME:g.name||'', ADDRESS:g.address||'', SLNO:slno, LETTERNO:letterNo, PLACE:place,
+      DATE:noticeDate, BO_TA:boTa, SCHEME:scheme, ASON:asOn
+    })+rowsXml+unitTail;
+    return (gi>0?pageBreak:'')+unit;
+  });
+
+  const outXml=head+units.join('')+tail;
+  let blob;
+  try{
+    zip.file('word/document.xml',outXml);
+    blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+  }catch(e){toast('Could not build the document: '+(e.message||''),'err');return;}
+  const fname=`SB-46 Notices ${o.office_name} ${scheme}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.docx';
+  dl(blob,fname);
+  $('#noticeOverlay').classList.remove('show');
+  toast(`Generated ${groups.length} SB-46 notice${groups.length===1?'':'s'} ✓ (${recs.length} accounts).`,'ok');
+}
+// Send the notice recipients (one per depositor) to the Address Labels module.
+function sendNoticeLabels(){
+  const {groups}=noticeState();
+  if(!groups.length){toast('No recipients to send.','err');return;}
+  const queue=groups.map(g=>({src:'cpv',desig:'',name:g.name||'',address:g.address||'',pincode:pincodeOf(g.address),mobile:''}));
+  try{
+    localStorage.setItem('sdo_addr_labels_handoff',JSON.stringify(queue));
+  }catch(e){toast('Could not stage the recipients.','err');return;}
+  toast(`Sending ${queue.length} recipient${queue.length===1?'':'s'} to Address Labels…`,'ok');
+  setTimeout(()=>{location.href='/leave-orders/address-labels.html';},600);
+}
+$('#noticeBtn').addEventListener('click',openNoticeModal);
+$('#ntCancel').addEventListener('click',()=>$('#noticeOverlay').classList.remove('show'));
+$('#ntScope').addEventListener('change',refreshNoticeSummary);
+$('#ntGenerate').addEventListener('click',e=>runExport(e.currentTarget,generateNotices));
+$('#ntLabels').addEventListener('click',sendNoticeLabels);
+$('#noticeOverlay').addEventListener('click',e=>{if(e.target===$('#noticeOverlay'))$('#noticeOverlay').classList.remove('show');});
 
 // init
 loadDashboard();

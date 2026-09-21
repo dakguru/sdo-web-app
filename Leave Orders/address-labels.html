@@ -1481,7 +1481,14 @@ OVERLAYS.forEach(id=>{const o=document.getElementById(id);o.addEventListener('cl
 (function(){
   // restore soft-persisted queue
   try{const raw=localStorage.getItem(LS_KEY+'_auto');if(raw){const arr=JSON.parse(raw);if(Array.isArray(arr))state.queue=arr;}}catch(e){}
+  // Recipients handed off from another module (e.g. CPV SB-46 notices) — merge & consume once.
+  let _handoff=0;
+  try{const h=localStorage.getItem('sdo_addr_labels_handoff');
+    if(h){const arr=JSON.parse(h);localStorage.removeItem('sdo_addr_labels_handoff');
+      if(Array.isArray(arr)&&arr.length){arr.forEach(r=>state.queue.push({id:uid(),src:r.src||'cpv',desig:r.desig||'',name:r.name||'',address:r.address||'',pincode:r.pincode||'',mobile:r.mobile||''}));_handoff=arr.length;}}
+  }catch(e){}
   updateGridInfo();renderCellGrid();syncQueue();loadOffices();
+  if(_handoff)setTimeout(()=>toast(`Loaded ${_handoff} recipient${_handoff===1?'':'s'} from CPV notices ✓`,'ok'),400);
   // barcode inventory — connect, load serials, and pre-fill the next free start serial
   (async()=>{
     try{await SB.init();}catch(e){}

@@ -5,3 +5,5 @@ android-toolchain/
 app/generate/node_modules/
 .env
 .DS_Store
+
+android-app/build/
