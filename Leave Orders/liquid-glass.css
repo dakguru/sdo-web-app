@@ -106,20 +106,20 @@ html[data-theme="dark"] {
 html[data-theme="light"] {
   color-scheme: light;
 
-  --lg-canvas: #e4e9f4;
-  --lg-canvas-2: #eef1f9;
-  --lg-canvas-3: #dbe2f0;
+  --lg-canvas: #dbe2f2;
+  --lg-canvas-2: #e9edf8;
+  --lg-canvas-3: #cfd9ee;
 
-  --lg-mat: rgba(255, 255, 255, .70);
-  --lg-mat-hi: rgba(255, 255, 255, .88);
-  --lg-mat-lo: rgba(255, 255, 255, .46);
-  --lg-mat-thick: rgba(255, 255, 255, .88);
+  --lg-mat: rgba(255, 255, 255, .48);
+  --lg-mat-hi: rgba(255, 255, 255, .68);
+  --lg-mat-lo: rgba(255, 255, 255, .3);
+  --lg-mat-thick: rgba(255, 255, 255, .72);
   --lg-mat-solid: #ffffff;
 
-  --lg-rim: rgba(9, 16, 33, .085);
-  --lg-rim-hi: rgba(9, 16, 33, .16);
-  --lg-rim-top: rgba(255, 255, 255, .92);
-  --lg-rim-bottom: rgba(9, 16, 33, .07);
+  --lg-rim: rgba(9, 16, 33, .1);
+  --lg-rim-hi: rgba(9, 16, 33, .2);
+  --lg-rim-top: rgba(255, 255, 255, 1);
+  --lg-rim-bottom: rgba(9, 16, 33, .09);
 
   --lg-spec: rgba(255, 255, 255, .75);
   --lg-spec-hi: rgba(255, 255, 255, .95);
@@ -134,7 +134,7 @@ html[data-theme="light"] {
   --lg-shadow-3: 0 2px 4px rgba(15, 23, 42, .05), 0 16px 38px -10px rgba(15, 23, 42, .16);
   --lg-shadow-4: 0 4px 10px rgba(15, 23, 42, .06), 0 30px 64px -18px rgba(15, 23, 42, .22);
 
-  --lg-sheet: linear-gradient(160deg, rgba(255, 255, 255, .78) 0%, rgba(255, 255, 255, .42) 46%, rgba(255, 255, 255, .66) 100%);
+  --lg-sheet: linear-gradient(158deg, rgba(255, 255, 255, .62) 0%, rgba(255, 255, 255, .12) 44%, rgba(255, 255, 255, .42) 100%);
   --lg-row-alt: rgba(9, 16, 33, .022);
 
   --lg-blue: #007aff;
@@ -150,13 +150,16 @@ html[data-theme="light"] {
   --lg-accent: #5856d6;
   --lg-accent-soft: rgba(88, 86, 214, .14);
 
-  /* Daylight wants a far quieter field — enough colour for the glass to have
-     something to bend, not enough to read as a wallpaper. */
+  /* Daylight needs a field with real structure behind the glass — without
+     contrast to refract, translucent white on near-white just reads as a
+     flat card. Broad, soft, and low-chroma so it stays a material, not a
+     wallpaper. */
   --lg-field:
-    radial-gradient(1500px 900px at 10% -14%, color-mix(in srgb, var(--lg-indigo) 13%, transparent), transparent 64%),
-    radial-gradient(1200px 760px at 94% 2%, color-mix(in srgb, var(--lg-purple) 10%, transparent), transparent 60%),
-    radial-gradient(1100px 820px at 52% 112%, color-mix(in srgb, var(--lg-teal) 9%, transparent), transparent 62%),
-    linear-gradient(175deg, var(--lg-canvas) 0%, var(--lg-canvas-2) 46%, var(--lg-canvas-3) 100%);
+    radial-gradient(1500px 900px at 8% -16%, color-mix(in srgb, var(--lg-indigo) 30%, transparent), transparent 60%),
+    radial-gradient(1250px 800px at 96% 0%, color-mix(in srgb, var(--lg-purple) 24%, transparent), transparent 56%),
+    radial-gradient(1150px 860px at 54% 114%, color-mix(in srgb, var(--lg-teal) 22%, transparent), transparent 58%),
+    radial-gradient(900px 620px at 78% 62%, color-mix(in srgb, var(--lg-pink) 14%, transparent), transparent 60%),
+    linear-gradient(172deg, var(--lg-canvas) 0%, var(--lg-canvas-2) 44%, var(--lg-canvas-3) 100%);
 }
 
 /* Composite helpers used throughout. */
@@ -384,7 +387,7 @@ body ::-webkit-scrollbar-corner { background: transparent; }
 .lg-blob-3 { width: 42vw; height: 42vw; bottom: -16vw; left: 28%; background: color-mix(in srgb, var(--lg-teal) 36%, transparent); animation-duration: 52s; animation-delay: -24s; }
 .lg-blob-4 { width: 26vw; height: 26vw; top: 58%; left: -6vw; background: color-mix(in srgb, var(--lg-pink) 30%, transparent); animation-duration: 42s; animation-delay: -6s; }
 
-html[data-theme="light"] .lg-blob { opacity: .26; filter: blur(104px); }
+html[data-theme="light"] .lg-blob { opacity: .42; filter: blur(100px); }
 
 @keyframes lgDrift {
   from { transform: translate3d(0, 0, 0) scale(1); }
