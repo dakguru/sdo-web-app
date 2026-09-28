@@ -1355,17 +1355,6 @@ function renderDashboard(){
           <div class="og-bar"><i style="width:${pct}%"></i></div>
           <span class="pct">${pct}%</span>
         </div>
-        <div class="og-dl">
-          <span class="og-dl-lbl">⬇ Consolidated · all categories</span>
-          <div class="dl-group ver"><span class="dg-tag">✓ Verified</span>
-            <button class="btn blue sm" data-dl="Verified|xlsx" data-branch="${esc(branch)}" data-off="${esc(g.office_name)}">Excel</button>
-            <button class="btn gold sm" data-dl="Verified|pdf" data-branch="${esc(branch)}" data-off="${esc(g.office_name)}">PDF</button>
-          </div>
-          <div class="dl-group pen"><span class="dg-tag">Yet to verify</span>
-            <button class="btn blue sm" data-dl="Pending|xlsx" data-branch="${esc(branch)}" data-off="${esc(g.office_name)}">Excel</button>
-            <button class="btn gold sm" data-dl="Pending|pdf" data-branch="${esc(branch)}" data-off="${esc(g.office_name)}">PDF</button>
-          </div>
-        </div>
       </div>
       <div class="scheme-grid">`;
     for(const o of items){
