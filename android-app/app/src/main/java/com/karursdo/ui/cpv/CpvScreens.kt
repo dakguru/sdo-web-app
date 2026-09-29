@@ -44,7 +44,6 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.PictureAsPdf
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
@@ -79,6 +78,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -89,7 +89,6 @@ import androidx.lifecycle.viewModelScope
 import com.karursdo.data.repo.CpvAccount
 import com.karursdo.data.repo.CpvAllotmentDto
 import com.karursdo.data.repo.CpvBatchDto
-import com.karursdo.data.repo.CpvConsRow
 import com.karursdo.data.repo.CpvExtraDto
 import com.karursdo.data.repo.CpvOfficeConsolidated
 import com.karursdo.data.repo.CpvRecordDto
@@ -250,7 +249,13 @@ class CpvListViewModel @Inject constructor(
         }
     }
 
-    /** Fetch one office's verified+pending rows across all categories (for the consolidated download). */
+    /**
+     * Fetch one office's verified+pending rows across all categories.
+     *
+     * The dashboard no longer offers a "Consolidated · all categories" download — the detail
+     * screen's per-subset reports cover the same ground — but the query and its report
+     * renderer are kept, as on the web, so the consolidated view can be brought back cheaply.
+     */
     suspend fun consolidated(branch: String): CpvOfficeConsolidated = repo.loadOfficeConsolidated(branch)
 
     fun clearMessage() { _state.value = _state.value.copy(message = null) }
@@ -264,31 +269,11 @@ fun CpvListScreen(
 ) {
     val state by vm.state.collectAsState()
     var query by remember { mutableStateOf("") }
-    val context = LocalContext.current
-    val scope = rememberCoroutineScopeCompat()
     val snackHost = remember { androidx.compose.material3.SnackbarHostState() }
     var allotFor by remember { mutableStateOf<Triple<String, String, String>?>(null) }
-    var downloading by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.message) {
         state.message?.let { snackHost.showSnackbar(it); vm.clearMessage() }
-    }
-
-    fun runDownload(branch: String, office: String, sol: String, kind: String) {
-        if (downloading) return
-        downloading = true
-        scope.launch {
-            runCatching {
-                val data = vm.consolidated(branch)
-                val rows = if (kind == "Verified") data.verified else data.pending
-                if (rows.isEmpty()) { snackHost.showSnackbar("No ${kind.lowercase()} accounts in $office."); return@runCatching }
-                val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    CpvReportPdf.generateConsolidated(context, data.officeName.ifBlank { office }, data.sol.ifBlank { sol }, branch, kind, rows)
-                }
-                CpvReportPdf.open(context, file)
-            }.onFailure { snackHost.showSnackbar("Could not build report: ${it.message}") }
-            downloading = false
-        }
     }
 
     val q = query.trim().lowercase()
@@ -407,18 +392,6 @@ fun CpvListScreen(
                             Spacer(Modifier.height(8.dp))
                             items.sortedBy { it.scheme }.forEach { b ->
                                 SchemeRow(b, cpvVerifiedFor(b, state.vCounts, state.extraVer, state.extraTot), cpvTotalFor(b, state.extraTot)) { onOpenBatch(b.office_key, "${b.office_name} · ${b.scheme}") }
-                            }
-                            // Per-office consolidated download (all categories)
-                            HorizontalDivider(Modifier.padding(vertical = 10.dp))
-                            Text("⬇ Consolidated · all categories", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(Modifier.height(6.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(onClick = { runDownload(branch, g.office_name, g.sol_id ?: "", "Verified") }, enabled = !downloading, modifier = Modifier.weight(1f)) {
-                                    Icon(Icons.Rounded.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Verified")
-                                }
-                                OutlinedButton(onClick = { runDownload(branch, g.office_name, g.sol_id ?: "", "Pending") }, enabled = !downloading, modifier = Modifier.weight(1f)) {
-                                    Icon(Icons.Rounded.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Pending")
-                                }
                             }
                         }
                     }
@@ -706,7 +679,59 @@ class CpvDetailViewModel @Inject constructor(
     fun clearMessage() { _state.value = _state.value.copy(message = null) }
 }
 
-private enum class VerFilter { ALL, VERIFIED, UNVERIFIED }
+/**
+ * Verification subsets, mirroring the portal's Verification dropdown.
+ *
+ * The discrepancy state is remark-driven and needs no schema change (exactly as on the web):
+ * a row that is verified AND carries a non-empty remark is "verified with discrepancies";
+ * verified with no remark is "verified — clean".
+ */
+private enum class VerFilter { ALL, VERIFIED, CLEAN, DISCREPANCY, UNVERIFIED }
+
+/** The three states a row can be in under the remark-driven discrepancy model. */
+private enum class VState { NONE, CLEAN, DISC }
+
+private fun vStateOf(verified: Boolean, remarks: String?): VState = when {
+    !verified -> VState.NONE
+    !remarks.isNullOrBlank() -> VState.DISC
+    else -> VState.CLEAN
+}
+
+private fun VerFilter.accepts(st: VState): Boolean = when (this) {
+    VerFilter.ALL -> true
+    VerFilter.VERIFIED -> st != VState.NONE          // any verified (clean + discrepancy)
+    VerFilter.CLEAN -> st == VState.CLEAN            // verified, no remark
+    VerFilter.DISCREPANCY -> st == VState.DISC       // verified with a discrepancy remark
+    VerFilter.UNVERIFIED -> st == VState.NONE
+}
+
+/** The subset name stamped on a report and carried into its file name (blank for ALL). */
+private fun VerFilter.subsetLabel(): String = when (this) {
+    VerFilter.ALL -> ""
+    VerFilter.VERIFIED -> "Verified"
+    VerFilter.CLEAN -> "Verified (clean)"
+    VerFilter.DISCREPANCY -> "Verified with discrepancies"
+    VerFilter.UNVERIFIED -> "Unverified"
+}
+
+/** Does this account pass the office search box, the status dropdown and the verification subset? */
+private fun CpvAccount.matches(q: String, status: String?, f: VerFilter): Boolean {
+    if (q.isNotEmpty()) {
+        val hay = (record.acct + " " + record.name + " " + record.cif + " " + record.address).lowercase()
+        if (!hay.contains(q)) return false
+    }
+    if (status != null && record.status != status) return false
+    return f.accepts(vStateOf(verified, remarks))
+}
+
+/** The same two filters applied to an extra (from-master) policy — status doesn't apply to insurance. */
+private fun CpvExtraDto.matches(q: String, f: VerFilter): Boolean {
+    if (q.isNotEmpty()) {
+        val hay = (policy + " " + name + " " + address).lowercase()
+        if (!hay.contains(q)) return false
+    }
+    return f.accepts(vStateOf(verified, remarks))
+}
 
 @Composable
 fun CpvDetailScreen(
@@ -739,19 +764,7 @@ fun CpvDetailScreen(
     val statuses = remember(accounts) { accounts.mapNotNull { it.record.status.ifBlank { null } }.distinct().sorted() }
     val q = query.trim().lowercase()
     val filtered = remember(accounts, q, statusFilter, verFilter) {
-        accounts.filter { a ->
-            if (q.isNotEmpty()) {
-                val hay = (a.record.acct + " " + a.record.name + " " + a.record.cif + " " + a.record.address).lowercase()
-                if (!hay.contains(q)) return@filter false
-            }
-            if (statusFilter != null && a.record.status != statusFilter) return@filter false
-            when (verFilter) {
-                VerFilter.VERIFIED -> if (!a.verified) return@filter false
-                VerFilter.UNVERIFIED -> if (a.verified) return@filter false
-                VerFilter.ALL -> {}
-            }
-            true
-        }
+        accounts.filter { it.matches(q, statusFilter, verFilter) }
     }
     // Keep selection within the visible set.
     LaunchedEffect(filtered) {
@@ -765,21 +778,48 @@ fun CpvDetailScreen(
     val extraVerified = extras.count { it.verified }
     val totalCount = accounts.size + extras.size
     val totalVerified = verifiedCount + extraVerified
+    // "Verified with discrepancies" — verified rows carrying a remark, extras included.
+    val totalDisc = accounts.count { vStateOf(it.verified, it.remarks) == VState.DISC } +
+        extras.count { vStateOf(it.verified, it.remarks) == VState.DISC }
     // The office search & verification filter also apply to the additional policies.
     val extrasShown = remember(extras, q, verFilter) {
-        extras.filter { e ->
-            if (q.isNotEmpty()) {
-                val hay = (e.policy + " " + e.name + " " + e.address).lowercase()
-                if (!hay.contains(q)) return@filter false
-            }
-            when (verFilter) { VerFilter.VERIFIED -> e.verified; VerFilter.UNVERIFIED -> !e.verified; VerFilter.ALL -> true }
-        }
+        extras.filter { it.matches(q, verFilter) }
     }
 
     // one-shot messages
     val snackHost = remember { androidx.compose.material3.SnackbarHostState() }
     LaunchedEffect(state.message) {
         state.message?.let { snackHost.showSnackbar(it); vm.clearMessage() }
+    }
+
+    // Build a PDF of one verification subset. The rows are computed from [f] directly rather
+    // than read off `filtered`, so a pill's download is exact even though setting the filter
+    // state only takes effect on the next recomposition. Extras ride along through the same
+    // filters, so they are exported and counted alongside the office's own policies.
+    fun runPdf(f: VerFilter) {
+        val meta = state.meta ?: return
+        val rows = accounts.filter { it.matches(q, statusFilter, f) } +
+            (if (pli) extras.filter { it.matches(q, f) }.map { it.toAccount(meta.scheme) } else emptyList())
+        val subset = f.subsetLabel()
+        if (rows.isEmpty()) {
+            scope.launch { snackHost.showSnackbar("Nothing to export in ${subset.ifBlank { "the current view" }}.") }
+            return
+        }
+        scope.launch {
+            runCatching {
+                val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    CpvReportPdf.generate(
+                        context,
+                        CpvReportMeta(
+                            meta.office_name, meta.scheme_label ?: meta.scheme,
+                            meta.sol_id, meta.branch_id, meta.scheme, subset
+                        ),
+                        rows
+                    )
+                }
+                CpvReportPdf.open(context, file)
+            }.onFailure { snackHost.showSnackbar("Could not build report: ${it.message}") }
+        }
     }
 
     androidx.compose.material3.Scaffold(
@@ -794,25 +834,7 @@ fun CpvDetailScreen(
                         title, style = MaterialTheme.typography.titleMedium, color = Color.White,
                         maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
                     )
-                    IconButton(onClick = {
-                        val meta = state.meta
-                        // Include the attached extra policies so they're exported and counted too.
-                        val extraRows = extras.map { it.toAccount(meta?.scheme ?: "") }
-                        if (meta == null || (filtered.isEmpty() && extraRows.isEmpty())) return@IconButton
-                        val snapshot = filtered.toList() + extraRows
-                        scope.launch {
-                            runCatching {
-                                val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                    CpvReportPdf.generate(
-                                        context,
-                                        CpvReportMeta(meta.office_name, meta.scheme_label ?: meta.scheme, meta.sol_id, meta.branch_id, meta.scheme),
-                                        snapshot
-                                    )
-                                }
-                                CpvReportPdf.open(context, file)
-                            }
-                        }
-                    }) {
+                    IconButton(onClick = { runPdf(verFilter) }) {
                         Icon(Icons.Rounded.PictureAsPdf, contentDescription = "PDF report", tint = Color.White)
                     }
                 }
@@ -873,10 +895,32 @@ fun CpvDetailScreen(
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Pill("${if (pli) "Policies" else "Total"} $totalCount" + (if (extras.isNotEmpty()) " (+${extras.size})" else ""), Brand.BadgeDsBg, Brand.BadgeDsFg)
-                            Pill("✓ Verified $totalVerified", Brand.ChipPaidBg, Brand.ChipPaidFg)
-                            Pill("Unverified ${totalCount - totalVerified}", Brand.TpOthBg, Brand.TpOthFg)
+                        Pill("${if (pli) "Policies" else "Total"} $totalCount" + (if (extras.isNotEmpty()) " (+${extras.size})" else ""), Brand.BadgeDsBg, Brand.BadgeDsFg)
+                        Spacer(Modifier.height(8.dp))
+                        // Tap a count to filter the list to that subset; tap its PDF button to
+                        // download a report of just that subset (the file name says which).
+                        Row(
+                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            VerPill(
+                                "✓ Verified", totalVerified, verFilter == VerFilter.VERIFIED,
+                                Brand.ChipPaidBg, Brand.ChipPaidFg, Brand.Emerald,
+                                onFilter = { verFilter = VerFilter.VERIFIED },
+                                onPdf = { verFilter = VerFilter.VERIFIED; runPdf(VerFilter.VERIFIED) }
+                            )
+                            VerPill(
+                                "⚠ With discrepancies", totalDisc, verFilter == VerFilter.DISCREPANCY,
+                                Brand.ChipOtherBg, Brand.ChipOtherFg, Brand.Amber,
+                                onFilter = { verFilter = VerFilter.DISCREPANCY },
+                                onPdf = { verFilter = VerFilter.DISCREPANCY; runPdf(VerFilter.DISCREPANCY) }
+                            )
+                            VerPill(
+                                "Unverified", totalCount - totalVerified, verFilter == VerFilter.UNVERIFIED,
+                                Brand.TpOthBg, Brand.TpOthFg, Brand.Muted,
+                                onFilter = { verFilter = VerFilter.UNVERIFIED },
+                                onPdf = { verFilter = VerFilter.UNVERIFIED; runPdf(VerFilter.UNVERIFIED) }
+                            )
                         }
                         if (pli) {
                             val sa = accounts.sumOf { it.record.sumAssured ?: 0.0 } + extras.sumOf { it.sum_assured ?: 0.0 }
@@ -891,11 +935,11 @@ fun CpvDetailScreen(
                 }
                 item {
                     Row(
-                        Modifier.fillMaxWidth(),
+                        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Verification filter chips
+                        // Verification filter chips — the portal's Verification dropdown, as chips.
                         FilterChip(
                             selected = verFilter == VerFilter.ALL,
                             onClick = { verFilter = VerFilter.ALL },
@@ -907,6 +951,18 @@ fun CpvDetailScreen(
                             onClick = { verFilter = VerFilter.VERIFIED },
                             label = { Text("Verified") },
                             colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Brand.Emerald, selectedLabelColor = Color.White)
+                        )
+                        FilterChip(
+                            selected = verFilter == VerFilter.CLEAN,
+                            onClick = { verFilter = VerFilter.CLEAN },
+                            label = { Text("Clean") },
+                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Brand.Emerald, selectedLabelColor = Color.White)
+                        )
+                        FilterChip(
+                            selected = verFilter == VerFilter.DISCREPANCY,
+                            onClick = { verFilter = VerFilter.DISCREPANCY },
+                            label = { Text("⚠ Discrepancy") },
+                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Brand.Amber, selectedLabelColor = Color.White)
                         )
                         FilterChip(
                             selected = verFilter == VerFilter.UNVERIFIED,
@@ -921,8 +977,11 @@ fun CpvDetailScreen(
                 // Count + select-all
                 item {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        val shownVer = filtered.count { it.verified }
+                        val shownDisc = filtered.count { vStateOf(it.verified, it.remarks) == VState.DISC }
                         Text(
-                            "Showing ${filtered.size} of ${accounts.size}",
+                            "Showing ${filtered.size} of ${accounts.size} · $shownVer verified · " +
+                                "$shownDisc with discrepancy · ${filtered.size - shownVer} unverified",
                             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)
                         )
@@ -1001,6 +1060,7 @@ fun CpvDetailScreen(
                 if (pli && extras.isNotEmpty()) {
                     item {
                         val vc = extras.count { it.verified }
+                        val dc = extras.count { vStateOf(it.verified, it.remarks) == VState.DISC }
                         val isFiltered = extrasShown.size != extras.size
                         Column(Modifier.padding(top = 8.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1009,7 +1069,9 @@ fun CpvDetailScreen(
                                 Pill("from master pool", Brand.BadgeDsBg, Brand.BadgeDsFg)
                             }
                             Text(
-                                (if (isFiltered) "${extrasShown.size} shown of " else "") + "${extras.size} added · $vc verified · counted in this office's totals & exports",
+                                (if (isFiltered) "${extrasShown.size} shown of " else "") +
+                                    "${extras.size} added · $vc verified" + (if (dc > 0) " ($dc with discrepancy)" else "") +
+                                    " · counted in this office's totals & exports",
                                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1066,7 +1128,9 @@ fun CpvDetailScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { vm.saveExtraRemark(ex, text.trim(), verify = true); extraRemarkFor = null }) { Text("Save & Verify") }
+                TextButton(onClick = { vm.saveExtraRemark(ex, text.trim(), verify = true); extraRemarkFor = null }) {
+                    Text(if (text.isNotBlank()) "Save & Verify with discrepancy" else "Save & Verify")
+                }
             },
             dismissButton = {
                 TextButton(onClick = { vm.saveExtraRemark(ex, text.trim(), verify = false); extraRemarkFor = null }) { Text("Save remark") }
@@ -1095,7 +1159,7 @@ fun CpvDetailScreen(
                 TextButton(onClick = {
                     vm.verify(listOf(acc), true, text.trim())
                     remarkDialogFor = null
-                }) { Text("Save & Verify") }
+                }) { Text(if (text.isNotBlank()) "Save & Verify with discrepancy" else "Save & Verify") }
             },
             dismissButton = {
                 TextButton(onClick = {
@@ -1103,6 +1167,55 @@ fun CpvDetailScreen(
                     remarkDialogFor = null
                 }) { Text("Save remark") }
             }
+        )
+    }
+}
+
+/**
+ * One verification pill in the detail summary — the portal's clickable header pill. Tapping the
+ * label filters the list to that subset; the trailing PDF button downloads a report of just that
+ * subset. The pill carries a ring while its subset is the active filter.
+ */
+@Composable
+private fun VerPill(
+    label: String,
+    count: Int,
+    active: Boolean,
+    bg: Color,
+    fg: Color,
+    accent: Color,
+    onFilter: () -> Unit,
+    onPdf: () -> Unit
+) {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val fgc = if (dark) androidx.compose.ui.graphics.lerp(fg, Color.White, 0.55f) else fg
+    val bgc = if (dark) fgc.copy(alpha = 0.18f) else bg
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(bgc)
+            .border(if (active) 1.5.dp else 1.dp, if (active) accent else Color.Transparent, CircleShape)
+            .clickable(onClick = onFilter)
+            .padding(start = 10.dp, end = 4.dp, top = 3.dp, bottom = 3.dp)
+    ) {
+        Text(
+            "$label $count",
+            color = fgc,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+            maxLines = 1
+        )
+        Spacer(Modifier.width(6.dp))
+        Icon(
+            Icons.Rounded.PictureAsPdf,
+            contentDescription = "Download $label as PDF",
+            tint = fgc,
+            modifier = Modifier
+                .clip(CircleShape)
+                .clickable(onClick = onPdf)
+                .size(28.dp)          // a comfortable tap target around the 16dp glyph
+                .padding(6.dp)
         )
     }
 }
@@ -1151,10 +1264,13 @@ private fun AccountCard(
 ) {
     val (stBg, stFg) = statusColors(a.record.status)
     val accent = statusAccent(a.record.status)
+    // Verified + a remark = verified with discrepancies → amber, not green.
+    val disc = vStateOf(a.verified, a.remarks) == VState.DISC
 
     val container by animateColorAsState(
         when {
             selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            disc -> Brand.Amber.copy(alpha = 0.09f)
             a.verified -> Brand.Emerald.copy(alpha = 0.06f)
             else -> MaterialTheme.colorScheme.surface
         }, tween(240), label = "cardBg"
@@ -1162,6 +1278,7 @@ private fun AccountCard(
     val borderColor by animateColorAsState(
         when {
             selected -> MaterialTheme.colorScheme.primary
+            disc -> Brand.Amber.copy(alpha = 0.6f)
             a.verified -> Brand.Emerald.copy(alpha = 0.5f)
             else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
         }, tween(240), label = "cardBorder"
@@ -1306,32 +1423,7 @@ private fun AccountCard(
                         }
                     }
                     Spacer(Modifier.width(8.dp))
-                    AnimatedContent(
-                        targetState = a.verified,
-                        transitionSpec = {
-                            (scaleIn(spring()) + fadeIn(tween(180))) togetherWith
-                                (scaleOut(tween(140)) + fadeOut(tween(120)))
-                        },
-                        label = "verifyToggle"
-                    ) { isVerified ->
-                        if (isVerified) {
-                            AssistChip(
-                                onClick = onToggleVerify,
-                                label = { Text("Verified", fontWeight = FontWeight.Bold) },
-                                leadingIcon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                                colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = Brand.ChipPaidBg, labelColor = Brand.ChipPaidFg, leadingIconContentColor = Brand.Emerald
-                                )
-                            )
-                        } else {
-                            Button(
-                                onClick = onToggleVerify,
-                                shape = RoundedCornerShape(12.dp),
-                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
-                            ) { Text("Verify", fontWeight = FontWeight.Bold, maxLines = 1) }
-                        }
-                    }
+                    VerifyControl(a.verified, a.remarks, onToggleVerify)
                 }
             }
         }
@@ -1354,11 +1446,13 @@ private fun PliPolicyCard(
     onToggleVerify: () -> Unit,
     onEditRemark: () -> Unit
 ) {
-    val accent = if (a.verified) Brand.Emerald else MaterialTheme.colorScheme.primary
+    val disc = vStateOf(a.verified, a.remarks) == VState.DISC
+    val accent = when { disc -> Brand.Amber; a.verified -> Brand.Emerald; else -> MaterialTheme.colorScheme.primary }
 
     val container by animateColorAsState(
         when {
             selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            disc -> Brand.Amber.copy(alpha = 0.09f)
             a.verified -> Brand.Emerald.copy(alpha = 0.06f)
             else -> MaterialTheme.colorScheme.surface
         }, tween(240), label = "cardBg"
@@ -1366,6 +1460,7 @@ private fun PliPolicyCard(
     val borderColor by animateColorAsState(
         when {
             selected -> MaterialTheme.colorScheme.primary
+            disc -> Brand.Amber.copy(alpha = 0.6f)
             a.verified -> Brand.Emerald.copy(alpha = 0.5f)
             else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
         }, tween(240), label = "cardBorder"
@@ -1504,32 +1599,7 @@ private fun PliPolicyCard(
                         }
                     }
                     Spacer(Modifier.width(8.dp))
-                    AnimatedContent(
-                        targetState = a.verified,
-                        transitionSpec = {
-                            (scaleIn(spring()) + fadeIn(tween(180))) togetherWith
-                                (scaleOut(tween(140)) + fadeOut(tween(120)))
-                        },
-                        label = "verifyToggle"
-                    ) { isVerified ->
-                        if (isVerified) {
-                            AssistChip(
-                                onClick = onToggleVerify,
-                                label = { Text("Verified", fontWeight = FontWeight.Bold) },
-                                leadingIcon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                                colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = Brand.ChipPaidBg, labelColor = Brand.ChipPaidFg, leadingIconContentColor = Brand.Emerald
-                                )
-                            )
-                        } else {
-                            Button(
-                                onClick = onToggleVerify,
-                                shape = RoundedCornerShape(12.dp),
-                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
-                            ) { Text("Verify", fontWeight = FontWeight.Bold, maxLines = 1) }
-                        }
-                    }
+                    VerifyControl(a.verified, a.remarks, onToggleVerify)
                 }
             }
         }
@@ -1666,14 +1736,23 @@ private fun MasterResultRow(m: PliMasterDto, state: String, onAdd: () -> Unit, o
  */
 @Composable
 private fun ExtraPolicyCard(ex: CpvExtraDto, onToggleVerify: () -> Unit, onEditRemark: () -> Unit, onRemove: () -> Unit) {
-    val accent = if (ex.verified) Brand.Emerald else MaterialTheme.colorScheme.primary
     val doe = fmtTxn("", ex.doe)
     val paid = monYear("", "", ex.paid_to)
     val remark = ex.remarks ?: ""
+    val disc = vStateOf(ex.verified, remark) == VState.DISC
+    val accent = when { disc -> Brand.Amber; ex.verified -> Brand.Emerald; else -> MaterialTheme.colorScheme.primary }
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = if (ex.verified) Brand.Emerald.copy(alpha = 0.06f) else MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, if (ex.verified) Brand.Emerald.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+        color = when {
+            disc -> Brand.Amber.copy(alpha = 0.09f)
+            ex.verified -> Brand.Emerald.copy(alpha = 0.06f)
+            else -> MaterialTheme.colorScheme.surface
+        },
+        border = BorderStroke(1.dp, when {
+            disc -> Brand.Amber.copy(alpha = 0.6f)
+            ex.verified -> Brand.Emerald.copy(alpha = 0.5f)
+            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+        }),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(Modifier.height(IntrinsicSize.Min)) {
@@ -1719,20 +1798,51 @@ private fun ExtraPolicyCard(ex: CpvExtraDto, onToggleVerify: () -> Unit, onEditR
                         }
                     }
                     Spacer(Modifier.width(8.dp))
-                    if (ex.verified) {
-                        AssistChip(
-                            onClick = onToggleVerify,
-                            label = { Text("Verified", fontWeight = FontWeight.Bold) },
-                            leadingIcon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = Brand.ChipPaidBg, labelColor = Brand.ChipPaidFg, leadingIconContentColor = Brand.Emerald)
-                        )
-                    } else {
-                        Button(onClick = onToggleVerify, shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)) {
-                            Text("Verify", fontWeight = FontWeight.Bold, maxLines = 1)
-                        }
-                    }
+                    VerifyControl(ex.verified, remark, onToggleVerify)
                 }
             }
+        }
+    }
+}
+
+/**
+ * The Verify control shared by the account, policy and extra-policy cards. It carries the
+ * remark-driven discrepancy state exactly as the portal does:
+ *   • unverified, no remark    → "Verify"                     (primary)
+ *   • unverified, has a remark → "Verify with discrepancy"    (amber)
+ *   • verified, no remark      → "Verified"                   (green)
+ *   • verified, has a remark   → "Verified ⚠"                 (amber)
+ */
+@Composable
+private fun VerifyControl(verified: Boolean, remarks: String?, onToggle: () -> Unit) {
+    val disc = !remarks.isNullOrBlank()
+    AnimatedContent(
+        targetState = verified,
+        transitionSpec = {
+            (scaleIn(spring()) + fadeIn(tween(180))) togetherWith
+                (scaleOut(tween(140)) + fadeOut(tween(120)))
+        },
+        label = "verifyToggle"
+    ) { isVerified ->
+        if (isVerified) {
+            AssistChip(
+                onClick = onToggle,
+                label = { Text(if (disc) "Verified ⚠" else "Verified", fontWeight = FontWeight.Bold) },
+                leadingIcon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                colors = if (disc) AssistChipDefaults.assistChipColors(
+                    containerColor = Brand.ChipOtherBg, labelColor = Brand.ChipOtherFg, leadingIconContentColor = Brand.Amber
+                ) else AssistChipDefaults.assistChipColors(
+                    containerColor = Brand.ChipPaidBg, labelColor = Brand.ChipPaidFg, leadingIconContentColor = Brand.Emerald
+                )
+            )
+        } else {
+            Button(
+                onClick = onToggle,
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = if (disc) 12.dp else 20.dp, vertical = 8.dp),
+                colors = if (disc) ButtonDefaults.buttonColors(containerColor = Brand.Amber, contentColor = Color.White)
+                else ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+            ) { Text(if (disc) "Verify with discrepancy" else "Verify", fontWeight = FontWeight.Bold, maxLines = 1) }
         }
     }
 }
@@ -1805,11 +1915,15 @@ private fun CpvBulkBar(
                 )
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // A remark in the box means these rows will be verified WITH discrepancies,
+                    // so the button says so (and turns amber) before it is pressed.
+                    val disc = remark.isNotBlank()
                     Button(
                         onClick = onVerify,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
-                    ) { Text("✓ Verify $count") }
+                        colors = if (disc) ButtonDefaults.buttonColors(containerColor = Brand.Amber, contentColor = Color.White)
+                        else ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+                    ) { Text(if (disc) "⚠ Verify $count with discrepancy" else "✓ Verify $count", maxLines = 1, overflow = TextOverflow.Ellipsis) }
                     OutlinedButton(onClick = onUnverify, modifier = Modifier.weight(1f)) { Text("Unverify") }
                 }
             }

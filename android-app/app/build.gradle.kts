@@ -33,8 +33,8 @@ android {
         applicationId = "com.karursdo"
         minSdk = 26
         targetSdk = 36
-        versionCode = 34
-        versionName = "2.16.0"
+        versionCode = 35
+        versionName = "2.17.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "SUPABASE_URL", "\"${secret("SUPABASE_URL")}\"")
