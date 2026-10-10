@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="auth-guard.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
+<title>Department of Posts &mdash; Phone Directory, Karur Sub Division</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --indigo:#4f46e5; --violet:#7c3aed; --pink:#ec4899; --teal:#0d9488; --emerald:#059669;
+    --amber:#f59e0b; --rose:#e11d48; --sky:#0284c7; --cyan:#0891b2;
+    --bg:#eef2fb; --card:#ffffff; --ink:#0f172a; --ink-2:#1e293b; --muted:#64748b; --line:#e2e8f0;
+    --grad-bg:radial-gradient(1200px 600px at -10% -20%, #dbeafe 0%, transparent 60%),
+              radial-gradient(900px 500px at 110% 0%, #ede9fe 0%, transparent 55%),
+              radial-gradient(800px 600px at 50% 120%, #ccfbf1 0%, transparent 60%),
+              linear-gradient(180deg,#eef2fb 0%,#f6f8fe 100%);
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04);
+    --shadow-md:0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
+    --shadow-lg:0 12px 32px rgba(15,23,42,.12), 0 4px 12px rgba(15,23,42,.06);
+    --c-ds:#4f46e5; --c-ds2:#7c3aed;
+    --c-gds:#0d9488; --c-gds2:#059669;
+    --c-out:#d97706; --c-out2:#e11d48;
+  }
+  html.dark{
+    --bg:#0a0e1a; --card:#141a2b; --ink:#f1f5f9; --ink-2:#e2e8f0; --muted:#94a3b8; --line:#26314b;
+    --grad-bg:radial-gradient(1100px 600px at -5% -15%, rgba(79,70,229,.17) 0%, transparent 60%),
+              radial-gradient(900px 500px at 108% -5%, rgba(124,58,237,.15) 0%, transparent 58%),
+              radial-gradient(800px 600px at 50% 120%, rgba(13,148,136,.14) 0%, transparent 60%),
+              linear-gradient(180deg,#0a0e1a 0%,#0f1729 100%);
+    --c-ds:#818cf8; --c-ds2:#c084fc;
+    --c-gds:#2dd4bf; --c-gds2:#34d399;
+    --c-out:#fbbf24; --c-out2:#fb7185;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;color:var(--ink);font:14.5px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--grad-bg);background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+
+  /* ===== App switcher bar (glass) ===== */
+  .appbar{position:sticky;top:0;z-index:60;background:linear-gradient(90deg,rgba(9,20,40,.92),rgba(19,43,82,.92));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#fff;padding:8px 22px;display:flex;align-items:center;gap:12px;font:600 12.5px/1.2 'Inter',-apple-system,'Segoe UI',sans-serif;letter-spacing:.2px;border-bottom:1px solid rgba(255,255,255,.08);flex-wrap:wrap}
+  .appbar .switch{margin-left:auto;display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:11px;backdrop-filter:blur(8px);flex-wrap:wrap}
+  .appbar .pill{padding:6px 13px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.82);border-radius:7px;text-decoration:none;transition:background .2s,color .2s,box-shadow .2s}
+  .appbar .pill:hover{background:rgba(255,255,255,.12);color:#fff}
+  .appbar .pill.active{color:#0b1836;background:#fff;box-shadow:0 3px 10px rgba(0,0,0,.28)}
+
+  /* ===== Government header (glass, tricolour) ===== */
+  header{position:relative;overflow:hidden;color:#fff;padding:0;box-shadow:0 14px 34px rgba(9,20,40,.28)}
+  header::before{content:"";position:absolute;inset:0;z-index:0;background:
+    radial-gradient(880px 420px at 6% -60%, rgba(129,140,248,.50), transparent 60%),
+    radial-gradient(760px 420px at 102% -20%, rgba(45,212,191,.32), transparent 55%),
+    radial-gradient(700px 500px at 60% 140%, rgba(236,72,153,.28), transparent 60%),
+    linear-gradient(120deg,#0a1834 0%,#16307a 42%,#4f46e5 78%,#7c3aed 100%)}
+  header::after{content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;background:linear-gradient(90deg,#FF9933 0 33.33%,#ffffff 33.33% 66.66%,#138808 66.66% 100%)}
+  .hdr-grain{position:absolute;inset:0;z-index:0;opacity:.5;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 0);background-size:22px 22px}
+  .header-inner{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:15px 22px 12px;display:block}
+  .gov-band{display:flex;align-items:center;gap:18px}
+  .gov-crest{height:60px;width:60px;flex:0 0 auto;border-radius:15px;background:#fff;padding:5px;object-fit:contain;box-shadow:0 8px 22px rgba(0,0,0,.30),0 0 0 1px rgba(255,255,255,.35),inset 0 0 0 1px rgba(0,0,0,.04)}
+  .gov-post{width:auto;max-width:150px;padding:7px 12px}
+  .gov-titles{flex:1 1 auto;min-width:0;text-align:center}
+  .gov-l1{font:800 11px/1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:3.4px;text-transform:uppercase;background:linear-gradient(90deg,#fde68a,#fcd34d,#fbbf24);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .gov-l2{font:800 clamp(19px,2.5vw,26px)/1.1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:.3px;margin-top:4px;background:linear-gradient(180deg,#ffffff 0%,#d7e1ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .gov-l3{font:600 12.5px/1.35 'Inter',sans-serif;color:rgba(255,255,255,.80);margin-top:5px}
+  .gov-l3 b{color:#fff;font-weight:800;letter-spacing:.2px}
+  .gov-underline{width:78px;height:3px;margin:9px auto 0;border-radius:3px;background:linear-gradient(90deg,#FF9933,#fff,#138808);box-shadow:0 0 10px rgba(255,255,255,.25)}
+  .header-module{position:relative;z-index:1;max-width:1280px;margin:11px auto 0;padding:12px 22px 16px;border-top:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:13px;min-width:0}
+  .brand .logo{width:46px;height:46px;flex:0 0 auto;display:grid;place-items:center;font-size:23px;border-radius:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.26);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+  .brand h1{margin:0;font:800 19px/1.15 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:.2px}
+  .brand .sub{font-size:12.5px;color:rgba(255,255,255,.78);margin-top:2px}
+  .theme-btn{margin-left:auto;background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.3);color:#fff;width:40px;height:40px;border-radius:11px;font-size:18px;cursor:pointer;transition:background .2s,transform .2s}
+  .theme-btn:hover{background:rgba(255,255,255,.26);transform:translateY(-1px)}
+
+  main{max-width:1280px;margin:0 auto;padding:22px 22px 60px}
+
+  /* ===== Stat tiles ===== */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin-bottom:18px}
+  .tile{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow-sm);transition:transform .25s cubic-bezier(.22,1,.36,1),box-shadow .25s}
+  .tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+  .tile .bar{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:16px 0 0 16px}
+  .tile .l{font-size:11.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--muted)}
+  .tile .n{font:800 27px/1.1 'Plus Jakarta Sans','Inter',sans-serif;margin-top:5px;letter-spacing:-.5px}
+  .tile .f{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .tile.t-all .bar{background:linear-gradient(180deg,#4f46e5,#0891b2)}
+  .tile.t-ds  .bar{background:linear-gradient(180deg,var(--c-ds),var(--c-ds2))}
+  .tile.t-gds .bar{background:linear-gradient(180deg,var(--c-gds),var(--c-gds2))}
+  .tile.t-out .bar{background:linear-gradient(180deg,var(--c-out),var(--c-out2))}
+  .tile.t-cov .bar{background:linear-gradient(180deg,#0ea5e9,#22d3ee)}
+  .tile.t-ds  .n{color:var(--c-ds)} .tile.t-gds .n{color:var(--c-gds)} .tile.t-out .n{color:var(--c-out)}
+  .cov-track{height:6px;border-radius:99px;background:var(--line);margin-top:8px;overflow:hidden}
+  .cov-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#0ea5e9,#22d3ee,#34d399);transition:width .7s cubic-bezier(.22,1,.36,1)}
+
+  /* ===== Toolbar ===== */
+  .toolbar{position:sticky;top:38px;z-index:40;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:11px 13px;box-shadow:var(--shadow-md);margin-bottom:16px}
+  .seg{display:flex;gap:3px;padding:3px;background:var(--bg);border:1px solid var(--line);border-radius:12px;flex-wrap:wrap}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:700 12.5px/1 'Inter',sans-serif;padding:8px 13px;border-radius:9px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+  .seg button:hover{color:var(--ink)}
+  .seg button .cnt{font-size:10.5px;font-weight:800;padding:2px 6px;border-radius:99px;background:var(--line);color:var(--muted)}
+  .seg button.active{background:var(--card);color:var(--ink);box-shadow:var(--shadow-sm)}
+  .seg button.active[data-cat="DS"]{color:var(--c-ds)} .seg button.active[data-cat="DS"] .cnt{background:color-mix(in srgb,var(--c-ds) 18%,transparent);color:var(--c-ds)}
+  .seg button.active[data-cat="GDS"]{color:var(--c-gds)} .seg button.active[data-cat="GDS"] .cnt{background:color-mix(in srgb,var(--c-gds) 18%,transparent);color:var(--c-gds)}
+  .seg button.active[data-cat="OUT"]{color:var(--c-out)} .seg button.active[data-cat="OUT"] .cnt{background:color-mix(in srgb,var(--c-out) 20%,transparent);color:var(--c-out)}
+  .search{flex:1 1 280px;min-width:220px;display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:0 13px;transition:box-shadow .2s,border-color .2s}
+  .search:focus-within{border-color:var(--indigo);box-shadow:0 0 0 3.5px rgba(79,70,229,.14)}
+  .search span{color:var(--muted);font-size:15px}
+  .search input{flex:1;border:0;background:transparent;outline:none;color:var(--ink);font:500 14px/1 'Inter',sans-serif;padding:11px 0;min-width:0}
+  .search .clr{cursor:pointer;color:var(--muted);font-size:17px;line-height:1;padding:2px 4px;border-radius:6px}
+  .search .clr:hover{background:var(--line);color:var(--ink)}
+  select.pick,.chkwrap{background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:10px 12px;font:600 12.5px/1 'Inter',sans-serif;outline:none;cursor:pointer;max-width:230px}
+  select.pick:focus{border-color:var(--indigo)}
+  .chkwrap{display:flex;align-items:center;gap:7px;user-select:none}
+  .chkwrap input{accent-color:var(--indigo);width:15px;height:15px;cursor:pointer}
+  .btn{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);font:700 12.5px/1 'Inter',sans-serif;padding:10px 14px;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .2s;box-shadow:var(--shadow-sm);white-space:nowrap}
+  .btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);border-color:var(--indigo)}
+  .btn:active{transform:translateY(0)}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+  .btn.primary{background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;border-color:transparent;box-shadow:0 6px 18px rgba(79,70,229,.30)}
+  .btn.primary:hover{box-shadow:0 10px 26px rgba(79,70,229,.40)}
+  .btn.gmail{background:linear-gradient(135deg,#ea4335,#fbbc05 55%,#34a853);color:#fff;border-color:transparent;box-shadow:0 6px 18px rgba(234,67,53,.28)}
+  .btn.gmail:hover{box-shadow:0 10px 26px rgba(234,67,53,.38)}
+  .btn.ghost{background:transparent;box-shadow:none}
+
+  /* ===== Result meta ===== */
+  .meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 2px 14px;font-size:12.5px;color:var(--muted)}
+  .meta b{color:var(--ink);font-weight:800}
+  .chip{display:inline-flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:4px 11px;font-size:11.5px;font-weight:700;color:var(--muted);box-shadow:var(--shadow-sm)}
+  .chip .x{cursor:pointer;font-size:14px;line-height:1;opacity:.7}
+  .chip .x:hover{opacity:1;color:var(--rose)}
+
+  /* ===== Office group ===== */
+  .ogroup{margin-bottom:22px}
+  .ohead{position:sticky;top:104px;z-index:20;display:flex;align-items:center;gap:11px;flex-wrap:wrap;
+    background:var(--card);border:1px solid var(--line);border-left:5px solid var(--indigo);border-radius:13px;
+    padding:10px 14px;box-shadow:var(--shadow-sm);margin-bottom:11px;cursor:pointer;transition:box-shadow .2s}
+  .ohead:hover{box-shadow:var(--shadow-md)}
+  .ohead .on{font:800 14.5px/1.2 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:.1px}
+  .ohead .tag{font-size:10.5px;font-weight:800;letter-spacing:.6px;padding:3px 8px;border-radius:7px;text-transform:uppercase}
+  .ohead .tag.bo{background:rgba(13,148,136,.14);color:var(--teal)}
+  .ohead .tag.so{background:rgba(79,70,229,.13);color:var(--indigo)}
+  .ohead .tag.ho{background:rgba(225,29,72,.13);color:var(--rose)}
+  .ohead .tag.adm{background:rgba(217,119,6,.15);color:#b45309}
+  html.dark .ohead .tag.adm{color:#fbbf24}
+  .ohead .pin{font:600 12px/1 'JetBrains Mono',monospace;color:var(--muted);background:var(--bg);border:1px solid var(--line);padding:4px 8px;border-radius:7px}
+  .ohead .cnt{margin-left:auto;font-size:11.5px;font-weight:800;color:var(--muted);background:var(--bg);border:1px solid var(--line);padding:4px 10px;border-radius:99px}
+  .ohead .caret{font-size:11px;color:var(--muted);transition:transform .25s}
+  .ogroup.collapsed .ohead .caret{transform:rotate(-90deg)}
+  .ogroup.collapsed .cards{display:none}
+
+  /* ===== Contact cards ===== */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px}
+  .cc{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:14px;
+      box-shadow:var(--shadow-sm);transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s,border-color .28s}
+  .cc:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+  .cc .glow{position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none;border-radius:17px}
+  .cc:hover .glow{opacity:1}
+  .cc.ds  .glow{background:linear-gradient(135deg,color-mix(in srgb,var(--c-ds) 9%,transparent),transparent 62%)}
+  .cc.gds .glow{background:linear-gradient(135deg,color-mix(in srgb,var(--c-gds) 9%,transparent),transparent 62%)}
+  .cc.out .glow{background:linear-gradient(135deg,color-mix(in srgb,var(--c-out) 10%,transparent),transparent 62%)}
+  .cc .rail{position:absolute;left:0;top:0;bottom:0;width:3px}
+  .cc.ds  .rail{background:linear-gradient(180deg,var(--c-ds),var(--c-ds2))}
+  .cc.gds .rail{background:linear-gradient(180deg,var(--c-gds),var(--c-gds2))}
+  .cc.out .rail{background:linear-gradient(180deg,var(--c-out),var(--c-out2))}
+  .cc .top{position:relative;display:flex;gap:12px;align-items:flex-start}
+  .av{width:46px;height:46px;flex:0 0 auto;border-radius:14px;display:grid;place-items:center;color:#fff;
+      font:800 15.5px/1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:.3px;box-shadow:0 5px 14px rgba(15,23,42,.18),inset 0 1px 0 rgba(255,255,255,.28)}
+  .who{min-width:0;flex:1}
+  .who .nm{font:800 14.5px/1.25 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:.1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .who .dz{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:nowrap;min-width:0}
+  .dchip{font:800 10.5px/1 'Inter',sans-serif;letter-spacing:.5px;padding:4px 7px;border-radius:6px;text-transform:uppercase;flex:0 0 auto}
+  .cc.ds  .dchip{background:color-mix(in srgb,var(--c-ds) 15%,transparent);color:var(--c-ds)}
+  .cc.gds .dchip{background:color-mix(in srgb,var(--c-gds) 16%,transparent);color:var(--c-gds)}
+  .cc.out .dchip{background:color-mix(in srgb,var(--c-out) 18%,transparent);color:#b45309}
+  html.dark .cc.out .dchip{color:var(--c-out)}
+  .who .dfull{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .who .off{font-size:12px;color:var(--muted);margin-top:5px;display:flex;align-items:center;gap:5px;overflow:hidden}
+  .who .off b{color:var(--ink-2);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .who .off .pc{font:600 10.5px/1 'JetBrains Mono',monospace;color:var(--muted);flex:0 0 auto}
+  .phone-row{position:relative;display:flex;align-items:center;gap:9px;margin-top:12px;padding:9px 11px;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
+  .phone-row .num{font:700 15px/1 'JetBrains Mono',monospace;letter-spacing:.4px;color:var(--ink);flex:1}
+  .phone-row.none .num{font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:0}
+  .acts{display:flex;gap:5px}
+  .ib{width:31px;height:31px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--line);background:var(--card);
+      cursor:pointer;font-size:14px;transition:all .18s;text-decoration:none;color:var(--ink)}
+  .ib:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+  .ib.call:hover{background:#059669;border-color:#059669;color:#fff}
+  .ib.wa:hover{background:#25d366;border-color:#25d366;color:#fff}
+  .ib.sms:hover{background:#0284c7;border-color:#0284c7;color:#fff}
+  .ib.cp:hover{background:#7c3aed;border-color:#7c3aed;color:#fff}
+  .ib.vc:hover{background:#4f46e5;border-color:#4f46e5;color:#fff}
+  .savename{margin-top:9px;font:600 11px/1.35 'JetBrains Mono',monospace;color:var(--muted);background:var(--bg);border:1px dashed var(--line);border-radius:9px;padding:6px 9px;word-break:break-word}
+  .savename em{font-style:normal;color:var(--ink-2);font-weight:700}
+  .mailrow{margin-top:7px;font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mailrow a{color:var(--indigo);text-decoration:none;font-weight:600}
+  .mailrow a:hover{text-decoration:underline}
+
+  /* ===== Export panel ===== */
+  .expwrap{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 17px;box-shadow:var(--shadow-md);margin-bottom:18px}
+  .expwrap h2{margin:0 0 3px;font:800 16px/1.2 'Plus Jakarta Sans','Inter',sans-serif;display:flex;align-items:center;gap:9px}
+  .expwrap .hint{font-size:12.5px;color:var(--muted);margin-bottom:14px}
+  .expgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(244px,1fr));gap:12px}
+  .expcard{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:15px;padding:13px;background:var(--bg)}
+  .expcard .ebar{position:absolute;left:0;right:0;top:0;height:3px}
+  .expcard.ds  .ebar{background:linear-gradient(90deg,var(--c-ds),var(--c-ds2))}
+  .expcard.gds .ebar{background:linear-gradient(90deg,var(--c-gds),var(--c-gds2))}
+  .expcard.out .ebar{background:linear-gradient(90deg,var(--c-out),var(--c-out2))}
+  .expcard .et{font:800 13.5px/1.2 'Plus Jakarta Sans','Inter',sans-serif;display:flex;align-items:center;gap:8px}
+  .expcard .en{margin-left:auto;font-size:11px;font-weight:800;color:var(--muted);background:var(--card);border:1px solid var(--line);padding:3px 9px;border-radius:99px}
+  .expcard .ed{font-size:11.5px;color:var(--muted);margin:6px 0 11px}
+  .expcard .eb{display:flex;gap:7px;flex-wrap:wrap}
+  .expcard .eb .btn{padding:8px 11px;font-size:11.5px}
+  .allrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+  .allrow .lbl{font-size:12px;font-weight:700;color:var(--muted);margin-right:3px}
+
+  /* ===== Modal ===== */
+  .ovl{position:fixed;inset:0;z-index:200;background:rgba(8,14,28,.62);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);display:none;align-items:center;justify-content:center;padding:20px}
+  .ovl.on{display:flex;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal{width:min(640px,100%);max-height:86vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 30px 80px rgba(2,8,23,.45);animation:pop .26s cubic-bezier(.22,1,.36,1)}
+  @keyframes pop{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+  .modal .mh{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:11px;padding:16px 18px;border-bottom:1px solid var(--line);background:var(--card);border-radius:20px 20px 0 0}
+  .modal .mh h3{margin:0;font:800 16px/1.2 'Plus Jakarta Sans','Inter',sans-serif}
+  .modal .mh .xx{margin-left:auto;cursor:pointer;width:32px;height:32px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--line);background:var(--bg);font-size:16px}
+  .modal .mh .xx:hover{background:var(--rose);color:#fff;border-color:var(--rose)}
+  .modal .mb{padding:17px 18px}
+  .steps{counter-reset:s;list-style:none;margin:0;padding:0}
+  .steps li{counter-increment:s;position:relative;padding:0 0 15px 40px;font-size:13.5px;line-height:1.6}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:0;width:27px;height:27px;border-radius:9px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;font:800 12.5px/1 'Inter',sans-serif;box-shadow:0 4px 12px rgba(79,70,229,.3)}
+  .steps li b{font-weight:800}
+  .steps code{font:600 12px/1 'JetBrains Mono',monospace;background:var(--bg);border:1px solid var(--line);padding:2px 6px;border-radius:5px}
+  .mnote{font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:10px;padding:10px 12px;margin-top:12px;line-height:1.6}
+
+  /* ===== Toast ===== */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(26px);z-index:300;opacity:0;pointer-events:none;
+    background:#0f172a;color:#fff;font:700 13px/1.4 'Inter',sans-serif;padding:12px 20px;border-radius:13px;box-shadow:0 18px 44px rgba(2,8,23,.45);transition:all .3s cubic-bezier(.22,1,.36,1);max-width:90vw;text-align:center}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{background:#9f1239}
+
+  .state{text-align:center;padding:60px 20px;color:var(--muted)}
+  .state .big{font-size:40px;margin-bottom:10px;opacity:.65}
+  .state .t{font:800 16px/1.3 'Plus Jakarta Sans','Inter',sans-serif;color:var(--ink);margin-bottom:5px}
+  .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--indigo);border-radius:50%;margin:0 auto 14px;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .foot{text-align:center;color:var(--muted);font-size:12px;padding:26px 10px 0;line-height:1.7}
+
+  @media (max-width:720px){
+    main{padding:16px 13px 50px}
+    .toolbar{position:relative;top:0;border-radius:14px}
+    .ohead{position:relative;top:0}
+    .cards{grid-template-columns:1fr}
+    .gov-band{gap:11px} .gov-crest{height:46px;width:46px} .gov-post{max-width:112px}
+    .appbar{padding:7px 13px} .header-inner{padding:12px 13px 10px} .header-module{padding:11px 13px 13px}
+    .allrow .btn{flex:1 1 auto;justify-content:center}
+    #btnGmail{margin-left:0 !important;width:100%;justify-content:center}
+  }
+  @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms !important;transition-duration:.01ms !important} }
+</style>
+<!-- Liquid Glass design system -->
+<script src="/leave-orders/liquid-glass.js"></script>
+<link rel="stylesheet" href="/leave-orders/liquid-glass.css">
+</head>
+<body>
+
+<div class="appbar">
+  <a href="/" style="opacity:.9;color:#fff;text-decoration:none;font-weight:700;display:flex;align-items:center;gap:6px">&#x1F3E0; Home</a>
+  <span style="opacity:.35">|</span>
+  <span style="opacity:.75">Department of Posts &middot; Karur Sub Division</span>
+  <div class="switch">
+    <a class="pill" href="/employees">Employee Directory</a>
+    <span class="pill active">Phone Directory</span>
+    <a class="pill" href="/office-management">Office Management</a>
+    <a class="pill" href="/birthdays">Birthdays</a>
+    <a class="pill" href="/retirements">Retirements</a>
+  </div>
+</div>
+
+<header>
+  <div class="hdr-grain"></div>
+  <div class="header-inner">
+    <div class="gov-band">
+      <img class="gov-crest" src="/assets/app-logo.jpg" alt="Government of India &mdash; Karur Sub Division" />
+      <div class="gov-titles">
+        <div class="gov-l1">Government of India</div>
+        <div class="gov-l2">Department of Posts</div>
+        <div class="gov-l3">O/o the Asst. Superintendent of Post Offices &middot; <b>Karur Sub Division</b> &middot; Karur &mdash; 639001</div>
+        <div class="gov-underline"></div>
+      </div>
+      <img class="gov-crest gov-post" src="/assets/india-post-logo.png" alt="India Post" />
+    </div>
+  </div>
+  <div class="header-module">
+    <div class="brand">
+      <div class="logo">&#128222;</div>
+      <div>
+        <h1>Phone Directory</h1>
+        <div class="sub">Mobile contacts of Departmental staff, GDS &amp; Outsourced resources &mdash; call, message &amp; save to your phone</div>
+      </div>
+    </div>
+    <button class="theme-btn" id="themeBtn" title="Toggle theme" style="margin-left:auto">&#127769;</button>
+  </div>
+</header>
+
+<main>
+  <div class="tiles" id="tiles"></div>
+
+  <!-- Download / save-to-phone panel -->
+  <div class="expwrap">
+    <h2><span>&#128229;</span> Download &amp; save contacts to your phone</h2>
+    <div class="hint">Three separate files &mdash; <b>Departmental</b>, <b>GDS</b> and <b>Outsiders</b>. Each contact is saved under the name
+      <b>Name &middot; Designation &middot; Office</b> &mdash; for example <b id="fmtEg">&mdash;</b>.
+      Single-letter initials are dropped from the saved name. Only staff with a mobile number on record are included in vCard &amp; CSV files.</div>
+    <div class="expgrid" id="expGrid"></div>
+    <div class="allrow">
+      <span class="lbl">Whole directory:</span>
+      <button class="btn" data-all="vcf">&#128241; vCard (.vcf)</button>
+      <button class="btn" data-all="gcsv">&#128236; Google CSV</button>
+      <button class="btn" data-all="xlsx">&#128202; Excel</button>
+      <button class="btn" data-all="pdf">&#128196; PDF</button>
+      <span class="lbl" style="margin-left:10px">Current view:</span>
+      <button class="btn ghost" data-view="vcf">&#128241; vCard</button>
+      <button class="btn ghost" data-view="gcsv">&#128236; Google CSV</button>
+      <button class="btn ghost" data-view="xlsx">&#128202; Excel</button>
+      <button class="btn gmail" id="btnGmail" style="margin-left:auto">&#9993; Export to Gmail contacts</button>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="seg" id="catSeg">
+      <button data-cat="ALL" class="active">All <span class="cnt" data-c="ALL">0</span></button>
+      <button data-cat="DS">Departmental <span class="cnt" data-c="DS">0</span></button>
+      <button data-cat="GDS">GDS <span class="cnt" data-c="GDS">0</span></button>
+      <button data-cat="OUT">Outsiders <span class="cnt" data-c="OUT">0</span></button>
+    </div>
+    <div class="search">
+      <span>&#128269;</span>
+      <input id="q" placeholder="Search office, name, mobile no., designation or pincode&hellip;" autocomplete="off" />
+      <span class="clr" id="qClr" style="display:none">&times;</span>
+    </div>
+    <select class="pick" id="offSel"><option value="">All offices</option></select>
+    <select class="pick" id="sortSel">
+      <option value="office">Sort: Office &rarr; Designation</option>
+      <option value="name">Sort: Name (A&ndash;Z)</option>
+      <option value="desig">Sort: Designation</option>
+    </select>
+    <label class="chkwrap"><input type="checkbox" id="onlyMob" /> With mobile only</label>
+    <button class="btn ghost" id="viewBtn" title="Group by office, or show one flat list">&#128193; Grouped</button>
+  </div>
+
+  <div class="meta" id="meta"></div>
+  <div id="list"><div class="state"><div class="spin"></div><div class="t">Loading contacts&hellip;</div><div>Fetching staff, offices and mobile numbers from the cloud.</div></div></div>
+
+  <div class="foot">
+    Mobile numbers come from the Employee Directory roster plus individual updates made on this portal and the public
+    <a href="/update-mobile" style="color:var(--indigo);font-weight:700">Update&nbsp;Mobile</a> page.
+    Karur Sub Division only &middot; no pay, bank or Aadhaar details are ever included in any export.
+  </div>
+</main>
+
+<!-- Gmail / Google Contacts modal -->
+<div class="ovl" id="gOvl" role="dialog" aria-modal="true" aria-labelledby="gTitle">
+  <div class="modal">
+    <div class="mh">
+      <span style="font-size:20px">&#9993;</span>
+      <h3 id="gTitle">Export contacts to your Gmail account</h3>
+      <span class="xx" id="gClose" title="Close">&times;</span>
+    </div>
+    <div class="mb">
+      <p style="margin:0 0 14px;font-size:13.5px;color:var(--muted)">
+        Download the three Google&nbsp;CSV files, then import them into Google&nbsp;Contacts. Once imported they sync
+        automatically to the Contacts app on every Android phone, and to iPhone when the Google account is added under
+        <b>Settings &rarr; Contacts &rarr; Accounts</b>.
+      </p>
+      <div class="expgrid" id="gGrid" style="margin-bottom:16px"></div>
+      <ol class="steps">
+        <li>Download the <b>Departmental</b>, <b>GDS</b> and <b>Outsiders</b> CSV files above &mdash; one at a time.</li>
+        <li>Open <b>Google Contacts</b> in a browser and sign in with your Gmail account.</li>
+        <li>In the left sidebar choose <b>Import</b> &rarr; <b>Select file</b> &rarr; pick a downloaded <code>.csv</code> &rarr; <b>Import</b>.</li>
+        <li>Repeat for the other two files. Each set lands in its own label &mdash; <code>Karur SDO - Departmental</code>, <code>Karur SDO - GDS</code>, <code>Karur SDO - Outsiders</code> &mdash; so you can review or remove a whole set in one go.</li>
+        <li>On your phone, make sure contact sync is switched on for that Google account. The numbers appear within a minute.</li>
+      </ol>
+      <a class="btn gmail" href="https://contacts.google.com/" target="_blank" rel="noopener noreferrer" style="width:100%;justify-content:center;margin-top:4px">Open Google Contacts &rarr;</a>
+      <div class="mnote"><b>Prefer not to use Google?</b> Use the <b>vCard (.vcf)</b> downloads instead &mdash; open the file on the
+        phone and Android or iPhone will offer to import every contact straight into the phonebook, no account needed.</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="/leave-orders/supabase-sync.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   Phone Directory — Karur Sub Division
+   Reads the same Supabase datasets as the Employee Directory (DS / GDS /
+   OUT / OFFICES / TEL) and overlays the individual phone + e-mail edits
+   held in app_staff_phones, so a number changed anywhere in the portal
+   (or on the public /update-mobile page) shows up here immediately.
+
+   Contacts are split into three categories — Departmental, GDS, Outsiders
+   — and can be downloaded as vCard, Google-Contacts CSV, Excel or PDF.
+   The saved contact name is always "Name  SHORT-DESIGNATION  Office".
+   ═══════════════════════════════════════════════════════════════════════ */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+// Payroll exports are full of doubled spaces ("RAJESWARI  S"), which would
+// otherwise show up verbatim in the saved contact name — collapse them here.
+const cln = v => (v == null ? '' : String(v)).replace(/\s+/g, ' ').trim();
+const esc = s => cln(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+const CATS = {
+  DS : {label:'Departmental', icon:'&#128188;', file:'Departmental', cls:'ds'},
+  GDS: {label:'GDS',          icon:'&#127968;', file:'GDS',          cls:'gds'},
+  OUT: {label:'Outsiders',    icon:'&#129309;', file:'Outsiders',    cls:'out'},
+};
+const state = { all:[], offices:new Map(), cat:'ALL', q:'', office:'', onlyMob:false, sort:'office', grouped:true, collapsed:new Set() };
+
+/* ── theme ─────────────────────────────────────────────────────────── */
+(function(){
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') document.documentElement.classList.add('dark');
+  $('#themeBtn').onclick = () => {
+    document.documentElement.classList.toggle('dark');
+    const d = document.documentElement.classList.contains('dark');
+    localStorage.setItem('theme', d ? 'dark' : 'light');
+    $('#themeBtn').innerHTML = d ? '&#9728;' : '&#127769;';
+  };
+  if (saved === 'dark') $('#themeBtn').innerHTML = '&#9728;';
+})();
+
+/* ── toast ─────────────────────────────────────────────────────────── */
+let toastT = null;
+function toast(msg, err){
+  const t = $('#toast'); t.textContent = msg; t.className = 'on' + (err ? ' err' : '');
+  clearTimeout(toastT); toastT = setTimeout(() => { t.className = ''; }, err ? 4200 : 2800);
+}
+
+/* ── designation → official short form ─────────────────────────────────
+   Ordered most-specific first: "Sub Postmaster" must not fall through to
+   the plain "Postmaster" rule, and "Sorting Postman" must not become SPM. */
+const DESIG_RULES = [
+  [/assistant\s*branch\s*post\s*-?\s*master|^\s*abpm\s*$/i , 'ABPM'      ],
+  [/branch\s*post\s*-?\s*master|^\s*bpm\s*$/i             , 'BPM'       ],
+  [/assistant\s*superintendent/i                          , 'ASP'       ],
+  [/superintendent\s*of\s*post/i                          , 'SPOs'      ],
+  [/public\s*relation\s*inspector/i                       , 'PRI(P)'    ],
+  [/inspector\s*(of\s*)?posts?/i                          , 'IP'        ],
+  [/development\s*officer/i                               , 'DO(PLI)'   ],
+  [/deputy\s*post\s*-?\s*master/i                         , 'Dy.PM'     ],
+  [/sub\s*post\s*-?\s*master/i                            , 'SPM'       ],
+  [/assistant\s*post\s*-?\s*master/i                      , 'APM'       ],
+  [/sorting\s*post\s*-?\s*man/i                           , 'Sorting PM'],
+  [/head\s*post\s*-?\s*man/i                              , 'HPM'       ],
+  [/post\s*-?\s*master/i                                  , 'PM Gr.'    ],
+  [/post\s*-?\s*man/i                                     , 'PM'        ],
+  [/postal\s*assistant/i                                  , 'PA'        ],
+  [/sorting\s*assistant/i                                 , 'SA'        ],
+  [/multi\s*-?\s*tasking/i                                , 'MTS'       ],
+  [/office\s*assistant/i                                  , 'OA'        ],
+  [/mail\s*overseer/i                                     , 'MO'        ],
+  [/cash\s*overseer/i                                     , 'CO'        ],
+  [/section\s*supervisor.*hsg|hsg.*section\s*supervisor/i , 'HSG-II'    ],
+  [/section\s*supervisor/i                                , 'Sec.Supvr' ],
+  [/\bhsg\s*-?\s*(ii|2)\b/i                               , 'HSG-II'    ],
+  [/\bhsg\b/i                                             , 'HSG'       ],
+  [/\blsg\b/i                                             , 'LSG'       ],
+  [/dak\s*sevak/i                                         , 'DS'        ],
+  [/delivery\s*agent/i                                    , 'DA'        ],
+  [/mail\s*carrier/i                                      , 'MC'        ],
+  [/stamp\s*vendor/i                                      , 'SV'        ],
+  [/packer/i                                              , 'Packer'    ],
+  [/accountant/i                                          , 'Accts'     ],
+  [/driver/i                                              , 'Driver'    ],
+  [/watch\s*man/i                                         , 'Watchman'  ],
+];
+function shortDesig(full, cat){
+  if (cat === 'OUT') return 'OS';                     // Outsourced resource
+  const s = cln(full);
+  if (!s) return cat === 'GDS' ? 'GDS' : 'Staff';
+  for (const [re, ab] of DESIG_RULES) if (re.test(s)) return ab;
+  // Fallback: initials of the words, capped at 5 characters.
+  const ini = s.split(/[\s\-\/()]+/).filter(Boolean).map(w => w[0]).join('').toUpperCase();
+  return ini.slice(0,5) || 'Staff';
+}
+
+/* ── phone helpers ─────────────────────────────────────────────────────
+   Reduce whatever the roster holds (spaces, +91, 0- or 91-prefix) to the
+   bare 10-digit Indian mobile number; '' when it is not a usable number. */
+function tenDigit(v){
+  let d = cln(v).replace(/\D+/g,'');
+  if (d.length > 10 && d.startsWith('91'))        d = d.slice(-10);
+  else if (d.length === 11 && d.startsWith('0'))  d = d.slice(1);
+  else if (d.length > 10)                         d = d.slice(-10);
+  return d.length === 10 ? d : '';
+}
+const prettyPhone = d => d ? d.slice(0,5) + ' ' + d.slice(5) : '';
+const e164        = d => d ? '+91' + d : '';
+function initials(n){
+  const p = cln(n).split(/\s+/).filter(Boolean);
+  return ((p[0]||'')[0]||'?').toUpperCase() + ((p[1]||'')[0]||'').toUpperCase();
+}
+// Stable per-person hue, so the same official always gets the same avatar.
+function hashHue(s){ let h = 0; for (let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0; return h % 360; }
+const CAT_HUE = { DS:[232,268], GDS:[168,152], OUT:[32,350] };
+function avatarStyle(c){
+  const [h1,h2] = CAT_HUE[c.cat] || CAT_HUE.DS, j = (hashHue(c.name + c.id) % 26) - 13;
+  return 'background:linear-gradient(135deg,hsl(' + ((h1+j+360)%360) + ' 72% 52%),hsl(' + ((h2+j+360)%360) + ' 68% 45%))';
+}
+
+/* ── the saved-contact name: "Name  DESIG  Office" ─────────────────────
+   Payroll names carry a single-letter initial, leading or trailing
+   ("RAJESWARI S", "P NACHIMUTHU"). Those are dropped from the saved
+   contact name so the phonebook sorts and reads on the real name; the
+   full payroll name is still what the cards and the Excel sheet show. */
+function stripInitials(name){
+  const parts = cln(name).split(' ').filter(w => !/^[A-Za-z]\.?$/.test(w));
+  return parts.length ? parts.join(' ') : cln(name);   // all-initials name: keep as is
+}
+function contactName(c){ return [stripInitials(c.name), c.short, c.office].map(cln).filter(Boolean).join(' '); }
+
+/* ═════════════════════════ data load ═════════════════════════ */
+const BOSO = { BPO:'BO', SPO:'SO', SDO:'SO', HPO:'HO', BPC:'BPC', LPC:'LPC', PDN:'PDN', WTC:'WTC' };
+
+async function load(){
+  try{
+    await SB.init();
+    try { await KarurScope.load(); } catch(e) {}
+    const [ds, gds, out, offs, tel] = await Promise.all([
+      SB.getDataset('DS'), SB.getDataset('GDS'), SB.getDataset('OUT'),
+      SB.getDataset('OFFICES'), SB.getDataset('TEL')
+    ]);
+
+    // Offices — Karur Sub Division only (the clamp every other page applies).
+    const offList = window.KarurScope ? KarurScope.filterOffices((offs && offs.data) || []) : ((offs && offs.data) || []);
+    const OM = new Map();
+    for (const o of offList) OM.set(cln(o.office_id), o);
+    state.offices = OM;
+
+    // Mobile numbers: the TEL roster first, then individual edits, which win.
+    const phones = Object.assign({}, (tel && tel.data) || {});
+    const emails = {}, outPhone = {};
+    try{
+      for (const ed of (await SB.getPhoneEdits()) || []){
+        const id = cln(ed.target_id);
+        if (ed.target_type === 'EMPLOYEE')            { if (cln(ed.phone)) phones[id] = ed.phone; else delete phones[id]; }
+        else if (ed.target_type === 'EMPLOYEE_EMAIL') { if (cln(ed.phone)) emails[id] = ed.phone; }
+        else if (ed.target_type === 'OUTSIDER')       { outPhone[id] = ed.phone; }
+      }
+    } catch(e){ console.warn('phone edits unavailable', e); }
+
+    const inK = e => window.KarurScope ? KarurScope.inScope(e) : true;
+    const all = [];
+    const pushEmp = (e, cat) => {
+      const name = cln(e.Employee_name); if (!name) return;
+      const id   = cln(e.Employee_id);
+      const oid  = cln(e.Office_id);
+      all.push(mk({
+        cat, id, name,
+        desig: cln(e.Post_desc),
+        oid, om: OM.get(oid),
+        officeFallback: cln(e.Office_desc),
+        mobile: phones[id],
+        email : emails[id],
+      }));
+    };
+    for (const e of ((ds  && ds.data)  || []).filter(inK)) pushEmp(e, 'DS');
+    for (const e of ((gds && gds.data) || []).filter(inK)) pushEmp(e, 'GDS');
+    for (const e of ((out && out.data) || []).filter(inK)){
+      const id   = cln(e.resource_id);
+      const name = [e.first_name, e.middle_name, e.last_name].map(cln).filter(Boolean).join(' ') || id;
+      if (!name) continue;
+      const oid = cln(e.office_id);
+      all.push(mk({
+        cat:'OUT', id, name,
+        desig: cln(e.post_desc) || 'Outsourced Resource',
+        oid, om: OM.get(oid),
+        officeFallback: cln(e.office_name),
+        mobile: (id in outPhone) ? outPhone[id] : e.mobile_no,
+        email : cln(e.personal_email_id),
+        pinFallback: cln(e.pin_code),
+      }));
+    }
+    state.all = all;
+    buildOfficePicker();
+    buildExportCards();
+    render();
+  } catch(err){
+    console.error(err);
+    $('#list').innerHTML = '<div class="state"><div class="big">&#9888;</div><div class="t">Could not load the directory</div><div>' + esc(err.message) + '</div></div>';
+  }
+}
+
+function mk(r){
+  const om = r.om;
+  return {
+    cat    : r.cat,
+    id     : r.id,
+    name   : r.name,
+    desig  : r.desig,
+    short  : shortDesig(r.desig, r.cat),
+    oid    : r.oid,
+    office : om ? cln(om.office_name) : (r.officeFallback || '(Office not mapped)'),
+    boso   : om ? (BOSO[cln(om.office_type)] || cln(om.office_type)) : '',
+    pincode: om ? cln(om.pincode) : cln(r.pinFallback),
+    // A BO accounts to its Sub Office; SOs and the HO account to the Head Office.
+    acct   : om ? (cln(om.office_type) === 'BPO' ? (cln(om.so_name) || cln(om.ho_name)) : (cln(om.ho_name) || cln(om.office_name))) : '',
+    mobile : tenDigit(r.mobile),
+    email  : cln(r.email),
+  };
+}
+
+/* ═════════════════════ filtering / sorting ═════════════════════ */
+const DRANK = ['SPOs','ASP','IP','PRI(P)','DO(PLI)','PM Gr.','Dy.PM','SPM','APM','HSG-II','HSG','LSG','Sec.Supvr',
+               'PA','SA','Accts','MO','CO','HPM','Sorting PM','PM','MTS','OA','Driver','Watchman',
+               'BPM','ABPM','DS','DA','MC','Packer','SV','OS'];
+const drank = s => { const i = DRANK.indexOf(s); return i < 0 ? 99 : i; };
+
+function filtered(){
+  let l = state.all.slice();
+  if (state.cat !== 'ALL') l = l.filter(c => c.cat === state.cat);
+  if (state.office)        l = l.filter(c => c.office === state.office);
+  if (state.onlyMob)       l = l.filter(c => c.mobile);
+  const q = state.q.trim().toLowerCase();
+  if (q){
+    const qd = q.replace(/\D+/g,'');
+    l = l.filter(c =>
+      c.name.toLowerCase().includes(q)   ||
+      c.office.toLowerCase().includes(q) ||
+      c.desig.toLowerCase().includes(q)  ||
+      c.short.toLowerCase().includes(q)  ||
+      c.acct.toLowerCase().includes(q)   ||
+      c.id.toLowerCase().includes(q)     ||
+      (qd.length >= 3 && (c.mobile.includes(qd) || c.pincode.includes(qd)))
+    );
+  }
+  const byName = (a,b) => a.name.localeCompare(b.name);
+  if (state.sort === 'name')       l.sort(byName);
+  else if (state.sort === 'desig') l.sort((a,b) => drank(a.short) - drank(b.short) || a.short.localeCompare(b.short) || byName(a,b));
+  else                             l.sort((a,b) => a.office.localeCompare(b.office) || drank(a.short) - drank(b.short) || byName(a,b));
+  return l;
+}
+
+/* ═════════════════════════ render ═════════════════════════ */
+function render(){
+  const list = filtered();
+
+  // category counters on the segmented control
+  const n = { ALL: state.all.length, DS:0, GDS:0, OUT:0 };
+  for (const c of state.all) n[c.cat]++;
+  $$('#catSeg .cnt').forEach(e => e.textContent = n[e.dataset.c]);
+
+  // tiles
+  const withM = state.all.filter(c => c.mobile).length;
+  const pct   = state.all.length ? Math.round(withM * 100 / state.all.length) : 0;
+  const covOf = cat => state.all.filter(c => c.cat === cat && c.mobile).length;
+  $('#tiles').innerHTML =
+    tile('t-all', 'Total contacts', state.all.length, (state.offices.size || 0) + ' offices in scope') +
+    tile('t-ds',  'Departmental',   n.DS,  covOf('DS')  + ' with mobile') +
+    tile('t-gds', 'GDS',            n.GDS, covOf('GDS') + ' with mobile') +
+    tile('t-out', 'Outsiders',      n.OUT, covOf('OUT') + ' with mobile') +
+    '<div class="tile t-cov"><div class="bar"></div><div class="l">Mobile coverage</div><div class="n">' + pct + '%</div>' +
+      '<div class="f">' + withM + ' of ' + state.all.length + ' on record</div>' +
+      '<div class="cov-track"><div class="cov-fill" style="width:' + pct + '%"></div></div></div>';
+
+  // sample of the save-name format
+  const eg = state.all.find(c => c.mobile) || state.all[0];
+  $('#fmtEg').textContent = eg ? contactName(eg) : '—';
+
+  // meta line + active-filter chips
+  const bits = ['Showing <b>' + list.length + '</b> contact' + (list.length === 1 ? '' : 's')];
+  if (state.cat !== 'ALL') bits.push('<span class="chip">' + CATS[state.cat].label + ' <span class="x" data-clr="cat" title="Clear">&times;</span></span>');
+  if (state.office)        bits.push('<span class="chip">' + esc(state.office) + ' <span class="x" data-clr="office" title="Clear">&times;</span></span>');
+  if (state.q)             bits.push('<span class="chip">&ldquo;' + esc(state.q) + '&rdquo; <span class="x" data-clr="q" title="Clear">&times;</span></span>');
+  if (state.onlyMob)       bits.push('<span class="chip">With mobile only <span class="x" data-clr="mob" title="Clear">&times;</span></span>');
+  const noMob = list.filter(c => !c.mobile).length;
+  if (noMob) bits.push('<span style="opacity:.85">' + noMob + ' without a number</span>');
+  $('#meta').innerHTML = bits.join(' ');
+
+  // body
+  const host = $('#list');
+  if (!list.length){
+    host.innerHTML = '<div class="state"><div class="big">&#128269;</div><div class="t">No contacts match</div>' +
+      '<div>Try a different office, category or search term.</div></div>';
+    return;
+  }
+  if (!state.grouped){ host.innerHTML = '<div class="cards">' + list.map(card).join('') + '</div>'; return; }
+
+  const groups = new Map();
+  for (const c of list){ if (!groups.has(c.office)) groups.set(c.office, []); groups.get(c.office).push(c); }
+  host.innerHTML = [...groups.keys()].sort((a,b) => a.localeCompare(b)).map(k => {
+    const rows = groups.get(k), f = rows[0];
+    const tagCls = f.boso === 'BO' ? 'bo' : f.boso === 'SO' ? 'so' : f.boso === 'HO' ? 'ho' : 'adm';
+    const open = !state.collapsed.has(k);
+    return '<section class="ogroup' + (open ? '' : ' collapsed') + '">' +
+      '<div class="ohead" data-tog="' + esc(k) + '">' +
+        '<span class="caret">&#9660;</span>' +
+        '<span class="on">' + esc(k) + '</span>' +
+        (f.boso    ? '<span class="tag ' + tagCls + '">' + esc(f.boso) + '</span>' : '') +
+        (f.pincode ? '<span class="pin">&#128204; ' + esc(f.pincode) + '</span>' : '') +
+        '<span class="cnt">' + rows.length + ' staff</span>' +
+      '</div>' +
+      '<div class="cards">' + rows.map(card).join('') + '</div>' +
+    '</section>';
+  }).join('');
+}
+
+function tile(cls, label, num, foot){
+  return '<div class="tile ' + cls + '"><div class="bar"></div><div class="l">' + label + '</div>' +
+         '<div class="n">' + num + '</div><div class="f">' + foot + '</div></div>';
+}
+
+function card(c){
+  const k = c.cat + ':' + c.id;
+  const p = c.mobile;
+  const phone = p
+    ? '<div class="phone-row"><span class="num">' + prettyPhone(p) + '</span><div class="acts">' +
+        '<a class="ib call" href="tel:' + e164(p) + '" title="Call ' + esc(c.name) + '">&#128222;</a>' +
+        '<a class="ib wa" href="https://wa.me/91' + p + '" target="_blank" rel="noopener noreferrer" title="WhatsApp">&#128172;</a>' +
+        '<a class="ib sms" href="sms:' + e164(p) + '" title="Send SMS">&#9993;</a>' +
+        '<span class="ib cp" data-cp="' + p + '" title="Copy number">&#128203;</span>' +
+        '<span class="ib vc" data-vc="' + esc(k) + '" title="Save this one contact (.vcf)">&#128229;</span>' +
+      '</div></div>'
+    : '<div class="phone-row none"><span class="num">&#9888; No mobile number on record</span>' +
+      '<a class="ib vc" href="/update-mobile" target="_blank" rel="noopener" title="Add a number">&#9998;</a></div>';
+  return '<article class="cc ' + CATS[c.cat].cls + '">' +
+    '<div class="glow"></div><div class="rail"></div>' +
+    '<div class="top">' +
+      '<div class="av" style="' + avatarStyle(c) + '">' + initials(c.name) + '</div>' +
+      '<div class="who">' +
+        '<div class="nm" title="' + esc(c.name) + '">' + esc(c.name) + '</div>' +
+        '<div class="dz"><span class="dchip">' + esc(c.short) + '</span>' +
+          '<span class="dfull" title="' + esc(c.desig) + '">' + esc(c.desig || CATS[c.cat].label) + '</span></div>' +
+        '<div class="off">&#127970; <b title="' + esc(c.office) + '">' + esc(c.office) + '</b>' +
+          (c.pincode ? '<span class="pc">&middot; ' + esc(c.pincode) + '</span>' : '') + '</div>' +
+      '</div>' +
+    '</div>' +
+    phone +
+    (c.email ? '<div class="mailrow">&#9993; <a href="mailto:' + esc(c.email) + '">' + esc(c.email) + '</a></div>' : '') +
+    '<div class="savename">Saves as&nbsp; <em>' + esc(contactName(c)) + '</em></div>' +
+  '</article>';
+}
+
+/* ═════════════ office picker + export cards ═════════════ */
+function buildOfficePicker(){
+  const sel = $('#offSel'), seen = new Map();
+  for (const c of state.all) seen.set(c.office, (seen.get(c.office) || 0) + 1);
+  [...seen.keys()].sort((a,b) => a.localeCompare(b)).forEach(o => {
+    const op = document.createElement('option');
+    op.value = o; op.textContent = o + ' (' + seen.get(o) + ')';
+    sel.append(op);
+  });
+}
+function expCard(cat){
+  const C = CATS[cat], rows = state.all.filter(c => c.cat === cat), withM = rows.filter(c => c.mobile).length;
+  return '<div class="expcard ' + C.cls + '"><div class="ebar"></div>' +
+    '<div class="et"><span>' + C.icon + '</span>' + C.label + '<span class="en">' + withM + ' / ' + rows.length + '</span></div>' +
+    '<div class="ed">' + withM + ' contact' + (withM === 1 ? '' : 's') + ' with a mobile number on record.</div>' +
+    '<div class="eb">' +
+      '<button class="btn" data-exp="vcf"  data-cat="' + cat + '">&#128241; vCard</button>' +
+      '<button class="btn" data-exp="gcsv" data-cat="' + cat + '">&#128236; Google CSV</button>' +
+    '</div></div>';
+}
+function buildExportCards(){
+  const html = ['DS','GDS','OUT'].map(expCard).join('');
+  $('#expGrid').innerHTML = html;
+  $('#gGrid').innerHTML   = html;
+}
+
+/* ═════════════════════════ exports ═════════════════════════ */
+const today = () => { const d = new Date(), p = n => String(n).padStart(2,'0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()); };
+
+function saveBlob(text, filename, mime){
+  const blob = new Blob(['\uFEFF' + text], { type: mime + ';charset=utf-8' });
+  const url  = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 400);
+}
+const fileName = (scope, ext) => ('Karur-SDO_Contacts_' + scope + '_' + today()).replace(/[^A-Za-z0-9._-]+/g,'-') + '.' + ext;
+const exportable = rows => rows.filter(c => c.mobile);
+
+/* --- vCard 3.0 — imports natively on Android, iPhone, Outlook & Google --- */
+const vEsc = s => cln(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,');
+function toVcf(rows, label){
+  const out = [];
+  for (const c of rows){
+    const fn = contactName(c);
+    out.push(
+      'BEGIN:VCARD', 'VERSION:3.0',
+      'N:' + vEsc(fn) + ';;;;',
+      'FN:' + vEsc(fn),
+      'ORG:' + vEsc('Department of Posts, Karur Sub Division') + ';' + vEsc(c.office),
+      'TITLE:' + vEsc(c.desig || CATS[c.cat].label),
+      'TEL;TYPE=CELL,VOICE:' + e164(c.mobile)
+    );
+    if (c.email)   out.push('EMAIL;TYPE=INTERNET:' + vEsc(c.email));
+    if (c.pincode) out.push('ADR;TYPE=WORK:;;' + vEsc(c.office) + ';' + vEsc(c.office.replace(/\s+(B\.O|S\.O|H\.O)\.?$/i,'')) + ';Tamil Nadu;' + vEsc(c.pincode) + ';India');
+    out.push('CATEGORIES:' + vEsc(label));
+    out.push('NOTE:' + vEsc([CATS[c.cat].label, c.desig, c.office, c.boso && '(' + c.boso + ')',
+      c.pincode && 'PIN ' + c.pincode, c.acct && 'A/c Office: ' + c.acct, 'ID ' + c.id].filter(Boolean).join(' · ')));
+    out.push('END:VCARD');
+  }
+  return out.join('\r\n') + '\r\n';
+}
+
+/* --- Google Contacts CSV (the column set Google Contacts itself exports) --- */
+const G_HEAD = ['First Name','Middle Name','Last Name','Phonetic First Name','Phonetic Middle Name','Phonetic Last Name',
+  'Name Prefix','Name Suffix','Nickname','File As','Organization Name','Organization Title','Organization Department',
+  'Birthday','Notes','Photo','Labels','E-mail 1 - Label','E-mail 1 - Value','Phone 1 - Label','Phone 1 - Value'];
+const csvCell = v => { const s = cln(v); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+function toGoogleCsv(rows, label){
+  const lines = [G_HEAD.join(',')];
+  for (const c of rows){
+    const nm = contactName(c);
+    lines.push([
+      nm, '', '', '', '', '', '', '', '', nm,
+      'Department of Posts — Karur Sub Division', c.desig || CATS[c.cat].label, c.office,
+      '',
+      [CATS[c.cat].label, c.desig, c.office, c.boso, c.pincode && 'PIN ' + c.pincode,
+       c.acct && 'A/c Office: ' + c.acct].filter(Boolean).join(' · '),
+      '',
+      '* myContacts ::: ' + label,
+      c.email ? '* Personal' : '', c.email || '',
+      '* Mobile', e164(c.mobile)
+    ].map(csvCell).join(','));
+  }
+  return lines.join('\r\n') + '\r\n';
+}
+
+/* --- Excel --- */
+const X_HEAD = ['Sl. No','Contact save name','Name of the Official','Designation','Short','Category',
+                'Office','BO/SO','Pincode','Office ID','Account Office','Mobile Number','E-mail'];
+function sheetAoa(rows){
+  return [X_HEAD, ...rows.map((c,i) => [i+1, contactName(c), c.name, c.desig, c.short, CATS[c.cat].label,
+    c.office, c.boso, c.pincode, c.oid, c.acct, c.mobile ? e164(c.mobile) : '', c.email])];
+}
+function toXlsx(sheets, fname){
+  const wb = XLSX.utils.book_new();
+  const used = new Set();
+  for (const [nm, rows] of sheets){
+    let sn = cln(nm).replace(/[\\\/?*\[\]:]/g,' ').slice(0,31) || 'Sheet';
+    let i = 2; while (used.has(sn)) { sn = sn.slice(0,28) + ' ' + (i++); } used.add(sn);
+    const ws = XLSX.utils.aoa_to_sheet(sheetAoa(rows));
+    ws['!cols'] = [{wch:6},{wch:46},{wch:28},{wch:26},{wch:10},{wch:13},{wch:26},{wch:7},{wch:9},{wch:11},{wch:22},{wch:16},{wch:26}];
+    XLSX.utils.book_append_sheet(wb, ws, sn);
+  }
+  XLSX.writeFile(wb, fname);
+}
+
+/* --- PDF (jsPDF + autotable, fetched on first use) --- */
+let pdfLoad = null;
+const loadScript = src => new Promise((res, rej) => {
+  const s = document.createElement('script'); s.src = src; s.onload = res;
+  s.onerror = () => rej(new Error('Could not load ' + src)); document.head.appendChild(s);
+});
+function ensurePdf(){
+  if (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable) return Promise.resolve();
+  if (!pdfLoad) pdfLoad = loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js')
+    .then(() => loadScript('https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js'))
+    .catch(e => { pdfLoad = null; throw e; });
+  return pdfLoad;
+}
+function toPdf(sections, fname){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'landscape', unit:'pt', format:'a4' });
+  const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+  sections.forEach(([title, rows], i) => {
+    if (i > 0) doc.addPage();
+    doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(31,56,100);
+    doc.text('Department of Posts — Phone Directory, Karur Sub Division', W/2, 40, { align:'center' });
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(60,72,88);
+    doc.text(title + '   ·   ' + rows.length + ' contacts   ·   generated ' + today(), W/2, 58, { align:'center' });
+    doc.autoTable({
+      startY: 72,
+      head: [['Sl.','Name of the Official','Designation','Short','Office','BO/SO','Pincode','Mobile Number']],
+      body: rows.map((c,n) => [String(n+1), c.name, c.desig, c.short, c.office, c.boso, c.pincode,
+                               c.mobile ? prettyPhone(c.mobile) : '—']),
+      styles: { font:'helvetica', fontSize:8.5, cellPadding:3.5, overflow:'linebreak', textColor:[30,41,59] },
+      headStyles: { fillColor:[31,56,100], textColor:255, fontStyle:'bold' },
+      alternateRowStyles: { fillColor:[243,246,252] },
+      columnStyles: { 0:{cellWidth:28,halign:'right'}, 3:{cellWidth:56}, 5:{cellWidth:40,halign:'center'},
+                      6:{cellWidth:50,halign:'center'}, 7:{cellWidth:90,fontStyle:'bold'} },
+      margin: { left:24, right:24, top:72, bottom:34 },
+    });
+  });
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++){
+    doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(120,130,145);
+    doc.text('Page ' + i + ' of ' + n, W-24, H-16, { align:'right' });
+    doc.text('Contact numbers only · no pay, bank or Aadhaar details', 24, H-16);
+  }
+  doc.save(fname);
+}
+
+/* --- one dispatcher for vCard / Google CSV / Excel --- */
+function doExport(kind, rows, scopeLabel, fileScope){
+  if (kind === 'xlsx'){
+    if (!rows.length){ toast('Nothing to export for ' + scopeLabel + '.', true); return; }
+    toXlsx([[scopeLabel, rows]], fileName(fileScope, 'xlsx'));
+    toast(rows.length + ' contacts exported to Excel.');
+    return;
+  }
+  const ex = exportable(rows);
+  if (!ex.length){ toast('No mobile numbers to export for ' + scopeLabel + '.', true); return; }
+  if (kind === 'vcf'){
+    saveBlob(toVcf(ex, 'Karur SDO - ' + scopeLabel), fileName(fileScope, 'vcf'), 'text/vcard');
+    toast(ex.length + ' contacts downloaded as vCard — open the file on your phone to import.');
+  } else if (kind === 'gcsv'){
+    saveBlob(toGoogleCsv(ex, 'Karur SDO - ' + scopeLabel), fileName(fileScope, 'csv'), 'text/csv');
+    toast(ex.length + ' contacts downloaded as Google CSV — import it at contacts.google.com.');
+  }
+}
+
+/* ═════════════════════════ events ═════════════════════════ */
+$('#catSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  $$('#catSeg button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); state.cat = b.dataset.cat; render();
+});
+let qT = null;
+$('#q').addEventListener('input', e => {
+  state.q = e.target.value;
+  $('#qClr').style.display = state.q ? '' : 'none';
+  clearTimeout(qT); qT = setTimeout(render, 110);
+});
+$('#qClr').addEventListener('click', () => { $('#q').value = ''; state.q = ''; $('#qClr').style.display = 'none'; render(); });
+$('#offSel').addEventListener('change',  e => { state.office  = e.target.value;   render(); });
+$('#sortSel').addEventListener('change', e => { state.sort    = e.target.value;   render(); });
+$('#onlyMob').addEventListener('change', e => { state.onlyMob = e.target.checked; render(); });
+$('#viewBtn').addEventListener('click', () => {
+  state.grouped = !state.grouped;
+  $('#viewBtn').innerHTML = state.grouped ? '&#128193; Grouped' : '&#9638; Flat list';
+  render();
+});
+$('#meta').addEventListener('click', e => {
+  const x = e.target.closest('[data-clr]'); if (!x) return;
+  const w = x.dataset.clr;
+  if (w === 'cat')    { state.cat = 'ALL'; $$('#catSeg button').forEach(b => b.classList.toggle('active', b.dataset.cat === 'ALL')); }
+  if (w === 'office') { state.office = ''; $('#offSel').value = ''; }
+  if (w === 'q')      { state.q = ''; $('#q').value = ''; $('#qClr').style.display = 'none'; }
+  if (w === 'mob')    { state.onlyMob = false; $('#onlyMob').checked = false; }
+  render();
+});
+
+// card actions + office-group collapse
+$('#list').addEventListener('click', e => {
+  const tog = e.target.closest('[data-tog]');
+  if (tog){
+    const k = tog.dataset.tog;
+    state.collapsed.has(k) ? state.collapsed.delete(k) : state.collapsed.add(k);
+    tog.closest('.ogroup').classList.toggle('collapsed');
+    return;
+  }
+  const cp = e.target.closest('[data-cp]');
+  if (cp){
+    const num = e164(cp.dataset.cp);
+    const fallback = () => {
+      const ta = document.createElement('textarea'); ta.value = num;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.append(ta); ta.select();
+      try { document.execCommand('copy'); toast('Copied ' + num); }
+      catch(_) { toast('Could not copy the number', true); }
+      ta.remove();
+    };
+    if (navigator.clipboard) navigator.clipboard.writeText(num).then(() => toast('Copied ' + num)).catch(fallback);
+    else fallback();
+    return;
+  }
+  const vc = e.target.closest('[data-vc]');
+  if (vc && vc.dataset.vc){
+    const c = state.all.find(x => (x.cat + ':' + x.id) === vc.dataset.vc); if (!c) return;
+    saveBlob(toVcf([c], 'Karur SDO - ' + CATS[c.cat].label),
+             (contactName(c).replace(/[^A-Za-z0-9 ._-]+/g,'-').trim() || 'contact') + '.vcf', 'text/vcard');
+    toast('Saved ' + c.name + ' as a vCard.');
+  }
+});
+
+// export buttons — the panel and the modal share one handler
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-exp]');
+  if (b){
+    const cat = b.dataset.cat;
+    doExport(b.dataset.exp, state.all.filter(c => c.cat === cat), CATS[cat].label, CATS[cat].file);
+    return;
+  }
+  const a = e.target.closest('[data-all]');
+  if (a){
+    const kind = a.dataset.all;
+    const perCat = () => ['DS','GDS','OUT'].map(c => [CATS[c].label, state.all.filter(x => x.cat === c)]);
+    if (kind === 'xlsx'){
+      if (!state.all.length){ toast('Nothing to export yet.', true); return; }
+      toXlsx(perCat(), fileName('All-Staff','xlsx'));
+      toast(state.all.length + ' contacts exported to Excel (one sheet per category).');
+      return;
+    }
+    if (kind === 'pdf'){
+      if (!state.all.length){ toast('Nothing to export yet.', true); return; }
+      const old = a.innerHTML; a.disabled = true; a.textContent = 'Preparing…';
+      ensurePdf()
+        .then(() => { toPdf(perCat(), fileName('All-Staff','pdf')); toast('Phone directory exported to PDF.'); })
+        .catch(err => toast('PDF failed: ' + err.message, true))
+        .finally(() => { a.disabled = false; a.innerHTML = old; });
+      return;
+    }
+    doExport(kind, state.all, 'All Staff', 'All-Staff');
+    return;
+  }
+  const v = e.target.closest('[data-view]');
+  if (v){
+    const label = [state.cat === 'ALL' ? 'All staff' : CATS[state.cat].label,
+                   state.office || null,
+                   state.q ? '“' + state.q + '”' : null].filter(Boolean).join(' · ');
+    doExport(v.dataset.view, filtered(), label, 'Filtered');
+  }
+});
+
+$('#btnGmail').addEventListener('click', () => $('#gOvl').classList.add('on'));
+$('#gClose').addEventListener('click',  () => $('#gOvl').classList.remove('on'));
+$('#gOvl').addEventListener('click', e => { if (e.target === $('#gOvl')) $('#gOvl').classList.remove('on'); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') $('#gOvl').classList.remove('on');
+  if (e.key === '/' && document.activeElement !== $('#q')){ e.preventDefault(); $('#q').focus(); }
+});
+
+load();
+</script>
+</body>
+</html>

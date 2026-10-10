@@ -14,6 +14,7 @@
     { "source": "/leave-orders", "destination": "/Leave Orders/index.html" },
     { "source": "/arrangements", "destination": "/Leave Orders/arrangements.html" },
     { "source": "/employees", "destination": "/Leave Orders/employees.html" },
+    { "source": "/phone-directory", "destination": "/Leave Orders/phone-directory.html" },
     { "source": "/office-management", "destination": "/Leave Orders/office-management.html" },
     { "source": "/birthdays", "destination": "/Leave Orders/birthdays.html" },
     { "source": "/retirements", "destination": "/Leave Orders/retirements.html" },

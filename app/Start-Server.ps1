@@ -344,6 +344,7 @@ try {
       # the local server matches production routing).
       if ($path -eq '/login' -or $path -eq '/login/')                     { Send-File $ctx (Join-Path $root 'Leave Orders\login.html') (MimeOf 'index.html'); continue }
       if ($path -eq '/birthdays' -or $path -eq '/birthdays/')             { Send-File $ctx (Join-Path $root 'Leave Orders\birthdays.html') (MimeOf 'index.html'); continue }
+      if ($path -eq '/phone-directory' -or $path -eq '/phone-directory/') { Send-File $ctx (Join-Path $root 'Leave Orders\phone-directory.html') (MimeOf 'index.html'); continue }
       if ($path -eq '/retirements' -or $path -eq '/retirements/')         { Send-File $ctx (Join-Path $root 'Leave Orders\retirements.html') (MimeOf 'index.html'); continue }
       if ($path -eq '/sanctioned-posts' -or $path -eq '/sanctioned-posts/') { Send-File $ctx (Join-Path $root 'Leave Orders\sanctioned-posts.html') (MimeOf 'index.html'); continue }
       if ($path -eq '/update-mobile' -or $path -eq '/update-mobile/')       { Send-File $ctx (Join-Path $root 'Leave Orders\update-mobile.html') (MimeOf 'index.html'); continue }
