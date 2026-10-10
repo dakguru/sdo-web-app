@@ -121,6 +121,7 @@ fun HomeScreen(
     onOpenBirthdays: () -> Unit = {},
     onOpenRetirements: () -> Unit = {},
     onOpenPerformance: () -> Unit = {},
+    onOpenPhoneDirectory: () -> Unit = {},
     vm: HomeViewModel = hiltViewModel()
 ) {
     val events by vm.events.collectAsState()
@@ -220,6 +221,7 @@ fun HomeScreen(
                 val tiles = listOf(
                     QuickAction("🏅", "Delivery Performance", Brand.Emerald, onOpenPerformance),
                     QuickAction("📇", "Staff Directory", Brand.Indigo, onOpenDirectory),
+                    QuickAction("📞", "Phone Directory", Brand.Teal, onOpenPhoneDirectory),
                     QuickAction("🔁", "Arrangements", Brand.Teal, onOpenArrangements),
                     QuickAction("✅", "Cent % Verification", Brand.Pink, onOpenCpv),
                     QuickAction("🎂", "Birthdays", Brand.Violet, onOpenBirthdays),

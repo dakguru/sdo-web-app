@@ -2,4 +2,6 @@
 <paths>
     <!-- Generated Mail Overseer PDF reports live under cacheDir/reports. -->
     <cache-path name="reports" path="reports/" />
+    <!-- Generated Phone Directory vCard / CSV contact files. -->
+    <cache-path name="contacts" path="contacts/" />
 </paths>

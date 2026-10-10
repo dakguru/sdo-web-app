@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable object HomeRoute
 @Serializable object DirectoryRoute
+@Serializable object PhoneDirectoryRoute
 @Serializable object MessageRoute
 @Serializable data class OfficeDetailRoute(val officeId: String, val officeName: String)
 @Serializable data class EmployeeDetailRoute(val type: String, val employeeId: String)

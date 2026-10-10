@@ -39,6 +39,7 @@ import com.karursdo.ui.home.HomeScreen
 import com.karursdo.ui.people.BirthdaysScreen
 import com.karursdo.ui.people.RetirementsScreen
 import com.karursdo.ui.performance.PerformanceHomeScreen
+import com.karursdo.ui.phone.PhoneDirectoryScreen
 import com.karursdo.ui.performance.PerformanceOfficeScreen
 import com.karursdo.ui.ingest.ImportScreen
 import com.karursdo.ui.mo.MoBeatListScreen
@@ -129,7 +130,8 @@ fun KsdApp(onLogout: () -> Unit = {}) {
                     onOpenCpv = { navController.navigate(CpvRoute) },
                     onOpenBirthdays = { navController.navigate(BirthdaysRoute) },
                     onOpenRetirements = { navController.navigate(RetirementsRoute) },
-                    onOpenPerformance = { navController.navigate(PerformanceRoute) }
+                    onOpenPerformance = { navController.navigate(PerformanceRoute) },
+                    onOpenPhoneDirectory = { navController.navigate(PhoneDirectoryRoute) }
                 )
             }
             composable<PerformanceRoute> {
@@ -147,6 +149,9 @@ fun KsdApp(onLogout: () -> Unit = {}) {
                     initialMode = r.mode,
                     onBack = { navController.popBackStack() }
                 )
+            }
+            composable<PhoneDirectoryRoute> {
+                PhoneDirectoryScreen(onBack = { navController.popBackStack() })
             }
             composable<BirthdaysRoute> {
                 BirthdaysScreen(onBack = { navController.popBackStack() })
