@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Question Bank &mdash; Quiz Administration | Karur Division</title>
+<meta name="theme-color" content="#16307a" />
+<meta name="robots" content="noindex,nofollow" />
+<link rel="icon" href="/assets/india-post-logo.png" />
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leave-orders/quiz/quiz.css">
+<style>
+  .toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .toolbar .input{flex:1;min-width:170px}
+  .toolbar .select{max-width:170px}
+  .qrow{border:1px solid var(--line);border-radius:var(--r-md);padding:14px;margin-bottom:11px;
+    background:var(--card)}
+  .qrow .qh{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
+  .qrow .qt{font-weight:600;font-size:14.5px;line-height:1.55;overflow-wrap:break-word}
+  .qopts{display:grid;gap:5px;margin-top:10px}
+  .qopt{font-size:13px;padding:6px 10px;border-radius:8px;background:var(--card-2);display:flex;gap:9px}
+  .qopt.key{background:rgba(5,150,105,.11);font-weight:700}
+  .qacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+  .optfield{display:flex;gap:10px;align-items:center;margin-bottom:9px}
+  .optfield .rad{flex:none;display:flex;align-items:center;gap:7px;font-weight:800;font-size:13px;
+    min-width:62px}
+  .optfield input[type=radio]{width:21px;height:21px;accent-color:var(--ok)}
+  .optfield .input{flex:1}
+  .drop{border:2px dashed var(--line-2);border-radius:var(--r-lg);padding:24px 18px;text-align:center;
+    background:var(--card-2);cursor:pointer}
+  .drop.over{border-color:var(--indigo);background:rgba(79,70,229,.06)}
+</style>
+</head>
+<body>
+<div id="shell"><main id="app"></main></div>
+
+<script src="/leave-orders/quiz/quiz-core.js"></script>
+<script src="/leave-orders/quiz/quiz-admin-core.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var host = null;
+  var parsed = null;
+  var categories = [];
+
+  QuizAdmin.boot({
+    title: 'Question Bank',
+    subtitle: 'Create, import, validate and publish examination questions',
+    icon: '&#10067;',
+    active: '/Quiz/admin/questions',
+    requireRole: 'QUIZ_EDITOR',
+    onReady: function (me, h) { host = h; shell(); }
+  });
+
+  function shell() {
+    host.innerHTML =
+      // The official questions come from the administrator. Nothing is invented
+      // here, and this notice stays visible so that stays clear.
+      QuizUI.alert('', '&#8505;',
+        '<b>Official questions are supplied by the administrator.</b> Add them one at a time below, ' +
+        'or bulk-import from Excel. A question is only eligible for an examination once its status ' +
+        'is <b>Active</b>, and a paper is frozen at the moment you publish the examination &mdash; ' +
+        'later edits here cannot change an attempt already in progress.') +
+
+      '<div class="toolbar">' +
+        '<input class="input" id="q" placeholder="Search question text, code or category…" />' +
+        '<select class="select" id="st">' +
+          '<option value="">All statuses</option>' +
+          '<option value="ACTIVE">Active</option>' +
+          '<option value="DRAFT">Draft</option>' +
+          '<option value="ARCHIVED">Archived</option>' +
+        '</select>' +
+        '<select class="select" id="cat"><option value="">All categories</option></select>' +
+        '<button class="btn sm ghost" type="button" id="go">Search</button>' +
+        '<button class="btn sm" type="button" id="add">+ Add question</button>' +
+        '<button class="btn sm ghost" type="button" id="imp">&#11014; Import</button>' +
+        '<button class="btn sm ghost" type="button" id="tpl">&#11015; Template</button>' +
+      '</div>' +
+      '<div id="counts" class="grid grid-4" style="margin-bottom:16px"></div>' +
+      '<div id="impArea"></div>' +
+      '<div id="list">' + QuizUI.skeleton(4) + '</div>';
+
+    document.getElementById('go').addEventListener('click', load);
+    document.getElementById('q').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') load();
+    });
+    document.getElementById('st').addEventListener('change', load);
+    document.getElementById('cat').addEventListener('change', load);
+    document.getElementById('add').addEventListener('click', function () { editor(null); });
+    document.getElementById('imp').addEventListener('click', renderImport);
+    document.getElementById('tpl').addEventListener('click', downloadTemplate);
+
+    load();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     LIST
+     ═══════════════════════════════════════════════════════════════ */
+  function load() {
+    var list = document.getElementById('list');
+    list.innerHTML = QuizUI.skeleton(4);
+
+    QuizAPI.admin('questions-list', {
+      q: document.getElementById('q').value.trim(),
+      status: document.getElementById('st').value,
+      category: document.getElementById('cat').value,
+      limit: 100,
+    }).then(function (r) {
+      var c = r.counts;
+      document.getElementById('counts').innerHTML =
+        st('Total', c.total) + st('Active', c.active) + st('Draft', c.draft) + st('Archived', c.archived);
+
+      // Keep the category filter in step with what is actually in the bank.
+      if (JSON.stringify(r.categories) !== JSON.stringify(categories)) {
+        categories = r.categories || [];
+        var sel = document.getElementById('cat');
+        var cur = sel.value;
+        sel.innerHTML = '<option value="">All categories</option>' + categories.map(function (x) {
+          return '<option value="' + QuizUI.esc(x) + '"' + (x === cur ? ' selected' : '') + '>' +
+            QuizUI.esc(x) + '</option>';
+        }).join('');
+      }
+
+      if (!c.total) {
+        list.innerHTML = QuizUI.empty('&#10067;', 'Question Bank Not Yet Uploaded',
+          'No questions have been added yet. Use <b>+ Add question</b> for a single question, ' +
+          'or <b>Import</b> to upload the question bank from Excel. ' +
+          'Download the template first if you would like the exact column layout.');
+        return;
+      }
+      if (!r.questions.length) {
+        list.innerHTML = QuizUI.empty('&#128269;', 'No matching questions',
+          'No question matches the current search and filters.');
+        return;
+      }
+
+      list.innerHTML =
+        '<p style="font-size:12.5px;color:var(--muted);margin-bottom:11px">Showing ' +
+          r.questions.length + ' question(s).</p>' +
+        r.questions.map(qCard).join('');
+
+      Array.prototype.forEach.call(list.querySelectorAll('[data-qa]'), function (b) {
+        b.addEventListener('click', function () {
+          var act = b.getAttribute('data-qa');
+          var id = b.getAttribute('data-id');
+          var q = r.questions.filter(function (x) { return x.id === id; })[0];
+          if (act === 'edit') editor(q);
+          else if (act === 'dup') duplicate(id);
+          else if (act === 'hist') history(id);
+          else setStatus(id, act);
+        });
+      });
+    }).catch(function (e) {
+      list.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  function qCard(q) {
+    var opts = ['a', 'b', 'c', 'd'].map(function (k) {
+      var isKey = q.correct_option === k.toUpperCase();
+      return '<div class="qopt' + (isKey ? ' key' : '') + '">' +
+        '<span style="flex:none;font-weight:800">' + k.toUpperCase() + '</span>' +
+        '<span style="flex:1;min-width:0;overflow-wrap:break-word">' +
+          QuizUI.esc(q['option_' + k]) + '</span>' +
+        (isKey ? '<span style="flex:none">&#10004;</span>' : '') +
+      '</div>';
+    }).join('');
+
+    return '<div class="qrow">' +
+      '<div class="qh">' +
+        '<b style="font-family:JetBrains Mono,monospace;font-size:12px">' +
+          QuizUI.esc(q.qcode || '—') + '</b>' +
+        QuizUI.statusBadge(q.status) +
+        (q.category ? QuizUI.badge(q.category) : '') +
+        QuizUI.badge(q.difficulty || 'MEDIUM', q.difficulty === 'HARD' ? 'warn' : 'mute') +
+        '<span style="margin-left:auto;font-size:10.5px;color:var(--muted)">v' + q.version + '</span>' +
+      '</div>' +
+      '<div class="qt">' + QuizUI.esc(q.question_text) + '</div>' +
+      '<div class="qopts">' + opts + '</div>' +
+      (q.explanation || q.source_ref
+        ? '<div style="margin-top:9px;font-size:12px;color:var(--muted);line-height:1.6">' +
+          (q.explanation ? QuizUI.esc(q.explanation) : '') +
+          (q.source_ref ? '<br><b>Reference:</b> ' + QuizUI.esc(q.source_ref) : '') + '</div>'
+        : '') +
+      '<div class="qacts">' +
+        btn('edit', q.id, 'Edit') +
+        (q.status !== 'ACTIVE' ? btn('ACTIVE', q.id, 'Activate', 'ok') : '') +
+        (q.status !== 'DRAFT' ? btn('DRAFT', q.id, 'Move to draft') : '') +
+        (q.status !== 'ARCHIVED' ? btn('ARCHIVED', q.id, 'Archive') : '') +
+        btn('dup', q.id, 'Duplicate') +
+        btn('hist', q.id, 'History') +
+      '</div>' +
+    '</div>';
+  }
+
+  function btn(act, id, label, cls) {
+    return '<button class="btn sm ' + (cls === 'ok' ? 'ok' : 'ghost') + '" type="button" ' +
+      'data-qa="' + act + '" data-id="' + id + '">' + label + '</button>';
+  }
+
+  function st(k, v) {
+    return '<div class="stat"><div class="k">' + QuizUI.esc(k) + '</div>' +
+      '<div class="v">' + QuizUI.esc(v) + '</div></div>';
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     EDITOR
+     ═══════════════════════════════════════════════════════════════ */
+  function editor(q) {
+    var e = q || {};
+    var correct = e.correct_option || '';
+
+    var optRow = function (k) {
+      var K = k.toUpperCase();
+      return '<div class="optfield">' +
+        '<label class="rad"><input type="radio" name="correct" value="' + K + '"' +
+          (correct === K ? ' checked' : '') + ' /> ' + K + '</label>' +
+        '<input class="input" id="o_' + k + '" placeholder="Option ' + K + '" ' +
+          'value="' + QuizUI.esc(e['option_' + k] || '') + '" />' +
+      '</div>';
+    };
+
+    QuizUI.modal('qed', q ? 'Edit question ' + (e.qcode || '') : 'Add a question',
+      '<div class="field">' +
+        '<label for="qtext">Question</label>' +
+        '<textarea class="textarea" id="qtext" placeholder="Type the question exactly as it should appear">' +
+          QuizUI.esc(e.question_text || '') + '</textarea>' +
+      '</div>' +
+      '<div class="section-title" style="margin-top:4px">Options &mdash; select the correct one</div>' +
+      optRow('a') + optRow('b') + optRow('c') + optRow('d') +
+      '<div class="grid grid-2" style="margin-top:12px">' +
+        '<div class="field"><label for="qcat">Category / topic</label>' +
+          '<input class="input" id="qcat" list="catList" placeholder="e.g. Post Office Act 2023" ' +
+            'value="' + QuizUI.esc(e.category || '') + '" />' +
+          '<datalist id="catList">' + categories.map(function (c) {
+            return '<option value="' + QuizUI.esc(c) + '"></option>'; }).join('') + '</datalist>' +
+        '</div>' +
+        '<div class="field"><label for="qdiff">Difficulty</label>' +
+          '<select class="select" id="qdiff">' +
+            ['EASY', 'MEDIUM', 'HARD'].map(function (d) {
+              return '<option value="' + d + '"' +
+                ((e.difficulty || 'MEDIUM') === d ? ' selected' : '') + '>' +
+                d.charAt(0) + d.slice(1).toLowerCase() + '</option>';
+            }).join('') +
+          '</select>' +
+        '</div>' +
+      '</div>' +
+      '<div class="field"><label for="qexp">Explanation (optional)</label>' +
+        '<textarea class="textarea" id="qexp" placeholder="Shown only if the answer key is released">' +
+          QuizUI.esc(e.explanation || '') + '</textarea></div>' +
+      '<div class="field"><label for="qref">Official source / reference (optional)</label>' +
+        '<input class="input" id="qref" placeholder="e.g. Rule 32, Post Office Manual Vol. VI" ' +
+          'value="' + QuizUI.esc(e.source_ref || '') + '" /></div>' +
+      '<div class="field"><label for="qstat">Status</label>' +
+        '<select class="select" id="qstat">' +
+          ['DRAFT', 'ACTIVE', 'ARCHIVED'].map(function (s) {
+            return '<option value="' + s + '"' + ((e.status || 'DRAFT') === s ? ' selected' : '') + '>' +
+              s.charAt(0) + s.slice(1).toLowerCase() + '</option>';
+          }).join('') +
+        '</select>' +
+        '<div class="hint">Only <b>Active</b> questions can be drawn into an examination.</div>' +
+      '</div>' +
+      (q ? '<div class="field"><label for="qnote">Change note (recorded in the history)</label>' +
+        '<input class="input" id="qnote" placeholder="e.g. Corrected option C per Directorate letter" /></div>' : '') +
+      '<div id="qerr"></div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'qed\')">Cancel</button>' +
+      '<button class="btn" type="button" id="qsave" style="flex:1">' +
+        (q ? 'Save changes' : 'Add question') + '</button>');
+
+    document.getElementById('qsave').addEventListener('click', function () {
+      var pickedRadio = document.querySelector('input[name="correct"]:checked');
+      var payload = {
+        id: q ? q.id : undefined,
+        question_text: document.getElementById('qtext').value,
+        option_a: document.getElementById('o_a').value,
+        option_b: document.getElementById('o_b').value,
+        option_c: document.getElementById('o_c').value,
+        option_d: document.getElementById('o_d').value,
+        correct_option: pickedRadio ? pickedRadio.value : '',
+        category: document.getElementById('qcat').value,
+        difficulty: document.getElementById('qdiff').value,
+        explanation: document.getElementById('qexp').value,
+        source_ref: document.getElementById('qref').value,
+        status: document.getElementById('qstat').value,
+        change_note: q ? document.getElementById('qnote').value : undefined,
+      };
+
+      var b = this;
+      b.disabled = true; b.textContent = 'Saving…';
+      QuizAPI.admin('question-save', null, payload).then(function (r) {
+        QuizUI.closeModal('qed');
+        QuizUI.toast(r.notice || r.duplicateWarning || 'Question saved.',
+          (r.notice || r.duplicateWarning) ? '' : 'ok');
+        load();
+      }).catch(function (err) {
+        b.disabled = false; b.textContent = q ? 'Save changes' : 'Add question';
+        document.getElementById('qerr').innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(err.message));
+      });
+    });
+  }
+
+  function setStatus(id, status) {
+    QuizAPI.admin('question-status', null, { id: id, status: status })
+      .then(function () { QuizUI.toast('Status updated.', 'ok'); load(); })
+      .catch(QuizUI.err);
+  }
+
+  function duplicate(id) {
+    QuizAPI.admin('question-duplicate', null, { id: id })
+      .then(function (r) { QuizUI.toast('Duplicated as ' + r.qcode + ' (draft).', 'ok'); load(); })
+      .catch(QuizUI.err);
+  }
+
+  function history(id) {
+    QuizUI.modal('qh', 'Modification history', QuizUI.skeleton(3), '');
+    QuizAPI.admin('question-history', { id: id }).then(function (r) {
+      var box = document.querySelector('#qh .modal-body');
+      if (!r.revisions.length) {
+        box.innerHTML = '<p style="font-size:13.5px;color:var(--muted)">This question has not been ' +
+          'edited since it was created.</p>';
+        return;
+      }
+      box.innerHTML = r.revisions.map(function (v) {
+        var s = v.snapshot || {};
+        return '<div class="rev" style="border-left:4px solid var(--indigo)">' +
+          '<div style="display:flex;gap:9px;align-items:center;margin-bottom:7px">' +
+            QuizUI.badge('v' + v.version) +
+            '<span style="font-size:11.5px;color:var(--muted)">' +
+              QuizUI.esc(QuizTime.ist(v.changed_at_ms)) + ' &middot; ' +
+              QuizUI.esc(v.changed_by || '') + '</span>' +
+          '</div>' +
+          (v.change_note ? '<p style="font-size:12.5px;font-style:italic;margin-bottom:7px">' +
+            QuizUI.esc(v.change_note) + '</p>' : '') +
+          '<div class="rq">' + QuizUI.esc(s.question_text || '') + '</div>' +
+          '<div style="font-size:12.5px;color:var(--muted);margin-top:6px">Key: <b>' +
+            QuizUI.esc(s.correct_option || '') + '</b></div>' +
+        '</div>';
+      }).join('');
+    }).catch(function (e) {
+      document.querySelector('#qh .modal-body').innerHTML =
+        QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     IMPORT / TEMPLATE
+     ═══════════════════════════════════════════════════════════════ */
+  function downloadTemplate() {
+    var columns = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d',
+                   'correct_option', 'explanation', 'source_ref', 'category', 'difficulty'];
+    var sample = [[
+      'In which year did the Post Office Act come into force?',
+      '2021', '2022', '2023', '2024',
+      'C',
+      'The Post Office Act, 2023 replaced the Indian Post Office Act, 1898.',
+      'Post Office Act, 2023',
+      'Post Office Act 2023',
+      'MEDIUM'
+    ]];
+    QuizAdmin.exportXlsx('Quiz-Question-Bank-Template.xlsx', 'Questions', columns, sample);
+    QuizUI.toast('Template downloaded. Replace the sample row with your questions.', 'ok');
+  }
+
+  function renderImport() {
+    var area = document.getElementById('impArea');
+    area.innerHTML =
+      '<div class="card">' +
+        '<div class="card-head"><div class="card-ic">&#11014;</div>' +
+          '<div><div class="card-t">Import questions from Excel</div>' +
+          '<div class="card-s">.xlsx or .csv, up to 2000 questions per batch</div></div></div>' +
+        QuizUI.alert('', '&#8505;',
+          'Required columns: <b>question_text</b>, <b>option_a</b> to <b>option_d</b> and ' +
+          '<b>correct_option</b> (A, B, C or D). Optional: explanation, source_ref, category, ' +
+          'difficulty. Download the <b>Template</b> for the exact layout. Rows with a blank option, ' +
+          'two identical options or a missing key are reported rather than imported.') +
+        '<div class="drop" id="qdrop" tabindex="0" role="button">' +
+          '<div style="font-size:38px;opacity:.6">&#128228;</div>' +
+          '<p style="font-weight:700;margin:9px 0 4px">Tap to choose a file, or drop it here</p>' +
+        '</div>' +
+        '<input type="file" id="qfile" accept=".xlsx,.xls,.csv" hidden />' +
+        '<div id="qimpOut" style="margin-top:14px"></div>' +
+      '</div>';
+
+    var drop = document.getElementById('qdrop');
+    var file = document.getElementById('qfile');
+    drop.addEventListener('click', function () { file.click(); });
+    drop.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); }
+    });
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); });
+    });
+    drop.addEventListener('drop', function (e) {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) pick(e.dataTransfer.files[0]);
+    });
+    file.addEventListener('change', function () {
+      if (file.files && file.files[0]) pick(file.files[0]);
+    });
+    area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function pick(f) {
+    var out = document.getElementById('qimpOut');
+    out.innerHTML = QuizUI.skeleton(2);
+    QuizAdmin.readSheet(f).then(function (res) {
+      parsed = { file: f, rows: res.rows };
+      out.innerHTML =
+        '<p style="font-size:13px;font-weight:700;margin-bottom:11px">' +
+          QuizUI.esc(f.name) + ' &mdash; ' + res.rows.length + ' row(s)</p>' +
+        '<div class="field"><div class="checkrow">' +
+          '<input type="checkbox" id="activate" />' +
+          '<label for="activate" style="font-weight:500;margin:0">Mark imported questions as ' +
+            '<b>Active</b> immediately (otherwise they arrive as Draft for review)</label>' +
+        '</div></div>' +
+        '<div class="btn-row">' +
+          '<button class="btn ghost" type="button" id="qprev">Preview</button>' +
+          '<button class="btn" type="button" id="qsave2" style="flex:1">Import</button>' +
+        '</div>' +
+        '<div id="qres" style="margin-top:14px"></div>';
+
+      document.getElementById('qprev').addEventListener('click', function () { doImport(true); });
+      document.getElementById('qsave2').addEventListener('click', function () { doImport(false); });
+    }).catch(function (e) {
+      out.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  function doImport(dryRun) {
+    var res = document.getElementById('qres');
+    res.innerHTML = QuizUI.skeleton(2);
+
+    QuizAPI.admin('questions-import', null, {
+      rows: parsed.rows,
+      filename: parsed.file.name,
+      activate: document.getElementById('activate').checked,
+      dry_run: !!dryRun,
+    }).then(function (r) {
+      var s = r.summary;
+      var h = '<div class="grid grid-4">' +
+        stt('Rows', s.total) +
+        stt(dryRun ? 'Will import' : 'Imported', dryRun ? s.toInsert : s.inserted) +
+        stt('Duplicates', s.duplicates) +
+        stt('Needing review', s.skipped) +
+      '</div>';
+      if (r.message) {
+        h += '<p style="margin-top:13px;font-size:13.5px;font-weight:600">' +
+          QuizUI.esc(r.message) + '</p>';
+      }
+      if (r.issues && r.issues.length) {
+        h += '<div class="section-title">Rows requiring review</div>' +
+          QuizAdmin.table(['Row', 'Issue'],
+            r.issues.map(function (i) { return [i.line, i.issue]; }), { wrapCols: [1] });
+      }
+      if (dryRun) {
+        h += '<div class="btn-row" style="margin-top:13px">' +
+          '<button class="btn" type="button" id="qcfm">Looks right &mdash; import now</button></div>';
+      }
+      res.innerHTML = h;
+
+      var c = document.getElementById('qcfm');
+      if (c) c.addEventListener('click', function () { doImport(false); });
+      if (!dryRun) { QuizUI.toast(r.message, 'ok'); load(); }
+    }).catch(function (e) {
+      res.innerHTML = QuizUI.alert('err', '&#9888;', '<b>Import failed.</b><br>' + QuizUI.esc(e.message));
+    });
+  }
+
+  function stt(k, v) {
+    return '<div class="stat"><div class="k">' + QuizUI.esc(k) + '</div>' +
+      '<div class="v">' + QuizUI.esc(v) + '</div></div>';
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=5" />
+<title>Examination &mdash; National Postal Week 2026 Quiz | Karur Division</title>
+<meta name="theme-color" content="#16307a" />
+<meta name="robots" content="noindex,nofollow" />
+<link rel="icon" href="/assets/india-post-logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leave-orders/quiz/quiz.css">
+</head>
+<body class="exam-mode">
+
+<div class="netstat" id="netstat">&#9888; Connection lost &mdash; retrying&hellip;</div>
+<div id="testbarSlot"></div>
+
+<!-- Top bar: branding, question number, overall countdown, progress -->
+<div class="exam-top" id="examTop">
+  <div class="exam-top-row">
+    <img src="/assets/india-post-logo.png" alt="India Post"
+         style="width:28px;height:28px;border-radius:7px;background:#fff;padding:3px;flex:none" />
+    <div style="min-width:0;flex:1">
+      <div class="exam-ttl" id="examTitle">Loading examination…</div>
+      <div class="exam-qno" id="examQno">&nbsp;</div>
+    </div>
+    <div class="exam-clock" id="clock" role="timer" aria-live="off">
+      <span aria-hidden="true">&#9201;</span><span id="clockVal">--:--</span>
+    </div>
+  </div>
+  <div class="exam-rail"><i id="rail" style="width:0%"></i></div>
+</div>
+
+<div class="exam-body" id="body">
+  <div class="question">
+    <div class="skel lg"></div><div class="skel"></div><div class="skel w60"></div>
+  </div>
+</div>
+
+<div class="exam-foot" id="foot" hidden>
+  <div class="exam-foot-in">
+    <button class="btn ghost sm" type="button" id="skipBtn" hidden>Skip</button>
+    <div class="grow"></div>
+    <button class="btn" type="button" id="nextBtn" disabled>Save &amp; Next</button>
+  </div>
+</div>
+
+<div id="shell"><div id="app" hidden></div></div>
+
+<script src="/leave-orders/quiz/quiz-core.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ─────────────────────────────────────────────────────────────
+     Timing model
+     -------------
+     The server owns both deadlines and re-states them on every reply. We
+     keep a local anchor only so the digits move smoothly between replies.
+     Nothing here decides that time is up: when a local countdown reaches
+     zero we ASK the server, and the server's answer is what happens. A
+     participant who changes their device clock changes only the animation.
+     ───────────────────────────────────────────────────────────── */
+
+  var attemptId = (function () {
+    // /Quiz/exam/<id>  — also tolerate ?attempt=<id>
+    var m = location.pathname.match(/\/exam\/([^/?#]+)/i);
+    if (m) return decodeURIComponent(m[1]);
+    return new URLSearchParams(location.search).get('attempt') || '';
+  })();
+
+  var state = null;
+  var selected = null;
+  var tickIv = null;
+  var pollIv = null;
+  var busy = false;
+  var finished = false;
+  var askingServer = false;
+
+  var elBody = document.getElementById('body');
+  var elFoot = document.getElementById('foot');
+  var elTitle = document.getElementById('examTitle');
+  var elQno = document.getElementById('examQno');
+  var elClock = document.getElementById('clock');
+  var elClockVal = document.getElementById('clockVal');
+  var elRail = document.getElementById('rail');
+  var elNext = document.getElementById('nextBtn');
+  var elSkip = document.getElementById('skipBtn');
+  var elNet = document.getElementById('netstat');
+
+  QuizUI.initTheme();
+  if (!document.getElementById('toast')) {
+    var t = document.createElement('div');
+    t.id = 'toast'; t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite');
+    document.body.appendChild(t);
+  }
+  // The mandatory credit footer, kept deliberately quiet during an exam.
+  document.getElementById('shell').insertAdjacentHTML('beforeend', QuizUI.footer());
+
+  if (!attemptId) {
+    fatal('No examination attempt was specified.',
+          'Open the quiz from your dashboard rather than typing the address.');
+  } else {
+    refresh();
+    // A slow background poll keeps the clock honest and finalises the attempt
+    // server-side even if this tab is left open and idle.
+    pollIv = setInterval(function () { if (!busy && !finished) refresh(true); }, 25000);
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     Server sync
+     ───────────────────────────────────────────────────────────── */
+  function refresh(quiet) {
+    if (askingServer) return;
+    askingServer = true;
+
+    QuizAPI.part('exam-state', { attempt_id: attemptId }).then(function (r) {
+      askingServer = false;
+      online();
+      QuizTime.anchor(r.serverTimeMs);
+
+      if (r.finished) { onFinished(r); return; }
+
+      // A fresh question? Clear the local selection so a tap cannot land on
+      // the wrong question after an advance.
+      var changed = !state || state.seq !== r.seq;
+      state = r;
+      if (changed) selected = r.selectedSlot || null;
+      else if (r.selectedSlot && !selected) selected = r.selectedSlot;
+
+      if (r.testMode) showTestBar();
+      render();
+      startTicking();
+    }, function (err) {
+      askingServer = false;
+      if (err.status === 401) { QuizUI.go('/Quiz'); return; }
+      if (err.offline) { offline(); return; }
+      if (!quiet) {
+        fatal('This examination could not be opened.', err.message);
+      }
+    });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     Render
+     ───────────────────────────────────────────────────────────── */
+  function render() {
+    var s = state;
+    elTitle.textContent = s.examTitle || 'Examination';
+    elQno.textContent = 'Question ' + s.seq + ' of ' + s.total +
+      '  ·  ' + s.answeredCount + ' answered';
+    elRail.style.width = Math.round(((s.seq - 1) / s.total) * 100) + '%';
+
+    var opts = (s.options || []).map(function (o) {
+      var on = selected === o.slot;
+      return '<button class="opt' + (on ? ' sel' : '') + '" type="button" ' +
+        'data-slot="' + QuizUI.esc(o.slot) + '" role="radio" aria-checked="' + (on ? 'true' : 'false') + '">' +
+        '<span class="k" aria-hidden="true">' + QuizUI.esc(o.slot) + '</span>' +
+        '<span class="v">' + QuizUI.esc(o.text) + '</span>' +
+      '</button>';
+    }).join('');
+
+    elBody.innerHTML =
+      '<div class="qtimer" id="qtimer">' +
+        '<span style="font-size:11px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;' +
+          'color:var(--muted);flex:none">This question</span>' +
+        '<div class="bar"><i id="qbar" style="width:100%"></i></div>' +
+        '<div class="t" id="qtime">--</div>' +
+      '</div>' +
+      '<div class="question">' +
+        '<div class="q-meta">Question ' + s.seq + ' of ' + s.total + '</div>' +
+        '<div class="q-text">' + QuizUI.esc(s.questionText) + '</div>' +
+      '</div>' +
+      '<div class="options" role="radiogroup" aria-label="Answer options">' + opts + '</div>' +
+      '<p style="margin:14px 0 0;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.6">' +
+        (s.navigation === 'ONE_WAY'
+          ? 'One-way paper &mdash; you cannot return to this question once you move on.'
+          : 'You may revisit questions in this paper.') +
+      '</p>';
+
+    Array.prototype.forEach.call(elBody.querySelectorAll('.opt'), function (b) {
+      b.addEventListener('click', function () { choose(b.getAttribute('data-slot')); });
+    });
+
+    elFoot.hidden = false;
+    elSkip.hidden = !s.allowSkip;
+    elNext.textContent = s.isLast ? 'Submit Examination' : 'Save & Next';
+    elNext.classList.toggle('ok', !!s.isLast);
+    elNext.disabled = !selected;
+  }
+
+  function choose(slot) {
+    if (busy || finished) return;
+    selected = slot;
+    Array.prototype.forEach.call(elBody.querySelectorAll('.opt'), function (b) {
+      var on = b.getAttribute('data-slot') === slot;
+      b.classList.toggle('sel', on);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    elNext.disabled = false;
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     Countdowns — purely presentational
+     ───────────────────────────────────────────────────────────── */
+  function startTicking() {
+    clearInterval(tickIv);
+    tick();
+    tickIv = setInterval(tick, 500);
+  }
+
+  function tick() {
+    if (!state || finished) return;
+    var now = QuizTime.now();
+
+    // Overall
+    var left = Math.max(0, state.attemptDeadlineMs - now);
+    elClockVal.textContent = QuizTime.clock(left);
+    elClock.classList.toggle('warn', left <= 120000 && left > 30000);
+    elClock.classList.toggle('crit', left <= 30000);
+
+    // Per question
+    var qLeft = Math.max(0, state.questionDeadlineMs - now);
+    // The bar is drawn against the FULL per-question allowance, so resuming
+    // mid-question shows a partly-spent bar rather than a full one.
+    var qTotal = Math.max(1, (state.secondsPerQuestion || 30) * 1000);
+    var bar = document.getElementById('qbar');
+    var qt = document.getElementById('qtime');
+    var wrap = document.getElementById('qtimer');
+    if (bar && qt && wrap) {
+      var pct = Math.max(0, Math.min(100, (qLeft / Math.max(1, qTotal)) * 100));
+      bar.style.width = pct + '%';
+      qt.textContent = Math.ceil(qLeft / 1000) + 's';
+      wrap.classList.toggle('warn', qLeft <= 10000 && qLeft > 5000);
+      wrap.classList.toggle('crit', qLeft <= 5000);
+    }
+
+    // Either clock reaching zero is a prompt to ask the server, not a
+    // decision. Whichever applicable deadline came first, the server enforces.
+    if (left <= 0 || qLeft <= 0) {
+      clearInterval(tickIv);
+      if (!busy) {
+        // Try to bank the current selection before the question locks.
+        if (selected && qLeft <= 0 && left > 0) {
+          saveAnswer(true).catch(function () {}).then(function () { refresh(); });
+        } else {
+          refresh();
+        }
+      }
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     Submitting answers
+     ───────────────────────────────────────────────────────────── */
+  elNext.addEventListener('click', function () {
+    if (!selected || busy || finished) return;
+    if (state.isLast) {
+      confirmSubmit();
+    } else {
+      setBusy(true, 'Saving…');
+      saveAnswer(true).then(function () { setBusy(false); refresh(); })
+        .catch(function (e) { setBusy(false); handleAnswerError(e); });
+    }
+  });
+
+  elSkip.addEventListener('click', function () {
+    if (busy || finished) return;
+    setBusy(true, 'Skipping…');
+    QuizAPI.part('skip', null, { attempt_id: attemptId, seq: state.seq })
+      .then(function () { selected = null; setBusy(false); refresh(); })
+      .catch(function (e) { setBusy(false); handleAnswerError(e); });
+  });
+
+  // An idempotency token per (question, choice): a retry after a dropped
+  // connection overwrites the same row rather than scoring twice.
+  function saveAnswer(advance) {
+    var token = attemptId + ':' + state.seq + ':' + selected;
+    return QuizAPI.part('answer', null, {
+      attempt_id: attemptId, seq: state.seq, slot: selected,
+      advance: advance !== false, client_token: token,
+    });
+  }
+
+  function confirmSubmit() {
+    var unanswered = state.total - state.answeredCount - (selected ? 0 : 1);
+    QuizUI.modal('subm', 'Submit your examination?',
+      '<p style="font-size:14px;line-height:1.65">This is the last question. Once you submit, ' +
+      'the examination is closed and cannot be reopened.</p>' +
+      (unanswered > 0
+        ? QuizUI.alert('warn', '&#9888;', '<b>' + unanswered + ' question(s) will remain unanswered</b> ' +
+            'and will score zero.')
+        : '') +
+      '<p style="font-size:12.5px;color:var(--muted);margin-top:10px">Your answers are already ' +
+      'saved on the server. Submitting finalises the attempt and calculates your score.</p>',
+      '<button class="btn ghost" type="button" id="noSub">Go back</button>' +
+      '<button class="btn ok" type="button" id="yesSub" style="flex:1">Submit now</button>'
+    );
+    document.getElementById('noSub').addEventListener('click', function () { QuizUI.closeModal('subm'); });
+    document.getElementById('yesSub').addEventListener('click', function () {
+      QuizUI.closeModal('subm');
+      setBusy(true, 'Submitting…');
+      saveAnswer(false)
+        .catch(function () { /* the submit below still finalises what is stored */ })
+        .then(function () {
+          return QuizAPI.part('submit', null, { attempt_id: attemptId });
+        })
+        .then(function () { finished = true; QuizUI.go('/Quiz/result/' + attemptId); })
+        .catch(function (e) { setBusy(false); handleAnswerError(e); });
+    });
+  }
+
+  function handleAnswerError(e) {
+    if (e.status === 401) { QuizUI.go('/Quiz'); return; }
+    if (e.offline) { offline(); QuizUI.toast('No connection — your answer was not saved. Retrying…', 'err');
+      setTimeout(function () { refresh(true); }, 2500); return; }
+    // The server refused: time ran out, the question locked, or the attempt
+    // closed. Re-sync and show whatever the server now says.
+    QuizUI.toast(e.message, 'err');
+    setTimeout(refresh, 900);
+  }
+
+  function setBusy(on, label) {
+    busy = on;
+    elNext.disabled = on || !selected;
+    elSkip.disabled = on;
+    if (on && label) elNext.textContent = label;
+    else if (!on && state) elNext.textContent = state.isLast ? 'Submit Examination' : 'Save & Next';
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     Finish states
+     ───────────────────────────────────────────────────────────── */
+  function onFinished(r) {
+    finished = true;
+    clearInterval(tickIv);
+    clearInterval(pollIv);
+    elFoot.hidden = true;
+    elClockVal.textContent = '00:00';
+    elClock.classList.remove('warn');
+    elClock.classList.add('crit');
+    elRail.style.width = '100%';
+    elQno.textContent = 'Completed';
+
+    var why = {
+      TIME_UP: ['&#9201;', 'Time is up',
+        'Your examination time has ended and the attempt was submitted automatically. ' +
+        'Every answer you saved has been counted.'],
+      COMPLETED: ['&#9989;', 'Examination completed',
+        'You have answered the last question. Your attempt has been submitted.'],
+      SUBMITTED: ['&#9989;', 'Already submitted', 'This attempt has already been submitted.'],
+      AUTO_SUBMITTED: ['&#9201;', 'Automatically submitted',
+        'Your attempt was submitted automatically when the time ran out.'],
+      EXPIRED: ['&#9201;', 'Time is up',
+        'Your examination time ended and the attempt has been finalised.'],
+      VOID: ['&#10060;', 'Attempt cancelled', 'This attempt was cancelled.'],
+    }[r.reason] || ['&#9989;', 'Examination closed', 'This attempt is no longer open.'];
+
+    elBody.innerHTML =
+      '<div class="card" style="text-align:center">' +
+        '<div style="font-size:54px;line-height:1">' + why[0] + '</div>' +
+        '<h3 style="margin:12px 0 7px;font-size:20px">' + why[1] + '</h3>' +
+        '<p style="font-size:13.5px;color:var(--muted);line-height:1.65;max-width:420px;margin:0 auto 18px">' +
+          why[2] + '</p>' +
+        '<div class="btn-row" style="justify-content:center">' +
+          '<a class="btn" href="/Quiz/result/' + QuizUI.esc(attemptId) + '">View my result &rarr;</a>' +
+          '<a class="btn ghost" href="/Quiz/dashboard">Dashboard</a>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function fatal(title, detail) {
+    finished = true;
+    clearInterval(tickIv); clearInterval(pollIv);
+    elFoot.hidden = true;
+    elTitle.textContent = 'Examination';
+    elQno.textContent = '';
+    elBody.innerHTML = '<div class="card">' +
+      QuizUI.alert('err', '&#9888;', '<b>' + QuizUI.esc(title) + '</b><br>' + QuizUI.esc(detail || '')) +
+      '<div class="btn-row"><a class="btn ghost" href="/Quiz/dashboard">Back to dashboard</a></div></div>';
+  }
+
+  function showTestBar() {
+    var slot = document.getElementById('testbarSlot');
+    if (slot && !slot.innerHTML) {
+      slot.innerHTML = '<div class="testbar">&#9888; Test Mode &mdash; administrator dry run &middot; ' +
+        'not an official attempt</div>';
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     Network and integrity signals
+     ───────────────────────────────────────────────────────────── */
+  function offline() { elNet.classList.add('on'); }
+  function online() { elNet.classList.remove('on'); }
+
+  window.addEventListener('offline', function () {
+    offline();
+    logEvent('OFFLINE');
+  });
+  window.addEventListener('online', function () {
+    QuizUI.toast('Back online — syncing with the server…', 'ok');
+    logEvent('ONLINE');
+    refresh();
+  });
+
+  // Logged for administrator review only. A tab switch never ends an
+  // examination and never disqualifies anyone on its own.
+  document.addEventListener('visibilitychange', function () {
+    if (finished) return;
+    if (document.hidden) {
+      logEvent('TAB_HIDDEN');
+    } else {
+      logEvent('TAB_VISIBLE');
+      refresh();            // re-sync: the clock kept running while away
+    }
+  });
+
+  // Mild deterrent, honestly labelled: this cannot stop a second device.
+  elBody.addEventListener('copy', function (e) {
+    if (finished) return;
+    e.preventDefault();
+    logEvent('COPY_BLOCKED');
+    QuizUI.toast('Copying is disabled during the examination.', 'err');
+  });
+
+  window.addEventListener('beforeunload', function (e) {
+    if (finished || !state) return;
+    logEvent('PAGE_EXIT');
+    e.preventDefault();
+    e.returnValue = '';     // browsers show their own wording
+    return '';
+  });
+
+  function logEvent(type) {
+    try {
+      QuizAPI.part('event', null, { type: type, attempt_id: attemptId }).catch(function () {});
+    } catch (_) {}
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Settings &amp; Roles &mdash; Quiz Administration | Karur Division</title>
+<meta name="theme-color" content="#16307a" />
+<meta name="robots" content="noindex,nofollow" />
+<link rel="icon" href="/assets/india-post-logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leave-orders/quiz/quiz.css">
+<style>
+  .envrow{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);
+    font-size:13px;flex-wrap:wrap}
+  .envrow:last-child{border-bottom:0}
+  .envrow code{font-family:"JetBrains Mono",monospace;font-size:11.5px;background:var(--card-2);
+    padding:2px 7px;border-radius:6px;border:1px solid var(--line)}
+  .rolerow{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);
+    flex-wrap:wrap}
+  .rolerow:last-child{border-bottom:0}
+  .rolerow .rn{flex:1;min-width:140px}
+  .rolerow .rn b{display:block;font-size:13.5px}
+  .rolerow .rn span{font-size:11.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="shell"><main id="app"></main></div>
+
+<script src="/leave-orders/quiz/quiz-core.js"></script>
+<script src="/leave-orders/quiz/quiz-admin-core.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var host = null;
+  var S = {};
+
+  QuizAdmin.boot({
+    title: 'Settings & Roles',
+    subtitle: 'Examination policy, registration rules and quiz privileges',
+    icon: '&#9881;',
+    active: '/Quiz/admin/settings',
+    requireRole: 'QUIZ_ADMIN',
+    onReady: function (me, h) { host = h; load(); }
+  });
+
+  function load() {
+    host.innerHTML = QuizUI.skeleton(4);
+    Promise.all([
+      QuizAPI.admin('settings-get'),
+      QuizAPI.admin('roles-list'),
+    ]).then(function (res) {
+      S = res[0].settings || {};
+      render(res[0], res[1]);
+    }).catch(function (e) {
+      host.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  function render(cfg, roles) {
+    var reg = S.registration || {};
+    var d = S.exam_defaults || {};
+    var env = cfg.environment || {};
+
+    var h = '';
+
+    /* ── Deployment status ─────────────────────────────────────── */
+    h += '<div class="card">' +
+      '<div class="card-head"><div class="card-ic">&#128268;</div>' +
+        '<div><div class="card-t">Deployment</div>' +
+        '<div class="card-s">Read-only — set in the Vercel project environment</div></div></div>' +
+      '<div class="envrow"><code>GOOGLE_CLIENT_ID</code>' +
+        (env.googleClientIdSet ? QuizUI.badge('Configured', 'ok') : QuizUI.badge('Not set', 'err')) +
+        '<span style="flex:1;font-size:12px;color:var(--muted)">' +
+          (env.googleClientIdSet
+            ? 'Google Sign-In is available to employees.'
+            : 'Google Sign-In is unavailable until this is set and the project is redeployed.') +
+        '</span></div>' +
+      '<div class="envrow"><code>SUPABASE_URL</code>' + QuizUI.badge('Configured', 'ok') +
+        '<span style="flex:1;font-size:12px;color:var(--muted);word-break:break-all">' +
+          QuizUI.esc(env.supabaseUrl || '') + '</span></div>' +
+      '<p style="margin-top:12px;font-size:12.5px;color:var(--muted);line-height:1.6">' +
+        'Secrets are never shown here, and never reach the browser. The full list and the setup ' +
+        'steps are in <code>Leave Orders/quiz/DEPLOYMENT.md</code>.</p>' +
+    '</div>';
+
+    /* ── Registration policy ───────────────────────────────────── */
+    h += '<div class="card">' +
+      '<div class="card-head"><div class="card-ic">&#128221;</div>' +
+        '<div><div class="card-t">Registration</div>' +
+        '<div class="card-s">How employees join the quiz</div></div></div>' +
+
+      '<div class="field"><div class="checkrow">' +
+        '<input type="checkbox" id="r_auto"' + (reg.auto_approve_on_roster_match ? ' checked' : '') + ' />' +
+        '<label for="r_auto" style="font-weight:500;margin:0">' +
+          '<b>Approve automatically when the Employee ID matches the roster</b><br>' +
+          '<span style="font-size:12.5px;color:var(--muted)">Recommended for a division-wide quiz. ' +
+          'The roster match is the identity evidence; you can still suspend, reject or release any ' +
+          'registration afterwards. Switch this off to approve every registration by hand.</span>' +
+        '</label></div></div>' +
+
+      '<div class="field"><div class="checkrow">' +
+        '<input type="checkbox" id="r_fb"' + (reg.allow_employee_id_fallback ? ' checked' : '') + ' />' +
+        '<label for="r_fb" style="font-weight:500;margin:0">' +
+          '<b>Allow Employee ID sign-in as a fallback</b><br>' +
+          '<span style="font-size:12.5px;color:var(--muted)">Lets an employee sign in with their ' +
+          'Employee ID plus their name, without a Google account. <b>This is weaker identity proof</b> ' +
+          '&mdash; knowing an Employee ID and a name is not the same as controlling an account. ' +
+          'Every such sign-in is flagged in the activity log for review. Enable it only if Google ' +
+          'Sign-In cannot be made ready in time.</span>' +
+        '</label></div></div>' +
+
+      '<div class="field"><label for="r_dom">Restrict Google sign-in to these email domains</label>' +
+        '<input class="input" id="r_dom" placeholder="Leave blank to allow any domain" value="' +
+          QuizUI.esc((reg.allowed_email_domains || []).join(', ')) + '" />' +
+        '<div class="hint">Comma-separated, for example <code>indiapost.gov.in, gov.in</code>. ' +
+          'Leave blank so employees can use their personal Google accounts &mdash; most will.</div></div>' +
+
+      '<div class="field"><label for="r_pre">Registration ID prefix</label>' +
+        '<input class="input mono" id="r_pre" value="' + QuizUI.esc(reg.reg_code_prefix || 'NPW2026') + '" />' +
+        '<div class="hint">Registration IDs are issued as <code>PREFIX-0001</code>.</div></div>' +
+
+      '<button class="btn" type="button" id="saveReg">Save registration settings</button>' +
+    '</div>';
+
+    /* ── Examination defaults ──────────────────────────────────── */
+    h += '<div class="card">' +
+      '<div class="card-head"><div class="card-ic">&#9881;</div>' +
+        '<div><div class="card-t">Default examination policy</div>' +
+        '<div class="card-s">Pre-filled when a new examination is created</div></div></div>' +
+      QuizUI.alert('', '&#8505;',
+        'Changing these does <b>not</b> alter an examination that already exists, and never alters ' +
+        'an attempt in progress &mdash; each attempt carries its own frozen copy of the marking and ' +
+        'timing it began under.') +
+      '<div class="grid grid-2">' +
+        n('Questions', 'd_qc', d.question_count, 20) +
+        n('Minimum allowed', 'd_min', d.min_questions, 15) +
+        n('Maximum allowed', 'd_max', d.max_questions, 25) +
+        n('Seconds per question', 'd_spq', d.seconds_per_question, 30) +
+        n('Overall duration (minutes)', 'd_mins',
+          d.total_seconds ? Math.round(d.total_seconds / 60) : 10, 10) +
+        n('Attempts allowed', 'd_att', d.attempts_allowed, 1) +
+        n('Marks for a correct answer', 'd_pos', d.positive_marks, 4) +
+        n('Marks deducted for a wrong answer', 'd_neg', d.negative_marks, 1) +
+      '</div>' +
+      '<div class="field"><label for="d_nav">Question navigation</label>' +
+        '<select class="select" id="d_nav">' +
+          '<option value="ONE_WAY"' + ((d.navigation || 'ONE_WAY') === 'ONE_WAY' ? ' selected' : '') +
+            '>One-way — cannot return to a question</option>' +
+          '<option value="FREE"' + (d.navigation === 'FREE' ? ' selected' : '') +
+            '>Free — may revisit questions</option>' +
+        '</select></div>' +
+      ck('Randomise question order by default', 'd_rq', d.randomize_questions !== false) +
+      ck('Randomise option order by default', 'd_ro', d.randomize_options !== false) +
+      ck('Allow skipping by default', 'd_skip', d.allow_skip !== false) +
+      '<button class="btn" type="button" id="saveDef">Save examination defaults</button>' +
+    '</div>';
+
+    /* ── Roles ─────────────────────────────────────────────────── */
+    h += '<div class="card">' +
+      '<div class="card-head"><div class="card-ic">&#128273;</div>' +
+        '<div><div class="card-t">Quiz privileges</div>' +
+        '<div class="card-s">A portal login does not by itself grant quiz access</div></div></div>' +
+      QuizUI.alert('', '&#8505;',
+        '<b>Quiz Administrator</b> — everything, including publishing papers and releasing results.<br>' +
+        '<b>Quiz Editor</b> — question bank, paper previews and test attempts.<br>' +
+        '<b>Quiz Viewer</b> — read-only reports.<br><br>' +
+        'An explicit grant below always wins. Where there is no grant, the portal role is translated ' +
+        'using the default map: ' +
+        Object.keys(S.role_map || {}).map(function (k) {
+          return '<code>' + QuizUI.esc(k) + ' → ' +
+            QuizUI.esc(String((S.role_map || {})[k]).replace('QUIZ_', '')) + '</code>';
+        }).join(', ') + '.') +
+      '<div id="roleList"></div>' +
+    '</div>';
+
+    host.innerHTML = h;
+
+    document.getElementById('saveReg').addEventListener('click', saveReg);
+    document.getElementById('saveDef').addEventListener('click', saveDefaults);
+    renderRoles(roles);
+  }
+
+  function n(label, id, val, dflt) {
+    return '<div class="field"><label for="' + id + '">' + QuizUI.esc(label) + '</label>' +
+      '<input class="input" type="number" step="any" id="' + id + '" value="' +
+      QuizUI.esc(val != null ? val : dflt) + '" /></div>';
+  }
+  function ck(label, id, on) {
+    return '<div class="field"><div class="checkrow">' +
+      '<input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + ' />' +
+      '<label for="' + id + '" style="font-weight:500;margin:0">' + QuizUI.esc(label) + '</label>' +
+      '</div></div>';
+  }
+
+  function saveReg() {
+    var doms = document.getElementById('r_dom').value.split(',')
+      .map(function (s) { return s.trim().replace(/^@/, '').toLowerCase(); })
+      .filter(Boolean);
+    var fb = document.getElementById('r_fb').checked;
+    var wasFb = (S.registration || {}).allow_employee_id_fallback === true;
+
+    var go = function () {
+      var b = document.getElementById('saveReg');
+      b.disabled = true; b.textContent = 'Saving…';
+      QuizAPI.admin('settings-set', null, {
+        key: 'registration',
+        value: {
+          auto_approve_on_roster_match: document.getElementById('r_auto').checked,
+          allow_employee_id_fallback: fb,
+          allowed_email_domains: doms,
+          reg_code_prefix: document.getElementById('r_pre').value.trim() || 'NPW2026',
+        },
+      }).then(function () {
+        b.disabled = false; b.textContent = 'Save registration settings';
+        QuizUI.toast('Registration settings saved.', 'ok');
+        load();
+      }).catch(function (e) {
+        b.disabled = false; b.textContent = 'Save registration settings';
+        QuizUI.err(e);
+      });
+    };
+
+    // Turning on the weaker sign-in path is worth one deliberate confirmation.
+    if (fb && !wasFb) {
+      QuizUI.modal('fbm', 'Enable Employee ID sign-in?',
+        QuizUI.alert('warn', '&#9888;',
+          'Anyone who knows an employee&rsquo;s <b>Employee ID and name</b> would be able to sign in ' +
+          'as that employee. Both are widely known inside the division, so this is a convenience ' +
+          'measure, not an identity check.<br><br>Enable it only if Google Sign-In cannot be ready ' +
+          'in time, and turn it off once it is.'),
+        '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'fbm\')">Cancel</button>' +
+        '<button class="btn danger" type="button" id="fbok" style="flex:1">I understand — enable it</button>');
+      document.getElementById('fbok').addEventListener('click', function () {
+        QuizUI.closeModal('fbm'); go();
+      });
+      return;
+    }
+    go();
+  }
+
+  function saveDefaults() {
+    var g = function (id) { return +document.getElementById(id).value; };
+    var c = function (id) { return document.getElementById(id).checked; };
+    var b = document.getElementById('saveDef');
+    b.disabled = true; b.textContent = 'Saving…';
+
+    QuizAPI.admin('settings-set', null, {
+      key: 'exam_defaults',
+      value: {
+        question_count: g('d_qc'),
+        min_questions: g('d_min'),
+        max_questions: g('d_max'),
+        seconds_per_question: g('d_spq'),
+        total_seconds: Math.round(g('d_mins') * 60),
+        attempts_allowed: g('d_att'),
+        positive_marks: g('d_pos'),
+        negative_marks: g('d_neg'),
+        unanswered_marks: 0,
+        navigation: document.getElementById('d_nav').value,
+        randomize_questions: c('d_rq'),
+        randomize_options: c('d_ro'),
+        allow_skip: c('d_skip'),
+      },
+    }).then(function () {
+      b.disabled = false; b.textContent = 'Save examination defaults';
+      QuizUI.toast('Examination defaults saved.', 'ok');
+      load();
+    }).catch(function (e) {
+      b.disabled = false; b.textContent = 'Save examination defaults';
+      QuizUI.err(e);
+    });
+  }
+
+  function renderRoles(roles) {
+    var grants = {};
+    (roles.grants || []).forEach(function (g) { grants[g.username] = g.quiz_role; });
+    var map = roles.roleMap || {};
+
+    var el = document.getElementById('roleList');
+    var users = (roles.portalUsers || []).filter(function (u) { return u.active; });
+
+    if (!users.length) {
+      el.innerHTML = '<p style="font-size:13px;color:var(--muted)">No active portal users found.</p>';
+      return;
+    }
+
+    el.innerHTML = users.map(function (u) {
+      var effective = grants[u.username] || map[String(u.role || '').toUpperCase()] || 'NONE';
+      var explicit = !!grants[u.username];
+      return '<div class="rolerow">' +
+        '<div class="rn"><b>' + QuizUI.esc(u.display_name || u.username) + '</b>' +
+          '<span>' + QuizUI.esc(u.username) + ' &middot; portal role ' +
+            QuizUI.esc(u.role || '—') +
+            (explicit ? ' &middot; explicit grant' : ' &middot; from the default map') + '</span></div>' +
+        '<select class="select" data-u="' + QuizUI.esc(u.username) + '" style="max-width:190px">' +
+          ['QUIZ_ADMIN', 'QUIZ_EDITOR', 'QUIZ_VIEWER', 'NONE'].map(function (r) {
+            return '<option value="' + r + '"' + (effective === r ? ' selected' : '') + '>' +
+              (r === 'NONE' ? 'No access' : r.replace('QUIZ_', 'Quiz ').toLowerCase()
+                .replace(/\b\w/g, function (m) { return m.toUpperCase(); })) + '</option>';
+          }).join('') +
+        '</select>' +
+      '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call(el.querySelectorAll('select[data-u]'), function (s) {
+      s.addEventListener('change', function () {
+        var u = s.getAttribute('data-u');
+        s.disabled = true;
+        QuizAPI.admin('role-grant', null, { username: u, quiz_role: s.value })
+          .then(function () {
+            s.disabled = false;
+            QuizUI.toast('Role updated for ' + u + '.', 'ok');
+            load();
+          }).catch(function (e) {
+            s.disabled = false;
+            QuizUI.err(e);
+            load();
+          });
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>

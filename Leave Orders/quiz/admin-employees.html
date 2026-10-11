@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Employees &amp; Registrations &mdash; Quiz Administration | Karur Division</title>
+<meta name="theme-color" content="#16307a" />
+<meta name="robots" content="noindex,nofollow" />
+<link rel="icon" href="/assets/india-post-logo.png" />
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leave-orders/quiz/quiz.css">
+<style>
+  .subtabs{display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap}
+  .subtabs button{min-height:40px;padding:0 15px;border-radius:11px;cursor:pointer;
+    font:700 13px/1 "Inter",sans-serif;background:var(--card);color:var(--muted);
+    border:1px solid var(--line)}
+  .subtabs button.on{background:linear-gradient(135deg,var(--indigo),var(--violet));
+    color:#fff;border-color:transparent}
+  .drop{border:2px dashed var(--line-2);border-radius:var(--r-lg);padding:26px 18px;text-align:center;
+    background:var(--card-2);transition:border-color .2s,background .2s;cursor:pointer}
+  .drop.over{border-color:var(--indigo);background:rgba(79,70,229,.06)}
+  .drop .di{font-size:40px;opacity:.6}
+  .maprow{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;margin-bottom:9px}
+  .toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .toolbar .input{flex:1;min-width:180px}
+  .toolbar .select{max-width:200px}
+</style>
+</head>
+<body>
+<div id="shell"><main id="app"></main></div>
+
+<script src="/leave-orders/quiz/quiz-core.js"></script>
+<script src="/leave-orders/quiz/quiz-admin-core.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var host = null;
+  var view = 'registrations';     // registrations | directory | import
+  var parsed = null;              // the uploaded sheet, before saving
+
+  QuizAdmin.boot({
+    title: 'Employees & Registrations',
+    subtitle: 'Divisional employee directory and quiz registrations',
+    icon: '&#128101;',
+    active: '/Quiz/admin/employees',
+    requireRole: 'QUIZ_VIEWER',
+    onReady: function (me, h) {
+      host = h;
+      var q = new URLSearchParams(location.search).get('view');
+      if (q) view = q;
+      shell();
+    }
+  });
+
+  function shell() {
+    host.innerHTML =
+      '<div class="subtabs">' +
+        tabBtn('registrations', '&#128221; Registrations') +
+        tabBtn('directory', '&#128193; Employee Directory') +
+        (QuizAdmin.atLeast('QUIZ_ADMIN') ? tabBtn('import', '&#11014; Import from Excel') : '') +
+      '</div><div id="pane"></div>';
+
+    Array.prototype.forEach.call(host.querySelectorAll('.subtabs button'), function (b) {
+      b.addEventListener('click', function () { view = b.getAttribute('data-v'); shell(); });
+    });
+
+    if (view === 'directory') renderDirectory();
+    else if (view === 'import') renderImport();
+    else renderRegistrations();
+  }
+
+  function tabBtn(v, label) {
+    return '<button type="button" data-v="' + v + '" class="' + (view === v ? 'on' : '') + '">' +
+      label + '</button>';
+  }
+
+  var pane = function () { return document.getElementById('pane'); };
+
+  /* ═══════════════════════════════════════════════════════════════
+     REGISTRATIONS
+     ═══════════════════════════════════════════════════════════════ */
+  function renderRegistrations() {
+    pane().innerHTML =
+      '<div class="toolbar">' +
+        '<input class="input" id="rq" placeholder="Search name, Employee ID, office, registration ID…" />' +
+        '<select class="select" id="rs">' +
+          '<option value="">All statuses</option>' +
+          '<option value="PENDING">Pending approval</option>' +
+          '<option value="APPROVED">Approved</option>' +
+          '<option value="REJECTED">Rejected</option>' +
+          '<option value="SUSPENDED">Suspended</option>' +
+          '<option value="CANCELLED">Cancelled</option>' +
+        '</select>' +
+        '<button class="btn sm ghost" type="button" id="rgo">Search</button>' +
+        '<button class="btn sm ghost" type="button" id="rxl">&#11015; Excel</button>' +
+        (QuizAdmin.atLeast('QUIZ_ADMIN')
+          ? '<button class="btn sm" type="button" id="radd">+ Add manually</button>' +
+            '<button class="btn sm ok" type="button" id="rbulk">Approve all pending</button>'
+          : '') +
+      '</div>' +
+      '<div id="rlist">' + QuizUI.skeleton(4) + '</div>';
+
+    document.getElementById('rgo').addEventListener('click', loadRegs);
+    document.getElementById('rq').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') loadRegs();
+    });
+    document.getElementById('rs').addEventListener('change', loadRegs);
+    document.getElementById('rxl').addEventListener('click', exportRegs);
+
+    var add = document.getElementById('radd');
+    if (add) add.addEventListener('click', addManual);
+    var bulk = document.getElementById('rbulk');
+    if (bulk) bulk.addEventListener('click', approveAllPending);
+
+    loadRegs();
+  }
+
+  function loadRegs() {
+    var list = document.getElementById('rlist');
+    list.innerHTML = QuizUI.skeleton(4);
+    QuizAPI.admin('registrations-list', {
+      q: document.getElementById('rq').value.trim(),
+      status: document.getElementById('rs').value,
+      limit: 500,
+    }).then(function (r) {
+      if (!r.registrations.length) {
+        list.innerHTML = QuizUI.empty('&#128221;', 'No registrations found',
+          'Nobody matching these filters has registered yet. Employees appear here as soon as ' +
+          'they sign in and confirm their Employee ID.');
+        return;
+      }
+
+      var html = '<p style="font-size:12.5px;color:var(--muted);margin-bottom:11px">Showing ' +
+        r.registrations.length + ' of ' + r.total + ' registration(s).</p>';
+
+      html += '<div class="tbl-wrap"><table class="tbl"><thead><tr>' +
+        '<th>Registration</th><th>Employee</th><th>Designation</th><th>Office</th>' +
+        '<th>Sign-in</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+
+      r.registrations.forEach(function (x) {
+        var idn = x.identity || {};
+        html += '<tr>' +
+          '<td><b>' + QuizUI.esc(x.reg_code) + '</b><br>' +
+            '<span style="font-size:11px;color:var(--muted)">' +
+            QuizUI.esc(QuizTime.ist(x.created_at_ms)) + '</span></td>' +
+          '<td class="wrap"><b>' + QuizUI.esc(x.employee_name) + '</b><br>' +
+            '<span style="font-family:JetBrains Mono,monospace;font-size:11.5px">' +
+            QuizUI.esc(x.employee_id) + '</span></td>' +
+          '<td class="wrap">' + QuizUI.esc(x.designation) + '</td>' +
+          '<td class="wrap">' + QuizUI.esc(x.office) + '</td>' +
+          '<td>' + (idn.provider === 'google'
+              ? QuizUI.badge('Google', 'ok') + '<br><span style="font-size:10.5px;color:var(--muted)">' +
+                QuizUI.esc(idn.email || '') + '</span>'
+              : QuizUI.badge(x.manual_entry ? 'Manual' : 'Employee ID', 'warn')) + '</td>' +
+          '<td>' + QuizUI.statusBadge(x.status) +
+            (x.remarks ? '<br><span style="font-size:10.5px;color:var(--muted)">' +
+              QuizUI.esc(x.remarks) + '</span>' : '') + '</td>' +
+          '<td>' + actionBtns(x) + '</td>' +
+        '</tr>';
+      });
+      html += '</tbody></table></div>';
+      list.innerHTML = html;
+
+      Array.prototype.forEach.call(list.querySelectorAll('[data-act]'), function (b) {
+        b.addEventListener('click', function () {
+          onAction(b.getAttribute('data-act'), b.getAttribute('data-id'), b.getAttribute('data-name'));
+        });
+      });
+    }).catch(function (e) {
+      list.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  function actionBtns(x) {
+    if (!QuizAdmin.atLeast('QUIZ_ADMIN')) return '<span style="color:var(--muted);font-size:11.5px">—</span>';
+    var n = QuizUI.esc(x.employee_name);
+    var out = '<div style="display:flex;gap:5px;flex-wrap:wrap">';
+    if (x.status !== 'APPROVED') {
+      out += mini('approve', x.id, n, 'Approve', 'ok');
+    }
+    if (x.status !== 'SUSPENDED') out += mini('suspend', x.id, n, 'Suspend', '');
+    if (x.status !== 'REJECTED') out += mini('reject', x.id, n, 'Reject', '');
+    out += mini('unlink', x.id, n, 'Unlink', 'danger');
+    out += '</div>';
+    return out;
+  }
+
+  function mini(act, id, name, label, cls) {
+    return '<button class="btn sm ' + (cls === 'ok' ? 'ok' : cls === 'danger' ? 'danger' : 'ghost') +
+      '" type="button" data-act="' + act + '" data-id="' + id + '" data-name="' + name + '">' +
+      label + '</button>';
+  }
+
+  function onAction(act, id, name) {
+    if (act === 'unlink') return unlink(id, name);
+    var map = { approve: 'APPROVED', suspend: 'SUSPENDED', reject: 'REJECTED' };
+    var status = map[act];
+    if (!status) return;
+
+    if (act === 'approve') {
+      send(id, status, '');
+      return;
+    }
+    // Suspending or rejecting someone deserves a recorded reason.
+    QuizUI.modal('rmod', (act === 'reject' ? 'Reject' : 'Suspend') + ' registration',
+      '<p style="font-size:13.5px;margin-bottom:13px">' + QuizUI.esc(name) + '</p>' +
+      '<div class="field"><label for="rr">Reason (shown to the employee)</label>' +
+      '<textarea class="textarea" id="rr" placeholder="e.g. Employee ID belongs to another official"></textarea></div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'rmod\')">Cancel</button>' +
+      '<button class="btn danger" type="button" id="rok" style="flex:1">Confirm</button>');
+    document.getElementById('rok').addEventListener('click', function () {
+      var reason = document.getElementById('rr').value.trim();
+      QuizUI.closeModal('rmod');
+      send(id, status, reason);
+    });
+  }
+
+  function send(id, status, remarks) {
+    QuizAPI.admin('registration-status', null, { id: id, status: status, remarks: remarks })
+      .then(function () { QuizUI.toast('Registration updated.', 'ok'); loadRegs(); })
+      .catch(QuizUI.err);
+  }
+
+  function unlink(id, name) {
+    QuizUI.modal('umod', 'Release this Employee ID',
+      QuizUI.alert('warn', '&#9888;',
+        'This removes the registration so the Employee ID can be claimed again by the correct ' +
+        'official. It is refused if the employee has already sat the examination, and it is ' +
+        'recorded in the audit log.') +
+      '<p style="font-size:13.5px;margin-bottom:13px"><b>' + QuizUI.esc(name) + '</b></p>' +
+      '<div class="field"><label for="ur">Reason (required, audited)</label>' +
+      '<textarea class="textarea" id="ur" placeholder="e.g. Registered in error by a colleague; verified by telephone"></textarea></div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'umod\')">Cancel</button>' +
+      '<button class="btn danger" type="button" id="uok" style="flex:1">Release Employee ID</button>');
+
+    document.getElementById('uok').addEventListener('click', function () {
+      var reason = document.getElementById('ur').value.trim();
+      if (reason.length < 5) { QuizUI.toast('Please record a reason.', 'err'); return; }
+      QuizUI.closeModal('umod');
+      QuizAPI.admin('registration-unlink', null, { id: id, reason: reason })
+        .then(function (r) { QuizUI.toast(r.message, 'ok'); loadRegs(); })
+        .catch(QuizUI.err);
+    });
+  }
+
+  function approveAllPending() {
+    QuizAPI.admin('registrations-list', { status: 'PENDING', limit: 2000 }).then(function (r) {
+      var ids = r.registrations.map(function (x) { return x.id; });
+      if (!ids.length) { QuizUI.toast('There are no pending registrations.', 'ok'); return; }
+
+      QuizUI.modal('bmod', 'Approve all pending registrations',
+        '<p style="font-size:14px;line-height:1.6">Approve <b>' + ids.length +
+        '</b> pending registration(s)? Every one of them has already matched the uploaded ' +
+        'employee list. They will become eligible to sit the examination.</p>',
+        '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'bmod\')">Cancel</button>' +
+        '<button class="btn ok" type="button" id="bok" style="flex:1">Approve ' + ids.length + '</button>');
+
+      document.getElementById('bok').addEventListener('click', function () {
+        QuizUI.closeModal('bmod');
+        QuizAPI.admin('registration-edit', null, { bulk_ids: ids, status: 'APPROVED' })
+          .then(function (x) { QuizUI.toast(x.updated + ' approved.', 'ok'); loadRegs(); })
+          .catch(QuizUI.err);
+      });
+    }).catch(QuizUI.err);
+  }
+
+  function addManual() {
+    QuizUI.modal('amod', 'Add a registration manually',
+      QuizUI.alert('warn', '&#8505;',
+        'A manually added registration stays <b>Pending</b> and is marked unverified, because it ' +
+        'is not yet linked to the employee&rsquo;s own account. The employee must still sign in; ' +
+        'this only reserves their Employee ID.') +
+      '<div class="field"><label for="mid">Employee ID</label>' +
+      '<input class="input mono" id="mid" placeholder="e.g. 10003963" /></div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'amod\')">Cancel</button>' +
+      '<button class="btn" type="button" id="mok" style="flex:1">Add</button>');
+
+    document.getElementById('mok').addEventListener('click', function () {
+      var id = document.getElementById('mid').value.trim();
+      if (!id) { QuizUI.toast('Enter an Employee ID.', 'err'); return; }
+      QuizAPI.admin('registration-add', null, { employee_id: id })
+        .then(function () { QuizUI.closeModal('amod'); QuizUI.toast('Registration added.', 'ok'); loadRegs(); })
+        .catch(QuizUI.err);
+    });
+  }
+
+  function exportRegs() {
+    QuizAPI.admin('report', { kind: 'registrations' }).then(function (r) {
+      QuizAdmin.exportXlsx('Quiz-Registrations-' + stamp() + '.xlsx', 'Registrations', r.columns, r.rows);
+      QuizUI.toast('Exported ' + r.rows.length + ' registration(s).', 'ok');
+    }).catch(QuizUI.err);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     EMPLOYEE DIRECTORY
+     ═══════════════════════════════════════════════════════════════ */
+  function renderDirectory() {
+    pane().innerHTML =
+      '<div class="toolbar">' +
+        '<input class="input" id="eq" placeholder="Search Employee ID, name, designation or office…" />' +
+        '<button class="btn sm ghost" type="button" id="ego">Search</button>' +
+        '<button class="btn sm ghost" type="button" id="exl">&#11015; Excel</button>' +
+        (QuizAdmin.atLeast('QUIZ_ADMIN')
+          ? '<button class="btn sm" type="button" id="enew">+ Add employee</button>' : '') +
+      '</div>' +
+      '<div id="elist">' + QuizUI.skeleton(4) + '</div>';
+
+    document.getElementById('ego').addEventListener('click', loadDir);
+    var en = document.getElementById('enew');
+    if (en) en.addEventListener('click', function () { empEditor(null); });
+    document.getElementById('eq').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') loadDir();
+    });
+    document.getElementById('exl').addEventListener('click', function () {
+      QuizAPI.admin('employees-list', { limit: 1000 }).then(function (r) {
+        QuizAdmin.exportXlsx('Quiz-Employee-Directory-' + stamp() + '.xlsx', 'Employees',
+          ['Employee ID', 'Name', 'Designation', 'Office', 'Division', 'Active'],
+          r.employees.map(function (e) {
+            return [e.employee_id, e.employee_name, e.designation, e.office,
+                    e.division || '', e.active ? 'Yes' : 'No'];
+          }));
+        QuizUI.toast('Exported ' + r.employees.length + ' employee(s).', 'ok');
+      }).catch(QuizUI.err);
+    });
+
+    loadDir();
+  }
+
+  function loadDir() {
+    var list = document.getElementById('elist');
+    list.innerHTML = QuizUI.skeleton(4);
+    QuizAPI.admin('employees-list', {
+      q: document.getElementById('eq').value.trim(), limit: 300,
+    }).then(function (r) {
+      if (!r.total) {
+        list.innerHTML = QuizUI.empty('&#128193;', 'Employee Directory Pending Import',
+          'No employees have been imported yet. Nobody can register until the divisional ' +
+          'employee list is uploaded. Use the <b>Import from Excel</b> tab.');
+        return;
+      }
+      var canEdit = QuizAdmin.atLeast('QUIZ_ADMIN');
+      list.innerHTML =
+        '<p style="font-size:12.5px;color:var(--muted);margin-bottom:11px">Showing ' +
+          r.employees.length + ' of ' + r.total + ' employee(s) in the directory.</p>' +
+        '<div class="tbl-wrap"><table class="tbl"><thead><tr>' +
+          '<th>Employee ID</th><th>Name</th><th>Designation</th><th>Office</th>' +
+          '<th>Status</th>' + (canEdit ? '<th>Action</th>' : '') +
+        '</tr></thead><tbody>' +
+        r.employees.map(function (e) {
+          return '<tr>' +
+            '<td style="font-family:JetBrains Mono,monospace;font-size:12px">' +
+              QuizUI.esc(e.employee_id) + '</td>' +
+            '<td class="wrap">' + QuizUI.esc(e.employee_name) + '</td>' +
+            '<td class="wrap">' + QuizUI.esc(e.designation) + '</td>' +
+            '<td class="wrap">' + QuizUI.esc(e.office) + '</td>' +
+            '<td>' + (e.active ? QuizUI.badge('Active', 'ok') : QuizUI.badge('Inactive', 'mute')) + '</td>' +
+            (canEdit ? '<td><button class="btn sm ghost" type="button" data-emp="' +
+              QuizUI.esc(e.employee_id) + '">Edit</button></td>' : '') +
+          '</tr>';
+        }).join('') +
+        '</tbody></table></div>';
+
+      Array.prototype.forEach.call(list.querySelectorAll('[data-emp]'), function (b) {
+        b.addEventListener('click', function () {
+          var id = b.getAttribute('data-emp');
+          empEditor(r.employees.filter(function (x) { return x.employee_id === id; })[0]);
+        });
+      });
+    }).catch(function (e) {
+      list.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  // Correcting a record here affects future registrations and lookups only.
+  // Registrations hold their own snapshot of name, designation and office taken
+  // at registration time, so examination history is never rewritten by an edit.
+  function empEditor(emp) {
+    var e = emp || {};
+    var isNew = !emp;
+
+    QuizUI.modal('eed', isNew ? 'Add an employee' : 'Edit ' + (e.employee_id || ''),
+      (isNew ? '' : QuizUI.alert('', '&#8505;',
+        'Changes apply to future registrations and Employee ID lookups. Anyone who has already ' +
+        'registered keeps the designation and office recorded at that time, so results and ' +
+        'reports stay consistent.')) +
+      '<div class="field"><label for="e_id">Employee ID</label>' +
+        '<input class="input mono" id="e_id" value="' + QuizUI.esc(e.employee_id || '') + '"' +
+        (isNew ? ' placeholder="e.g. 10003963"' : ' readonly') + ' /></div>' +
+      '<div class="field"><label for="e_name">Name</label>' +
+        '<input class="input" id="e_name" value="' + QuizUI.esc(e.employee_name || '') + '" /></div>' +
+      '<div class="field"><label for="e_desig">Designation</label>' +
+        '<input class="input" id="e_desig" value="' + QuizUI.esc(e.designation || '') + '" /></div>' +
+      '<div class="field"><label for="e_office">Office</label>' +
+        '<input class="input" id="e_office" value="' + QuizUI.esc(e.office || '') + '" /></div>' +
+      '<div class="field"><label for="e_cat">Category (optional)</label>' +
+        '<input class="input" id="e_cat" value="' + QuizUI.esc(e.category || '') + '" ' +
+        'placeholder="e.g. DS or GDS" /></div>' +
+      '<div class="field"><div class="checkrow">' +
+        '<input type="checkbox" id="e_active"' + (e.active === false ? '' : ' checked') + ' />' +
+        '<label for="e_active" style="font-weight:500;margin:0">Active &mdash; may register for the ' +
+          'quiz. Clearing this withdraws eligibility without deleting any record.</label>' +
+      '</div></div>' +
+      '<div id="e_err"></div>',
+      '<button class="btn ghost" type="button" id="e_cancel">Cancel</button>' +
+      '<button class="btn" type="button" id="e_save" style="flex:1">' +
+        (isNew ? 'Add employee' : 'Save changes') + '</button>');
+
+    document.getElementById('e_cancel').addEventListener('click', function () {
+      QuizUI.closeModal('eed');
+    });
+
+    document.getElementById('e_save').addEventListener('click', function () {
+      var b = this;
+      b.disabled = true;
+      b.textContent = 'Saving…';
+      QuizAPI.admin('employee-save', null, {
+        employee_id: document.getElementById('e_id').value.trim(),
+        employee_name: document.getElementById('e_name').value.trim(),
+        designation: document.getElementById('e_desig').value.trim(),
+        office: document.getElementById('e_office').value.trim(),
+        category: document.getElementById('e_cat').value.trim() || null,
+        active: document.getElementById('e_active').checked,
+      }).then(function () {
+        QuizUI.closeModal('eed');
+        QuizUI.toast('Employee record saved.', 'ok');
+        loadDir();
+      }).catch(function (err) {
+        b.disabled = false;
+        b.textContent = isNew ? 'Add employee' : 'Save changes';
+        document.getElementById('e_err').innerHTML =
+          QuizUI.alert('err', '&#9888;', QuizUI.esc(err.message));
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     EXCEL IMPORT
+     ═══════════════════════════════════════════════════════════════ */
+  function renderImport() {
+    pane().innerHTML =
+      QuizUI.alert('', '&#8505;',
+        'Upload the divisional employee list as <b>.xlsx</b> or <b>.csv</b>. The four required ' +
+        'columns are <b>Employee ID</b>, <b>Name</b>, <b>Designation</b> and <b>Office</b> &mdash; ' +
+        'the column names are mapped below, so your existing sheet does not need renaming. ' +
+        'Employee IDs are stored as text, so leading zeros survive.') +
+
+      '<div class="card">' +
+        '<div class="drop" id="drop" tabindex="0" role="button" ' +
+          'aria-label="Choose a spreadsheet to import">' +
+          '<div class="di">&#128228;</div>' +
+          '<p style="font-weight:700;margin:9px 0 4px">Tap to choose a file, or drop it here</p>' +
+          '<p style="font-size:12.5px;color:var(--muted);margin:0">.xlsx or .csv, up to 5000 rows</p>' +
+        '</div>' +
+        '<input type="file" id="file" accept=".xlsx,.xls,.csv" hidden />' +
+        '<div id="mapArea" style="margin-top:16px"></div>' +
+      '</div>' +
+      '<div id="impOut"></div>' +
+      '<div class="card">' +
+        '<div class="card-head"><div class="card-ic">&#128220;</div>' +
+          '<div><div class="card-t">Recent imports</div>' +
+          '<div class="card-s">Audit trail of directory uploads</div></div></div>' +
+        '<div id="jobs">' + QuizUI.skeleton(2) + '</div>' +
+      '</div>';
+
+    var drop = document.getElementById('drop');
+    var file = document.getElementById('file');
+
+    drop.addEventListener('click', function () { file.click(); });
+    drop.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); }
+    });
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); });
+    });
+    drop.addEventListener('drop', function (e) {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+    file.addEventListener('change', function () {
+      if (file.files && file.files[0]) handleFile(file.files[0]);
+    });
+
+    loadJobs();
+  }
+
+  function handleFile(f) {
+    document.getElementById('mapArea').innerHTML = QuizUI.skeleton(2);
+    QuizAdmin.readSheet(f).then(function (res) {
+      parsed = { file: f, rows: res.rows, headers: res.headers };
+      renderMapping();
+    }).catch(function (e) {
+      document.getElementById('mapArea').innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  // Flexible column mapping, pre-guessed from the header names. The Karur
+  // Division sheet uses Employee_id / Employee_name / Post_desc / Office_desc,
+  // which the guesser picks up without any manual selection.
+  function renderMapping() {
+    var hs = parsed.headers || [];
+    var guess = function (patterns) {
+      for (var i = 0; i < hs.length; i++) {
+        var h = String(hs[i]).toLowerCase().replace(/[^a-z]/g, '');
+        for (var j = 0; j < patterns.length; j++) {
+          if (h.indexOf(patterns[j]) >= 0) return hs[i];
+        }
+      }
+      return '';
+    };
+    var g = {
+      employee_id: guess(['employeeid', 'empid', 'hrms', 'staffid', 'id']),
+      employee_name: guess(['employeename', 'name', 'official']),
+      designation: guess(['postdesc', 'designation', 'post', 'cadre']),
+      office: guess(['officedesc', 'office', 'unit', 'so', 'bo']),
+    };
+
+    var opts = function (sel) {
+      return '<option value="">— not mapped —</option>' + hs.map(function (h) {
+        return '<option value="' + QuizUI.esc(h) + '"' + (h === sel ? ' selected' : '') + '>' +
+          QuizUI.esc(h) + '</option>';
+      }).join('');
+    };
+
+    document.getElementById('mapArea').innerHTML =
+      '<p style="font-size:13px;font-weight:700;margin-bottom:11px">' +
+        QuizUI.esc(parsed.file.name) + ' &mdash; ' + parsed.rows.length + ' data row(s)</p>' +
+      '<div class="section-title" style="margin-top:0">Column mapping</div>' +
+      mapRow('Employee ID', 'm_employee_id', opts(g.employee_id)) +
+      mapRow('Name', 'm_employee_name', opts(g.employee_name)) +
+      mapRow('Designation', 'm_designation', opts(g.designation)) +
+      mapRow('Office', 'm_office', opts(g.office)) +
+      mapRow('Category (optional)', 'm_category', opts(guess(['category', 'type', 'cadretype']))) +
+      '<div class="field" style="margin-top:14px">' +
+        '<label for="mode">If an Employee ID already exists</label>' +
+        '<select class="select" id="mode">' +
+          '<option value="MERGE">Update it, and keep everyone else (recommended)</option>' +
+          '<option value="REPLACE">Mark everyone inactive first, then import this file as the full list</option>' +
+        '</select>' +
+        '<div class="hint">Replace never deletes anybody &mdash; employees who have already registered ' +
+          'or sat an examination keep their records; they are only marked inactive.</div>' +
+      '</div>' +
+      '<div class="btn-row">' +
+        '<button class="btn ghost" type="button" id="prev">Preview</button>' +
+        '<button class="btn" type="button" id="save" style="flex:1">Import</button>' +
+      '</div>';
+
+    document.getElementById('prev').addEventListener('click', function () { doImport(true); });
+    document.getElementById('save').addEventListener('click', function () { doImport(false); });
+  }
+
+  function mapRow(label, id, optionsHtml) {
+    return '<div class="maprow">' +
+      '<label for="' + id + '" style="font-size:12.5px;font-weight:700">' + QuizUI.esc(label) + '</label>' +
+      '<select class="select" id="' + id + '">' + optionsHtml + '</select>' +
+    '</div>';
+  }
+
+  function doImport(dryRun) {
+    var pick = function (id) { return document.getElementById(id).value; };
+    var m = {
+      employee_id: pick('m_employee_id'),
+      employee_name: pick('m_employee_name'),
+      designation: pick('m_designation'),
+      office: pick('m_office'),
+      category: pick('m_category'),
+    };
+    if (!m.employee_id || !m.employee_name || !m.designation || !m.office) {
+      QuizUI.toast('Map Employee ID, Name, Designation and Office before importing.', 'err');
+      return;
+    }
+
+    var rows = parsed.rows.map(function (r) {
+      return {
+        employee_id: r[m.employee_id],
+        employee_name: r[m.employee_name],
+        designation: r[m.designation],
+        office: r[m.office],
+        category: m.category ? r[m.category] : null,
+      };
+    });
+
+    var out = document.getElementById('impOut');
+    out.innerHTML = '<div class="card">' + QuizUI.skeleton(2) + '</div>';
+
+    QuizAPI.admin('employees-import', null, {
+      rows: rows,
+      mode: document.getElementById('mode').value,
+      filename: parsed.file.name,
+      dry_run: !!dryRun,
+    }).then(function (r) {
+      var s = r.summary;
+      var h = '<div class="card">' +
+        '<div class="card-head"><div class="card-ic">' + (dryRun ? '&#128065;' : '&#9989;') + '</div>' +
+          '<div><div class="card-t">' + (dryRun ? 'Preview' : 'Import complete') + '</div>' +
+          '<div class="card-s">' + QuizUI.esc(parsed.file.name) + '</div></div></div>';
+
+      h += '<div class="grid grid-4">' +
+        st('Rows in file', s.total) +
+        st(dryRun ? 'Will insert' : 'Inserted', dryRun ? s.toInsert : s.inserted) +
+        st(dryRun ? 'Will update' : 'Updated', dryRun ? s.toUpdate : s.updated) +
+        st('Needing review', s.skipped) +
+      '</div>';
+
+      if (r.message) {
+        h += '<p style="margin-top:14px;font-size:13.5px;font-weight:600">' +
+          QuizUI.esc(r.message) + '</p>';
+      }
+
+      if (r.issues && r.issues.length) {
+        h += '<div class="section-title">Rows requiring review</div>' +
+          QuizAdmin.table(['Row', 'Employee ID', 'Issue'],
+            r.issues.map(function (i) { return [i.line, i.employee_id || '—', i.issue]; }),
+            { wrapCols: [2] });
+      }
+
+      if (dryRun) {
+        h += '<div class="btn-row" style="margin-top:14px">' +
+          '<button class="btn" type="button" id="cfm">Looks right &mdash; import now</button></div>';
+      }
+      h += '</div>';
+      out.innerHTML = h;
+
+      var cfm = document.getElementById('cfm');
+      if (cfm) cfm.addEventListener('click', function () { doImport(false); });
+
+      if (!dryRun) {
+        QuizUI.toast(r.message || 'Import complete.', 'ok');
+        loadJobs();
+      }
+      out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }).catch(function (e) {
+      out.innerHTML = '<div class="card">' + QuizUI.alert('err', '&#9888;',
+        '<b>Import failed.</b><br>' + QuizUI.esc(e.message)) + '</div>';
+    });
+  }
+
+  function st(k, v) {
+    return '<div class="stat"><div class="k">' + QuizUI.esc(k) + '</div>' +
+      '<div class="v">' + QuizUI.esc(v) + '</div></div>';
+  }
+
+  function loadJobs() {
+    var el = document.getElementById('jobs');
+    if (!el) return;
+    QuizAPI.admin('import-jobs', { kind: 'EMPLOYEES' }).then(function (r) {
+      if (!r.jobs.length) {
+        el.innerHTML = '<p style="font-size:13px;color:var(--muted)">No directory import has been ' +
+          'run yet.</p>';
+        return;
+      }
+      el.innerHTML = QuizAdmin.table(
+        ['When (IST)', 'File', 'Mode', 'Rows', 'Inserted', 'Updated', 'Review', 'By'],
+        r.jobs.map(function (j) {
+          return [QuizTime.ist(j.created_ms), j.filename || '—', j.mode, j.total_rows,
+                  j.inserted, j.updated, j.skipped, j.created_by || ''];
+        }), { numCols: [3, 4, 5, 6] });
+    }).catch(function (e) {
+      el.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  function stamp() {
+    var d = new Date();
+    var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+  }
+})();
+</script>
+</body>
+</html>

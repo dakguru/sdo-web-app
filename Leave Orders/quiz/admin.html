@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Quiz Administration &mdash; National Postal Week 2026 | Karur Division</title>
+<meta name="theme-color" content="#16307a" />
+<meta name="robots" content="noindex,nofollow" />
+<link rel="icon" href="/assets/india-post-logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leave-orders/quiz/quiz.css">
+<style>
+  .ex-row{display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line);
+    flex-wrap:wrap}
+  .ex-row:last-child{border-bottom:0}
+  .ex-row .en{flex:1;min-width:180px}
+  .ex-row .en b{display:block;font-size:14.5px;font-weight:700}
+  .ex-row .en span{font-size:11.5px;color:var(--muted)}
+  .mini{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+  .mini b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .bar-mini{height:6px;border-radius:3px;background:var(--line);overflow:hidden;width:100%;margin-top:7px}
+  .bar-mini i{display:block;height:100%;background:linear-gradient(90deg,var(--indigo),var(--teal))}
+</style>
+</head>
+<body>
+<div id="shell"><main id="app"></main></div>
+
+<script src="/leave-orders/quiz/quiz-core.js"></script>
+<script src="/leave-orders/quiz/quiz-admin-core.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  QuizAdmin.boot({
+    title: 'Quiz Administration',
+    subtitle: 'Overview — National Postal Week 2026 Online Quiz Competition',
+    icon: '&#128202;',
+    active: '/Quiz/admin',
+    requireRole: 'QUIZ_VIEWER',
+    onReady: function (me, host) {
+      host.innerHTML = QuizUI.skeleton(3);
+      load(host);
+      setInterval(function () { load(host, true); }, 60000);
+    }
+  });
+
+  function load(host, quiet) {
+    QuizAPI.admin('overview').then(function (r) {
+      QuizTime.anchor(r.serverTimeMs);
+      render(host, r);
+    }).catch(function (e) {
+      if (!quiet) {
+        host.innerHTML = QuizUI.alert('err', '&#9888;',
+          '<b>Could not load the overview.</b><br>' + QuizUI.esc(e.message));
+      }
+    });
+  }
+
+  function render(host, r) {
+    var c = r.counts;
+    var h = '';
+
+    // What is blocking go-live, stated plainly and first.
+    h += QuizAdmin.readinessBanner(r.readiness);
+
+    h += '<div class="grid grid-4">' +
+      stat('Employees', c.employees, 'in the directory') +
+      stat('Registrations', c.registrations, c.pending + ' pending approval') +
+      stat('Approved', c.approved, 'eligible to sit') +
+      stat('Questions', c.questionsActive, c.questionsTotal + ' in the bank') +
+    '</div>';
+
+    h += '<div class="grid grid-4" style="margin-top:14px">' +
+      stat('Examinations', c.exams, 'created') +
+      stat('Upcoming', c.examsUpcoming, 'scheduled ahead') +
+      stat('Active now', c.examsActive, 'open window') +
+      stat('Flagged events', c.suspectEvents, 'for review') +
+    '</div>';
+
+    // Per-examination participation
+    h += '<div class="section-title">Examinations</div>';
+    if (!r.exams || !r.exams.length) {
+      h += '<div class="card">' + QuizUI.empty('&#128198;', 'No examination created yet',
+        'Create your first examination in <a href="/Quiz/admin/exams">Examinations</a>, ' +
+        'then publish its question paper.') + '</div>';
+    } else {
+      h += '<div class="card">';
+      r.exams.forEach(function (ex) {
+        h += '<div class="ex-row">' +
+          '<div class="en">' +
+            '<b>' + QuizUI.esc(ex.title) + '</b>' +
+            '<span>' + (ex.examOpenMs ? QuizUI.esc(QuizTime.ist(ex.examOpenMs)) + ' IST' : 'Not scheduled') +
+              ' &middot; max ' + ex.maxMarks + ' marks</span>' +
+            '<div class="bar-mini"><i style="width:' + Math.min(100, ex.completionRate) + '%"></i></div>' +
+          '</div>' +
+          '<div class="mini">' +
+            '<span>Started <b>' + ex.started + '</b></span>' +
+            '<span>Completed <b>' + ex.completed + '</b></span>' +
+            '<span>In progress <b>' + ex.inProgress + '</b></span>' +
+            '<span>Absent <b>' + ex.absent + '</b></span>' +
+            '<span>Avg <b>' + (ex.averageScore == null ? '—' : ex.averageScore) + '</b></span>' +
+            '<span>High <b>' + (ex.highestScore == null ? '—' : ex.highestScore) + '</b></span>' +
+          '</div>' +
+          '<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">' +
+            QuizUI.statusBadge(ex.status) +
+            '<a class="btn sm ghost" href="/Quiz/admin/exams?exam=' + QuizUI.esc(ex.id) + '">Manage</a>' +
+            '<a class="btn sm ghost" href="/Quiz/admin/reports?exam=' + QuizUI.esc(ex.id) + '">Reports</a>' +
+          '</div>' +
+        '</div>';
+      });
+      h += '</div>';
+    }
+
+    // Quick actions
+    h += '<div class="section-title">Quick actions</div>' +
+      '<div class="grid grid-3">' +
+        card('&#128198;', 'Create an examination',
+          'Set the window, timing, marking and randomisation, then publish the paper.',
+          '/Quiz/admin/exams') +
+        card('&#10067;', 'Manage the question bank',
+          'Add questions one at a time, or bulk-import from Excel. Validate before publishing.',
+          '/Quiz/admin/questions') +
+        card('&#128101;', 'Employees and registrations',
+          'Import the divisional employee list, and approve or correct registrations.',
+          '/Quiz/admin/employees') +
+      '</div>';
+
+    // Maintenance
+    h += '<div class="card" style="margin-top:16px">' +
+      '<div class="card-head"><div class="card-ic">&#128736;</div>' +
+        '<div><div class="card-t">Maintenance</div>' +
+        '<div class="card-s">Finalise attempts whose browser never came back</div></div></div>' +
+      '<p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:13px">' +
+        'Attempts are finalised automatically as soon as the participant&rsquo;s page next reaches the ' +
+        'server. This sweep closes any attempt whose time has passed but whose device simply went ' +
+        'away &mdash; a phone switched off mid-examination, for instance. It is safe to run at any time.' +
+      '</p>' +
+      '<button class="btn ghost sm" type="button" id="sweep">Finalise expired attempts</button>' +
+      '<span id="sweepOut" style="margin-left:11px;font-size:12.5px;color:var(--muted)"></span>' +
+    '</div>';
+
+    host.innerHTML = h;
+
+    var sw = document.getElementById('sweep');
+    if (sw) {
+      if (!QuizAdmin.atLeast('QUIZ_ADMIN')) {
+        sw.disabled = true;
+        sw.classList.add('is-disabled');
+        document.getElementById('sweepOut').textContent = 'Quiz Administrator rights required.';
+      } else {
+        sw.addEventListener('click', function () {
+          sw.disabled = true; sw.textContent = 'Working…';
+          QuizAPI.admin('sweep-expired', null, {}).then(function (x) {
+            sw.disabled = false; sw.textContent = 'Finalise expired attempts';
+            document.getElementById('sweepOut').textContent =
+              x.finalised + ' finalised of ' + x.scanned + ' scanned.';
+            if (x.finalised) load(host, true);
+          }).catch(function (e) {
+            sw.disabled = false; sw.textContent = 'Finalise expired attempts';
+            QuizUI.err(e);
+          });
+        });
+      }
+    }
+  }
+
+  function stat(k, v, n) {
+    return '<div class="stat"><div class="k">' + QuizUI.esc(k) + '</div>' +
+      '<div class="v">' + QuizUI.esc(v) + '</div>' +
+      '<div class="n">' + QuizUI.esc(n) + '</div></div>';
+  }
+
+  function card(icon, title, body, href) {
+    return '<a class="card" href="' + href + '" style="text-decoration:none;display:block">' +
+      '<div class="card-head"><div class="card-ic">' + icon + '</div>' +
+        '<div><div class="card-t">' + QuizUI.esc(title) + '</div></div></div>' +
+      '<p style="font-size:13px;color:var(--muted);line-height:1.6;margin:0">' +
+        QuizUI.esc(body) + '</p>' +
+      '<div style="margin-top:12px"><span class="badge">Open &rarr;</span></div>' +
+    '</a>';
+  }
+})();
+</script>
+</body>
+</html>

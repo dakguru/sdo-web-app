@@ -396,6 +396,19 @@ html.light .card-icon.icon-perf{background:linear-gradient(135deg,rgba(5,150,105
 .card-badge.badge-perf{background:rgba(52,211,153,0.15);color:#6ee7b7;border:1px solid rgba(52,211,153,0.2)}
 html.light .card-badge.badge-perf{background:rgba(5,150,105,0.1);color:#047857;border-color:rgba(5,150,105,0.15)}
 .accent-perf{background:linear-gradient(90deg,#34d399,#22d3ee,#fbbf24)}
+.card-icon.icon-quiz{background:linear-gradient(135deg,rgba(167,139,250,0.3),rgba(129,140,248,0.26));box-shadow:0 4px 16px rgba(167,139,250,0.24),inset 0 1px 0 rgba(255,255,255,0.1)}
+html.light .card-icon.icon-quiz{background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(79,70,229,0.15));box-shadow:0 4px 16px rgba(124,58,237,0.12),inset 0 1px 0 rgba(255,255,255,0.5)}
+.card-badge.badge-quiz{background:rgba(167,139,250,0.16);color:#c4b5fd;border:1px solid rgba(167,139,250,0.22)}
+html.light .card-badge.badge-quiz{background:rgba(124,58,237,0.1);color:#5b21b6;border-color:rgba(124,58,237,0.16)}
+.accent-quiz{background:linear-gradient(90deg,#7c3aed,#4f46e5,#0891b2,#f0b000)}
+/* Live/upcoming indicator on the Quiz card, filled in by the readiness probe. */
+.quiz-live{position:absolute;top:14px;right:14px;display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;background:rgba(5,150,105,.18);color:#6ee7b7;border:1px solid rgba(5,150,105,.3)}
+html.light .quiz-live{background:rgba(5,150,105,.1);color:#047857;border-color:rgba(5,150,105,.2)}
+.quiz-live.soon{background:rgba(217,119,6,.18);color:#fcd34d;border-color:rgba(217,119,6,.3)}
+html.light .quiz-live.soon{background:rgba(217,119,6,.1);color:#92400e;border-color:rgba(217,119,6,.2)}
+.quiz-live .pip{width:6px;height:6px;border-radius:50%;background:currentColor;animation:quizPip 1.6s ease-in-out infinite}
+@keyframes quizPip{0%,100%{opacity:1}50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.quiz-live .pip{animation:none}}
 /* Phone Directory card */
 .card-icon.icon-phone{background:linear-gradient(135deg,rgba(45,212,191,0.28),rgba(96,165,250,0.24));box-shadow:0 4px 16px rgba(45,212,191,0.22),inset 0 1px 0 rgba(255,255,255,0.1)}
 html.light .card-icon.icon-phone{background:linear-gradient(135deg,rgba(13,148,136,0.15),rgba(37,99,235,0.14));box-shadow:0 4px 16px rgba(13,148,136,0.12),inset 0 1px 0 rgba(255,255,255,0.5)}
@@ -851,6 +864,16 @@ html.light .btn-logout:hover{background:rgba(225,29,72,0.18);color:#9f1239}
       <div class="card-desc">Manage login accounts for the portal — add or remove users, enable or disable access, edit names &amp; designations, and reset passwords. Restricted to Admin, ASP &amp; PA.</div>
       <span class="card-badge badge-users">Open Module →</span>
       <div class="card-accent accent-users"></div>
+    </a>
+
+    <!-- Employee Quiz & Assessment (National Postal Week 2026) -->
+    <a href="/Quiz/admin" class="nav-card" id="cardQuiz" style="position:relative">
+      <div class="card-icon icon-quiz">🎓</div>
+      <div class="card-title">Employee Quiz &amp; Assessment</div>
+      <div class="card-desc">Conduct secure online knowledge assessments, manage employee registrations, schedule quizzes, evaluate performance, and generate comprehensive reports.</div>
+      <span class="card-badge badge-quiz">Open Module →</span>
+      <div class="card-accent accent-quiz"></div>
+      <span class="quiz-live" id="quizLive" hidden><span class="pip"></span><span id="quizLiveTxt"></span></span>
     </a>
 
     <!-- 1. Sub Divisional Manager (Leave Orders) -->
@@ -1323,6 +1346,60 @@ document.querySelectorAll('.nav-card').forEach(card => {
   document.getElementById('btnLogout').addEventListener('click', function(){
     AuthSession.logout();
   });
+})();
+</script>
+<!-- Quiz module: live/upcoming indicator on the Employee Quiz card -->
+<script>
+/* quiz status probe */
+(function(){
+  'use strict';
+  // Public, read-only probe: title, status and window only. It carries no
+  // question, no answer key and no participant data. A failure is silent --
+  // the card still works, it just shows no chip.
+  var card = document.getElementById('cardQuiz');
+  if(!card) return;
+
+  fetch('/api/quiz-auth?action=status', {
+    headers:{'X-Quiz-Request':'1','Accept':'application/json'},
+    credentials:'same-origin', cache:'no-store'
+  }).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+    if(!d || !d.ok || !d.exams || !d.exams.length) return;
+
+    var now = d.serverTimeMs || Date.now();
+    var live = null, next = null;
+    d.exams.forEach(function(e){
+      var open = e.examOpenMs, close = e.examCloseMs;
+      if(open && open <= now && (!close || close >= now)){ if(!live) live = e; }
+      else if(open && open > now){ if(!next || open < next.examOpenMs) next = e; }
+    });
+
+    var chip = document.getElementById('quizLive');
+    var txt  = document.getElementById('quizLiveTxt');
+    if(!chip || !txt) return;
+
+    if(live){
+      txt.textContent = 'Live now';
+      chip.hidden = false;
+    } else if(next){
+      var mins = Math.round((next.examOpenMs - now)/60000);
+      txt.textContent = mins < 60 ? ('Opens in ' + mins + ' min')
+        : (mins < 1440 ? ('Opens in ' + Math.round(mins/60) + ' hr')
+                       : ('Opens in ' + Math.round(mins/1440) + ' d'));
+      chip.className = 'quiz-live soon';
+      chip.hidden = false;
+    }
+  }).catch(function(){ /* no chip, no problem */ });
+
+  // Route by privilege: a portal user with quiz rights lands on the admin
+  // module, anyone else on the participant view. The server re-checks either
+  // way, so this only saves a redirect.
+  try{
+    var u = window.AuthSession && AuthSession.user();
+    var role = u && u.role ? String(u.role).toUpperCase() : '';
+    if(['ADMIN','ASP','PA','MO'].indexOf(role) < 0){
+      card.setAttribute('href','/Quiz');
+    }
+  }catch(_){}
 })();
 </script>
 </body>

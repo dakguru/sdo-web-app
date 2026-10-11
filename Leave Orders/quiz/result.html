@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>My Result &mdash; National Postal Week 2026 Quiz | Karur Division</title>
+<meta name="theme-color" content="#16307a" />
+<meta name="robots" content="noindex,nofollow" />
+<link rel="icon" href="/assets/india-post-logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leave-orders/quiz/quiz.css">
+<style>
+  .who-rows{display:grid;gap:6px;margin-top:4px}
+  .who-row{display:flex;gap:10px;font-size:13px;line-height:1.5}
+  .who-row .k{flex:none;width:100px;color:var(--muted);font-weight:700;font-size:10.5px;
+    letter-spacing:.5px;text-transform:uppercase;padding-top:2px}
+  .who-row .v{flex:1;min-width:0;font-weight:600;overflow-wrap:break-word}
+  .rank-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;
+    font:800 15px/1 "Plus Jakarta Sans",sans-serif;
+    background:linear-gradient(135deg,rgba(245,158,11,.16),rgba(225,29,72,.12));
+    border:1px solid rgba(245,158,11,.32);color:var(--ink)}
+  .math{font-size:12.5px;color:var(--muted);line-height:1.8;font-variant-numeric:tabular-nums}
+  .math b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div id="shell">
+  <main id="app">
+    <div class="wrap-narrow">
+      <div id="body"></div>
+    </div>
+  </main>
+</div>
+
+<script src="/leave-orders/quiz/quiz-core.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  QuizUI.mount({
+    title: 'My Result',
+    subtitle: 'National Postal Week 2026 — Online Quiz Competition',
+    icon: '&#128202;',
+    actions: '<a class="icon-btn" href="/Quiz/dashboard">Dashboard</a>'
+  });
+
+  var attemptId = (function () {
+    var m = location.pathname.match(/\/result\/([^/?#]+)/i);
+    if (m) return decodeURIComponent(m[1]);
+    return new URLSearchParams(location.search).get('attempt') || '';
+  })();
+
+  var body = document.getElementById('body');
+  body.innerHTML = '<div class="card">' + QuizUI.skeleton(4) + '</div>';
+
+  if (!attemptId) {
+    body.innerHTML = '<div class="card">' + QuizUI.alert('err', '&#9888;',
+      '<b>No attempt was specified.</b><br>Open your result from the dashboard.') +
+      '<a class="btn ghost" href="/Quiz/dashboard">Back to dashboard</a></div>';
+    return;
+  }
+
+  QuizAPI.part('result', { attempt_id: attemptId }).then(function (r) {
+    if (!r.available) { renderPending(r); return; }
+    renderResult(r);
+  }).catch(function (e) {
+    if (e.status === 401) { QuizUI.go('/Quiz'); return; }
+    body.innerHTML = '<div class="card">' + QuizUI.alert('err', '&#9888;',
+      '<b>Could not load your result.</b><br>' + QuizUI.esc(e.message)) +
+      '<a class="btn ghost" href="/Quiz/dashboard">Back to dashboard</a></div>';
+  });
+
+  // ── Submitted, but the score is not released yet ───────────────
+  function renderPending(r) {
+    var icon = r.reason === 'WITHHELD' ? '&#128274;' : '&#9203;';
+    body.innerHTML =
+      '<div class="card" style="text-align:center">' +
+        '<div style="font-size:54px;line-height:1">' + icon + '</div>' +
+        '<h3 style="margin:12px 0 7px;font-size:20px">' +
+          (r.reason === 'WITHHELD' ? 'Result under review' : 'Result not yet published') + '</h3>' +
+        '<p style="font-size:13.5px;color:var(--muted);line-height:1.65;max-width:420px;margin:0 auto">' +
+          QuizUI.esc(r.message || 'Your examination has been submitted.') + '</p>' +
+        (r.publishAtMs
+          ? '<p style="margin-top:12px;font-size:12.5px;color:var(--muted)">Expected on ' +
+            QuizUI.esc(QuizTime.ist(r.publishAtMs)) + ' IST</p>'
+          : '') +
+        (r.examTitle ? '<div style="margin-top:14px">' + QuizUI.badge(r.examTitle) + '</div>' : '') +
+        '<div class="btn-row" style="justify-content:center;margin-top:20px">' +
+          '<a class="btn ghost" href="/Quiz/dashboard">Back to dashboard</a>' +
+          '<button class="btn" type="button" onclick="location.reload()">Check again</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  // ── Published result ──────────────────────────────────────────
+  function renderResult(r) {
+    var p = r.participant || {};
+    var s = r.result || {};
+    var pct = Number(s.percentage);
+    var tone = pct >= 75 ? 'ok' : (pct >= 40 ? 'warn' : 'err');
+
+    var h = '';
+
+    if (r.testMode) {
+      h += QuizUI.alert('warn', '&#9888;',
+        '<b>Test Mode result.</b> This was an administrator dry run. It is not an official ' +
+        'attempt and does not appear in any report, leaderboard or participation count.');
+    }
+
+    // Score hero
+    h += '<div class="score-hero">' +
+      '<div style="font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;' +
+        'color:var(--muted);margin-bottom:9px">Final Score</div>' +
+      '<div class="score-big">' + QuizUI.esc(s.score) + '</div>' +
+      '<div class="score-of">out of ' + QuizUI.esc(s.maxMarks) + ' marks</div>' +
+      '<div class="score-pct">' + QuizUI.badge(pct + '%', tone) + '</div>' +
+      (r.rank ? '<div style="margin-top:14px"><span class="rank-chip">&#127942; Rank ' +
+        r.rank + ' of ' + r.outOf + '</span></div>' : '') +
+    '</div>';
+
+    // Tally
+    h += '<div class="tally">' +
+      '<div class="t c"><div class="n">' + s.correct + '</div><div class="l">Correct</div></div>' +
+      '<div class="t w"><div class="n">' + s.wrong + '</div><div class="l">Wrong</div></div>' +
+      '<div class="t u"><div class="n">' + s.unanswered + '</div><div class="l">Unanswered</div></div>' +
+      '<div class="t s"><div class="n">' + s.attempted + '</div><div class="l">Attempted</div></div>' +
+    '</div>';
+
+    // How the score was arrived at — shown openly so the marking is auditable
+    // by the participant, not just by the administrator.
+    h += '<div class="card" style="margin-top:16px">' +
+      '<div class="card-head"><div class="card-ic">&#129518;</div>' +
+        '<div><div class="card-t">How this was calculated</div>' +
+        '<div class="card-s">Marks earned and deducted</div></div></div>' +
+      '<div class="math">' +
+        'Correct answers: <b>' + s.correct + '</b> &times; ' +
+          '<b>+' + (s.correct ? (s.positiveEarned / s.correct) : 0) + '</b> = ' +
+          '<b>+' + s.positiveEarned + '</b><br>' +
+        'Wrong answers: <b>' + s.wrong + '</b> &times; ' +
+          '<b>−' + (s.wrong ? (s.negativeDeducted / s.wrong) : 0) + '</b> = ' +
+          '<b>−' + s.negativeDeducted + '</b><br>' +
+        'Unanswered: <b>' + s.unanswered + '</b> &rarr; <b>0</b><br>' +
+        '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">' +
+          'Final score: <b>' + s.positiveEarned + ' − ' + s.negativeDeducted +
+          ' = ' + s.score + '</b> out of <b>' + s.maxMarks + '</b></div>' +
+        'Time taken: <b>' + fmtDur(s.elapsedSeconds) + '</b>' +
+      '</div>' +
+    '</div>';
+
+    // Participant particulars
+    h += '<div class="card">' +
+      '<div class="card-head"><div class="card-ic">&#128100;</div>' +
+        '<div><div class="card-t">' + QuizUI.esc(p.employeeName) + '</div>' +
+        '<div class="card-s">' + QuizUI.esc(r.examTitle || '') + '</div></div></div>' +
+      '<div class="who-rows">' +
+        row('Employee ID', p.employeeId) +
+        row('Designation', p.designation) +
+        row('Office', p.office) +
+        row('Registration', p.regCode) +
+        row('Published', s.publishedMs ? QuizTime.ist(s.publishedMs) + ' IST' : '—') +
+      '</div>' +
+    '</div>';
+
+    // Answer key review — only present when the server chose to send it.
+    if (r.answerKey && r.answerKey.length) {
+      h += '<div class="section-title">Question review</div>';
+      h += r.answerKey.map(reviewCard).join('');
+    } else {
+      h += QuizUI.alert('', '&#128274;',
+        'The answer key for this examination has not been released. ' +
+        'Your question-wise review will appear here if the administrator publishes it.');
+    }
+
+    h += '<div class="btn-row" style="margin-top:18px">' +
+      '<a class="btn ghost" href="/Quiz/dashboard">Back to dashboard</a>' +
+      '<button class="btn" type="button" onclick="window.print()">Print / Save as PDF</button>' +
+    '</div>';
+
+    body.innerHTML = h;
+  }
+
+  function reviewCard(q) {
+    var cls = q.yourOption == null ? 'skipped' : (q.isCorrect ? 'correct' : 'wrong');
+    var tag = q.yourOption == null
+      ? QuizUI.badge('Unanswered', 'mute')
+      : (q.isCorrect ? QuizUI.badge('Correct', 'ok') : QuizUI.badge('Wrong', 'err'));
+
+    var opts = (q.options || []).map(function (o) {
+      var isKey = o.key === q.correctOption;
+      var isMine = o.key === q.yourOption;
+      return '<div class="ro' + (isKey ? ' is-key' : '') + (isMine ? ' is-mine' : '') + '">' +
+        '<span style="flex:none;font-weight:800">' + QuizUI.esc(o.key) + '</span>' +
+        '<span style="flex:1;min-width:0">' + QuizUI.esc(o.text) + '</span>' +
+        (isKey ? '<span style="flex:none">&#10004;</span>' : '') +
+        (isMine && !isKey ? '<span style="flex:none">&#10008;</span>' : '') +
+      '</div>';
+    }).join('');
+
+    return '<div class="rev ' + cls + '">' +
+      '<div style="display:flex;gap:9px;align-items:center;margin-bottom:9px">' +
+        '<span style="font-size:11px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;' +
+          'color:var(--muted)">Q' + q.seq + '</span>' + tag +
+      '</div>' +
+      '<div class="rq">' + QuizUI.esc(q.questionText) + '</div>' + opts +
+      (q.explanation || q.reference
+        ? '<div class="rx">' + (q.explanation ? QuizUI.esc(q.explanation) : '') +
+          (q.reference ? '<br><b>Reference:</b> ' + QuizUI.esc(q.reference) : '') + '</div>'
+        : '') +
+    '</div>';
+  }
+
+  function row(k, v) {
+    return '<div class="who-row"><div class="k">' + QuizUI.esc(k) + '</div>' +
+           '<div class="v">' + QuizUI.esc(v || '—') + '</div></div>';
+  }
+
+  function fmtDur(sec) {
+    if (sec == null) return '—';
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m ? (m + ' min ' + s + ' sec') : (s + ' sec');
+  }
+})();
+</script>
+</body>
+</html>

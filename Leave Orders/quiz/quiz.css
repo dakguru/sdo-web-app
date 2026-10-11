@@ -1,0 +1,627 @@
+/*  quiz.css — design system for the Quiz & Assessment module
+ *  ─────────────────────────────────────────────────────────────────────────
+ *  National Postal Week 2026 · Department of Posts · Karur Division, Karur
+ *  "One Postal Network, Infinite Possibilities"
+ *
+ *  A refined extension of the existing KRRSDO visual identity: soft lavender
+ *  and indigo gradients, white rounded cards, restrained glass surfaces, the
+ *  tricolour rule on the header. Tokens mirror phone-directory.html and
+ *  performance.html so the module reads as part of the same portal.
+ *
+ *  Mobile first throughout. Every interactive target is at least 44px, the
+ *  layout holds from 320px up, and nothing animates heavily during an active
+ *  examination. Dark mode is a first-class theme, not an afterthought.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOKENS
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --indigo:#4f46e5; --violet:#7c3aed; --purple:#6d28d9; --pink:#ec4899;
+  --teal:#0d9488; --emerald:#059669; --amber:#f59e0b; --rose:#e11d48;
+  --sky:#0284c7; --cyan:#0891b2; --saffron:#FF9933; --green:#138808;
+
+  --bg:#eef2fb; --card:#ffffff; --card-2:#f8faff;
+  --ink:#0f172a; --ink-2:#1e293b; --muted:#64748b; --faint:#94a3b8;
+  --line:#e2e8f0; --line-2:#cbd5e1;
+
+  --grad-bg:
+    radial-gradient(1200px 600px at -10% -20%, #e0e7ff 0%, transparent 60%),
+    radial-gradient(900px 500px at 110% 0%, #ede9fe 0%, transparent 55%),
+    radial-gradient(800px 600px at 50% 120%, #e0f2fe 0%, transparent 60%),
+    linear-gradient(180deg,#eef2fb 0%,#f6f8fe 100%);
+
+  --glass:rgba(255,255,255,.72);
+  --glass-line:rgba(255,255,255,.9);
+
+  --shadow-sm:0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04);
+  --shadow-md:0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
+  --shadow-lg:0 12px 32px rgba(15,23,42,.12), 0 4px 12px rgba(15,23,42,.06);
+  --shadow-xl:0 24px 60px rgba(79,70,229,.18), 0 8px 24px rgba(15,23,42,.08);
+
+  --r-xs:8px; --r-sm:12px; --r-md:16px; --r-lg:22px; --r-xl:28px;
+
+  --ok:#059669; --warn:#d97706; --err:#dc2626; --info:#0284c7;
+
+  /* iPhone notch / home-indicator insets, used on every fixed edge. */
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+}
+
+html.dark {
+  --bg:#0a0e1a; --card:#141a2b; --card-2:#1a2135;
+  --ink:#f1f5f9; --ink-2:#e2e8f0; --muted:#94a3b8; --faint:#64748b;
+  --line:#26314b; --line-2:#334155;
+
+  --grad-bg:
+    radial-gradient(1100px 600px at -5% -15%, rgba(79,70,229,.20) 0%, transparent 60%),
+    radial-gradient(900px 500px at 108% -5%, rgba(124,58,237,.17) 0%, transparent 58%),
+    radial-gradient(800px 600px at 50% 120%, rgba(2,132,199,.14) 0%, transparent 60%),
+    linear-gradient(180deg,#0a0e1a 0%,#0f1729 100%);
+
+  --glass:rgba(20,26,43,.72);
+  --glass-line:rgba(255,255,255,.08);
+
+  --indigo:#818cf8; --violet:#a78bfa; --purple:#c084fc;
+  --teal:#2dd4bf; --emerald:#34d399; --amber:#fbbf24; --rose:#fb7185;
+  --sky:#38bdf8; --cyan:#22d3ee;
+
+  --ok:#34d399; --warn:#fbbf24; --err:#f87171; --info:#38bdf8;
+
+  --shadow-md:0 4px 12px rgba(0,0,0,.35), 0 2px 4px rgba(0,0,0,.2);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.45), 0 4px 12px rgba(0,0,0,.25);
+  --shadow-xl:0 24px 60px rgba(0,0,0,.55), 0 8px 24px rgba(0,0,0,.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BASE
+   ═══════════════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;padding:0;color:var(--ink);
+  font:15px/1.55 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--grad-bg);background-attachment:fixed;
+  min-height:100vh;min-height:100dvh;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  overflow-x:hidden;                       /* no horizontal scroll, ever */
+}
+a{color:var(--indigo);text-decoration:none}
+a:hover{text-decoration:underline}
+img{max-width:100%;height:auto}
+h1,h2,h3,h4{font-family:"Plus Jakarta Sans","Inter",sans-serif;margin:0;line-height:1.25}
+:focus-visible{outline:3px solid var(--indigo);outline-offset:2px;border-radius:6px}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}   /* 16px gutter on phones */
+.wrap-narrow{max-width:640px;margin:0 auto;padding:0 16px}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HEADER — Government identity + Postal Week event banner
+   ═══════════════════════════════════════════════════════════════════ */
+.q-header{position:relative;overflow:hidden;color:#fff;box-shadow:0 14px 34px rgba(9,20,40,.28)}
+.q-header::before{
+  content:"";position:absolute;inset:0;z-index:0;background:
+    radial-gradient(880px 420px at 6% -60%, rgba(129,140,248,.52), transparent 60%),
+    radial-gradient(760px 420px at 102% -20%, rgba(192,132,252,.34), transparent 55%),
+    radial-gradient(700px 500px at 60% 140%, rgba(236,72,153,.26), transparent 60%),
+    linear-gradient(120deg,#0a1834 0%,#16307a 40%,#4f46e5 76%,#7c3aed 100%);
+}
+/* The tricolour rule, as on every other page of the portal. */
+.q-header::after{
+  content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;
+  background:linear-gradient(90deg,var(--saffron) 0 33.33%,#fff 33.33% 66.66%,var(--green) 66.66% 100%);
+}
+.q-grain{
+  position:absolute;inset:0;z-index:0;opacity:.5;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 0);background-size:22px 22px;
+}
+.q-header-in{
+  position:relative;z-index:1;max-width:1180px;margin:0 auto;
+  padding:calc(14px + var(--safe-t)) 16px 12px;
+}
+
+.gov-band{display:flex;align-items:center;gap:12px}
+.gov-crest{width:46px;height:46px;border-radius:10px;object-fit:cover;flex:none;
+  box-shadow:0 4px 14px rgba(0,0,0,.3);background:rgba(255,255,255,.1)}
+.gov-crest.post{background:rgba(255,255,255,.95);padding:4px;object-fit:contain}
+.gov-titles{min-width:0;flex:1}
+.gov-l1{font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;opacity:.82}
+.gov-l2{font:800 17px/1.2 "Plus Jakarta Sans",sans-serif;letter-spacing:.2px}
+.gov-l3{font-size:11.5px;opacity:.86;margin-top:2px}
+.gov-rule{height:2px;width:72px;margin-top:7px;border-radius:2px;
+  background:linear-gradient(90deg,var(--saffron),#fff,var(--green))}
+
+/* ── The event banner: the quiz's own identity ───────────────────── */
+.event-band{
+  position:relative;z-index:1;max-width:1180px;margin:0 auto;
+  padding:0 16px 16px;text-align:center;
+}
+.event-tag{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 14px;border-radius:999px;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.26);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
+}
+.event-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--saffron);
+  box-shadow:0 0 0 3px rgba(255,153,51,.28)}
+.event-title{
+  margin:11px 0 0;font:800 clamp(19px,5.1vw,31px)/1.2 "Plus Jakarta Sans",sans-serif;
+  letter-spacing:-.3px;text-shadow:0 2px 18px rgba(0,0,0,.28);
+}
+.event-theme{
+  margin:9px auto 0;max-width:620px;
+  font:600 clamp(13px,3.4vw,17px)/1.4 "Plus Jakarta Sans",sans-serif;
+  background:linear-gradient(95deg,#fde68a,#fff,#a5f3fc,#fff,#fbcfe8);
+  background-size:220% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  -webkit-text-fill-color:transparent;
+  animation:themeShift 9s ease-in-out infinite;
+}
+.event-theme::before{content:"\201C"}
+.event-theme::after{content:"\201D"}
+@keyframes themeShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.event-window{margin-top:9px;font-size:11.5px;opacity:.8;letter-spacing:.4px}
+
+/* Module strip under the header: page title + theme toggle + sign-out. */
+.q-modbar{
+  position:relative;z-index:2;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  max-width:1180px;margin:0 auto;padding:11px 16px;
+  background:rgba(0,0,0,.18);border-top:1px solid rgba(255,255,255,.1);
+}
+.q-modbar .mi{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;
+  font-size:18px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);flex:none}
+.q-modbar h1{font-size:16px;font-weight:800;color:#fff}
+.q-modbar .sub{font-size:11.5px;opacity:.8;color:#fff}
+.q-modbar .spacer{margin-left:auto}
+
+.icon-btn{
+  min-width:44px;min-height:44px;padding:0 12px;border-radius:12px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.24);
+  font:600 13px/1 "Inter",sans-serif;transition:background .18s,transform .18s;
+}
+.icon-btn:hover{background:rgba(255,255,255,.26)}
+.icon-btn:active{transform:scale(.96)}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CARDS AND SURFACES
+   ═══════════════════════════════════════════════════════════════════ */
+main{padding:20px 0 40px}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-md);padding:18px;margin-bottom:16px;
+}
+.card.glass{
+  background:var(--glass);backdrop-filter:blur(18px) saturate(1.3);
+  -webkit-backdrop-filter:blur(18px) saturate(1.3);border-color:var(--glass-line);
+}
+.card-head{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.card-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:19px;flex:none;
+  background:linear-gradient(135deg,rgba(79,70,229,.14),rgba(124,58,237,.14));border:1px solid rgba(79,70,229,.2)}
+.card-t{font:800 16px/1.25 "Plus Jakarta Sans",sans-serif}
+.card-s{font-size:12.5px;color:var(--muted);margin-top:2px}
+
+.section-title{
+  font:800 12px/1 "Plus Jakarta Sans",sans-serif;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);margin:26px 0 12px;display:flex;align-items:center;gap:10px;
+}
+.section-title::after{content:"";flex:1;height:1px;background:var(--line)}
+
+.grid{display:grid;gap:14px}
+.grid-2{grid-template-columns:1fr}
+.grid-3{grid-template-columns:1fr}
+.grid-4{grid-template-columns:repeat(2,1fr)}
+@media(min-width:640px){
+  .grid-2{grid-template-columns:repeat(2,1fr)}
+  .grid-3{grid-template-columns:repeat(2,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+}
+@media(min-width:980px){
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+}
+
+/* Stat tile */
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);
+  padding:14px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+.stat::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,var(--indigo),var(--violet))}
+.stat .k{font-size:10.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted)}
+.stat .v{font:800 25px/1.1 "Plus Jakarta Sans",sans-serif;margin-top:5px;
+  font-variant-numeric:tabular-nums}
+.stat .n{font-size:11.5px;color:var(--faint);margin-top:3px}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════════════════════════ */
+.btn{
+  -webkit-appearance:none;appearance:none;cursor:pointer;
+  min-height:46px;padding:0 20px;border-radius:14px;border:1px solid transparent;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  font:700 14.5px/1 "Inter",sans-serif;letter-spacing:.1px;
+  transition:transform .16s cubic-bezier(.34,1.3,.64,1),box-shadow .2s,filter .2s;
+  background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;
+  box-shadow:0 6px 18px rgba(79,70,229,.3);
+}
+.btn:hover{filter:brightness(1.07);box-shadow:0 10px 26px rgba(79,70,229,.38)}
+.btn:active{transform:scale(.975)}
+.btn[disabled],.btn.is-disabled{
+  opacity:.5;cursor:not-allowed;filter:grayscale(.35);box-shadow:none;transform:none;
+}
+.btn.ghost{background:var(--card);color:var(--ink);border-color:var(--line-2);box-shadow:var(--shadow-sm)}
+.btn.ghost:hover{background:var(--card-2);filter:none}
+.btn.ok{background:linear-gradient(135deg,#059669,#0d9488);box-shadow:0 6px 18px rgba(5,150,105,.3)}
+.btn.danger{background:linear-gradient(135deg,#dc2626,#e11d48);box-shadow:0 6px 18px rgba(220,38,38,.3)}
+.btn.sm{min-height:38px;padding:0 14px;font-size:13px;border-radius:11px}
+.btn.block{width:100%}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+
+/* Google's button is rendered by their script; this wraps it so it lines up. */
+.gsi-wrap{display:flex;justify-content:center;min-height:46px}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FORMS
+   ═══════════════════════════════════════════════════════════════════ */
+.field{margin-bottom:15px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-2);margin-bottom:6px}
+.field .hint{font-size:11.5px;color:var(--muted);margin-top:5px}
+.input,.select,.textarea{
+  width:100%;min-height:46px;padding:11px 13px;border-radius:13px;
+  border:1.5px solid var(--line-2);background:var(--card);color:var(--ink);
+  font:500 15px/1.4 "Inter",sans-serif;                 /* 15px: no iOS zoom on focus */
+  transition:border-color .18s,box-shadow .18s;
+}
+.textarea{min-height:92px;resize:vertical}
+.input:focus,.select:focus,.textarea:focus{
+  outline:none;border-color:var(--indigo);box-shadow:0 0 0 4px rgba(79,70,229,.14);
+}
+.input[readonly],.input:disabled{background:var(--card-2);color:var(--muted);cursor:default}
+.input.mono{font-family:"JetBrains Mono",ui-monospace,monospace;letter-spacing:1px}
+.checkrow{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;line-height:1.5}
+.checkrow input[type=checkbox]{width:21px;height:21px;margin:1px 0 0;flex:none;accent-color:var(--indigo)}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BADGES, ALERTS, EMPTY STATES
+   ═══════════════════════════════════════════════════════════════════ */
+.badge{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;
+  font-size:11px;font-weight:700;letter-spacing:.4px;white-space:nowrap;
+  background:rgba(79,70,229,.1);color:var(--indigo);border:1px solid rgba(79,70,229,.2);
+}
+.badge.ok{background:rgba(5,150,105,.1);color:var(--ok);border-color:rgba(5,150,105,.22)}
+.badge.warn{background:rgba(217,119,6,.1);color:var(--warn);border-color:rgba(217,119,6,.22)}
+.badge.err{background:rgba(220,38,38,.1);color:var(--err);border-color:rgba(220,38,38,.22)}
+.badge.mute{background:rgba(100,116,139,.1);color:var(--muted);border-color:rgba(100,116,139,.22)}
+
+.alert{
+  display:flex;gap:11px;padding:13px 15px;border-radius:var(--r-md);
+  border:1px solid rgba(79,70,229,.22);background:rgba(79,70,229,.07);
+  font-size:13.5px;line-height:1.5;margin-bottom:14px;
+}
+.alert .ai{font-size:18px;flex:none;line-height:1.3}
+.alert.ok{border-color:rgba(5,150,105,.25);background:rgba(5,150,105,.08)}
+.alert.warn{border-color:rgba(217,119,6,.28);background:rgba(217,119,6,.08)}
+.alert.err{border-color:rgba(220,38,38,.28);background:rgba(220,38,38,.08)}
+.alert b{font-weight:700}
+
+.empty{text-align:center;padding:40px 18px;color:var(--muted)}
+.empty .ei{font-size:46px;opacity:.5;margin-bottom:12px}
+.empty h3{font-size:16px;color:var(--ink);margin-bottom:6px}
+.empty p{font-size:13.5px;max-width:420px;margin:0 auto;line-height:1.6}
+
+/* Loading skeleton */
+.skel{background:linear-gradient(90deg,var(--line) 25%,var(--card-2) 50%,var(--line) 75%);
+  background-size:200% 100%;animation:shimmer 1.4s linear infinite;border-radius:8px;height:14px;margin-bottom:9px}
+.skel.lg{height:26px}.skel.w60{width:60%}.skel.w40{width:40%}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Toast */
+#toast{
+  position:fixed;left:50%;transform:translate(-50%,120%);
+  bottom:calc(18px + var(--safe-b));z-index:9000;
+  max-width:calc(100vw - 32px);padding:12px 18px;border-radius:14px;
+  background:#0f172a;color:#fff;font-size:13.5px;font-weight:600;
+  box-shadow:0 14px 40px rgba(0,0,0,.4);transition:transform .34s cubic-bezier(.34,1.3,.64,1);
+}
+#toast.on{transform:translate(-50%,0)}
+#toast.err{background:linear-gradient(135deg,#dc2626,#e11d48)}
+#toast.ok{background:linear-gradient(135deg,#059669,#0d9488)}
+
+/* ═══════════════════════════════════════════════════════════════════
+   COUNTDOWN
+   ═══════════════════════════════════════════════════════════════════ */
+.countdown{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+.cd-unit{
+  min-width:66px;padding:11px 9px;border-radius:var(--r-md);text-align:center;
+  background:linear-gradient(160deg,rgba(79,70,229,.1),rgba(124,58,237,.08));
+  border:1px solid rgba(79,70,229,.2);
+}
+.cd-unit .n{font:800 27px/1 "Plus Jakarta Sans",sans-serif;font-variant-numeric:tabular-nums;
+  color:var(--indigo)}
+.cd-unit .l{font-size:9.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;
+  color:var(--muted);margin-top:5px}
+
+/* ═══════════════════════════════════════════════════════════════════
+   EXAMINATION SCREEN
+   ═══════════════════════════════════════════════════════════════════ */
+body.exam-mode{background:var(--grad-bg)}
+
+.exam-top{
+  position:sticky;top:0;z-index:50;
+  padding:calc(9px + var(--safe-t)) 14px 9px;
+  background:linear-gradient(135deg,rgba(10,24,52,.97),rgba(79,70,229,.95));
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  color:#fff;box-shadow:0 6px 22px rgba(9,20,40,.3);
+}
+.exam-top-row{display:flex;align-items:center;gap:10px;max-width:760px;margin:0 auto}
+.exam-ttl{font:800 13px/1.25 "Plus Jakarta Sans",sans-serif;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.exam-qno{font-size:11px;opacity:.86;font-weight:700;letter-spacing:.4px}
+
+/* Overall countdown chip — turns amber then red as time runs out. */
+.exam-clock{
+  display:inline-flex;align-items:center;gap:6px;flex:none;
+  padding:6px 12px;border-radius:999px;font-variant-numeric:tabular-nums;
+  background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);
+  font:800 14px/1 "JetBrains Mono",ui-monospace,monospace;
+}
+.exam-clock.warn{background:rgba(245,158,11,.3);border-color:rgba(245,158,11,.55)}
+.exam-clock.crit{background:rgba(220,38,38,.36);border-color:rgba(248,113,113,.6);
+  animation:pulseCrit 1s ease-in-out infinite}
+@keyframes pulseCrit{0%,100%{opacity:1}50%{opacity:.62}}
+
+/* Progress rail */
+.exam-rail{height:4px;border-radius:2px;background:rgba(255,255,255,.2);
+  margin:9px auto 0;max-width:760px;overflow:hidden}
+.exam-rail i{display:block;height:100%;border-radius:2px;
+  background:linear-gradient(90deg,var(--saffron),#fff,var(--green));
+  transition:width .35s ease}
+
+.exam-body{max-width:760px;margin:0 auto;padding:16px 16px 0}
+
+/* Per-question timer bar */
+.qtimer{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.qtimer .bar{flex:1;height:7px;border-radius:4px;background:var(--line);overflow:hidden}
+.qtimer .bar i{display:block;height:100%;border-radius:4px;
+  background:linear-gradient(90deg,var(--indigo),var(--violet));
+  transition:width 1s linear,background .3s}
+.qtimer.warn .bar i{background:linear-gradient(90deg,#f59e0b,#f97316)}
+.qtimer.crit .bar i{background:linear-gradient(90deg,#dc2626,#e11d48)}
+.qtimer .t{font:800 14px/1 "JetBrains Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums;min-width:46px;text-align:right;color:var(--ink-2)}
+.qtimer.crit .t{color:var(--err)}
+
+.question{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:18px;box-shadow:var(--shadow-md);margin-bottom:14px;
+}
+.q-meta{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--indigo);margin-bottom:9px}
+.q-text{font:600 17px/1.5 "Plus Jakarta Sans",sans-serif;color:var(--ink);
+  overflow-wrap:break-word;word-break:break-word}   /* long options must wrap, not clip */
+
+/* Answer cards — large, obviously tappable, clearly differentiated when chosen.
+   Nothing here ever hints at which option is correct. */
+.options{display:grid;gap:11px;margin-top:4px}
+.opt{
+  -webkit-appearance:none;appearance:none;cursor:pointer;width:100%;text-align:left;
+  display:flex;gap:13px;align-items:flex-start;
+  min-height:56px;padding:14px 15px;border-radius:var(--r-md);
+  background:var(--card);border:2px solid var(--line);color:var(--ink);
+  font:500 15.5px/1.45 "Inter",sans-serif;
+  transition:border-color .18s,background .18s,transform .14s,box-shadow .18s;
+  -webkit-tap-highlight-color:transparent;
+}
+.opt:hover:not(.sel){border-color:var(--line-2);background:var(--card-2)}
+.opt:active{transform:scale(.988)}
+.opt .k{
+  width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;
+  font:800 14px/1 "Plus Jakarta Sans",sans-serif;
+  background:var(--card-2);border:1.5px solid var(--line-2);color:var(--muted);
+  transition:background .18s,color .18s,border-color .18s;
+}
+.opt .v{flex:1;min-width:0;overflow-wrap:break-word;word-break:break-word;padding-top:4px}
+.opt.sel{
+  border-color:var(--indigo);background:rgba(79,70,229,.08);
+  box-shadow:0 0 0 4px rgba(79,70,229,.12);
+}
+.opt.sel .k{background:linear-gradient(135deg,var(--indigo),var(--violet));
+  color:#fff;border-color:transparent}
+.opt[disabled]{opacity:.55;cursor:not-allowed}
+
+/* Bottom action bar, clear of the home indicator. */
+.exam-foot{
+  position:sticky;bottom:0;z-index:40;
+  padding:12px 16px calc(12px + var(--safe-b));
+  background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-top:1px solid var(--line);
+}
+.exam-foot-in{max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.exam-foot .grow{flex:1}
+/* Every control in the examination footer is a full-size target, including
+   Skip. These are tapped under time pressure on a phone, so the compact .sm
+   size used in dense admin tables is not good enough here. */
+.exam-foot .btn,.exam-foot .btn.sm{min-height:46px;padding:0 18px;font-size:14.5px;border-radius:13px}
+
+/* Connection status — visible, honest, never silently extends time. */
+.netstat{
+  position:fixed;left:50%;transform:translateX(-50%);
+  top:calc(var(--safe-t) + 4px);z-index:8000;
+  padding:7px 15px;border-radius:999px;font-size:12px;font-weight:700;
+  background:linear-gradient(135deg,#d97706,#dc2626);color:#fff;
+  box-shadow:0 8px 22px rgba(0,0,0,.3);display:none;
+}
+.netstat.on{display:block}
+
+/* TEST MODE banner — unmistakable during every administrator dry run. */
+.testbar{
+  position:relative;z-index:60;padding:8px 16px;text-align:center;
+  font:800 12px/1.3 "Plus Jakarta Sans",sans-serif;letter-spacing:1.6px;text-transform:uppercase;
+  color:#1a1206;background:repeating-linear-gradient(135deg,#fbbf24 0 14px,#f59e0b 14px 28px);
+  border-bottom:2px solid rgba(0,0,0,.18);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESULT
+   ═══════════════════════════════════════════════════════════════════ */
+.score-hero{
+  text-align:center;padding:26px 18px;border-radius:var(--r-xl);
+  background:linear-gradient(160deg,rgba(79,70,229,.12),rgba(124,58,237,.08),rgba(13,148,136,.08));
+  border:1px solid rgba(79,70,229,.2);margin-bottom:18px;
+}
+.score-big{font:800 clamp(42px,13vw,66px)/1 "Plus Jakarta Sans",sans-serif;
+  font-variant-numeric:tabular-nums;
+  background:linear-gradient(135deg,var(--indigo),var(--violet),var(--teal));
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.score-of{font-size:14px;color:var(--muted);font-weight:600;margin-top:5px}
+.score-pct{margin-top:11px}
+
+.tally{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:520px){.tally{grid-template-columns:repeat(4,1fr)}}
+.tally .t{padding:13px;border-radius:var(--r-md);text-align:center;
+  background:var(--card);border:1px solid var(--line)}
+.tally .t .n{font:800 24px/1 "Plus Jakarta Sans",sans-serif;font-variant-numeric:tabular-nums}
+.tally .t .l{font-size:10.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;
+  color:var(--muted);margin-top:5px}
+.tally .t.c .n{color:var(--ok)} .tally .t.w .n{color:var(--err)}
+.tally .t.u .n{color:var(--muted)} .tally .t.s .n{color:var(--indigo)}
+
+/* Answer key review (only when the examination permits it) */
+.rev{border:1px solid var(--line);border-radius:var(--r-md);padding:14px;margin-bottom:11px;background:var(--card)}
+.rev.correct{border-left:4px solid var(--ok)}
+.rev.wrong{border-left:4px solid var(--err)}
+.rev.skipped{border-left:4px solid var(--muted)}
+.rev .rq{font-weight:600;font-size:14.5px;line-height:1.5;margin-bottom:10px}
+.rev .ro{font-size:13.5px;padding:7px 11px;border-radius:9px;margin-bottom:5px;
+  background:var(--card-2);display:flex;gap:9px}
+.rev .ro.is-key{background:rgba(5,150,105,.11);font-weight:700}
+.rev .ro.is-mine{background:rgba(220,38,38,.1);font-weight:700}
+.rev .ro.is-key.is-mine{background:rgba(5,150,105,.17)}
+.rev .rx{font-size:12.5px;color:var(--muted);margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABLES — horizontally scrollable on phones, never clipped
+   ═══════════════════════════════════════════════════════════════════ */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);
+  border-radius:var(--r-md);background:var(--card)}
+table.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:580px}
+table.tbl th,table.tbl td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);
+  white-space:nowrap}
+table.tbl th{font-size:10.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;
+  color:var(--muted);background:var(--card-2);position:sticky;top:0;z-index:1}
+table.tbl tbody tr:hover{background:var(--card-2)}
+table.tbl td.wrap{white-space:normal;min-width:240px}
+table.tbl .num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* Admin tab strip */
+.tabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  padding-bottom:4px;margin-bottom:16px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs a{
+  flex:none;min-height:40px;padding:0 15px;border-radius:12px;
+  display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
+  font:700 13px/1 "Inter",sans-serif;color:var(--muted);
+  background:var(--card);border:1px solid var(--line);text-decoration:none;
+}
+.tabs a:hover{color:var(--ink);background:var(--card-2);text-decoration:none}
+.tabs a.on{color:#fff;background:linear-gradient(135deg,var(--indigo),var(--violet));
+  border-color:transparent;box-shadow:0 4px 14px rgba(79,70,229,.3)}
+
+/* Modal */
+.modal{position:fixed;inset:0;z-index:7000;display:none;
+  padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:rgba(8,12,24,.62);backdrop-filter:blur(5px)}
+.modal.on{display:block}
+.modal-box{max-width:620px;margin:calc(24px + var(--safe-t)) auto calc(24px + var(--safe-b));
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-xl);
+  box-shadow:var(--shadow-xl);padding:20px}
+.modal-head{display:flex;align-items:center;gap:10px;margin-bottom:15px}
+.modal-head h3{font-size:17px;font-weight:800;flex:1}
+.modal-x{min-width:38px;min-height:38px;border-radius:11px;border:1px solid var(--line);
+  background:var(--card-2);cursor:pointer;font-size:17px;color:var(--muted)}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FOOTER — mandatory developer credit
+   ═══════════════════════════════════════════════════════════════════ */
+.q-footer{
+  margin-top:34px;padding:22px 16px calc(24px + var(--safe-b));
+  text-align:center;border-top:1px solid var(--line);
+  background:linear-gradient(180deg,transparent,rgba(79,70,229,.05));
+}
+.q-footer .dev{
+  font:800 clamp(13px,3.6vw,15.5px)/1.45 "Plus Jakarta Sans",sans-serif;
+  letter-spacing:.2px;
+  /* Violet → royal blue → cyan, with a restrained golden highlight. */
+  background:linear-gradient(100deg,#7c3aed 0%,#4f46e5 24%,#0891b2 48%,#f0b000 64%,#4f46e5 82%,#7c3aed 100%);
+  background-size:260% 100%;
+  -webkit-background-clip:text;background-clip:text;
+  color:transparent;-webkit-text-fill-color:transparent;
+  animation:shine 7s linear infinite;
+}
+html.dark .q-footer .dev{
+  background-image:linear-gradient(100deg,#c084fc 0%,#818cf8 24%,#22d3ee 48%,#fcd34d 64%,#818cf8 82%,#c084fc 100%);
+}
+@keyframes shine{0%{background-position:0% 50%}100%{background-position:260% 50%}}
+
+.q-footer .contact{margin-top:9px;font-size:12.5px;color:var(--muted);line-height:1.7}
+/* The phone number and email are the support route printed on every page, and
+   they are tapped on a phone. Inline-block with a 44px box makes them real
+   touch targets while leaving the prescribed sentence intact and in order. */
+.q-footer .contact a{
+  display:inline-block;min-height:44px;line-height:44px;padding:0 8px;
+  font-weight:700;color:var(--indigo);text-decoration:none;
+  border-radius:8px;white-space:nowrap;vertical-align:middle;
+  transition:background .18s;
+}
+.q-footer .contact a:hover{background:rgba(79,70,229,.1);text-decoration:underline}
+html.dark .q-footer .contact a:hover{background:rgba(129,140,248,.14)}
+.q-footer .contact a:hover{text-decoration:underline}
+.q-footer .sep{opacity:.4;margin:0 6px}
+.q-footer .org{margin-top:13px;font-size:11px;color:var(--faint);letter-spacing:.4px;line-height:1.7}
+
+/* Keep the footer quiet while an examination is running. */
+body.exam-mode .q-footer{margin-top:20px;padding-top:14px;opacity:.72;border-top-style:dashed}
+body.exam-mode .q-footer .contact,body.exam-mode .q-footer .org{font-size:11px}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════════════ */
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+
+/* Honour the reader's preference: stop every decorative animation, including
+   the footer shimmer and the theme shift. Countdown digits still update —
+   they are information, not decoration. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms!important;animation-iteration-count:1!important;
+    transition-duration:.001ms!important;scroll-behavior:auto!important;
+  }
+  .q-footer .dev{
+    -webkit-text-fill-color:currentColor;color:var(--violet);
+    background:none;-webkit-background-clip:border-box;background-clip:border-box;
+  }
+  html.dark .q-footer .dev{color:#c084fc;background:none}
+  .event-theme{
+    -webkit-text-fill-color:currentColor;color:#fde68a;
+    background:none;-webkit-background-clip:border-box;background-clip:border-box;
+  }
+  .score-big{-webkit-text-fill-color:currentColor;color:var(--indigo);background:none}
+}
+
+/* Higher-contrast borders when the system asks for them. */
+@media (prefers-contrast:more){
+  .opt{border-width:2.5px}
+  .input,.select,.textarea{border-width:2px}
+  .badge,.alert{border-width:1.5px}
+}
+
+@media print{
+  .q-modbar,.exam-foot,.tabs,.btn,.netstat{display:none!important}
+  body{background:#fff}
+  .card,.question{box-shadow:none;border-color:#ccc}
+}

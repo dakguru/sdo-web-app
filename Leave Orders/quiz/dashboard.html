@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>My Dashboard &mdash; National Postal Week 2026 Quiz | Karur Division</title>
+<meta name="theme-color" content="#16307a" />
+<link rel="icon" href="/assets/india-post-logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leave-orders/quiz/quiz.css">
+<style>
+  .me-card{display:flex;gap:14px;align-items:flex-start}
+  .me-av{width:54px;height:54px;border-radius:16px;flex:none;display:grid;place-items:center;
+    font:800 21px/1 "Plus Jakarta Sans",sans-serif;color:#fff;
+    background:linear-gradient(135deg,var(--indigo),var(--violet));box-shadow:0 6px 18px rgba(79,70,229,.3)}
+  .me-av img{width:100%;height:100%;border-radius:16px;object-fit:cover}
+  .me-info{flex:1;min-width:0}
+  .me-name{font:800 17px/1.25 "Plus Jakarta Sans",sans-serif;overflow-wrap:break-word}
+  .me-rows{margin-top:9px;display:grid;gap:5px}
+  .me-row{display:flex;gap:9px;font-size:12.5px;line-height:1.5}
+  .me-row .k{flex:none;width:92px;color:var(--muted);font-weight:700;
+    text-transform:uppercase;letter-spacing:.4px;font-size:10.5px;padding-top:2px}
+  .me-row .v{flex:1;min-width:0;font-weight:600;overflow-wrap:break-word}
+
+  .exam-card{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;
+    background:var(--card);box-shadow:var(--shadow-md);margin-bottom:16px}
+  .exam-card .eh{padding:16px 17px;background:linear-gradient(135deg,rgba(79,70,229,.1),rgba(124,58,237,.07));
+    border-bottom:1px solid var(--line)}
+  .exam-card .eh h3{font-size:17px;font-weight:800;overflow-wrap:break-word}
+  .exam-card .eh .ed{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+  .exam-card .eb{padding:16px 17px}
+  .spec{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px}
+  @media(min-width:560px){.spec{grid-template-columns:repeat(3,1fr)}}
+  .spec .sp{padding:10px 11px;border-radius:11px;background:var(--card-2);border:1px solid var(--line)}
+  .spec .sp .k{font-size:9.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--muted)}
+  .spec .sp .v{font:700 14px/1.3 "Plus Jakarta Sans",sans-serif;margin-top:3px;font-variant-numeric:tabular-nums}
+  .cd-box{text-align:center;padding:15px;border-radius:var(--r-md);margin-bottom:15px;
+    background:linear-gradient(160deg,rgba(79,70,229,.08),rgba(13,148,136,.06));
+    border:1px solid rgba(79,70,229,.17)}
+  .cd-box .cl{font-size:11px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;
+    color:var(--muted);margin-bottom:11px}
+  .res-mini{display:flex;gap:9px;flex-wrap:wrap;align-items:center;padding:12px;border-radius:11px;
+    background:rgba(5,150,105,.07);border:1px solid rgba(5,150,105,.2);margin-bottom:13px}
+  .res-mini .sc{font:800 21px/1 "Plus Jakarta Sans",sans-serif;color:var(--ok);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div id="shell">
+  <main id="app">
+    <div class="wrap">
+      <div id="status"></div>
+      <div class="card" id="meCard"><div id="meBody"></div></div>
+      <div class="section-title">Examinations</div>
+      <div id="exams"></div>
+      <div id="history"></div>
+    </div>
+  </main>
+</div>
+
+<script src="/leave-orders/quiz/quiz-core.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  QuizUI.mount({
+    title: 'My Dashboard',
+    subtitle: 'National Postal Week 2026 — Online Quiz Competition',
+    icon: '&#127942;',
+    actions: '<button class="icon-btn" id="refreshBtn" type="button" title="Refresh">&#8635;</button>' +
+             '<button class="icon-btn" id="outBtn" type="button">Sign out</button>'
+  });
+
+  var meBody = document.getElementById('meBody');
+  var examsEl = document.getElementById('exams');
+  var statusEl = document.getElementById('status');
+  var histEl = document.getElementById('history');
+  var stoppers = [];       // countdown cleanup functions
+
+  meBody.innerHTML = QuizUI.skeleton(4);
+  examsEl.innerHTML = '<div class="card">' + QuizUI.skeleton(3) + '</div>';
+
+  document.getElementById('outBtn').addEventListener('click', function () {
+    QuizAPI.logout().then(function () { QuizUI.go('/Quiz'); });
+  });
+  document.getElementById('refreshBtn').addEventListener('click', function () { load(); });
+
+  load();
+
+  function load() {
+    stoppers.forEach(function (s) { s(); });
+    stoppers = [];
+
+    QuizAPI.part('dashboard').then(function (r) {
+      QuizTime.anchor(r.serverTimeMs);
+      if (r.needsRegistration) { QuizUI.go('/Quiz/register'); return; }
+      renderMe(r);
+      renderStatus(r.registration);
+      renderExams(r.exams || []);
+    }).catch(function (e) {
+      if (e.status === 401) { QuizUI.go('/Quiz'); return; }
+      examsEl.innerHTML = QuizUI.alert('err', '&#9888;',
+        '<b>Could not load your dashboard.</b><br>' + QuizUI.esc(e.message) +
+        '<br><br><button class="btn sm ghost" onclick="location.reload()">Try again</button>');
+      meBody.innerHTML = '';
+    });
+  }
+
+  function renderMe(r) {
+    var reg = r.registration || {};
+    var id = r.identity || {};
+    var av = id.picture
+      ? '<div class="me-av"><img src="' + QuizUI.esc(id.picture) + '" alt="" referrerpolicy="no-referrer"></div>'
+      : '<div class="me-av">' + QuizUI.esc((reg.employeeName || 'E').charAt(0).toUpperCase()) + '</div>';
+
+    meBody.innerHTML =
+      '<div class="me-card">' + av +
+        '<div class="me-info">' +
+          '<div class="me-name">' + QuizUI.esc(reg.employeeName) + '</div>' +
+          '<div style="margin-top:6px">' + QuizUI.statusBadge(reg.status) +
+            ' ' + QuizUI.badge(reg.regCode || '—') + '</div>' +
+          '<div class="me-rows">' +
+            meRow('Employee ID', reg.employeeId) +
+            meRow('Designation', reg.designation) +
+            meRow('Office', reg.office) +
+            meRow('Account', id.email || (id.provider === 'google' ? 'Google account' : 'Employee ID sign-in')) +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function meRow(k, v) {
+    return '<div class="me-row"><div class="k">' + QuizUI.esc(k) + '</div>' +
+           '<div class="v">' + QuizUI.esc(v || '—') + '</div></div>';
+  }
+
+  function renderStatus(reg) {
+    if (!reg) { statusEl.innerHTML = ''; return; }
+    if (reg.status === 'APPROVED') { statusEl.innerHTML = ''; return; }
+
+    var map = {
+      PENDING: ['warn', '&#9203;', '<b>Awaiting approval.</b> Your registration has been received and is ' +
+        'pending administrator approval. You cannot start the examination until it is approved.'],
+      REJECTED: ['err', '&#9940;', '<b>Registration rejected.</b> ' +
+        (reg.remarks ? QuizUI.esc(reg.remarks) + ' ' : '') +
+        'Please contact the administrator on <a href="tel:+917904478591">+91 7904478591</a>.'],
+      SUSPENDED: ['err', '&#9888;', '<b>Examination eligibility suspended.</b> ' +
+        (reg.remarks ? QuizUI.esc(reg.remarks) + ' ' : '') +
+        'Please contact the administrator.'],
+      CANCELLED: ['mute', '&#10060;', '<b>Registration cancelled.</b> Please contact the administrator ' +
+        'if this is unexpected.'],
+    };
+    var m = map[reg.status];
+    statusEl.innerHTML = m ? QuizUI.alert(m[0], m[1], m[2]) : '';
+  }
+
+  function renderExams(exams) {
+    var upcoming = exams.filter(function (e) { return !e.completed; });
+    var done = exams.filter(function (e) { return e.completed; });
+
+    if (!exams.length) {
+      examsEl.innerHTML = '<div class="card">' + QuizUI.empty('&#128198;', 'Examination Not Yet Scheduled',
+        'No examination has been scheduled yet. This page will show the quiz, its timing and a ' +
+        'countdown as soon as the administrator publishes it. Please check back during ' +
+        'National Postal Week, 9th to 15th October 2026.') + '</div>';
+    } else {
+      examsEl.innerHTML = upcoming.length
+        ? upcoming.map(examCard).join('')
+        : '<div class="card">' + QuizUI.empty('&#9989;', 'Nothing pending',
+            'You have completed every examination currently open to you. Your results appear below.') + '</div>';
+      upcoming.forEach(wireExam);
+    }
+
+    if (done.length) {
+      histEl.innerHTML = '<div class="section-title">Completed examinations</div>' +
+        done.map(examCard).join('');
+      done.forEach(wireExam);
+    } else {
+      histEl.innerHTML = '';
+    }
+  }
+
+  function examCard(ex) {
+    var h = '<div class="exam-card" data-id="' + QuizUI.esc(ex.id) + '">' +
+      '<div class="eh">' +
+        '<h3>' + QuizUI.esc(ex.title) + '</h3>' +
+        (ex.description ? '<div class="ed">' + QuizUI.esc(ex.description) + '</div>' : '') +
+        '<div style="margin-top:9px">' + QuizUI.statusBadge(ex.status) + '</div>' +
+      '</div>' +
+      '<div class="eb">';
+
+    // Examination specification, straight from the server's own figures.
+    h += '<div class="spec">' +
+      sp('Date', QuizTime.istDate(ex.examOpenMs)) +
+      sp('Starts at', QuizTime.istTime(ex.examOpenMs) + ' IST') +
+      sp('Duration', Math.round(ex.totalSeconds / 60) + ' minutes') +
+      sp('Questions', ex.questionCount) +
+      sp('Per question', ex.secondsPerQuestion + ' seconds') +
+      sp('Correct answer', '+' + ex.positiveMarks + ' marks') +
+      sp('Wrong answer', '−' + ex.negativeMarks + ' mark' + (ex.negativeMarks === 1 ? '' : 's')) +
+      sp('Maximum marks', ex.maxMarks) +
+      sp('Navigation', ex.navigation === 'ONE_WAY' ? 'One-way' : 'Free') +
+    '</div>';
+
+    // Published result, if any.
+    if (ex.result) {
+      h += '<div class="res-mini">' +
+        '<span class="sc">' + ex.result.score + '</span>' +
+        '<span style="font-size:12.5px;color:var(--muted)">out of ' + ex.result.maxMarks +
+          ' &middot; ' + ex.result.percentage + '%</span>' +
+        '<a class="btn sm ghost" style="margin-left:auto" href="/Quiz/result/' +
+          QuizUI.esc(ex.result.attemptId) + '">View result &rarr;</a>' +
+      '</div>';
+    } else if (ex.resultPending) {
+      h += QuizUI.alert('', '&#9203;',
+        '<b>Submitted.</b> Your result will appear here once the administrator publishes it.');
+    }
+
+    // The gate. canStart and reason are decided on the server; this only draws
+    // what the server already decided.
+    if (ex.phase === 'NOT_STARTED') {
+      h += '<div class="cd-box">' +
+             '<div class="cl">Examination Not Yet Started</div>' +
+             '<div class="countdown" data-cd="' + ex.examOpenMs + '"></div>' +
+             '<div style="margin-top:11px;font-size:12px;color:var(--muted)">Opens ' +
+               QuizUI.esc(QuizTime.ist(ex.examOpenMs)) + ' IST</div>' +
+           '</div>';
+    }
+
+    if (ex.canStart) {
+      h += '<button class="btn block" type="button" data-start="' + QuizUI.esc(ex.id) + '">' +
+        (ex.phase === 'RESUME' ? 'Resume my attempt &rarr;' : 'Start Quiz &rarr;') + '</button>';
+      if (ex.phase === 'RESUME') {
+        h += '<p style="margin-top:9px;font-size:12px;color:var(--warn);text-align:center">' +
+             'You have an attempt in progress. Your timer has been running.</p>';
+      }
+    } else if (!ex.completed) {
+      h += '<button class="btn block is-disabled" type="button" disabled>Start Quiz</button>';
+      if (ex.reason && ex.phase !== 'NOT_STARTED') {
+        h += '<p style="margin-top:9px;font-size:12.5px;color:var(--muted);text-align:center">' +
+             QuizUI.esc(ex.reason) + '</p>';
+      }
+    }
+
+    if (ex.instructions) {
+      h += '<details style="margin-top:14px">' +
+        '<summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--indigo)">' +
+          'Important instructions</summary>' +
+        '<div style="margin-top:9px;font-size:13px;line-height:1.65;white-space:pre-wrap">' +
+          QuizUI.esc(ex.instructions) + '</div>' +
+      '</details>';
+    }
+
+    h += '</div></div>';
+    return h;
+  }
+
+  function sp(k, v) {
+    return '<div class="sp"><div class="k">' + QuizUI.esc(k) + '</div>' +
+           '<div class="v">' + QuizUI.esc(v) + '</div></div>';
+  }
+
+  function wireExam(ex) {
+    var card = examsEl.querySelector('[data-id="' + ex.id + '"]') ||
+               histEl.querySelector('[data-id="' + ex.id + '"]');
+    if (!card) return;
+
+    var cd = card.querySelector('[data-cd]');
+    if (cd) {
+      // When the countdown hits zero, reload so the server re-decides the
+      // gate — we never let the browser enable the button by itself.
+      stoppers.push(QuizTime.countdown(cd, +cd.getAttribute('data-cd'), function () {
+        QuizUI.toast('The examination is now open.', 'ok');
+        setTimeout(load, 1200);
+      }));
+    }
+
+    var btn = card.querySelector('[data-start]');
+    if (btn) {
+      btn.addEventListener('click', function () {
+        btn.disabled = true;
+        btn.textContent = 'Opening…';
+        QuizAPI.part('exam-start', null, { exam_id: ex.id })
+          .then(function (r) { QuizUI.go('/Quiz/exam/' + r.attemptId); })
+          .catch(function (err) {
+            btn.disabled = false;
+            btn.textContent = 'Start Quiz →';
+            QuizUI.err(err);
+            setTimeout(load, 1500);
+          });
+      });
+    }
+  }
+})();
+</script>
+</body>
+</html>

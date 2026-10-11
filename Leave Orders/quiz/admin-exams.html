@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Examinations &mdash; Quiz Administration | Karur Division</title>
+<meta name="theme-color" content="#16307a" />
+<meta name="robots" content="noindex,nofollow" />
+<link rel="icon" href="/assets/india-post-logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leave-orders/quiz/quiz.css">
+<style>
+  .exrow{border:1px solid var(--line);border-radius:var(--r-md);padding:15px;margin-bottom:12px;
+    background:var(--card)}
+  .exrow .eh{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
+  .exrow .eh h3{font-size:16px;font-weight:800;flex:1;min-width:150px}
+  .exmeta{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:11px 0}
+  @media(min-width:620px){.exmeta{grid-template-columns:repeat(4,1fr)}}
+  .exmeta .m{padding:9px 10px;border-radius:10px;background:var(--card-2);border:1px solid var(--line)}
+  .exmeta .m .k{font-size:9.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--muted)}
+  .exmeta .m .v{font:700 13px/1.3 "Plus Jakarta Sans",sans-serif;margin-top:3px}
+  .exacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+  .chk{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px dashed var(--line);
+    font-size:13px;line-height:1.5}
+  .chk:last-child{border-bottom:0}
+  .chk .ci{flex:none;width:20px;font-size:14px}
+  .chk .cd{font-size:11.5px;color:var(--muted)}
+  .mon-row{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);
+    font-size:13px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div id="shell"><main id="app"></main></div>
+
+<script src="/leave-orders/quiz/quiz-core.js"></script>
+<script src="/leave-orders/quiz/quiz-admin-core.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var host = null;
+  var defaults = {};
+  var monIv = null;
+
+  QuizAdmin.boot({
+    title: 'Examinations',
+    subtitle: 'Create, schedule, validate, publish and monitor',
+    icon: '&#128198;',
+    active: '/Quiz/admin/exams',
+    requireRole: 'QUIZ_VIEWER',
+    onReady: function (me, h) { host = h; load(); }
+  });
+
+  function load() {
+    host.innerHTML = QuizUI.skeleton(4);
+    QuizAPI.admin('exams-list').then(function (r) {
+      QuizTime.anchor(r.serverTimeMs);
+      defaults = r.defaults || {};
+      render(r.exams || []);
+    }).catch(function (e) {
+      host.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  function render(exams) {
+    var h = '';
+
+    if (QuizAdmin.atLeast('QUIZ_ADMIN')) {
+      h += '<div class="btn-row" style="margin-bottom:16px">' +
+        '<button class="btn" type="button" id="newEx">+ Create examination</button>' +
+        '<button class="btn ghost" type="button" id="presetEx">Create Postal Week 2026 quiz</button>' +
+      '</div>';
+    }
+
+    if (!exams.length) {
+      h += '<div class="card">' + QuizUI.empty('&#128198;', 'Examination Not Yet Scheduled',
+        'No examination exists yet. Create one, publish its question paper, then set it to ' +
+        '<b>Scheduled</b> or <b>Live</b> so it appears on employee dashboards.') + '</div>';
+    } else {
+      h += exams.map(exCard).join('');
+    }
+
+    host.innerHTML = h;
+
+    var nb = document.getElementById('newEx');
+    if (nb) nb.addEventListener('click', function () { editor(null); });
+    var pb = document.getElementById('presetEx');
+    if (pb) pb.addEventListener('click', presetPostalWeek);
+
+    Array.prototype.forEach.call(host.querySelectorAll('[data-xa]'), function (b) {
+      b.addEventListener('click', function () {
+        var act = b.getAttribute('data-xa');
+        var id = b.getAttribute('data-id');
+        var ex = exams.filter(function (x) { return x.id === id; })[0];
+        if (act === 'edit') editor(ex);
+        else if (act === 'validate') validate(id);
+        else if (act === 'publish') publish(ex);
+        else if (act === 'paper') paper(id);
+        else if (act === 'test') startTest(id);
+        else if (act === 'monitor') monitor(id);
+        else if (act === 'dup') duplicate(id);
+        else if (act === 'status') statusMenu(ex);
+      });
+    });
+
+    // Deep link from the overview page: /Quiz/admin/exams?exam=<id>
+    var want = new URLSearchParams(location.search).get('exam');
+    if (want) {
+      var card = host.querySelector('[data-exid="' + want + '"]');
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  function exCard(ex) {
+    var ready = ex.frozenQuestionCount >= ex.question_count;
+    return '<div class="exrow" data-exid="' + QuizUI.esc(ex.id) + '">' +
+      '<div class="eh">' +
+        '<h3>' + QuizUI.esc(ex.title) + '</h3>' +
+        QuizUI.statusBadge(ex.status) +
+        (ready ? QuizUI.badge('Paper frozen: ' + ex.frozenQuestionCount, 'ok')
+               : QuizUI.badge('Paper not published', 'warn')) +
+      '</div>' +
+      (ex.description ? '<p style="font-size:13px;color:var(--muted);line-height:1.55">' +
+        QuizUI.esc(ex.description) + '</p>' : '') +
+      '<div class="exmeta">' +
+        m('Opens', ex.exam_open_ms ? QuizTime.ist(ex.exam_open_ms) : 'Not set') +
+        m('Closes', ex.exam_close_ms ? QuizTime.ist(ex.exam_close_ms) : 'Not set') +
+        m('Latest start', ex.latest_start_ms ? QuizTime.istTime(ex.latest_start_ms) : 'Any time') +
+        m('Duration', Math.round(ex.total_seconds / 60) + ' min') +
+        m('Questions', ex.question_count) +
+        m('Per question', ex.seconds_per_question + ' s') +
+        m('Marking', '+' + ex.positive_marks + ' / −' + ex.negative_marks +
+          ' (max ' + ex.maxMarks + ')') +
+        m('Randomise', (ex.randomize_questions ? 'Q' : '') + (ex.randomize_options ? '+O' : '') || 'No') +
+      '</div>' +
+      '<div class="exacts">' +
+        xb('validate', ex.id, '&#9989; Validate') +
+        xb('paper', ex.id, '&#128196; Preview paper') +
+        (QuizAdmin.atLeast('QUIZ_EDITOR') ? xb('test', ex.id, '&#129514; Run test attempt') : '') +
+        xb('monitor', ex.id, '&#128065; Monitor') +
+        (QuizAdmin.atLeast('QUIZ_ADMIN')
+          ? xb('edit', ex.id, 'Edit') + xb('publish', ex.id, '&#128228; Publish paper', 'ok') +
+            xb('status', ex.id, 'Change status') + xb('dup', ex.id, 'Duplicate')
+          : '') +
+        '<a class="btn sm ghost" href="/Quiz/admin/reports?exam=' + QuizUI.esc(ex.id) + '">Reports</a>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function m(k, v) {
+    return '<div class="m"><div class="k">' + QuizUI.esc(k) + '</div>' +
+      '<div class="v">' + QuizUI.esc(v) + '</div></div>';
+  }
+  function xb(act, id, label, cls) {
+    return '<button class="btn sm ' + (cls === 'ok' ? 'ok' : 'ghost') + '" type="button" ' +
+      'data-xa="' + act + '" data-id="' + id + '">' + label + '</button>';
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     EDITOR
+     ═══════════════════════════════════════════════════════════════ */
+  function editor(ex) {
+    var e = ex || {};
+    var d = defaults;
+    var v = function (key, dflt) { return e[key] != null ? e[key] : dflt; };
+    var locked = ex && ['DRAFT', 'SCHEDULED'].indexOf(ex.status) < 0;
+
+    QuizUI.modal('xed', ex ? 'Edit examination' : 'Create examination',
+      (locked ? QuizUI.alert('warn', '&#128274;',
+        'This examination is <b>' + QuizUI.esc(ex.status) + '</b>. Its question count, timing and ' +
+        'marking are locked, because changing them would desync the frozen paper and any attempt ' +
+        'already recorded. Duplicate it to create a revised examination.') : '') +
+
+      '<div class="field"><label for="x_title">Title</label>' +
+        '<input class="input" id="x_title" value="' + QuizUI.esc(v('title', '')) + '" ' +
+        'placeholder="e.g. National Postal Week 2026 — Online Quiz Competition" /></div>' +
+
+      '<div class="field"><label for="x_desc">Description</label>' +
+        '<input class="input" id="x_desc" value="' + QuizUI.esc(v('description', '')) + '" /></div>' +
+
+      '<div class="field"><label for="x_inst">Instructions to participants</label>' +
+        '<textarea class="textarea" id="x_inst">' + QuizUI.esc(v('instructions', '')) + '</textarea></div>' +
+
+      '<div class="section-title">Schedule (Indian Standard Time)</div>' +
+      '<div class="grid grid-2">' +
+        dt('Examination opens', 'x_open', e.exam_open_ms) +
+        dt('Examination closes', 'x_close', e.exam_close_ms) +
+        dt('Latest permitted start', 'x_latest', e.latest_start_ms) +
+        dt('Result publication (if scheduled)', 'x_resms', e.result_publish_ms) +
+      '</div>' +
+
+      '<div class="section-title">Paper and timing</div>' +
+      '<div class="grid grid-2">' +
+        num('Number of questions', 'x_qc', v('question_count', d.question_count || 20), locked,
+          'Allowed range ' + (d.min_questions || 15) + ' to ' + (d.max_questions || 25)) +
+        num('Seconds per question', 'x_spq', v('seconds_per_question', d.seconds_per_question || 30), locked) +
+        num('Overall duration (minutes)', 'x_mins',
+          Math.round(v('total_seconds', d.total_seconds || 600) / 60), locked,
+          'Whichever deadline comes first is enforced') +
+        num('Attempts allowed', 'x_att', v('attempts_allowed', d.attempts_allowed || 1), locked) +
+      '</div>' +
+
+      '<div class="section-title">Marking</div>' +
+      '<div class="grid grid-2">' +
+        num('Marks for a correct answer', 'x_pos', v('positive_marks', d.positive_marks != null ? d.positive_marks : 4), locked) +
+        num('Marks deducted for a wrong answer', 'x_neg', v('negative_marks', d.negative_marks != null ? d.negative_marks : 1), locked,
+          'Enter a positive number; it is subtracted') +
+      '</div>' +
+
+      '<div class="section-title">Rules</div>' +
+      sel('Question navigation', 'x_nav', [['ONE_WAY', 'One-way — cannot return'], ['FREE', 'Free — may revisit']], v('navigation', 'ONE_WAY'), locked) +
+      sel('Result release', 'x_resmode', [['MANUAL', 'Manual — I will release them'], ['AUTO', 'Automatic — as soon as each attempt ends'], ['SCHEDULED', 'Scheduled — at the time set above']], v('result_mode', 'MANUAL')) +
+      sel('When the examination closes', 'x_onclose', [['AUTO_SUBMIT', 'Submit every attempt in progress immediately'], ['GRACE', 'Allow a grace period to finish']], v('on_close', 'AUTO_SUBMIT')) +
+      num('Grace period (seconds)', 'x_grace', v('grace_seconds', 0), false) +
+
+      chk('Randomise question order', 'x_rq', v('randomize_questions', true)) +
+      chk('Randomise option order', 'x_ro', v('randomize_options', true)) +
+      chk('Allow skipping a question', 'x_skip', v('allow_skip', true)) +
+      chk('Allow a late start after the opening time', 'x_late', v('late_entry_allowed', true)) +
+      chk('Show the answer key to participants with their result', 'x_key', v('show_answer_key', false)) +
+      chk('Show rank on the result', 'x_rank', v('rank_enabled', true)) +
+      '<div id="xerr"></div>',
+
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'xed\')">Cancel</button>' +
+      '<button class="btn" type="button" id="xsave" style="flex:1">' +
+        (ex ? 'Save changes' : 'Create') + '</button>');
+
+    document.getElementById('xsave').addEventListener('click', function () {
+      var g = function (id) { return document.getElementById(id).value; };
+      var c = function (id) { return document.getElementById(id).checked; };
+
+      var payload = {
+        id: ex ? ex.id : undefined,
+        title: g('x_title'),
+        description: g('x_desc'),
+        instructions: g('x_inst'),
+        exam_open_ms: QuizAdmin.localInputToMs(g('x_open')),
+        exam_close_ms: QuizAdmin.localInputToMs(g('x_close')),
+        latest_start_ms: QuizAdmin.localInputToMs(g('x_latest')),
+        result_publish_ms: QuizAdmin.localInputToMs(g('x_resms')),
+        question_count: +g('x_qc'),
+        seconds_per_question: +g('x_spq'),
+        total_seconds: Math.round((+g('x_mins')) * 60),
+        attempts_allowed: +g('x_att'),
+        positive_marks: +g('x_pos'),
+        negative_marks: +g('x_neg'),
+        navigation: g('x_nav'),
+        result_mode: g('x_resmode'),
+        on_close: g('x_onclose'),
+        grace_seconds: +g('x_grace'),
+        randomize_questions: c('x_rq'),
+        randomize_options: c('x_ro'),
+        allow_skip: c('x_skip'),
+        late_entry_allowed: c('x_late'),
+        show_answer_key: c('x_key'),
+        rank_enabled: c('x_rank'),
+      };
+
+      var b = this;
+      b.disabled = true; b.textContent = 'Saving…';
+      QuizAPI.admin('exam-save', null, payload).then(function () {
+        QuizUI.closeModal('xed');
+        QuizUI.toast('Examination saved.', 'ok');
+        load();
+      }).catch(function (err) {
+        b.disabled = false; b.textContent = ex ? 'Save changes' : 'Create';
+        document.getElementById('xerr').innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(err.message));
+      });
+    });
+  }
+
+  function dt(label, id, ms) {
+    return '<div class="field"><label for="' + id + '">' + QuizUI.esc(label) + '</label>' +
+      '<input class="input" type="datetime-local" id="' + id + '" value="' +
+        QuizAdmin.msToLocalInput(ms) + '" /></div>';
+  }
+  function num(label, id, val, disabled, hint) {
+    return '<div class="field"><label for="' + id + '">' + QuizUI.esc(label) + '</label>' +
+      '<input class="input" type="number" step="any" id="' + id + '" value="' + QuizUI.esc(val) + '"' +
+      (disabled ? ' disabled' : '') + ' />' +
+      (hint ? '<div class="hint">' + QuizUI.esc(hint) + '</div>' : '') + '</div>';
+  }
+  function sel(label, id, pairs, cur, disabled) {
+    return '<div class="field"><label for="' + id + '">' + QuizUI.esc(label) + '</label>' +
+      '<select class="select" id="' + id + '"' + (disabled ? ' disabled' : '') + '>' +
+      pairs.map(function (p) {
+        return '<option value="' + p[0] + '"' + (cur === p[0] ? ' selected' : '') + '>' +
+          QuizUI.esc(p[1]) + '</option>';
+      }).join('') + '</select></div>';
+  }
+  function chk(label, id, on) {
+    return '<div class="field"><div class="checkrow">' +
+      '<input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + ' />' +
+      '<label for="' + id + '" style="font-weight:500;margin:0">' + QuizUI.esc(label) + '</label>' +
+      '</div></div>';
+  }
+
+  // One-tap creation of this year's quiz, pre-filled with the recommended
+  // defaults and the Postal Week window. Still a DRAFT until published.
+  function presetPostalWeek() {
+    var d = defaults;
+    QuizAPI.admin('exam-save', null, {
+      title: 'National Postal Week 2026 — Online Quiz Competition',
+      description: 'One Postal Network, Infinite Possibilities — open to all officials of Karur Division.',
+      instructions:
+        'Read each question carefully. Each question has four options and exactly one correct answer.\n\n' +
+        '• ' + (d.seconds_per_question || 30) + ' seconds are allowed per question, and ' +
+        Math.round((d.total_seconds || 600) / 60) + ' minutes for the whole paper. ' +
+        'Whichever runs out first ends the examination.\n' +
+        '• A correct answer earns +' + (d.positive_marks != null ? d.positive_marks : 4) +
+        ' marks; a wrong answer loses ' + (d.negative_marks != null ? d.negative_marks : 1) +
+        ' mark. An unanswered question scores zero.\n' +
+        '• Questions appear one at a time and cannot be revisited.\n' +
+        '• Your answers are saved on the server as you go. If your connection drops, reopen the ' +
+        'same link — you will return to the same attempt with the time that remains.\n' +
+        '• Do not open the quiz on a second device. All times shown are Indian Standard Time.',
+      question_count: d.question_count || 20,
+      seconds_per_question: d.seconds_per_question || 30,
+      total_seconds: d.total_seconds || 600,
+      positive_marks: d.positive_marks != null ? d.positive_marks : 4,
+      negative_marks: d.negative_marks != null ? d.negative_marks : 1,
+      attempts_allowed: 1,
+      navigation: 'ONE_WAY',
+      randomize_questions: true,
+      randomize_options: true,
+      allow_skip: true,
+      late_entry_allowed: true,
+      on_close: 'AUTO_SUBMIT',
+      result_mode: 'MANUAL',
+      rank_enabled: true,
+      show_answer_key: false,
+    }).then(function () {
+      QuizUI.toast('Draft created. Set the date and time, then publish the paper.', 'ok');
+      load();
+    }).catch(QuizUI.err);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     VALIDATE / PUBLISH / PAPER
+     ═══════════════════════════════════════════════════════════════ */
+  function validate(id) {
+    QuizUI.modal('xval', 'Validate examination', QuizUI.skeleton(4), '');
+    QuizAPI.admin('exam-validate', { id: id }).then(function (r) {
+      var box = document.querySelector('#xval .modal-body');
+      box.innerHTML =
+        (r.ready
+          ? QuizUI.alert('ok', '&#9989;', '<b>Ready to publish.</b> Every pre-flight check passed.')
+          : QuizUI.alert('warn', '&#9888;', '<b>Not ready yet.</b> Resolve the items marked below.')) +
+        r.checks.map(function (c) {
+          return '<div class="chk"><span class="ci">' + (c.ok ? '&#9989;' : '&#10060;') + '</span>' +
+            '<span><b>' + QuizUI.esc(c.label) + '</b><div class="cd">' +
+            QuizUI.esc(c.detail) + '</div></span></div>';
+        }).join('') +
+        '<p style="margin-top:13px;font-size:12.5px;color:var(--muted)">' +
+          r.availableQuestions + ' active question(s) available in the bank; ' +
+          r.frozenQuestionCount + ' frozen for this examination.</p>';
+    }).catch(function (e) {
+      document.querySelector('#xval .modal-body').innerHTML =
+        QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  function publish(ex) {
+    QuizUI.modal('xpub', 'Publish the question paper',
+      QuizUI.alert('', '&#128228;',
+        'Publishing selects <b>' + ex.question_count + '</b> active question(s) at random and freezes ' +
+        'an immutable copy for this examination. From that moment the examination and the general ' +
+        'question bank are independent &mdash; later edits to the bank cannot change this paper or ' +
+        'any attempt in progress.') +
+      '<div class="field"><label for="pstatus">Set the examination to</label>' +
+        '<select class="select" id="pstatus">' +
+          '<option value="SCHEDULED">Scheduled — visible, opens at its set time</option>' +
+          '<option value="LIVE">Live — open now (within its window)</option>' +
+        '</select>' +
+        '<div class="hint">Participants see the examination and its countdown as soon as it leaves ' +
+          'Draft.</div>' +
+      '</div>' +
+      '<div id="puberr"></div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'xpub\')">Cancel</button>' +
+      '<button class="btn ok" type="button" id="pok" style="flex:1">Freeze paper &amp; publish</button>');
+
+    document.getElementById('pok').addEventListener('click', function () {
+      var b = this;
+      b.disabled = true; b.textContent = 'Publishing…';
+      QuizAPI.admin('exam-publish', null, {
+        id: ex.id, status: document.getElementById('pstatus').value,
+      }).then(function (r) {
+        QuizUI.closeModal('xpub');
+        QuizUI.toast(r.message, 'ok');
+        load();
+      }).catch(function (e) {
+        b.disabled = false; b.textContent = 'Freeze paper & publish';
+        document.getElementById('puberr').innerHTML =
+          QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+      });
+    });
+  }
+
+  function paper(id) {
+    QuizUI.modal('xpap', 'Question paper (with answer key)', QuizUI.skeleton(4), '');
+    QuizAPI.admin('exam-paper', { id: id }).then(function (r) {
+      var box = document.querySelector('#xpap .modal-body');
+      if (!r.questions.length) {
+        box.innerHTML = QuizUI.alert('warn', '&#9888;',
+          '<b>No paper has been frozen yet.</b> Publish the examination to freeze its questions.');
+        return;
+      }
+      box.innerHTML =
+        QuizUI.alert('warn', '&#128274;',
+          '<b>This view contains the answer key.</b> Opening it is recorded in the audit log. ' +
+          'Do not display this screen where participants can see it.') +
+        r.questions.map(function (q) {
+          return '<div class="rev" style="border-left:4px solid var(--indigo)">' +
+            '<div style="display:flex;gap:9px;align-items:center;margin-bottom:7px">' +
+              QuizUI.badge('Q' + q.seq) +
+              (q.qcode ? '<span style="font-family:JetBrains Mono,monospace;font-size:11px">' +
+                QuizUI.esc(q.qcode) + '</span>' : '') +
+              (q.category ? QuizUI.badge(q.category, 'mute') : '') +
+            '</div>' +
+            '<div class="rq">' + QuizUI.esc(q.question_text) + '</div>' +
+            ['a', 'b', 'c', 'd'].map(function (k) {
+              var isKey = q.correct_option === k.toUpperCase();
+              return '<div class="ro' + (isKey ? ' is-key' : '') + '">' +
+                '<span style="flex:none;font-weight:800">' + k.toUpperCase() + '</span>' +
+                '<span style="flex:1">' + QuizUI.esc(q['option_' + k]) + '</span>' +
+                (isKey ? '<span>&#10004;</span>' : '') + '</div>';
+            }).join('') +
+            (q.explanation ? '<div class="rx">' + QuizUI.esc(q.explanation) + '</div>' : '') +
+          '</div>';
+        }).join('');
+    }).catch(function (e) {
+      document.querySelector('#xpap .modal-body').innerHTML =
+        QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     TEST MODE
+     ═══════════════════════════════════════════════════════════════ */
+  function startTest(id) {
+    QuizUI.modal('xtst', 'Run a test attempt',
+      QuizUI.alert('', '&#129514;',
+        'This opens the examination <b>exactly as an employee will see it</b> &mdash; the same ' +
+        'question timer, overall timer, locking, auto-submission and scoring &mdash; but as a ' +
+        '<b>test attempt</b>. It ignores the scheduled window, so you can rehearse before the start ' +
+        'time.') +
+      '<p style="font-size:13px;line-height:1.6">A test attempt:</p>' +
+      '<ul style="font-size:13px;line-height:1.7;padding-left:19px;margin:7px 0 0">' +
+        '<li>never appears in any report, leaderboard or participation count;</li>' +
+        '<li>does not consume anyone&rsquo;s official attempt;</li>' +
+        '<li>shows the answer key on its result page, so you can verify the marking;</li>' +
+        '<li>can be re-run as often as you like &mdash; each run replaces the last.</li>' +
+      '</ul>' +
+      '<p style="font-size:12.5px;color:var(--muted);margin-top:11px">A <b>TEST MODE</b> banner is ' +
+        'shown throughout, so a dry run can never be mistaken for the real examination.</p>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'xtst\')">Cancel</button>' +
+      '<button class="btn ghost" type="button" id="treset">Clear my test attempts</button>' +
+      '<button class="btn" type="button" id="tgo" style="flex:1">Start test attempt</button>');
+
+    document.getElementById('treset').addEventListener('click', function () {
+      QuizAPI.admin('test-reset', null, { exam_id: id })
+        .then(function (r) { QuizUI.toast(r.cleared + ' test attempt(s) cleared.', 'ok'); })
+        .catch(QuizUI.err);
+    });
+
+    document.getElementById('tgo').addEventListener('click', function () {
+      var b = this;
+      b.disabled = true; b.textContent = 'Starting…';
+      QuizAPI.admin('test-start', null, { exam_id: id })
+        .then(function (r) { QuizUI.go('/Quiz/exam/' + r.attemptId); })
+        .catch(function (e) {
+          b.disabled = false; b.textContent = 'Start test attempt';
+          QuizUI.err(e);
+        });
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MONITOR
+     ═══════════════════════════════════════════════════════════════ */
+  function monitor(id) {
+    QuizUI.modal('xmon', 'Live monitoring', QuizUI.skeleton(4), '');
+    var el = document.querySelector('#xmon .modal-body');
+
+    function tick() {
+      if (!document.getElementById('xmon') ||
+          !document.getElementById('xmon').classList.contains('on')) {
+        clearInterval(monIv); monIv = null; return;
+      }
+      QuizAPI.admin('exam-monitor', { id: id }).then(function (r) {
+        QuizTime.anchor(r.serverTimeMs);
+        var live = r.attempts.filter(function (a) { return a.status === 'IN_PROGRESS'; });
+        var done = r.attempts.filter(function (a) { return a.status !== 'IN_PROGRESS'; });
+
+        el.innerHTML =
+          '<div class="grid grid-4" style="margin-bottom:14px">' +
+            sx('In progress', live.length) + sx('Completed', done.length) +
+            sx('Total started', r.attempts.length) +
+            sx('Overdue', live.filter(function (a) { return a.overdue; }).length) +
+          '</div>' +
+          (r.attempts.length
+            ? r.attempts.slice(0, 120).map(function (a) {
+                var e = a.employee || {};
+                return '<div class="mon-row">' +
+                  '<div style="flex:1;min-width:140px"><b>' +
+                    QuizUI.esc(e.employee_name || a.employee_id || '—') + '</b>' +
+                    '<div style="font-size:11px;color:var(--muted)">' +
+                      QuizUI.esc(e.office || '') + '</div></div>' +
+                  '<span style="font-size:11.5px;color:var(--muted)">Q' + a.current_seq + '/' +
+                    a.question_count + '</span>' +
+                  (a.status === 'IN_PROGRESS'
+                    ? '<span class="badge ' + (a.overdue ? 'err' : 'warn') + '">' +
+                      (a.overdue ? 'overdue' : QuizTime.clock(a.remainingMs) + ' left') + '</span>'
+                    : QuizUI.statusBadge(a.status)) +
+                '</div>';
+              }).join('')
+            : QuizUI.empty('&#128065;', 'Nobody has started yet',
+                'Attempts appear here as soon as employees begin the examination.')) +
+          '<p style="margin-top:13px;font-size:11.5px;color:var(--muted)">Refreshes every 10 seconds. ' +
+            'Overdue attempts are finalised automatically; use <b>Finalise expired attempts</b> on the ' +
+            'Overview page to close any whose device never returned.</p>';
+      }).catch(function (e) {
+        el.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+      });
+    }
+    tick();
+    clearInterval(monIv);
+    monIv = setInterval(tick, 10000);
+  }
+
+  function sx(k, v) {
+    return '<div class="stat"><div class="k">' + QuizUI.esc(k) + '</div>' +
+      '<div class="v">' + QuizUI.esc(v) + '</div></div>';
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     STATUS / DUPLICATE
+     ═══════════════════════════════════════════════════════════════ */
+  function statusMenu(ex) {
+    var options = ['DRAFT', 'SCHEDULED', 'REGISTRATION_OPEN', 'REGISTRATION_CLOSED',
+                   'LIVE', 'COMPLETED', 'RESULTS_PUBLISHED', 'CANCELLED'];
+    QuizUI.modal('xst', 'Change examination status',
+      '<p style="font-size:13.5px;margin-bottom:13px">' + QuizUI.esc(ex.title) + ' is currently ' +
+        QuizUI.statusBadge(ex.status) + '</p>' +
+      '<div class="field"><label for="nst">New status</label>' +
+        '<select class="select" id="nst">' + options.map(function (s) {
+          return '<option value="' + s + '"' + (s === ex.status ? ' selected' : '') + '>' +
+            s.replace(/_/g, ' ') + '</option>';
+        }).join('') + '</select>' +
+        '<div class="hint">Anything other than Draft or Cancelled requires the question paper to be ' +
+          'published first.</div></div>' +
+      '<div id="sterr"></div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'xst\')">Cancel</button>' +
+      '<button class="btn" type="button" id="stok" style="flex:1">Apply</button>');
+
+    document.getElementById('stok').addEventListener('click', function () {
+      QuizAPI.admin('exam-status', null, { id: ex.id, status: document.getElementById('nst').value })
+        .then(function () { QuizUI.closeModal('xst'); QuizUI.toast('Status updated.', 'ok'); load(); })
+        .catch(function (e) {
+          document.getElementById('sterr').innerHTML =
+            QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+        });
+    });
+  }
+
+  function duplicate(id) {
+    QuizAPI.admin('exam-duplicate', null, { id: id })
+      .then(function () { QuizUI.toast('Duplicated as a new draft.', 'ok'); load(); })
+      .catch(QuizUI.err);
+  }
+})();
+</script>
+</body>
+</html>

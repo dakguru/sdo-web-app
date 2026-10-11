@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>National Postal Week 2026 &mdash; Online Quiz Competition | Department of Posts, Karur Division</title>
+<meta name="description" content="National Postal Week 2026 Online Quiz Competition — Department of Posts, Karur Division, Karur 639001. One Postal Network, Infinite Possibilities." />
+<meta name="theme-color" content="#16307a" />
+<link rel="icon" href="/assets/india-post-logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leave-orders/quiz/quiz.css">
+<style>
+  /* Landing-only flourishes. */
+  .hero-cta{max-width:470px;margin:0 auto}
+  .signin-card{text-align:center}
+  .signin-card .lead{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:18px}
+  .divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--faint);font-size:11.5px;
+    font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+  .rule-list{list-style:none;padding:0;margin:0}
+  .rule-list li{display:flex;gap:11px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13.5px;line-height:1.55}
+  .rule-list li:last-child{border-bottom:0}
+  .rule-list .ri{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+    font-size:13px;background:rgba(79,70,229,.1);color:var(--indigo);font-weight:800}
+  .privacy{font-size:12px;color:var(--muted);line-height:1.65}
+  .privacy h4{font-size:12.5px;color:var(--ink-2);margin:0 0 6px}
+  .privacy ul{margin:6px 0 0;padding-left:18px}
+  .privacy li{margin-bottom:4px}
+</style>
+</head>
+<body>
+<div id="shell">
+  <main id="app">
+    <div class="wrap">
+
+      <!-- Sign-in -->
+      <div class="hero-cta">
+        <div class="card glass signin-card" id="signinCard">
+          <div class="card-ic" style="margin:0 auto 12px">&#128275;</div>
+          <h3 class="card-t" style="margin-bottom:7px">Employee Sign-in</h3>
+          <p class="lead">
+            This quiz is open to all officials of <b>Karur Division</b>. Sign in with your
+            Google account, then confirm your Employee ID once &mdash; your name, designation
+            and office are filled in automatically from the divisional employee list.
+          </p>
+          <div id="signinArea">
+            <div class="skel lg"></div><div class="skel w60" style="margin:0 auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="section-title">How the quiz works</div>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-ic">&#128221;</div>
+            <div><div class="card-t">Examination format</div>
+              <div class="card-s">What to expect on the day</div></div>
+          </div>
+          <ul class="rule-list" id="formatList">
+            <li><span class="ri">1</span><span>Multiple-choice questions with <b>exactly four options</b>; one is correct.</span></li>
+            <li><span class="ri">2</span><span>Each question carries a <b>time limit of its own</b>, and the paper has an <b>overall duration</b>. Whichever runs out first applies.</span></li>
+            <li><span class="ri">3</span><span>There is <b>negative marking</b> for a wrong answer. An unanswered question scores zero &mdash; so a pure guess can cost you.</span></li>
+            <li><span class="ri">4</span><span>Questions and options are <b>randomised</b>, so no two employees see the same paper in the same order.</span></li>
+            <li><span class="ri">5</span><span>One question appears at a time, and you <b>cannot return</b> to a question once it is answered or its time expires.</span></li>
+            <li><span class="ri">6</span><span>Answers are saved on the server the moment you choose them. A refresh, a dropped signal or an incoming call puts you back in the <b>same attempt</b>.</span></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-ic">&#9989;</div>
+            <div><div class="card-t">Before you begin</div>
+              <div class="card-s">A short checklist</div></div>
+          </div>
+          <ul class="rule-list">
+            <li><span class="ri">&#128241;</span><span>Use a phone or computer with a <b>stable internet connection</b>. The quiz works on Android Chrome, iPhone Safari and any modern browser.</span></li>
+            <li><span class="ri">&#128273;</span><span>Keep your <b>Employee ID</b> ready &mdash; the 8-digit number on your pay slip or service record.</span></li>
+            <li><span class="ri">&#8986;</span><span>All examination times shown are <b>Indian Standard Time</b>. The timer is kept by the server, not by your device.</span></li>
+            <li><span class="ri">&#128683;</span><span>Do not open a second window or device for the same attempt &mdash; concurrent sessions are logged for review.</span></li>
+            <li><span class="ri">&#128172;</span><span>If anything goes wrong mid-examination, <b>reopen the same link</b>. Do not start again from scratch.</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Privacy notice, as required before any Google data is collected -->
+      <div class="section-title">Privacy notice</div>
+      <div class="card">
+        <div class="privacy">
+          <h4>What we collect when you sign in with Google, and why</h4>
+          <ul>
+            <li><b>Your verified email address and Google account identifier</b> &mdash; to recognise
+              you on your return and to make sure one employee holds one registration.</li>
+            <li><b>Your name and profile picture</b> as published by your Google account &mdash; shown
+              only to you, on your own dashboard.</li>
+            <li><b>Your Employee ID, name, designation and office</b> &mdash; read from the official
+              Karur Division employee list after you confirm your Employee ID. You cannot type
+              these in yourself.</li>
+            <li><b>Your answers, timings and result</b>, and basic technical details of the attempt
+              (time of each submission, IP address, browser) &mdash; to conduct and audit the
+              examination fairly.</li>
+          </ul>
+          <p style="margin-top:9px">
+            Your Google password is never seen by this application. We request no access to your
+            Gmail, Drive, contacts or any other Google service &mdash; only your basic profile and
+            verified email. Results are visible to you and to authorised quiz administrators of
+            Karur Division. No webcam, microphone or location monitoring is used at any point.
+            Data is held for the conduct and audit of this examination and is not used for any
+            other purpose.
+          </p>
+          <p style="margin-top:9px">
+            Questions about your data, or a correction to your registration?
+            Call <a href="tel:+917904478591">+91 7904478591</a> or write to
+            <a href="mailto:arun18@live.in">arun18@live.in</a>.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="/leave-orders/quiz/quiz-core.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  QuizUI.mount({
+    title: 'Online Quiz Competition',
+    subtitle: 'National Postal Week 2026 — open to all officials of Karur Division',
+    icon: '&#127891;'
+  });
+
+  var area = document.getElementById('signinArea');
+  var cfg = null;
+
+  // ── Boot ──────────────────────────────────────────────────────
+  // Config first, then "am I already signed in?". An employee returning to
+  // the link mid-week should land on their dashboard, not a sign-in button.
+  QuizAPI.config().then(function (c) {
+    cfg = c;
+    QuizTime.anchor(c.serverTimeMs);
+
+    if (!c.configured) {
+      area.innerHTML = QuizUI.notConfigured(c.configError);
+      return null;
+    }
+    return QuizAPI.me().then(function (me) {
+      if (me.signedIn) {
+        QuizUI.go(me.needsRegistration ? '/Quiz/register' : '/Quiz/dashboard');
+        return null;
+      }
+      renderSignin();
+    }, function () { renderSignin(); });
+  }).catch(function (e) {
+    area.innerHTML = QuizUI.alert('err', '&#9888;',
+      '<b>Could not reach the quiz server.</b><br>' + QuizUI.esc(e.message) +
+      '<br><br>Please check your internet connection and reload this page.');
+  });
+
+  // ── Sign-in options ───────────────────────────────────────────
+  function renderSignin() {
+    var html = '';
+
+    if (cfg.googleReady) {
+      html += '<div class="gsi-wrap" id="gsiBtn"></div>' +
+              '<div id="gsiFallback" style="margin-top:10px"></div>';
+    } else {
+      html += QuizUI.alert('warn', '&#9888;',
+        '<b>Google Sign-In is not yet configured.</b><br>' +
+        'The administrator has to add the Google OAuth Client ID to the deployment ' +
+        'before Google sign-in can be used.');
+    }
+
+    if (cfg.employeeIdFallback) {
+      if (cfg.googleReady) html += '<div class="divider">or</div>';
+      html +=
+        '<form id="empForm" novalidate style="text-align:left">' +
+          '<div class="field">' +
+            '<label for="empId">Employee ID</label>' +
+            '<input class="input mono" id="empId" name="empId" inputmode="numeric" ' +
+              'autocomplete="off" placeholder="e.g. 10003963" required />' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="empName">Your name, as in the service record</label>' +
+            '<input class="input" id="empName" name="empName" autocomplete="name" ' +
+              'placeholder="Enter your full name" required />' +
+            '<div class="hint">Initials and spacing do not have to match exactly.</div>' +
+          '</div>' +
+          '<button class="btn block" type="submit" id="empBtn">Continue with Employee ID</button>' +
+        '</form>';
+    }
+
+    if (!cfg.googleReady && !cfg.employeeIdFallback) {
+      html += QuizUI.alert('err', '&#9940;',
+        '<b>Sign-in is currently unavailable.</b><br>No sign-in method has been enabled. ' +
+        'Please contact the administrator on <a href="tel:+917904478591">+91 7904478591</a>.');
+    }
+
+    area.innerHTML = html;
+
+    if (cfg.googleReady) loadGoogle();
+    var f = document.getElementById('empForm');
+    if (f) f.addEventListener('submit', onEmployeeId);
+  }
+
+  // ── Google Identity Services ──────────────────────────────────
+  // A server-issued nonce is planted in the sign-in request and comes back
+  // inside the ID token, where the server compares it. That is what stops a
+  // token obtained elsewhere being replayed into this application.
+  function loadGoogle() {
+    QuizAPI.auth('nonce', null, {}).then(function (n) {
+      var s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true;
+      s.defer = true;
+      s.onload = function () { initGoogle(n.nonce); };
+      s.onerror = function () {
+        document.getElementById('gsiFallback').innerHTML = QuizUI.alert('err', '&#9888;',
+          '<b>Google Sign-In could not load.</b><br>This usually means the network blocked ' +
+          'accounts.google.com. Check your connection and reload the page.');
+      };
+      document.head.appendChild(s);
+    }).catch(QuizUI.err);
+  }
+
+  function initGoogle(nonce) {
+    if (!window.google || !google.accounts || !google.accounts.id) return;
+    try {
+      google.accounts.id.initialize({
+        client_id: cfg.googleClientId,
+        nonce: nonce,
+        callback: onGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        ux_mode: 'popup',
+      });
+      google.accounts.id.renderButton(document.getElementById('gsiBtn'), {
+        type: 'standard', theme: document.documentElement.classList.contains('dark') ? 'filled_black' : 'outline',
+        size: 'large', text: 'continue_with', shape: 'pill', logo_alignment: 'left', width: 300,
+      });
+    } catch (e) {
+      document.getElementById('gsiFallback').innerHTML = QuizUI.alert('err', '&#9888;',
+        '<b>Google Sign-In could not start.</b><br>' + QuizUI.esc(e.message));
+    }
+  }
+
+  function onGoogleCredential(response) {
+    if (!response || !response.credential) {
+      QuizUI.toast('Sign-in was cancelled.', 'err');
+      return;
+    }
+    area.innerHTML = '<div class="skel lg"></div><div class="skel w60" style="margin:0 auto"></div>' +
+      '<p style="margin-top:12px;font-size:13px;color:var(--muted)">Verifying your sign-in&hellip;</p>';
+
+    QuizAPI.auth('google', null, { credential: response.credential })
+      .then(function (r) {
+        QuizUI.toast('Signed in as ' + (r.identity && r.identity.email ? r.identity.email : 'employee'), 'ok');
+        setTimeout(function () {
+          QuizUI.go(r.needsRegistration ? '/Quiz/register' : '/Quiz/dashboard');
+        }, 450);
+      })
+      .catch(function (e) {
+        // Re-render so the employee can simply try again — a failed sign-in
+        // must never leave a dead page.
+        renderSignin();
+        area.insertAdjacentHTML('afterbegin', QuizUI.alert('err', '&#9888;',
+          '<b>Sign-in could not be completed.</b><br>' + QuizUI.esc(e.message)));
+      });
+  }
+
+  // ── Employee ID fallback ──────────────────────────────────────
+  function onEmployeeId(e) {
+    e.preventDefault();
+    var id = document.getElementById('empId').value.trim();
+    var name = document.getElementById('empName').value.trim();
+    if (!id || !name) { QuizUI.toast('Please fill in both fields.', 'err'); return; }
+
+    var btn = document.getElementById('empBtn');
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+
+    QuizAPI.auth('employee-id', null, { employee_id: id, employee_name: name })
+      .then(function (r) {
+        QuizUI.toast('Signed in.', 'ok');
+        setTimeout(function () {
+          QuizUI.go(r.needsRegistration ? '/Quiz/register' : '/Quiz/dashboard');
+        }, 400);
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = 'Continue with Employee ID';
+        QuizUI.err(err);
+      });
+  }
+})();
+</script>
+</body>
+</html>

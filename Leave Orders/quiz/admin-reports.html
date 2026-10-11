@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Reports &amp; Results &mdash; Quiz Administration | Karur Division</title>
+<meta name="theme-color" content="#16307a" />
+<meta name="robots" content="noindex,nofollow" />
+<link rel="icon" href="/assets/india-post-logo.png" />
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leave-orders/quiz/quiz.css">
+<style>
+  .toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .rep-grid{display:grid;gap:11px;grid-template-columns:1fr}
+  @media(min-width:620px){.rep-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:980px){.rep-grid{grid-template-columns:repeat(3,1fr)}}
+  .rep{border:1px solid var(--line);border-radius:var(--r-md);padding:14px;background:var(--card);
+    cursor:pointer;transition:border-color .18s,transform .16s,box-shadow .18s}
+  .rep:hover{border-color:var(--indigo);box-shadow:var(--shadow-md)}
+  .rep:active{transform:scale(.99)}
+  .rep .ri{font-size:22px}
+  .rep b{display:block;font-size:14px;margin:7px 0 4px}
+  .rep span{font-size:12px;color:var(--muted);line-height:1.5}
+  .medal{font-weight:800;font-variant-numeric:tabular-nums}
+  .medal.g{color:#d97706}.medal.s{color:#64748b}.medal.b{color:#b45309}
+</style>
+</head>
+<body>
+<div id="shell"><main id="app"></main></div>
+
+<script src="/leave-orders/quiz/quiz-core.js"></script>
+<script src="/leave-orders/quiz/quiz-admin-core.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var host = null;
+  var exams = [];
+  var examId = '';
+
+  var REPORTS = [
+    ['registrations',       '&#128221;', 'Registered Employees', 'Every registration with sign-in method and status.', false],
+    ['approved',            '&#9989;', 'Approved Participants', 'Those cleared to sit the examination.', false],
+    ['attendance',          '&#128203;', 'Attendance & Non-attendance', 'Who attended and who did not, per approved employee.', true],
+    ['scores',              '&#128202;', 'Scores', 'Ranked scores with the full marking breakdown.', true],
+    ['office-participation','&#127970;', 'Office-wise Participation', 'Attendance and participation rate by office.', true],
+    ['office-average',      '&#128200;', 'Office-wise Average Scores', 'Average, highest and lowest score by office.', true],
+    ['question-stats',      '&#10067;', 'Question-wise Statistics', 'How each question performed across all attempts.', true],
+    ['suspicious',          '&#128269;', 'Suspicious Activity Review', 'Flagged events for administrator review.', false],
+    ['audit',               '&#128220;', 'Examination Audit History', 'Every administrative change, with who and when.', false],
+  ];
+
+  QuizAdmin.boot({
+    title: 'Reports & Results',
+    subtitle: 'Participation, scores, analytics and audit exports',
+    icon: '&#128200;',
+    active: '/Quiz/admin/reports',
+    requireRole: 'QUIZ_VIEWER',
+    onReady: function (me, h) {
+      host = h;
+      examId = new URLSearchParams(location.search).get('exam') || '';
+      host.innerHTML = QuizUI.skeleton(3);
+      QuizAPI.admin('exams-list').then(function (r) {
+        exams = r.exams || [];
+        if (!examId && exams.length) examId = exams[0].id;
+        shell();
+      }).catch(function (e) {
+        host.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+      });
+    }
+  });
+
+  function shell() {
+    if (!exams.length) {
+      host.innerHTML = '<div class="card">' + QuizUI.empty('&#128198;', 'No examination yet',
+        'Reports become available once an examination exists. Create one in ' +
+        '<a href="/Quiz/admin/exams">Examinations</a>.') + '</div>';
+      return;
+    }
+
+    host.innerHTML =
+      '<div class="toolbar">' +
+        '<label for="ex" style="font-size:12.5px;font-weight:700">Examination</label>' +
+        '<select class="select" id="ex" style="flex:1;min-width:220px;max-width:420px">' +
+          exams.map(function (e) {
+            return '<option value="' + QuizUI.esc(e.id) + '"' + (e.id === examId ? ' selected' : '') + '>' +
+              QuizUI.esc(e.title) + ' — ' + QuizUI.esc(e.status.replace(/_/g, ' ')) + '</option>';
+          }).join('') +
+        '</select>' +
+      '</div>' +
+      '<div id="resPane"></div>' +
+      '<div class="section-title">Downloadable reports</div>' +
+      '<div class="rep-grid" id="reps"></div>';
+
+    document.getElementById('ex').addEventListener('change', function () {
+      examId = this.value;
+      loadResults();
+      renderReps();
+    });
+
+    renderReps();
+    loadResults();
+  }
+
+  function renderReps() {
+    document.getElementById('reps').innerHTML = REPORTS.map(function (r) {
+      return '<div class="rep" data-k="' + r[0] + '" tabindex="0" role="button">' +
+        '<div class="ri">' + r[1] + '</div>' +
+        '<b>' + QuizUI.esc(r[2]) + '</b>' +
+        '<span>' + QuizUI.esc(r[3]) + (r[4] ? ' Needs an examination.' : '') + '</span>' +
+        '<div style="margin-top:10px">' + QuizUI.badge('Download Excel') + '</div>' +
+      '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call(document.querySelectorAll('.rep'), function (el) {
+      var run = function () { download(el.getAttribute('data-k')); };
+      el.addEventListener('click', run);
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); run(); }
+      });
+    });
+  }
+
+  function download(kind) {
+    QuizUI.toast('Preparing the report…');
+    QuizAPI.admin('report', { kind: kind, exam_id: examId }).then(function (r) {
+      if (!r.rows.length) {
+        QuizUI.toast('That report has no rows yet.', 'err');
+        return;
+      }
+      var ex = exams.filter(function (e) { return e.id === examId; })[0];
+      var name = 'Quiz-' + r.title.replace(/[^A-Za-z0-9]+/g, '-') +
+        (ex ? '-' + ex.title.replace(/[^A-Za-z0-9]+/g, '-').slice(0, 40) : '') +
+        '-' + stamp() + '.xlsx';
+      QuizAdmin.exportXlsx(name, r.title, r.columns, r.rows);
+      QuizUI.toast(r.rows.length + ' row(s) exported.', 'ok');
+    }).catch(QuizUI.err);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     RESULTS TABLE + PUBLICATION CONTROLS
+     ═══════════════════════════════════════════════════════════════ */
+  function loadResults() {
+    var pane = document.getElementById('resPane');
+    pane.innerHTML = '<div class="card">' + QuizUI.skeleton(4) + '</div>';
+
+    QuizAPI.admin('results-list', { exam_id: examId }).then(function (r) {
+      var ex = r.exam || {};
+      var rows = r.results || [];
+      var published = rows.filter(function (x) { return x.published; }).length;
+      var scores = rows.map(function (x) { return Number(x.score); });
+
+      var h = '<div class="card">' +
+        '<div class="card-head"><div class="card-ic">&#127942;</div>' +
+          '<div><div class="card-t">' + QuizUI.esc(ex.title || 'Results') + '</div>' +
+          '<div class="card-s">' + rows.length + ' completed attempt(s) &middot; ' +
+            published + ' published</div></div></div>';
+
+      if (!rows.length) {
+        h += QuizUI.empty('&#128202;', 'No results yet',
+          'Results appear here as employees complete the examination.');
+      } else {
+        h += '<div class="grid grid-4" style="margin-bottom:14px">' +
+          sx('Attempts', rows.length) +
+          sx('Average', round2(scores.reduce(function (a, b) { return a + b; }, 0) / scores.length)) +
+          sx('Highest', Math.max.apply(null, scores)) +
+          sx('Published', published) +
+        '</div>';
+
+        if (QuizAdmin.atLeast('QUIZ_ADMIN')) {
+          h += '<div class="btn-row" style="margin-bottom:14px">' +
+            '<button class="btn ok sm" type="button" id="pubAll">Publish all results</button>' +
+            '<button class="btn ghost sm" type="button" id="unpubAll">Hide all results</button>' +
+            '<button class="btn ghost sm" type="button" id="recalc">Recalculate scores</button>' +
+          '</div>';
+        }
+
+        h += '<div class="tbl-wrap"><table class="tbl"><thead><tr>' +
+          '<th>Rank</th><th>Employee</th><th>Office</th><th class="num">Correct</th>' +
+          '<th class="num">Wrong</th><th class="num">Unans.</th><th class="num">Score</th>' +
+          '<th class="num">%</th><th class="num">Time</th><th>Published</th>' +
+          (QuizAdmin.atLeast('QUIZ_ADMIN') ? '<th>Action</th>' : '') +
+          '</tr></thead><tbody>';
+
+        rows.forEach(function (x) {
+          var e = x.employee || {};
+          var medal = x.rank === 1 ? 'g' : x.rank === 2 ? 's' : x.rank === 3 ? 'b' : '';
+          h += '<tr>' +
+            '<td><span class="medal ' + medal + '">' + x.rank + '</span></td>' +
+            '<td class="wrap"><b>' + QuizUI.esc(e.employee_name || '—') + '</b><br>' +
+              '<span style="font-family:JetBrains Mono,monospace;font-size:11px">' +
+              QuizUI.esc(e.employee_id || x.employee_id || '') + '</span></td>' +
+            '<td class="wrap">' + QuizUI.esc(e.office || '') + '</td>' +
+            '<td class="num">' + x.correct + '</td>' +
+            '<td class="num">' + x.wrong + '</td>' +
+            '<td class="num">' + x.unanswered + '</td>' +
+            '<td class="num"><b>' + Number(x.score) + '</b> / ' + Number(x.max_marks) + '</td>' +
+            '<td class="num">' + Number(x.percentage) + '</td>' +
+            '<td class="num">' + fmtDur(x.elapsed_seconds) + '</td>' +
+            '<td>' + (x.withheld ? QuizUI.badge('Withheld', 'err')
+                     : x.published ? QuizUI.badge('Yes', 'ok') : QuizUI.badge('No', 'mute')) + '</td>' +
+            (QuizAdmin.atLeast('QUIZ_ADMIN')
+              ? '<td><button class="btn sm ghost" type="button" data-wh="' +
+                QuizUI.esc(x.attempt_id) + '" data-on="' + (x.withheld ? '1' : '0') + '">' +
+                (x.withheld ? 'Release' : 'Withhold') + '</button></td>'
+              : '') +
+          '</tr>';
+        });
+        h += '</tbody></table></div>';
+      }
+      h += '</div>';
+      pane.innerHTML = h;
+
+      var pa = document.getElementById('pubAll');
+      if (pa) pa.addEventListener('click', function () { publishAll(true); });
+      var ua = document.getElementById('unpubAll');
+      if (ua) ua.addEventListener('click', function () { publishAll(false); });
+      var rc = document.getElementById('recalc');
+      if (rc) rc.addEventListener('click', recalc);
+
+      Array.prototype.forEach.call(pane.querySelectorAll('[data-wh]'), function (b) {
+        b.addEventListener('click', function () {
+          withhold(b.getAttribute('data-wh'), b.getAttribute('data-on') !== '1');
+        });
+      });
+    }).catch(function (e) {
+      pane.innerHTML = '<div class="card">' + QuizUI.alert('err', '&#9888;',
+        QuizUI.esc(e.message)) + '</div>';
+    });
+  }
+
+  function publishAll(publish) {
+    QuizUI.modal('pmod', publish ? 'Publish all results' : 'Hide all results',
+      '<p style="font-size:14px;line-height:1.65">' +
+      (publish
+        ? 'Every participant will immediately be able to see their own score, and the examination ' +
+          'will be marked <b>Results Published</b>. Withheld results stay hidden.'
+        : 'Scores will be hidden from participants again. Nothing is deleted &mdash; you can ' +
+          'publish them later.') + '</p>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'pmod\')">Cancel</button>' +
+      '<button class="btn ' + (publish ? 'ok' : '') + '" type="button" id="pmok" style="flex:1">' +
+        (publish ? 'Publish now' : 'Hide now') + '</button>');
+
+    document.getElementById('pmok').addEventListener('click', function () {
+      QuizUI.closeModal('pmod');
+      QuizAPI.admin('results-publish', null, { exam_id: examId, publish: publish })
+        .then(function (r) { QuizUI.toast(r.message, 'ok'); loadResults(); })
+        .catch(QuizUI.err);
+    });
+  }
+
+  function withhold(attemptId, on) {
+    if (!on) {
+      QuizAPI.admin('result-withhold', null, { attempt_id: attemptId, withheld: false })
+        .then(function () { QuizUI.toast('Result released.', 'ok'); loadResults(); })
+        .catch(QuizUI.err);
+      return;
+    }
+    QuizUI.modal('wmod', 'Withhold this result',
+      '<p style="font-size:13.5px;margin-bottom:13px">The participant will see that their result ' +
+        'is under administrative review, instead of a score.</p>' +
+      '<div class="field"><label for="wr">Reason (required, audited)</label>' +
+        '<textarea class="textarea" id="wr" placeholder="e.g. Concurrent sessions flagged; pending enquiry"></textarea></div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'wmod\')">Cancel</button>' +
+      '<button class="btn danger" type="button" id="wok" style="flex:1">Withhold</button>');
+
+    document.getElementById('wok').addEventListener('click', function () {
+      var reason = document.getElementById('wr').value.trim();
+      if (reason.length < 5) { QuizUI.toast('Please record a reason.', 'err'); return; }
+      QuizUI.closeModal('wmod');
+      QuizAPI.admin('result-withhold', null, {
+        attempt_id: attemptId, withheld: true, reason: reason,
+      }).then(function () { QuizUI.toast('Result withheld.', 'ok'); loadResults(); })
+        .catch(QuizUI.err);
+    });
+  }
+
+  function recalc() {
+    QuizUI.modal('rcm', 'Recalculate scores',
+      QuizUI.alert('warn', '&#9888;',
+        'Every completed attempt for this examination is re-scored from the answers already stored ' +
+        'and the marking policy frozen on each attempt. Nothing is invented and no answer is changed. ' +
+        'Use this after correcting an answer key, and record why &mdash; the old and new figures go ' +
+        'to the audit log.') +
+      '<div class="field"><label for="rcn">Reason (required, audited)</label>' +
+        '<textarea class="textarea" id="rcn" placeholder="e.g. Q7 key corrected from B to C per Directorate clarification dated 12.10.2026"></textarea></div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'rcm\')">Cancel</button>' +
+      '<button class="btn danger" type="button" id="rcok" style="flex:1">Recalculate</button>');
+
+    document.getElementById('rcok').addEventListener('click', function () {
+      var note = document.getElementById('rcn').value.trim();
+      if (note.length < 5) { QuizUI.toast('Please record a reason.', 'err'); return; }
+      var b = this;
+      b.disabled = true; b.textContent = 'Recalculating…';
+      QuizAPI.admin('results-recalculate', null, { exam_id: examId, note: note })
+        .then(function (r) {
+          QuizUI.closeModal('rcm');
+          QuizUI.toast(r.message, 'ok');
+          loadResults();
+        }).catch(function (e) {
+          b.disabled = false; b.textContent = 'Recalculate';
+          QuizUI.err(e);
+        });
+    });
+  }
+
+  function sx(k, v) {
+    return '<div class="stat"><div class="k">' + QuizUI.esc(k) + '</div>' +
+      '<div class="v">' + QuizUI.esc(v) + '</div></div>';
+  }
+  function round2(n) { return Math.round(n * 100) / 100; }
+  function fmtDur(s) {
+    if (s == null) return '—';
+    var m = Math.floor(s / 60);
+    return m ? m + 'm ' + (s % 60) + 's' : s + 's';
+  }
+  function stamp() {
+    var d = new Date(), p = function (n) { return n < 10 ? '0' + n : '' + n; };
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Waiting Room &mdash; National Postal Week 2026 Quiz | Karur Division</title>
+<meta name="theme-color" content="#16307a" />
+<link rel="icon" href="/assets/india-post-logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leave-orders/quiz/quiz.css">
+<style>
+  .wait-hero{text-align:center;padding:26px 18px;border-radius:var(--r-xl);margin-bottom:18px;
+    background:linear-gradient(160deg,rgba(79,70,229,.1),rgba(124,58,237,.07),rgba(13,148,136,.06));
+    border:1px solid rgba(79,70,229,.2)}
+  .wait-hero .pulse{font-size:50px;line-height:1;animation:bob 2.6s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @media(prefers-reduced-motion:reduce){.wait-hero .pulse{animation:none}}
+  .wait-hero h2{margin:12px 0 7px;font-size:clamp(19px,5vw,25px)}
+  .wait-hero p{font-size:13.5px;color:var(--muted);line-height:1.65;max-width:430px;margin:0 auto}
+  .tips{list-style:none;padding:0;margin:0}
+  .tips li{display:flex;gap:11px;padding:10px 0;border-bottom:1px dashed var(--line);
+    font-size:13.5px;line-height:1.55}
+  .tips li:last-child{border-bottom:0}
+  .tips .ti{flex:none;font-size:17px;width:26px;text-align:center}
+</style>
+</head>
+<body>
+<div id="shell">
+  <main id="app">
+    <div class="wrap-narrow">
+      <div id="body"></div>
+    </div>
+  </main>
+</div>
+
+<script src="/leave-orders/quiz/quiz-core.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  QuizUI.mount({
+    title: 'Examination Waiting Room',
+    subtitle: 'National Postal Week 2026 — Online Quiz Competition',
+    icon: '&#9203;',
+    actions: '<a class="icon-btn" href="/Quiz/dashboard">Dashboard</a>'
+  });
+
+  var body = document.getElementById('body');
+  body.innerHTML = '<div class="card">' + QuizUI.skeleton(4) + '</div>';
+
+  var examId = new URLSearchParams(location.search).get('exam') || '';
+  var stop = null;
+
+  load();
+  // The waiting room stays in step with the server rather than trusting the
+  // local clock to decide when the door opens.
+  setInterval(load, 20000);
+
+  function load() {
+    QuizAPI.part('dashboard').then(function (r) {
+      QuizTime.anchor(r.serverTimeMs);
+      if (r.needsRegistration) { QuizUI.go('/Quiz/register'); return; }
+
+      var exams = r.exams || [];
+      var ex = examId ? exams.filter(function (e) { return e.id === examId; })[0] : null;
+      if (!ex) {
+        // No specific exam asked for: show the next one that is not finished.
+        ex = exams.filter(function (e) { return !e.completed; })[0];
+      }
+      if (!ex) {
+        body.innerHTML = '<div class="card">' + QuizUI.empty('&#128198;', 'Examination Not Yet Scheduled',
+          'There is no examination waiting for you at the moment. ' +
+          'Please check your dashboard during National Postal Week, 9th to 15th October 2026.') +
+          '<div class="btn-row" style="justify-content:center">' +
+          '<a class="btn ghost" href="/Quiz/dashboard">Back to dashboard</a></div></div>';
+        return;
+      }
+
+      // The gate opened while we were waiting: go straight in.
+      if (ex.canStart) { enter(ex); return; }
+      render(ex, r.registration);
+    }).catch(function (e) {
+      if (e.status === 401) { QuizUI.go('/Quiz'); return; }
+      body.innerHTML = '<div class="card">' + QuizUI.alert('err', '&#9888;',
+        '<b>Could not reach the server.</b><br>' + QuizUI.esc(e.message)) + '</div>';
+    });
+  }
+
+  function render(ex, reg) {
+    if (stop) { stop(); stop = null; }
+
+    var notStarted = ex.phase === 'NOT_STARTED';
+    body.innerHTML =
+      '<div class="wait-hero">' +
+        '<div class="pulse">' + (notStarted ? '&#9203;' : '&#128274;') + '</div>' +
+        '<h2>' + QuizUI.esc(notStarted ? 'Examination Not Yet Started' : ex.reason || 'Please wait') + '</h2>' +
+        '<p>' + QuizUI.esc(ex.title) + '</p>' +
+        (notStarted
+          ? '<div class="countdown" id="cd" style="margin-top:18px"></div>' +
+            '<p style="margin-top:13px;font-size:12.5px">Opens <b>' +
+              QuizUI.esc(QuizTime.ist(ex.examOpenMs)) + ' IST</b></p>'
+          : '<p style="margin-top:14px">' + QuizUI.statusBadge(reg ? reg.status : ex.status) + '</p>') +
+      '</div>' +
+
+      '<div class="card">' +
+        '<div class="card-head"><div class="card-ic">&#128203;</div>' +
+          '<div><div class="card-t">This examination</div>' +
+          '<div class="card-s">Confirmed details</div></div></div>' +
+        '<ul class="tips">' +
+          tip('&#128197;', '<b>' + QuizUI.esc(QuizTime.istDate(ex.examOpenMs)) + '</b> at <b>' +
+            QuizUI.esc(QuizTime.istTime(ex.examOpenMs)) + ' IST</b>') +
+          tip('&#9201;', 'Overall duration <b>' + Math.round(ex.totalSeconds / 60) + ' minutes</b>, ' +
+            'and <b>' + ex.secondsPerQuestion + ' seconds</b> per question') +
+          tip('&#10067;', '<b>' + ex.questionCount + ' questions</b>, four options each') +
+          tip('&#127919;', '<b>+' + ex.positiveMarks + '</b> for a correct answer, ' +
+            '<b>−' + ex.negativeMarks + '</b> for a wrong one, <b>0</b> if unanswered ' +
+            '(maximum <b>' + ex.maxMarks + '</b>)') +
+          (ex.latestStartMs ? tip('&#128682;', 'You must begin by <b>' +
+            QuizUI.esc(QuizTime.istTime(ex.latestStartMs)) + ' IST</b>') : '') +
+        '</ul>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<div class="card-head"><div class="card-ic">&#128161;</div>' +
+          '<div><div class="card-t">While you wait</div>' +
+          '<div class="card-s">Keep this page open</div></div></div>' +
+        '<ul class="tips">' +
+          tip('&#128246;', 'Check your signal now. The timer runs on the server, so a weak connection ' +
+            'costs you time you cannot get back.') +
+          tip('&#128274;', 'Close other apps and put your phone on silent &mdash; an incoming call does not ' +
+            'end your attempt, but it does keep the clock running.') +
+          tip('&#128260;', 'This page refreshes itself. The <b>Start</b> button appears the moment ' +
+            'the examination opens &mdash; you do not need to reload.') +
+          tip('&#9888;', 'Do not open the quiz in two windows or on two devices. ' +
+            'Concurrent sessions are logged for administrator review.') +
+        '</ul>' +
+      '</div>' +
+
+      '<div class="btn-row" style="margin-top:4px">' +
+        '<a class="btn ghost" href="/Quiz/dashboard">Back to dashboard</a>' +
+        '<button class="btn" type="button" id="checkNow" style="flex:1">Check now</button>' +
+      '</div>';
+
+    document.getElementById('checkNow').addEventListener('click', function () {
+      this.textContent = 'Checking…';
+      load();
+    });
+
+    var cd = document.getElementById('cd');
+    if (cd) {
+      stop = QuizTime.countdown(cd, ex.examOpenMs, function () {
+        QuizUI.toast('The examination is now open.', 'ok');
+        setTimeout(load, 1000);
+      });
+    }
+  }
+
+  function tip(icon, html) {
+    return '<li><span class="ti">' + icon + '</span><span>' + html + '</span></li>';
+  }
+
+  function enter(ex) {
+    body.innerHTML = '<div class="card" style="text-align:center">' +
+      '<div style="font-size:50px">&#128275;</div>' +
+      '<h3 style="margin:12px 0 7px;font-size:20px">The examination is open</h3>' +
+      '<p style="font-size:13.5px;color:var(--muted);margin-bottom:18px">' +
+        QuizUI.esc(ex.title) + '</p>' +
+      '<button class="btn block" type="button" id="goBtn">' +
+        (ex.phase === 'RESUME' ? 'Resume my attempt →' : 'Start Quiz →') + '</button>' +
+      '</div>';
+
+    document.getElementById('goBtn').addEventListener('click', function () {
+      var b = this;
+      b.disabled = true; b.textContent = 'Opening…';
+      QuizAPI.part('exam-start', null, { exam_id: ex.id })
+        .then(function (r) { QuizUI.go('/Quiz/exam/' + r.attemptId); })
+        .catch(function (err) {
+          b.disabled = false; b.textContent = 'Start Quiz →';
+          QuizUI.err(err);
+          setTimeout(load, 1500);
+        });
+    });
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,33 +1,232 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/login", "destination": "/Leave Orders/login.html" },
-    { "source": "/", "destination": "/Leave Orders/homepage.html" },
-    { "source": "/ir-library", "destination": "/Leave Orders/ir-library.html" },
-    { "source": "/high-value-memos", "destination": "/Leave Orders/hmvm.html" },
-    { "source": "/verification", "destination": "/Leave Orders/verification.html" },
-    { "source": "/cent-percent-verification", "destination": "/Leave Orders/cpv.html" },
-    { "source": "/address-labels", "destination": "/Leave Orders/address-labels.html" },
-    { "source": "/test-letters", "destination": "/Leave Orders/test-letters.html" },
-    { "source": "/format-corrector", "destination": "/Leave Orders/format-corrector.html" },
-    { "source": "/ir-builder", "destination": "/app/wwwroot/index.html" },
-    { "source": "/leave-orders", "destination": "/Leave Orders/index.html" },
-    { "source": "/arrangements", "destination": "/Leave Orders/arrangements.html" },
-    { "source": "/employees", "destination": "/Leave Orders/employees.html" },
-    { "source": "/phone-directory", "destination": "/Leave Orders/phone-directory.html" },
-    { "source": "/office-management", "destination": "/Leave Orders/office-management.html" },
-    { "source": "/birthdays", "destination": "/Leave Orders/birthdays.html" },
-    { "source": "/retirements", "destination": "/Leave Orders/retirements.html" },
-    { "source": "/sanctioned-posts", "destination": "/Leave Orders/sanctioned-posts.html" },
-    { "source": "/update-mobile", "destination": "/Leave Orders/update-mobile.html" },
-    { "source": "/pli", "destination": "/Leave Orders/pli.html" },
-    { "source": "/user-management", "destination": "/Leave Orders/user-management.html" },
-    { "source": "/performance", "destination": "/Leave Orders/performance.html" },
-    { "source": "/auth-guard.js", "destination": "/Leave Orders/auth-guard.js" },
-    { "source": "/leave-orders/(.*)", "destination": "/Leave Orders/$1" },
-    { "source": "/data/(.*)", "destination": "/app/data/$1" },
-    { "source": "/templates/(.*)", "destination": "/templates/$1" },
-    { "source": "/assets/(.*)", "destination": "/assets/$1" },
-    { "source": "/(.*)", "destination": "/app/wwwroot/$1" }
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/login",
+      "destination": "/Leave Orders/login.html"
+    },
+    {
+      "source": "/",
+      "destination": "/Leave Orders/homepage.html"
+    },
+    {
+      "source": "/ir-library",
+      "destination": "/Leave Orders/ir-library.html"
+    },
+    {
+      "source": "/high-value-memos",
+      "destination": "/Leave Orders/hmvm.html"
+    },
+    {
+      "source": "/verification",
+      "destination": "/Leave Orders/verification.html"
+    },
+    {
+      "source": "/cent-percent-verification",
+      "destination": "/Leave Orders/cpv.html"
+    },
+    {
+      "source": "/address-labels",
+      "destination": "/Leave Orders/address-labels.html"
+    },
+    {
+      "source": "/test-letters",
+      "destination": "/Leave Orders/test-letters.html"
+    },
+    {
+      "source": "/format-corrector",
+      "destination": "/Leave Orders/format-corrector.html"
+    },
+    {
+      "source": "/ir-builder",
+      "destination": "/app/wwwroot/index.html"
+    },
+    {
+      "source": "/leave-orders",
+      "destination": "/Leave Orders/index.html"
+    },
+    {
+      "source": "/arrangements",
+      "destination": "/Leave Orders/arrangements.html"
+    },
+    {
+      "source": "/employees",
+      "destination": "/Leave Orders/employees.html"
+    },
+    {
+      "source": "/phone-directory",
+      "destination": "/Leave Orders/phone-directory.html"
+    },
+    {
+      "source": "/office-management",
+      "destination": "/Leave Orders/office-management.html"
+    },
+    {
+      "source": "/birthdays",
+      "destination": "/Leave Orders/birthdays.html"
+    },
+    {
+      "source": "/retirements",
+      "destination": "/Leave Orders/retirements.html"
+    },
+    {
+      "source": "/sanctioned-posts",
+      "destination": "/Leave Orders/sanctioned-posts.html"
+    },
+    {
+      "source": "/update-mobile",
+      "destination": "/Leave Orders/update-mobile.html"
+    },
+    {
+      "source": "/pli",
+      "destination": "/Leave Orders/pli.html"
+    },
+    {
+      "source": "/user-management",
+      "destination": "/Leave Orders/user-management.html"
+    },
+    {
+      "source": "/performance",
+      "destination": "/Leave Orders/performance.html"
+    },
+    {
+      "source": "/auth-guard.js",
+      "destination": "/Leave Orders/auth-guard.js"
+    },
+    {
+      "source": "/leave-orders/(.*)",
+      "destination": "/Leave Orders/$1"
+    },
+    {
+      "source": "/data/(.*)",
+      "destination": "/app/data/$1"
+    },
+    {
+      "source": "/templates/(.*)",
+      "destination": "/templates/$1"
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/Quiz",
+      "destination": "/Leave Orders/quiz/index.html"
+    },
+    {
+      "source": "/Quiz/register",
+      "destination": "/Leave Orders/quiz/register.html"
+    },
+    {
+      "source": "/Quiz/dashboard",
+      "destination": "/Leave Orders/quiz/dashboard.html"
+    },
+    {
+      "source": "/Quiz/waiting",
+      "destination": "/Leave Orders/quiz/waiting.html"
+    },
+    {
+      "source": "/Quiz/admin",
+      "destination": "/Leave Orders/quiz/admin.html"
+    },
+    {
+      "source": "/Quiz/admin/questions",
+      "destination": "/Leave Orders/quiz/admin-questions.html"
+    },
+    {
+      "source": "/Quiz/admin/employees",
+      "destination": "/Leave Orders/quiz/admin-employees.html"
+    },
+    {
+      "source": "/Quiz/admin/exams",
+      "destination": "/Leave Orders/quiz/admin-exams.html"
+    },
+    {
+      "source": "/Quiz/admin/reports",
+      "destination": "/Leave Orders/quiz/admin-reports.html"
+    },
+    {
+      "source": "/Quiz/admin/settings",
+      "destination": "/Leave Orders/quiz/admin-settings.html"
+    },
+    {
+      "source": "/Quiz/exam/(.*)",
+      "destination": "/Leave Orders/quiz/exam.html"
+    },
+    {
+      "source": "/Quiz/exam",
+      "destination": "/Leave Orders/quiz/exam.html"
+    },
+    {
+      "source": "/Quiz/result/(.*)",
+      "destination": "/Leave Orders/quiz/result.html"
+    },
+    {
+      "source": "/Quiz/result",
+      "destination": "/Leave Orders/quiz/result.html"
+    },
+    {
+      "source": "/quiz",
+      "destination": "/Leave Orders/quiz/index.html"
+    },
+    {
+      "source": "/quiz/register",
+      "destination": "/Leave Orders/quiz/register.html"
+    },
+    {
+      "source": "/quiz/dashboard",
+      "destination": "/Leave Orders/quiz/dashboard.html"
+    },
+    {
+      "source": "/quiz/waiting",
+      "destination": "/Leave Orders/quiz/waiting.html"
+    },
+    {
+      "source": "/quiz/admin",
+      "destination": "/Leave Orders/quiz/admin.html"
+    },
+    {
+      "source": "/quiz/admin/questions",
+      "destination": "/Leave Orders/quiz/admin-questions.html"
+    },
+    {
+      "source": "/quiz/admin/employees",
+      "destination": "/Leave Orders/quiz/admin-employees.html"
+    },
+    {
+      "source": "/quiz/admin/exams",
+      "destination": "/Leave Orders/quiz/admin-exams.html"
+    },
+    {
+      "source": "/quiz/admin/reports",
+      "destination": "/Leave Orders/quiz/admin-reports.html"
+    },
+    {
+      "source": "/quiz/admin/settings",
+      "destination": "/Leave Orders/quiz/admin-settings.html"
+    },
+    {
+      "source": "/quiz/exam/(.*)",
+      "destination": "/Leave Orders/quiz/exam.html"
+    },
+    {
+      "source": "/quiz/exam",
+      "destination": "/Leave Orders/quiz/exam.html"
+    },
+    {
+      "source": "/quiz/result/(.*)",
+      "destination": "/Leave Orders/quiz/result.html"
+    },
+    {
+      "source": "/quiz/result",
+      "destination": "/Leave Orders/quiz/result.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/app/wwwroot/$1"
+    }
   ]
 }

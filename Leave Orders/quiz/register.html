@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Registration &mdash; National Postal Week 2026 Quiz | Karur Division</title>
+<meta name="theme-color" content="#16307a" />
+<link rel="icon" href="/assets/india-post-logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leave-orders/quiz/quiz.css">
+<style>
+  .steps{display:flex;gap:7px;margin-bottom:18px}
+  .step{flex:1;height:5px;border-radius:3px;background:var(--line);transition:background .3s}
+  .step.on{background:linear-gradient(90deg,var(--indigo),var(--violet))}
+  .who{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:var(--r-md);
+    background:var(--card-2);border:1px solid var(--line);margin-bottom:17px;font-size:13px}
+  .who img{width:38px;height:38px;border-radius:50%;flex:none;object-fit:cover;background:var(--line)}
+  .who .av{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;font-weight:800;font-size:15px}
+  .who .m{min-width:0;flex:1}
+  .who .m b{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .who .m span{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;display:block}
+  .confirm-box{border:1.5px solid rgba(5,150,105,.3);background:rgba(5,150,105,.06);
+    border-radius:var(--r-md);padding:15px;margin-bottom:16px}
+  .cfield{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed rgba(5,150,105,.2);font-size:13.5px}
+  .cfield:last-child{border-bottom:0}
+  .cfield .cl{flex:none;width:102px;font-weight:700;color:var(--muted);font-size:12px;
+    letter-spacing:.3px;text-transform:uppercase;padding-top:2px}
+  .cfield .cv{flex:1;font-weight:600;min-width:0;overflow-wrap:break-word}
+</style>
+</head>
+<body>
+<div id="shell">
+  <main id="app">
+    <div class="wrap-narrow">
+      <div class="steps">
+        <div class="step on" id="s1"></div>
+        <div class="step" id="s2"></div>
+      </div>
+      <div id="who"></div>
+      <div class="card" id="regCard">
+        <div class="card-head">
+          <div class="card-ic">&#128100;</div>
+          <div><div class="card-t">Employee Registration</div>
+            <div class="card-s">One-time &mdash; takes about a minute</div></div>
+        </div>
+        <div id="body"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/leave-orders/quiz/quiz-core.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  QuizUI.mount({
+    title: 'Registration',
+    subtitle: 'Confirm your Employee ID to join the quiz',
+    icon: '&#128221;',
+    actions: '<button class="icon-btn" id="outBtn" type="button">Sign out</button>'
+  });
+
+  var body = document.getElementById('body');
+  var whoEl = document.getElementById('who');
+  body.innerHTML = QuizUI.skeleton(4);
+
+  var me = null;
+  var found = null;      // the roster record, once looked up
+
+  document.getElementById('outBtn').addEventListener('click', function () {
+    QuizAPI.logout().then(function () { QuizUI.go('/Quiz'); });
+  });
+
+  // ── Boot ──────────────────────────────────────────────────────
+  QuizAPI.me().then(function (r) {
+    QuizTime.anchor(r.serverTimeMs);
+    if (!r.signedIn) { QuizUI.go('/Quiz'); return; }
+    me = r;
+    renderWho(r.identity);
+    // Already registered? There is nothing to do here.
+    if (r.registration) { QuizUI.go('/Quiz/dashboard'); return; }
+    renderStep1();
+  }).catch(function (e) {
+    body.innerHTML = QuizUI.alert('err', '&#9888;',
+      '<b>Could not load your sign-in.</b><br>' + QuizUI.esc(e.message) +
+      '<br><br><a href="/Quiz">Return to sign-in</a>');
+  });
+
+  function renderWho(id) {
+    if (!id) return;
+    var label = id.email || id.displayName || 'Signed in';
+    var av = id.picture
+      ? '<img src="' + QuizUI.esc(id.picture) + '" alt="" referrerpolicy="no-referrer" />'
+      : '<div class="av">' + QuizUI.esc((id.displayName || 'E').charAt(0).toUpperCase()) + '</div>';
+    whoEl.innerHTML =
+      '<div class="who">' + av +
+        '<div class="m"><b>' + QuizUI.esc(id.displayName || 'Signed in') + '</b>' +
+        '<span>' + QuizUI.esc(label) + '</span></div>' +
+        QuizUI.badge(id.provider === 'google' ? 'Google' : 'Employee ID',
+          id.provider === 'google' ? 'ok' : 'warn') +
+      '</div>';
+  }
+
+  // ── Step 1: Employee ID ───────────────────────────────────────
+  function renderStep1() {
+    body.innerHTML =
+      QuizUI.alert('', '&#8505;',
+        'Enter your <b>Employee ID</b> and we will fetch your name, designation and office ' +
+        'from the official Karur Division employee list. You cannot type these in yourself &mdash; ' +
+        'they come from the approved records.') +
+      '<form id="f1" novalidate>' +
+        '<div class="field">' +
+          '<label for="empId">Employee ID</label>' +
+          '<input class="input mono" id="empId" inputmode="numeric" autocomplete="off" ' +
+            'placeholder="e.g. 10003963" aria-describedby="empHint" required />' +
+          '<div class="hint" id="empHint">The 8-digit number on your pay slip or service record. ' +
+            'Leading zeros, if any, must be included.</div>' +
+        '</div>' +
+        '<button class="btn block" type="submit" id="b1">Fetch my details</button>' +
+      '</form>';
+
+    document.getElementById('f1').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var id = document.getElementById('empId').value.trim();
+      if (!id) { QuizUI.toast('Please enter your Employee ID.', 'err'); return; }
+
+      var b = document.getElementById('b1');
+      b.disabled = true; b.textContent = 'Searching…';
+
+      QuizAPI.part('lookup', null, { employee_id: id })
+        .then(function (r) { found = r.employee; renderStep2(); })
+        .catch(function (err) {
+          b.disabled = false; b.textContent = 'Fetch my details';
+          // A clear, actionable message in the page — not just a toast that
+          // disappears before it can be read.
+          var box = document.getElementById('lookupErr');
+          if (!box) {
+            box = document.createElement('div');
+            box.id = 'lookupErr';
+            document.getElementById('f1').insertAdjacentElement('beforebegin', box);
+          }
+          box.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(err.message));
+        });
+    });
+    document.getElementById('empId').focus();
+  }
+
+  // ── Step 2: confirm and register ──────────────────────────────
+  function renderStep2() {
+    document.getElementById('s2').classList.add('on');
+    body.innerHTML =
+      QuizUI.alert('ok', '&#9989;',
+        '<b>Record found.</b> Please check that these are your details before you register.') +
+      '<div class="confirm-box">' +
+        row('Employee ID', found.employee_id, true) +
+        row('Name', found.employee_name) +
+        row('Designation', found.designation) +
+        row('Office', found.office) +
+      '</div>' +
+      '<div class="field">' +
+        '<div class="checkrow">' +
+          '<input type="checkbox" id="consent" />' +
+          '<label for="consent" style="font-weight:500;margin:0">' +
+            'I confirm these are my details, and I accept the ' +
+            '<a href="/Quiz#privacy" target="_blank" rel="noopener">privacy notice</a> ' +
+            'describing what information is collected for this examination.' +
+          '</label>' +
+        '</div>' +
+      '</div>' +
+      '<div class="btn-row">' +
+        '<button class="btn ghost" type="button" id="back">&larr; Not me</button>' +
+        '<button class="btn grow" type="button" id="b2" style="flex:1">Complete registration</button>' +
+      '</div>';
+
+    document.getElementById('back').addEventListener('click', function () {
+      found = null;
+      document.getElementById('s2').classList.remove('on');
+      renderStep1();
+    });
+
+    document.getElementById('b2').addEventListener('click', function () {
+      if (!document.getElementById('consent').checked) {
+        QuizUI.toast('Please tick the confirmation box to continue.', 'err');
+        return;
+      }
+      var b = this;
+      b.disabled = true; b.textContent = 'Registering…';
+
+      QuizAPI.part('register', null, { employee_id: found.employee_id, consent: true })
+        .then(function (r) { renderDone(r); })
+        .catch(function (err) {
+          b.disabled = false; b.textContent = 'Complete registration';
+          QuizUI.err(err);
+        });
+    });
+  }
+
+  function row(label, value, mono) {
+    return '<div class="cfield"><div class="cl">' + QuizUI.esc(label) + '</div>' +
+           '<div class="cv"' + (mono ? ' style="font-family:JetBrains Mono,monospace;letter-spacing:1px"' : '') +
+           '>' + QuizUI.esc(value) + '</div></div>';
+  }
+
+  // ── Done ──────────────────────────────────────────────────────
+  function renderDone(r) {
+    var reg = r.registration || {};
+    var approved = reg.status === 'APPROVED';
+
+    body.innerHTML =
+      '<div style="text-align:center;padding:8px 0 4px">' +
+        '<div style="font-size:52px;line-height:1">' + (approved ? '&#127881;' : '&#9203;') + '</div>' +
+        '<h3 style="margin:10px 0 6px;font-size:19px">Registration ' +
+          (approved ? 'complete' : 'received') + '</h3>' +
+        '<p style="font-size:13.5px;color:var(--muted);line-height:1.6;max-width:400px;margin:0 auto">' +
+          (approved
+            ? 'You are registered for the National Postal Week 2026 Online Quiz Competition. ' +
+              'Your examination will open at the scheduled time.'
+            : 'Your registration has been recorded and is awaiting administrator approval. ' +
+              'You will be able to sit the examination once it is approved.') +
+        '</p>' +
+      '</div>' +
+      '<div class="confirm-box" style="margin-top:18px">' +
+        row('Registration ID', reg.regCode, true) +
+        row('Employee ID', reg.employeeId, true) +
+        row('Name', reg.employeeName) +
+        row('Designation', reg.designation) +
+        row('Office', reg.office) +
+      '</div>' +
+      '<div style="text-align:center;margin-bottom:15px">' +
+        QuizUI.statusBadge(reg.status) +
+      '</div>' +
+      '<button class="btn block" type="button" id="toDash">Go to my dashboard &rarr;</button>';
+
+    document.getElementById('toDash').addEventListener('click', function () {
+      QuizUI.go('/Quiz/dashboard');
+    });
+    QuizUI.toast(approved ? 'Registered successfully.' : 'Registration submitted.', 'ok');
+  }
+})();
+</script>
+</body>
+</html>
