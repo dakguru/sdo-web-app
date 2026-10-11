@@ -220,49 +220,53 @@
     header: function (opts) {
       var o = opts || {};
       var b = Object.assign({}, BRANDING, o.branding || {});
-      var banner = o.compact ? '' :
-        '<div class="event-band">' +
-          '<span class="event-tag"><span class="dot"></span>' + esc(b.window) + '</span>' +
-          '<h2 class="event-title">' + esc(b.event) + ' &mdash; ' + esc(b.sub) + '</h2>' +
-          '<p class="event-theme">' + esc(b.theme) + '</p>' +
+      // One compact band instead of a full-height hero: the event name, what
+      // it is, and where — flanked by the two emblems. The theme line and
+      // dates sit on a single small strip beneath, so the whole header costs
+      // roughly a third of the screen it used to.
+      var strip = o.compact ? '' :
+        '<div class="mh-strip">' +
+          '<span class="mh-quote">&ldquo;' + esc(b.theme) + '&rdquo;</span>' +
+          '<span class="mh-dot">&middot;</span>' +
+          '<span class="mh-when">' + esc(b.window) + '</span>' +
         '</div>';
 
+      // Icon and title are one unit, so a narrow screen wraps the action
+      // buttons to the next row rather than orphaning the icon above the text.
       var modbar = o.title ?
         '<div class="q-modbar">' +
-          '<div class="mi">' + (o.icon || '&#127891;') + '</div>' +
-          '<div style="min-width:0">' +
-            '<h1>' + esc(o.title) + '</h1>' +
-            (o.subtitle ? '<div class="sub">' + esc(o.subtitle) + '</div>' : '') +
+          '<div class="mb-id">' +
+            '<div class="mi">' + (o.icon || '&#127891;') + '</div>' +
+            '<div style="min-width:0">' +
+              '<h1>' + esc(o.title) + '</h1>' +
+              (o.subtitle ? '<div class="sub">' + esc(o.subtitle) + '</div>' : '') +
+            '</div>' +
           '</div>' +
-          '<div class="spacer"></div>' +
-          (o.actions || '') +
-          '<button class="icon-btn" id="themeBtn" type="button" ' +
-            'title="Switch between light and dark theme" aria-label="Switch theme">&#127769;</button>' +
+          (o.actions ? '<div class="mb-acts">' + o.actions + '</div>' : '') +
         '</div>' : '';
 
       return '' +
         '<header class="q-header">' +
           '<div class="q-grain"></div>' +
           '<div class="q-header-in">' +
-            // Fixed-width side slots keep the three title lines on the true
-            // centre of the header, even though the two logos differ in width.
-            '<div class="gov-band">' +
-              '<div class="gov-side">' +
-                '<img class="gov-crest goi" src="/assets/goi-logo.jpg" ' +
+            // Equal-width side slots put the three lines on the true centre of
+            // the page, even though the two emblems differ in proportion.
+            '<div class="masthead">' +
+              '<div class="mh-side">' +
+                '<img class="mh-logo goi" src="/assets/goi-logo.jpg" ' +
                   'alt="Government of India" />' +
               '</div>' +
-              '<div class="gov-titles">' +
-                '<div class="gov-l1">Government of India</div>' +
-                '<div class="gov-l2">' + esc(b.org) + '</div>' +
-                '<div class="gov-l3">' + esc(b.division) + '</div>' +
-                '<div class="gov-rule"></div>' +
+              '<div class="mh-text">' +
+                '<h1 class="mh-1">' + esc(b.event) + '</h1>' +
+                '<div class="mh-2">' + esc(b.sub) + '</div>' +
+                '<div class="mh-3">' + esc(b.division) + '</div>' +
               '</div>' +
-              '<div class="gov-side right">' +
-                '<img class="gov-crest post" src="/assets/india-post-logo.png" alt="India Post" />' +
+              '<div class="mh-side right">' +
+                '<img class="mh-logo post" src="/assets/india-post-logo.png" alt="India Post" />' +
               '</div>' +
             '</div>' +
+            strip +
           '</div>' +
-          banner +
           modbar +
         '</header>';
     },
@@ -316,9 +320,21 @@
         document.body.appendChild(t);
       }
 
+      // The theme switch floats clear of the header, bottom-right, so it costs
+      // no vertical space and stays reachable however far the page scrolls.
+      if (!document.getElementById('themeBtn')) {
+        var fab = document.createElement('button');
+        fab.id = 'themeBtn';
+        fab.type = 'button';
+        fab.className = 'theme-fab';
+        fab.title = 'Switch between light and dark theme';
+        fab.setAttribute('aria-label', 'Switch between light and dark theme');
+        document.body.appendChild(fab);
+      }
       var btn = document.getElementById('themeBtn');
       if (btn) {
-        if (document.documentElement.classList.contains('dark')) btn.innerHTML = '&#9728;';
+        btn.innerHTML = document.documentElement.classList.contains('dark')
+          ? '&#9728;' : '&#127769;';
         btn.addEventListener('click', function () { QuizUI.toggleTheme(); });
       }
     },

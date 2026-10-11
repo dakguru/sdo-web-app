@@ -91,11 +91,9 @@
 (function () {
   'use strict';
 
-  QuizUI.mount({
-    title: 'Online Quiz Competition',
-    subtitle: 'National Postal Week 2026 — open to all officials of Karur Division',
-    icon: '&#127891;'
-  });
+  // No module bar on the landing page: its title and subtitle would repeat
+  // the masthead word for word, and this page has no actions to put there.
+  QuizUI.mount({});
 
   var area = document.getElementById('signinArea');
   var cfg = null;
