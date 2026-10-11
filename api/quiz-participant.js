@@ -873,7 +873,8 @@ async function eventAction(req, res) {
   const body = await Q.readJsonBody(req);
   const type = String(body.type || '').toUpperCase().slice(0, 40);
 
-  const ALLOWED = ['TAB_HIDDEN', 'TAB_VISIBLE', 'OFFLINE', 'ONLINE', 'PAGE_EXIT', 'COPY_BLOCKED', 'RESUME'];
+  const ALLOWED = ['TAB_HIDDEN', 'TAB_VISIBLE', 'OFFLINE', 'ONLINE', 'PAGE_EXIT', 'COPY_BLOCKED',
+    'CONTEXT_MENU_BLOCKED', 'SCREENSHOT_KEY', 'RESUME'];
   if (!ALLOWED.includes(type)) return Q.ok(res, { logged: false });
 
   await Q.logEvent(req, {
@@ -881,7 +882,8 @@ async function eventAction(req, res) {
     registration_id: registration ? registration.id : null,
     identity_id: identity ? identity.id : null,
     type,
-    severity: type === 'TAB_HIDDEN' ? 'NOTICE' : 'INFO',
+    severity: ['TAB_HIDDEN', 'COPY_BLOCKED', 'CONTEXT_MENU_BLOCKED', 'SCREENSHOT_KEY']
+      .includes(type) ? 'NOTICE' : 'INFO',
     detail: { at: Date.now() },
   });
   return Q.ok(res, { logged: true });

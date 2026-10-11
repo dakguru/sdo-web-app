@@ -440,9 +440,14 @@
             'consider <b>Change status &rarr; Cancelled</b> instead &mdash; that keeps the record.')
         : '') +
 
-      '<div class="field"><label for="d_conf">Type the title to confirm</label>' +
-        '<input class="input" id="d_conf" autocomplete="off" placeholder="' +
-        QuizUI.esc(ex.title) + '" /></div>' +
+      '<div class="field"><label for="d_conf">Type or paste the title to confirm</label>' +
+        '<div class="hint" style="margin:0 0 7px">' +
+          '<span id="d_title" style="user-select:all;font-weight:700">' +
+          QuizUI.esc(ex.title) + '</span> ' +
+          '<button class="btn sm ghost" type="button" id="d_copy" ' +
+          'style="min-height:26px;padding:0 9px;font-size:11.5px">Copy</button></div>' +
+        '<input class="input" id="d_conf" autocomplete="off" ' +
+        'placeholder="Type or paste the title here" /></div>' +
 
       '<div class="field"><div class="checkrow">' +
         '<input type="checkbox" id="d_force" />' +
@@ -452,6 +457,23 @@
 
       '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'xdel\')">Cancel</button>' +
       '<button class="btn danger" type="button" id="dok" style="flex:1">Delete permanently</button>');
+
+    document.getElementById('d_copy').addEventListener('click', function () {
+      var t = ex.title;
+      var done = function () { QuizUI.toast('Title copied.', 'ok'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).then(done, selectInstead);
+      } else { selectInstead(); }
+      // Clipboard access can be refused; selecting the text is still a usable
+      // answer, because the administrator can then copy it themselves.
+      function selectInstead() {
+        var r = document.createRange();
+        r.selectNodeContents(document.getElementById('d_title'));
+        var sel = window.getSelection();
+        sel.removeAllRanges(); sel.addRange(r);
+        QuizUI.toast('Title selected — press Ctrl+C to copy.', 'ok');
+      }
+    });
 
     document.getElementById('dok').addEventListener('click', function () {
       var b = this;

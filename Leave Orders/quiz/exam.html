@@ -307,7 +307,7 @@
         .then(function () {
           return QuizAPI.part('submit', null, { attempt_id: attemptId });
         })
-        .then(function () { finished = true; QuizUI.go('/Quiz/result/' + attemptId); })
+        .then(function () { finished = true; unlock(); QuizUI.go('/Quiz/result/' + attemptId); })
         .catch(function (e) { setBusy(false); handleAnswerError(e); });
     });
   }
@@ -334,7 +334,7 @@
      Finish states
      ───────────────────────────────────────────────────────────── */
   function onFinished(r) {
-    finished = true;
+    finished = true; unlock();
     clearInterval(tickIv);
     clearInterval(pollIv);
     elFoot.hidden = true;
@@ -372,7 +372,7 @@
   }
 
   function fatal(title, detail) {
-    finished = true;
+    finished = true; unlock();
     clearInterval(tickIv); clearInterval(pollIv);
     elFoot.hidden = true;
     elTitle.textContent = 'Examination';
@@ -418,7 +418,59 @@
     }
   });
 
-  // Mild deterrent, honestly labelled: this cannot stop a second device.
+  // ─────────────────────────────────────────────────────────────
+  //  Copy deterrents
+  //
+  //  Honest about what this is. Selection, the context menu, dragging and the
+  //  clipboard shortcuts are taken away, which stops casual copying and the
+  //  mobile long-press menu. It cannot stop a second phone pointed at the
+  //  screen, a screenshot, or anyone who opens developer tools — nothing
+  //  running inside the page can. Every blocked attempt is logged instead, so
+  //  the administrator sees the pattern rather than trusting the lock.
+  // ─────────────────────────────────────────────────────────────
+  document.body.classList.add('exam-locked');
+
+  // Once the paper is over there is nothing left to protect, so the page
+  // behaves normally again.
+  function unlock() { document.body.classList.remove('exam-locked'); }
+
+  function deter(type, event) {
+    if (finished) return;
+    event.preventDefault();
+    logEvent(type);
+  }
+
+  elBody.addEventListener('cut', function (e) { deter('COPY_BLOCKED', e); });
+  elBody.addEventListener('dragstart', function (e) { deter('COPY_BLOCKED', e); });
+
+  // Right-click, and the long-press that raises the same menu on a touchscreen.
+  document.addEventListener('contextmenu', function (e) {
+    if (finished) return;
+    e.preventDefault();
+    logEvent('CONTEXT_MENU_BLOCKED');
+    QuizUI.toast('The right-click menu is disabled during the examination.', 'err');
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (finished) return;
+    var k = String(e.key || '').toLowerCase();
+
+    // Print and Save are copy routes of their own — a printed paper is a copy.
+    if ((e.ctrlKey || e.metaKey) && (k === 'c' || k === 'x' || k === 'a' || k === 'p' || k === 's')) {
+      e.preventDefault();
+      logEvent('COPY_BLOCKED');
+      QuizUI.toast('Copying is disabled during the examination.', 'err');
+    }
+  });
+
+  // PrintScreen cannot be prevented — the capture happens in the operating
+  // system, outside the browser. The key press is still worth recording, so a
+  // pattern of it shows up in the suspicious-activity report.
+  document.addEventListener('keyup', function (e) {
+    if (finished) return;
+    if (String(e.key || '') === 'PrintScreen') logEvent('SCREENSHOT_KEY');
+  });
+
   elBody.addEventListener('copy', function (e) {
     if (finished) return;
     e.preventDefault();
@@ -434,7 +486,22 @@
     return '';
   });
 
+  // A held Ctrl+C is one intent, not forty, and forty requests would be the
+  // candidate's own browser flooding the event endpoint mid-paper. One line per
+  // type every few seconds is enough for the administrator to see the pattern.
+  // Only the deterrents are throttled. Tab switches and disconnections are the
+  // integrity record proper, and rapid switching is exactly the pattern worth
+  // seeing, so those are never collapsed.
+  var THROTTLED = ['COPY_BLOCKED', 'CONTEXT_MENU_BLOCKED', 'SCREENSHOT_KEY'];
+  var lastLogged = {};
+  var LOG_THROTTLE_MS = 3000;
+
   function logEvent(type) {
+    var now = Date.now();
+    if (THROTTLED.indexOf(type) >= 0) {
+      if (lastLogged[type] && now - lastLogged[type] < LOG_THROTTLE_MS) return;
+      lastLogged[type] = now;
+    }
     try {
       QuizAPI.part('event', null, { type: type, attempt_id: attemptId }).catch(function () {});
     } catch (_) {}

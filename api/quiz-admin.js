@@ -883,6 +883,16 @@ async function examSave(req, res, actor) {
   return Q.ok(res, { saved: true, id: rows[0].id, status: 'DRAFT' });
 }
 
+// Dashes of every width collapse to a hyphen and whitespace to a single space,
+// so a pasted title and a retyped one compare equal.
+function confirmKey(v) {
+  return String(v == null ? '' : v)
+    .replace(/[‐-―−]/g, '-')
+    .replace(/s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
 async function examDuplicate(req, res, actor) {
   const body = await Q.readJsonBody(req);
   const src = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(String(body.id || '')));
@@ -990,10 +1000,13 @@ async function examDelete(req, res, actor) {
   const ex = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(id));
   if (!ex) throw new Q.AppError('Examination not found.', 404);
 
-  const typed = String(body.confirm_title || '').trim();
-  if (typed.toLowerCase() !== String(ex.title || '').trim().toLowerCase()) {
+  // The confirmation exists to make the administrator name which examination is
+  // being destroyed, not to test their typing. Titles carry an em dash and
+  // non-breaking spaces that no one reproduces by hand, so dashes and runs of
+  // whitespace are normalised before the comparison; the words still have to match.
+  if (confirmKey(body.confirm_title) !== confirmKey(ex.title)) {
     throw new Q.AppError(
-      'Type the examination title exactly as it appears to confirm the deletion.',
+      'The title did not match. Copy it from the dialog and paste it in to confirm.',
       400, 'CONFIRM_TITLE_MISMATCH');
   }
 
