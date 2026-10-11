@@ -315,6 +315,17 @@ function examGate(ex, registration, myAttempts, now) {
     return { canStart: false, phase: 'ATTEMPTED', reason: 'You have already completed this examination.' };
   }
 
+  // An examination with no opening time has not been scheduled, whatever its
+  // status says, and a missing date must mean 'not yet' rather than 'no
+  // restriction' — otherwise marking a paper SCHEDULED before setting its date
+  // opens it to everyone immediately. LIVE is the deliberate exception: an
+  // administrator sets that by hand and means it.
+  if (!ex.exam_open_ms && ex.status !== 'LIVE') {
+    return {
+      canStart: false, phase: 'NOT_SCHEDULED',
+      reason: 'The date and time of this examination have not been announced yet.',
+    };
+  }
   if (ex.exam_open_ms && now < ex.exam_open_ms) {
     return { canStart: false, phase: 'NOT_STARTED', reason: 'Examination Not Yet Started' };
   }

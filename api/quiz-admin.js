@@ -967,6 +967,11 @@ async function examSchedule(req, res, actor) {
   // but only once its paper is frozen — otherwise it would appear on dashboards
   // with nothing behind it.
   if (body.set_scheduled === true && before.status === 'DRAFT') {
+    if (!openMs) {
+      throw new Q.AppError(
+        'Set an opening time before scheduling — that is the moment the examination ' +
+        'opens itself.', 400, 'NO_SCHEDULE');
+    }
     const frozen = await Q.sbCount('quiz_exam_questions', 'exam_id=' + Q.eq(id));
     if (frozen < before.question_count) {
       throw new Q.AppError(
@@ -1191,6 +1196,15 @@ async function examStatus(req, res, actor) {
 
   const before = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(id));
   if (!before) throw new Q.AppError('Examination not found.', 404);
+
+  // Scheduled means scheduled. Without an opening time there is nothing for
+  // participants to wait for, and the gate would let them straight in. LIVE is
+  // left alone deliberately: it is the administrator saying 'open it now'.
+  if (status === 'SCHEDULED' && !before.exam_open_ms) {
+    throw new Q.AppError(
+      'Set the date and time first — use Schedule. An examination marked Scheduled ' +
+      'with no opening time would be open to everyone immediately.', 409, 'NO_SCHEDULE');
+  }
 
   if (status !== 'DRAFT' && status !== 'CANCELLED') {
     const frozen = await Q.sbCount('quiz_exam_questions', 'exam_id=' + Q.eq(id));
