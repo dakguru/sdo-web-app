@@ -7,3 +7,8 @@ app/generate/node_modules/
 .DS_Store
 
 android-app/build/
+
+# Divisional employee roster — personal data (names, Employee IDs, postings).
+# Import it through /Quiz/admin/employees instead; it then lives in the
+# database, so the spreadsheet does not need to be in version control.
+Karur Division Employee List.xlsx
