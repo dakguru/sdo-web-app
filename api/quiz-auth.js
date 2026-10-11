@@ -25,6 +25,20 @@ const crypto = require('crypto');
 
 const NONCE_COOKIE = 'quiz_nonce';
 
+// Sign-in throttling comes in two tiers, because the two threats are different.
+//
+// The per-account tier is the real limit on a person: nobody legitimately signs
+// in ten times a minute, and it holds however many addresses they come from.
+//
+// The per-IP tier cannot be the per-person limit, because a whole office can
+// share one public address — at a uniform start time that is a hundred
+// colleagues arriving as a single IP, and throttling them was throttling the
+// examination. It survives only as a flood guard on the unauthenticated path,
+// set far above any plausible office, since the account behind a request is
+// unknowable until its token has been verified.
+const GOOGLE_ACCOUNT_PER_MIN = 10;
+const GOOGLE_IP_FLOOD_PER_MIN = 300;
+
 module.exports = async function handler(req, res) {
   try {
     const cfgErr = Q.configError();
@@ -144,10 +158,17 @@ async function googleAction(req, res) {
   const credential = body.credential || body.id_token;
   if (!credential) throw new Q.AppError('No Google credential was received.', 400);
 
-  await Q.rateLimit('gsignin:' + (Q.clientIp(req) || 'unknown'), 30, 60 * 1000);
+  // Flood guard only — deliberately loose. See the note beside the constants.
+  await Q.rateLimit('gsignin:ip:' + (Q.clientIp(req) || 'unknown'),
+    GOOGLE_IP_FLOOD_PER_MIN, 60 * 1000);
 
   const expectedNonce = takeNonce(req);
   const claims = await Q.verifyGoogleIdToken(credential, expectedNonce);
+
+  // The account is only knowable once the token is verified, which is exactly
+  // why this cannot replace the guard above — but it is the limit that matters,
+  // and it guards every database write that follows.
+  await Q.rateLimit('gsignin:acct:' + claims.sub, GOOGLE_ACCOUNT_PER_MIN, 60 * 1000);
 
   if (!claims.email || !claims.emailVerified) {
     throw new Q.AuthError(

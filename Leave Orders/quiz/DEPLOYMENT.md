@@ -323,7 +323,10 @@ Stated plainly, including the limits.
 - Ownership. An attempt ID is not authority — it must belong to the signed-in
   participant's own registration.
 - Rate limits on Employee ID lookup and every sign-in path, so the roster
-  cannot be walked 782 IDs at a time.
+  cannot be walked 782 IDs at a time. Google sign-in is limited per Google
+  account rather than per IP address, because an office behind one public
+  address is many people, not one; a loose per-address flood guard remains on
+  the unauthenticated path, where the account is not yet knowable.
 
 **Logged for your review, never automatic:**
 
