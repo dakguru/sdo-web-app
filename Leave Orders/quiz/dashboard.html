@@ -222,9 +222,27 @@
     if (ex.phase === 'NOT_STARTED') {
       h += '<div class="cd-box">' +
              '<div class="cl">Examination Not Yet Started</div>' +
-             '<div class="countdown" data-cd="' + ex.examOpenMs + '"></div>' +
+             '<div class="countdown" data-cd="' + ex.examOpenMs + '" data-cd-kind="open"></div>' +
              '<div style="margin-top:11px;font-size:12px;color:var(--muted)">Opens ' +
                QuizUI.esc(QuizTime.ist(ex.examOpenMs)) + ' IST</div>' +
+           '</div>';
+    }
+
+    // Open now, and the window will shut: how long is left to begin. The doors
+    // close at the latest permitted start, or at the closing time if that comes
+    // first. With neither set there is nothing to count down to.
+    var beginBy = null;
+    if (ex.phase === 'OPEN') {
+      if (ex.latestStartMs && ex.examCloseMs) beginBy = Math.min(ex.latestStartMs, ex.examCloseMs);
+      else beginBy = ex.latestStartMs || ex.examCloseMs || null;
+    }
+    if (beginBy) {
+      h += '<div class="cd-box">' +
+             '<div class="cl">Time Left To Begin</div>' +
+             '<div class="countdown" data-cd="' + beginBy + '" data-cd-kind="begin"></div>' +
+             '<div style="margin-top:11px;font-size:12px;color:var(--muted)">You must start by ' +
+               QuizUI.esc(QuizTime.ist(beginBy)) + ' IST &middot; the paper itself runs for ' +
+               Math.round(ex.totalSeconds / 60) + ' minutes once you begin</div>' +
            '</div>';
     }
 
@@ -234,6 +252,14 @@
       if (ex.phase === 'RESUME') {
         h += '<p style="margin-top:9px;font-size:12px;color:var(--warn);text-align:center">' +
              'You have an attempt in progress. Your timer has been running.</p>';
+        // Their own clock, which is what someone mid-paper actually wants to see.
+        if (ex.inProgressDeadlineMs) {
+          h += '<div class="cd-box" style="margin-top:11px">' +
+                 '<div class="cl">Time Left In Your Attempt</div>' +
+                 '<div class="countdown" data-cd="' + ex.inProgressDeadlineMs + '" ' +
+                   'data-cd-kind="attempt"></div>' +
+               '</div>';
+        }
       }
     } else if (!ex.completed) {
       h += '<button class="btn block is-disabled" type="button" disabled>Start Quiz</button>';
@@ -266,15 +292,17 @@
                histEl.querySelector('[data-id="' + ex.id + '"]');
     if (!card) return;
 
-    var cd = card.querySelector('[data-cd]');
-    if (cd) {
-      // When the countdown hits zero, reload so the server re-decides the
-      // gate — we never let the browser enable the button by itself.
+    // When a countdown hits zero, reload so the server re-decides the gate —
+    // we never let the browser enable or disable the button by itself.
+    Array.prototype.forEach.call(card.querySelectorAll('[data-cd]'), function (cd) {
+      var kind = cd.getAttribute('data-cd-kind') || 'open';
       stoppers.push(QuizTime.countdown(cd, +cd.getAttribute('data-cd'), function () {
-        QuizUI.toast('The examination is now open.', 'ok');
+        if (kind === 'open') QuizUI.toast('The examination is now open.', 'ok');
+        else if (kind === 'begin') QuizUI.toast('The time to begin this examination has passed.', 'err');
+        else QuizUI.toast('Your examination time has ended.', 'err');
         setTimeout(load, 1200);
       }));
-    }
+    });
 
     var btn = card.querySelector('[data-start]');
     if (btn) {

@@ -271,6 +271,8 @@ async function dashboardAction(req, res) {
       reason: gate.reason,
       phase: gate.phase,
       inProgressAttemptId: live ? live.id : null,
+      // So the dashboard can show the attempt's own clock, not just the window's.
+      inProgressDeadlineMs: live ? live.deadline_ms : null,
       completed: done.length > 0,
       result: result ? shapeResult(result, ex) : null,
       resultPending: done.length > 0 && !result,
