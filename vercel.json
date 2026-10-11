@@ -117,7 +117,15 @@
       "destination": "/Leave Orders/quiz/index.html"
     },
     {
+      "source": "/Quiz/",
+      "destination": "/Leave Orders/quiz/index.html"
+    },
+    {
       "source": "/Quiz/register",
+      "destination": "/Leave Orders/quiz/register.html"
+    },
+    {
+      "source": "/Quiz/register/",
       "destination": "/Leave Orders/quiz/register.html"
     },
     {
@@ -125,7 +133,15 @@
       "destination": "/Leave Orders/quiz/dashboard.html"
     },
     {
+      "source": "/Quiz/dashboard/",
+      "destination": "/Leave Orders/quiz/dashboard.html"
+    },
+    {
       "source": "/Quiz/waiting",
+      "destination": "/Leave Orders/quiz/waiting.html"
+    },
+    {
+      "source": "/Quiz/waiting/",
       "destination": "/Leave Orders/quiz/waiting.html"
     },
     {
@@ -133,7 +149,15 @@
       "destination": "/Leave Orders/quiz/admin.html"
     },
     {
+      "source": "/Quiz/admin/",
+      "destination": "/Leave Orders/quiz/admin.html"
+    },
+    {
       "source": "/Quiz/admin/questions",
+      "destination": "/Leave Orders/quiz/admin-questions.html"
+    },
+    {
+      "source": "/Quiz/admin/questions/",
       "destination": "/Leave Orders/quiz/admin-questions.html"
     },
     {
@@ -141,7 +165,15 @@
       "destination": "/Leave Orders/quiz/admin-employees.html"
     },
     {
+      "source": "/Quiz/admin/employees/",
+      "destination": "/Leave Orders/quiz/admin-employees.html"
+    },
+    {
       "source": "/Quiz/admin/exams",
+      "destination": "/Leave Orders/quiz/admin-exams.html"
+    },
+    {
+      "source": "/Quiz/admin/exams/",
       "destination": "/Leave Orders/quiz/admin-exams.html"
     },
     {
@@ -149,11 +181,23 @@
       "destination": "/Leave Orders/quiz/admin-reports.html"
     },
     {
+      "source": "/Quiz/admin/reports/",
+      "destination": "/Leave Orders/quiz/admin-reports.html"
+    },
+    {
       "source": "/Quiz/admin/settings",
       "destination": "/Leave Orders/quiz/admin-settings.html"
     },
     {
+      "source": "/Quiz/admin/settings/",
+      "destination": "/Leave Orders/quiz/admin-settings.html"
+    },
+    {
       "source": "/Quiz/exam/(.*)",
+      "destination": "/Leave Orders/quiz/exam.html"
+    },
+    {
+      "source": "/Quiz/exam/",
       "destination": "/Leave Orders/quiz/exam.html"
     },
     {
@@ -165,6 +209,10 @@
       "destination": "/Leave Orders/quiz/result.html"
     },
     {
+      "source": "/Quiz/result/",
+      "destination": "/Leave Orders/quiz/result.html"
+    },
+    {
       "source": "/Quiz/result",
       "destination": "/Leave Orders/quiz/result.html"
     },
@@ -173,7 +221,15 @@
       "destination": "/Leave Orders/quiz/index.html"
     },
     {
+      "source": "/quiz/",
+      "destination": "/Leave Orders/quiz/index.html"
+    },
+    {
       "source": "/quiz/register",
+      "destination": "/Leave Orders/quiz/register.html"
+    },
+    {
+      "source": "/quiz/register/",
       "destination": "/Leave Orders/quiz/register.html"
     },
     {
@@ -181,7 +237,15 @@
       "destination": "/Leave Orders/quiz/dashboard.html"
     },
     {
+      "source": "/quiz/dashboard/",
+      "destination": "/Leave Orders/quiz/dashboard.html"
+    },
+    {
       "source": "/quiz/waiting",
+      "destination": "/Leave Orders/quiz/waiting.html"
+    },
+    {
+      "source": "/quiz/waiting/",
       "destination": "/Leave Orders/quiz/waiting.html"
     },
     {
@@ -189,7 +253,15 @@
       "destination": "/Leave Orders/quiz/admin.html"
     },
     {
+      "source": "/quiz/admin/",
+      "destination": "/Leave Orders/quiz/admin.html"
+    },
+    {
       "source": "/quiz/admin/questions",
+      "destination": "/Leave Orders/quiz/admin-questions.html"
+    },
+    {
+      "source": "/quiz/admin/questions/",
       "destination": "/Leave Orders/quiz/admin-questions.html"
     },
     {
@@ -197,7 +269,15 @@
       "destination": "/Leave Orders/quiz/admin-employees.html"
     },
     {
+      "source": "/quiz/admin/employees/",
+      "destination": "/Leave Orders/quiz/admin-employees.html"
+    },
+    {
       "source": "/quiz/admin/exams",
+      "destination": "/Leave Orders/quiz/admin-exams.html"
+    },
+    {
+      "source": "/quiz/admin/exams/",
       "destination": "/Leave Orders/quiz/admin-exams.html"
     },
     {
@@ -205,11 +285,23 @@
       "destination": "/Leave Orders/quiz/admin-reports.html"
     },
     {
+      "source": "/quiz/admin/reports/",
+      "destination": "/Leave Orders/quiz/admin-reports.html"
+    },
+    {
       "source": "/quiz/admin/settings",
       "destination": "/Leave Orders/quiz/admin-settings.html"
     },
     {
+      "source": "/quiz/admin/settings/",
+      "destination": "/Leave Orders/quiz/admin-settings.html"
+    },
+    {
       "source": "/quiz/exam/(.*)",
+      "destination": "/Leave Orders/quiz/exam.html"
+    },
+    {
+      "source": "/quiz/exam/",
       "destination": "/Leave Orders/quiz/exam.html"
     },
     {
@@ -218,6 +310,10 @@
     },
     {
       "source": "/quiz/result/(.*)",
+      "destination": "/Leave Orders/quiz/result.html"
+    },
+    {
+      "source": "/quiz/result/",
       "destination": "/Leave Orders/quiz/result.html"
     },
     {

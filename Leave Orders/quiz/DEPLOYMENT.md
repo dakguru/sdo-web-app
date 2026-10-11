@@ -134,7 +134,31 @@ failing silently.
 
 ### 3.1 Grant yourself the Quiz Administrator role
 
-Sign in at `/Quiz/admin` with your portal account. Role resolution is:
+**Bootstrap, once per deployment.** The role-granting screen is itself
+restricted to Quiz Administrators, so the *first* administrator cannot promote
+themselves through the interface. Grant the role directly in the Supabase SQL
+editor, replacing `your-portal-username`:
+
+```sql
+insert into public.quiz_admin_roles (username, quiz_role, granted_by, created_ms)
+values ('your-portal-username', 'QUIZ_ADMIN', 'bootstrap',
+        (extract(epoch from now()) * 1000)::bigint)
+on conflict (username) do update
+  set quiz_role = excluded.quiz_role,
+      granted_by = excluded.granted_by,
+      created_ms = excluded.created_ms;
+```
+
+Then **sign out of `/Quiz/admin` and sign in again** — the quiz role is stamped
+onto the session at login, so an existing session keeps the old role until it
+is replaced.
+
+After that, everything is done from the interface: **Settings → Quiz
+privileges** lists every portal user with a role dropdown. Grant a second
+person Quiz Administrator before the examination so you are not a single point
+of failure on the day.
+
+Role resolution is:
 
 1. an explicit grant in `quiz_admin_roles` wins; otherwise
 2. the configurable `role_map` translates your portal role:

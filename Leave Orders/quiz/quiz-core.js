@@ -225,8 +225,6 @@
           '<span class="event-tag"><span class="dot"></span>' + esc(b.window) + '</span>' +
           '<h2 class="event-title">' + esc(b.event) + ' &mdash; ' + esc(b.sub) + '</h2>' +
           '<p class="event-theme">' + esc(b.theme) + '</p>' +
-          '<div class="event-window">World Post Day &middot; Celebrating India Post&rsquo;s enduring role in ' +
-            'connecting citizens and building a modern, inclusive and citizen-centric postal network</div>' +
         '</div>';
 
       var modbar = o.title ?
@@ -246,15 +244,22 @@
         '<header class="q-header">' +
           '<div class="q-grain"></div>' +
           '<div class="q-header-in">' +
+            // Fixed-width side slots keep the three title lines on the true
+            // centre of the header, even though the two logos differ in width.
             '<div class="gov-band">' +
-              '<img class="gov-crest" src="/assets/app-logo.jpg" alt="" />' +
+              '<div class="gov-side">' +
+                '<img class="gov-crest goi" src="/assets/goi-logo.jpg" ' +
+                  'alt="Government of India" />' +
+              '</div>' +
               '<div class="gov-titles">' +
                 '<div class="gov-l1">Government of India</div>' +
                 '<div class="gov-l2">' + esc(b.org) + '</div>' +
                 '<div class="gov-l3">' + esc(b.division) + '</div>' +
                 '<div class="gov-rule"></div>' +
               '</div>' +
-              '<img class="gov-crest post" src="/assets/india-post-logo.png" alt="India Post" />' +
+              '<div class="gov-side right">' +
+                '<img class="gov-crest post" src="/assets/india-post-logo.png" alt="India Post" />' +
+              '</div>' +
             '</div>' +
           '</div>' +
           banner +
@@ -268,16 +273,18 @@
     footer: function () {
       return '' +
         '<footer class="q-footer">' +
+          // Moved down from the hero so the header leads with the event title
+          // and theme, and the day's purpose closes the page instead.
+          '<div class="wpd">World Post Day &middot; Celebrating India Post&rsquo;s enduring role in ' +
+            'connecting citizens and building a modern, inclusive and citizen-centric ' +
+            'postal network</div>' +
           '<div class="dev">Developed by Arun Selvaraj, Instructor, WTC Karur</div>' +
           '<div class="contact">For any queries, please call ' +
             '<a href="tel:+917904478591">+91 7904478591</a>' +
             '<span class="sep">/</span>' +
             '<a href="mailto:arun18@live.in">arun18@live.in</a>' +
           '</div>' +
-          '<div class="org">' +
-            esc(BRANDING.org) + ' &middot; ' + esc(BRANDING.division) + '<br>' +
-            esc(BRANDING.event) + ' &middot; ' + esc(BRANDING.sub) +
-          '</div>' +
+          '<div class="org">' + esc(BRANDING.event) + ' &middot; ' + esc(BRANDING.sub) + '</div>' +
         '</footer>';
     },
 
