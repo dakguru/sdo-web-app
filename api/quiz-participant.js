@@ -468,11 +468,20 @@ async function examStartAction(req, res) {
 // correct answer is never part of this payload.
 async function examStateAction(req, res) {
   const ctx = await actorFor(req);
-  const registration = ctx.registration;
   const attemptId = String((req.query && req.query.attempt_id) || '').trim();
   if (!attemptId) throw new Q.AppError('No attempt was specified.', 400);
 
   const attempt = await loadOwnAttempt(attemptId, ctx);
+  return Q.ok(res, await buildExamState(req, ctx, attempt));
+}
+
+// The same payload, built rather than sent, so that answering a question can
+// return the next one in the same response instead of costing a second
+// request. Every database call here crosses the network one at a time, so the
+// round trip saved is the one the candidate was waiting through.
+async function buildExamState(req, ctx, attempt) {
+  const registration = ctx.registration;
+  const attemptId = attempt.id;
   const ex = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(attempt.exam_id));
   const now = Date.now();
 
@@ -480,17 +489,17 @@ async function examStateAction(req, res) {
   // an attempt finalises even if the participant's browser never comes back.
   if (attempt.status === 'IN_PROGRESS' && attempt.deadline_ms <= now) {
     const result = await finaliseAttempt(req, attempt, 'EXPIRED');
-    return Q.ok(res, {
+    return {
       finished: true, reason: 'TIME_UP', attemptId,
       resultAvailable: !!result, serverTimeMs: Date.now(),
       examTitle: ex ? ex.title : null,
-    });
+    };
   }
   if (attempt.status !== 'IN_PROGRESS') {
-    return Q.ok(res, {
+    return {
       finished: true, reason: attempt.status, attemptId,
       serverTimeMs: now, examTitle: ex ? ex.title : null,
-    });
+    };
   }
 
   const qs = await Q.sbSelect('quiz_attempt_questions',
@@ -524,11 +533,11 @@ async function examStateAction(req, res) {
 
   if (seq > attempt.question_count) {
     const result = await finaliseAttempt(req, attempt, 'AUTO_SUBMITTED');
-    return Q.ok(res, {
+    return {
       finished: true, reason: 'COMPLETED', attemptId,
       resultAvailable: !!result, serverTimeMs: Date.now(),
       examTitle: ex ? ex.title : null,
-    });
+    };
   }
   if (advanced && seq !== attempt.current_seq) {
     await Q.sbUpdate('quiz_attempts', 'id=' + Q.eq(attemptId),
@@ -560,7 +569,7 @@ async function examStateAction(req, res) {
 
   const prior = (answers || []).find(a => a.seq === seq);
 
-  return Q.ok(res, {
+  return {
     finished: false,
     attemptId,
     examTitle: ex ? ex.title : '',
@@ -582,7 +591,7 @@ async function examStateAction(req, res) {
     attemptDeadlineMs: attempt.deadline_ms,
     questionRemainingMs: Math.max(0, qDeadline - now),
     attemptRemainingMs: Math.max(0, attempt.deadline_ms - now),
-  });
+  };
 }
 
 async function answerAction(req, res) {
@@ -655,12 +664,30 @@ async function answerAction(req, res) {
 
   // Deliberately no `correct` field in the response: the participant must not
   // learn the answer during the examination.
+  const next = advance ? await nextStateOrNull(req, ctx, attempt, nextSeq) : null;
+
   return Q.ok(res, {
     saved: true, seq, advanced: advance, nextSeq,
     finished: nextSeq > attempt.question_count,
     serverTimeMs: now,
+    next,
   });
 }
+
+// The next question, attached to the response that advanced to it. If building
+// it fails for any reason the field is simply absent and the client fetches the
+// state as it always did, so this can only ever save a round trip, never cost
+// correctness.
+async function nextStateOrNull(req, ctx, attempt, nextSeq) {
+  if (nextSeq > attempt.question_count) return null;
+  try {
+    attempt.current_seq = nextSeq;
+    return await buildExamState(req, ctx, attempt);
+  } catch (_) {
+    return null;
+  }
+}
+
 
 async function skipAction(req, res) {
   const ctx = await actorFor(req);
@@ -686,7 +713,11 @@ async function skipAction(req, res) {
   await Q.sbUpdate('quiz_attempts', 'id=' + Q.eq(attemptId),
     { current_seq: nextSeq }, { returning: false });
 
-  return Q.ok(res, { skipped: true, nextSeq, finished: nextSeq > attempt.question_count, serverTimeMs: now });
+  const next = await nextStateOrNull(req, ctx, attempt, nextSeq);
+  return Q.ok(res, {
+    skipped: true, nextSeq, finished: nextSeq > attempt.question_count,
+    serverTimeMs: now, next,
+  });
 }
 
 async function submitAction(req, res) {

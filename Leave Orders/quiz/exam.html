@@ -112,27 +112,34 @@
   /* ─────────────────────────────────────────────────────────────
      Server sync
      ───────────────────────────────────────────────────────────── */
+  // Applied either from a fetched state or from the one the answer response
+  // carried with it. Identical either way — the only difference is whether a
+  // second request had to go and come back first.
+  function applyState(r) {
+    online();
+    QuizTime.anchor(r.serverTimeMs);
+
+    if (r.finished) { onFinished(r); return; }
+
+    // A fresh question? Clear the local selection so a tap cannot land on
+    // the wrong question after an advance.
+    var changed = !state || state.seq !== r.seq;
+    state = r;
+    if (changed) selected = r.selectedSlot || null;
+    else if (r.selectedSlot && !selected) selected = r.selectedSlot;
+
+    if (r.testMode) showTestBar();
+    render();
+    startTicking();
+  }
+
   function refresh(quiet) {
     if (askingServer) return;
     askingServer = true;
 
     QuizAPI.part('exam-state', { attempt_id: attemptId }).then(function (r) {
       askingServer = false;
-      online();
-      QuizTime.anchor(r.serverTimeMs);
-
-      if (r.finished) { onFinished(r); return; }
-
-      // A fresh question? Clear the local selection so a tap cannot land on
-      // the wrong question after an advance.
-      var changed = !state || state.seq !== r.seq;
-      state = r;
-      if (changed) selected = r.selectedSlot || null;
-      else if (r.selectedSlot && !selected) selected = r.selectedSlot;
-
-      if (r.testMode) showTestBar();
-      render();
-      startTicking();
+      applyState(r);
     }, function (err) {
       askingServer = false;
       if (err.status === 401) { QuizUI.go('/Quiz'); return; }
@@ -261,8 +268,11 @@
       confirmSubmit();
     } else {
       setBusy(true, 'Saving…');
-      saveAnswer(true).then(function () { setBusy(false); refresh(); })
-        .catch(function (e) { setBusy(false); handleAnswerError(e); });
+      saveAnswer(true).then(function (r) {
+        setBusy(false);
+        if (r && r.next) { selected = null; applyState(r.next); }
+        else refresh();
+      }).catch(function (e) { setBusy(false); handleAnswerError(e); });
     }
   });
 
@@ -270,7 +280,11 @@
     if (busy || finished) return;
     setBusy(true, 'Skipping…');
     QuizAPI.part('skip', null, { attempt_id: attemptId, seq: state.seq })
-      .then(function () { selected = null; setBusy(false); refresh(); })
+      .then(function (r) {
+        selected = null; setBusy(false);
+        if (r && r.next) applyState(r.next);
+        else refresh();
+      })
       .catch(function (e) { setBusy(false); handleAnswerError(e); });
   });
 
