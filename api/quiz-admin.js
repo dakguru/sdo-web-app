@@ -1081,17 +1081,53 @@ async function examValidate(req, res) {
   checks.push({ label: 'Overall duration fits the window',
     ok: !(ex.exam_open_ms && ex.exam_close_ms) || (ex.exam_close_ms - ex.exam_open_ms) >= ex.total_seconds * 1000,
     detail: 'Duration ' + Math.round(ex.total_seconds / 60) + ' min' });
-  checks.push({ label: 'Per-question time covers the paper',
-    ok: ex.seconds_per_question * ex.question_count >= ex.total_seconds * 0.5,
-    detail: ex.seconds_per_question + ' s x ' + ex.question_count + ' = ' +
-            Math.round(ex.seconds_per_question * ex.question_count / 60) + ' min' });
+  // The per-question budget and the overall limit are two clocks over the same
+  // paper, and whichever expires first wins. If the per-question budget totals
+  // more than the overall limit, the last questions cannot be reached at all by
+  // anyone who uses their time — the old check compared against half the
+  // duration and so passed exactly the papers that are wrong this way.
+  const perQuestionTotal = ex.seconds_per_question * ex.question_count;
+  const mins = sec => Math.round(sec / 60 * 10) / 10 + ' min';
+  checks.push({
+    label: 'Every question can be reached within the overall time',
+    ok: perQuestionTotal <= ex.total_seconds,
+    detail: perQuestionTotal <= ex.total_seconds
+      ? ex.seconds_per_question + ' s x ' + ex.question_count + ' = ' + mins(perQuestionTotal) +
+        ', within the ' + mins(ex.total_seconds) + ' allowed'
+      : ex.seconds_per_question + ' s x ' + ex.question_count + ' = ' + mins(perQuestionTotal) +
+        ', but only ' + mins(ex.total_seconds) + ' is allowed. A candidate using the full time per ' +
+        'question runs out with about ' +
+        Math.ceil((perQuestionTotal - ex.total_seconds) / ex.seconds_per_question) +
+        ' question(s) unseen. Raise the duration to ' + mins(perQuestionTotal) +
+        ' (or set the time limit to Automatic), or lower the per-question time to ' +
+        Math.floor(ex.total_seconds / ex.question_count) + ' s.',
+  });
+
+  // The last candidate admitted should still get the whole paper. Their clock
+  // is capped by the closing time, so a late cut-off quietly shortens it.
+  if (ex.latest_start_ms && ex.exam_close_ms) {
+    const latestFinish = ex.latest_start_ms + ex.total_seconds * 1000;
+    checks.push({
+      label: 'The last candidate admitted still gets the full paper',
+      ok: latestFinish <= ex.exam_close_ms,
+      detail: latestFinish <= ex.exam_close_ms
+        ? 'Starting at ' + Q.istString(ex.latest_start_ms) + ' still finishes by close'
+        : 'Starting at ' + Q.istString(ex.latest_start_ms) + ' would need until ' +
+          Q.istString(latestFinish) + ', but the paper closes at ' +
+          Q.istString(ex.exam_close_ms) + '. Move the closing time later, or the latest start earlier.',
+    });
+  }
+
   checks.push({ label: 'Question paper frozen for this examination',
     ok: frozen >= ex.question_count,
+    informational: true,
     detail: frozen ? frozen + ' questions frozen' : 'Not yet published' });
 
   return Q.ok(res, {
     exam: ex, checks,
-    ready: checks.slice(0, 5).every(c => c.ok),
+    // Every gating check, however many there are — a positional slice silently
+    // stopped covering them the moment one was added.
+    ready: checks.filter(c => !c.informational).every(c => c.ok),
     availableQuestions: usable, frozenQuestionCount: frozen,
   });
 }
