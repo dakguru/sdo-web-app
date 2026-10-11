@@ -102,6 +102,8 @@
         else if (act === 'monitor') monitor(id);
         else if (act === 'dup') duplicate(id);
         else if (act === 'status') statusMenu(ex);
+        else if (act === 'schedule') schedule(ex);
+        else if (act === 'delete') removeExam(ex);
       });
     });
 
@@ -128,7 +130,8 @@
         m('Opens', ex.exam_open_ms ? QuizTime.ist(ex.exam_open_ms) : 'Not set') +
         m('Closes', ex.exam_close_ms ? QuizTime.ist(ex.exam_close_ms) : 'Not set') +
         m('Latest start', ex.latest_start_ms ? QuizTime.istTime(ex.latest_start_ms) : 'Any time') +
-        m('Duration', Math.round(ex.total_seconds / 60) + ' min') +
+        m('Duration', Math.round(ex.total_seconds / 60) + ' min' +
+          (ex.duration_mode === 'AUTO' ? ' (auto)' : '')) +
         m('Questions', ex.question_count) +
         m('Per question', ex.seconds_per_question + ' s') +
         m('Marking', '+' + ex.positive_marks + ' / −' + ex.negative_marks +
@@ -141,10 +144,13 @@
         (QuizAdmin.atLeast('QUIZ_EDITOR') ? xb('test', ex.id, '&#129514; Run test attempt') : '') +
         xb('monitor', ex.id, '&#128065; Monitor') +
         (QuizAdmin.atLeast('QUIZ_ADMIN')
-          ? xb('edit', ex.id, 'Edit') + xb('publish', ex.id, '&#128228; Publish paper', 'ok') +
-            xb('status', ex.id, 'Change status') + xb('dup', ex.id, 'Duplicate')
+          ? xb('edit', ex.id, 'Edit') + xb('schedule', ex.id, '&#128197; Schedule') +
+            xb('publish', ex.id, '&#128228; Publish paper', 'ok') +
+            xb('status', ex.id, 'Change status') + xb('dup', ex.id, 'Duplicate') +
+            xb('delete', ex.id, '&#128465; Delete', 'danger')
           : '') +
-        '<a class="btn sm ghost" href="/Quiz/admin/reports?exam=' + QuizUI.esc(ex.id) + '">Reports</a>' +
+        '<a class="btn sm ghost" href="/Quiz/admin/reports?exam=' + QuizUI.esc(ex.id) + '">' +
+          '&#127942; Results &amp; leaderboard</a>' +
       '</div>' +
     '</div>';
   }
@@ -154,7 +160,7 @@
       '<div class="v">' + QuizUI.esc(v) + '</div></div>';
   }
   function xb(act, id, label, cls) {
-    return '<button class="btn sm ' + (cls === 'ok' ? 'ok' : 'ghost') + '" type="button" ' +
+    return '<button class="btn sm ' + (cls === 'ok' || cls === 'danger' ? cls : 'ghost') + '" type="button" ' +
       'data-xa="' + act + '" data-id="' + id + '">' + label + '</button>';
   }
 
@@ -196,6 +202,10 @@
         num('Number of questions', 'x_qc', v('question_count', d.question_count || 20), locked,
           'Allowed range ' + (d.min_questions || 15) + ' to ' + (d.max_questions || 25)) +
         num('Seconds per question', 'x_spq', v('seconds_per_question', d.seconds_per_question || 30), locked) +
+        sel('Overall time limit', 'x_dmode', [
+          ['AUTO', 'Automatic — seconds per question x number of questions'],
+          ['FIXED', 'Fixed — I will enter the overall duration myself']],
+          v('duration_mode', 'FIXED'), locked) +
         num('Overall duration (minutes)', 'x_mins',
           Math.round(v('total_seconds', d.total_seconds || 600) / 60), locked,
           'Whichever deadline comes first is enforced') +
@@ -227,6 +237,25 @@
       '<button class="btn" type="button" id="xsave" style="flex:1">' +
         (ex ? 'Save changes' : 'Create') + '</button>');
 
+    // In AUTO the overall duration is a consequence of the other two numbers,
+    // so it is computed in front of the administrator rather than typed.
+    var dmode = document.getElementById('x_dmode');
+    var mins  = document.getElementById('x_mins');
+    function syncDuration() {
+      if (dmode.value !== 'AUTO') { if (!locked) mins.disabled = false; return; }
+      var spq = +document.getElementById('x_spq').value || 0;
+      var qc  = +document.getElementById('x_qc').value || 0;
+      mins.value = Math.round(spq * qc / 60 * 100) / 100;
+      mins.disabled = true;
+    }
+    if (!locked) {
+      ['x_dmode', 'x_spq', 'x_qc'].forEach(function (f) {
+        document.getElementById(f).addEventListener('input', syncDuration);
+        document.getElementById(f).addEventListener('change', syncDuration);
+      });
+    }
+    syncDuration();
+
     document.getElementById('xsave').addEventListener('click', function () {
       var g = function (id) { return document.getElementById(id).value; };
       var c = function (id) { return document.getElementById(id).checked; };
@@ -242,6 +271,7 @@
         result_publish_ms: QuizAdmin.localInputToMs(g('x_resms')),
         question_count: +g('x_qc'),
         seconds_per_question: +g('x_spq'),
+        duration_mode: g('x_dmode'),
         total_seconds: Math.round((+g('x_mins')) * 60),
         attempts_allowed: +g('x_att'),
         positive_marks: +g('x_pos'),
@@ -335,6 +365,111 @@
       QuizUI.toast('Draft created. Set the date and time, then publish the paper.', 'ok');
       load();
     }).catch(QuizUI.err);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SCHEDULE  —  set or move the window without touching the paper
+     ═══════════════════════════════════════════════════════════════ */
+  function schedule(ex) {
+    var mins = Math.round(ex.total_seconds / 60);
+    QuizUI.modal('xsch', 'Schedule the examination',
+      QuizUI.alert('', '&#128197;',
+        'Everyone sits the paper inside the same window. Nobody can begin before the opening ' +
+        'time &mdash; the dashboard shows a countdown until then &mdash; and the examination ' +
+        'opens itself at that moment without anyone having to press anything.') +
+
+      '<div class="section-title">Window (Indian Standard Time)</div>' +
+      '<div class="grid grid-2">' +
+        dt('Examination opens', 's_open', ex.exam_open_ms) +
+        dt('Examination closes', 's_close', ex.exam_close_ms) +
+      '</div>' +
+      dt('Latest permitted start', 's_latest', ex.latest_start_ms) +
+      '<div class="hint" style="margin-top:-6px">Leave the latest start empty to let anyone begin ' +
+        'at any point in the window. Set it to the opening time to force a uniform start.</div>' +
+
+      chk('Allow a late start after the opening time', 's_late', ex.late_entry_allowed !== false) +
+
+      (ex.status === 'DRAFT'
+        ? chk('Set this examination to Scheduled so participants can see it', 's_sched', true)
+        : '') +
+
+      '<div class="hint">This paper runs for <b>' + mins + ' minute(s)</b>, so the window must be ' +
+        'at least that long.</div>' +
+      '<div id="scherr"></div>',
+
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'xsch\')">Cancel</button>' +
+      '<button class="btn" type="button" id="sok" style="flex:1">Save schedule</button>');
+
+    document.getElementById('sok').addEventListener('click', function () {
+      var b = this;
+      var schedBox = document.getElementById('s_sched');
+      b.disabled = true; b.textContent = 'Saving…';
+      QuizAPI.admin('exam-schedule', null, {
+        id: ex.id,
+        exam_open_ms: QuizAdmin.localInputToMs(document.getElementById('s_open').value),
+        exam_close_ms: QuizAdmin.localInputToMs(document.getElementById('s_close').value),
+        latest_start_ms: QuizAdmin.localInputToMs(document.getElementById('s_latest').value),
+        late_entry_allowed: document.getElementById('s_late').checked,
+        set_scheduled: !!(schedBox && schedBox.checked),
+      }).then(function (r) {
+        QuizUI.closeModal('xsch');
+        QuizUI.toast(r.message, 'ok');
+        load();
+      }).catch(function (e) {
+        b.disabled = false; b.textContent = 'Save schedule';
+        document.getElementById('scherr').innerHTML =
+          QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     DELETE
+     ═══════════════════════════════════════════════════════════════ */
+  function removeExam(ex) {
+    var sat = ex.frozenQuestionCount > 0;
+    QuizUI.modal('xdel', 'Delete examination',
+      QuizUI.alert('err', '&#9888;',
+        '<b>This cannot be undone.</b> Deleting <b>' + QuizUI.esc(ex.title) + '</b> also removes ' +
+        'its frozen question paper and every attempt, answer and result recorded against it. ' +
+        'The question bank itself is not touched.') +
+
+      (ex.status !== 'DRAFT' && ex.status !== 'CANCELLED'
+        ? QuizUI.alert('warn', '&#128274;',
+            'This examination is <b>' + QuizUI.esc(ex.status) + '</b>. If it has already been sat, ' +
+            'consider <b>Change status &rarr; Cancelled</b> instead &mdash; that keeps the record.')
+        : '') +
+
+      '<div class="field"><label for="d_conf">Type the title to confirm</label>' +
+        '<input class="input" id="d_conf" autocomplete="off" placeholder="' +
+        QuizUI.esc(ex.title) + '" /></div>' +
+
+      '<div class="field"><div class="checkrow">' +
+        '<input type="checkbox" id="d_force" />' +
+        '<label for="d_force" style="font-weight:500;margin:0">Delete even if employees have ' +
+        'already sat this examination</label></div></div>' +
+      '<div id="delerr"></div>',
+
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'xdel\')">Cancel</button>' +
+      '<button class="btn danger" type="button" id="dok" style="flex:1">Delete permanently</button>');
+
+    document.getElementById('dok').addEventListener('click', function () {
+      var b = this;
+      b.disabled = true; b.textContent = 'Deleting…';
+      QuizAPI.admin('exam-delete', null, {
+        id: ex.id,
+        confirm_title: document.getElementById('d_conf').value,
+        force: document.getElementById('d_force').checked,
+      }).then(function (r) {
+        QuizUI.closeModal('xdel');
+        QuizUI.toast(r.message, 'ok');
+        load();
+      }).catch(function (e) {
+        b.disabled = false; b.textContent = 'Delete permanently';
+        document.getElementById('delerr').innerHTML =
+          QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+      });
+    });
   }
 
   /* ═══════════════════════════════════════════════════════════════

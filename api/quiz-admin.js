@@ -38,6 +38,8 @@ const ROUTES = {
   // ── examinations ──────────────────────────────────────────
   'exams-list':            { role: 'QUIZ_VIEWER', fn: examsList },
   'exam-save':             { role: 'QUIZ_ADMIN',  fn: examSave },
+  'exam-schedule':         { role: 'QUIZ_ADMIN',  fn: examSchedule },
+  'exam-delete':           { role: 'QUIZ_ADMIN',  fn: examDelete },
   'exam-duplicate':        { role: 'QUIZ_ADMIN',  fn: examDuplicate },
   'exam-validate':         { role: 'QUIZ_EDITOR', fn: examValidate },
   'exam-publish':          { role: 'QUIZ_ADMIN',  fn: examPublish },
@@ -799,6 +801,15 @@ async function examSave(req, res, actor) {
     throw new Q.AppError('Number of questions must be between ' + minQ + ' and ' + maxQ + '.', 400);
   }
 
+  // The per-question timer can drive the overall limit. In AUTO the two can
+  // never drift apart, which is the usual cause of a paper whose clock expires
+  // before its last question is reached.
+  const spq = clampInt(body.seconds_per_question, 5, 1800, d.seconds_per_question || 30);
+  const durationMode = String(body.duration_mode || '').toUpperCase() === 'AUTO' ? 'AUTO' : 'FIXED';
+  const totalSeconds = durationMode === 'AUTO'
+    ? Math.min(24 * 3600, spq * qCount)
+    : clampInt(body.total_seconds, 30, 24 * 3600, d.total_seconds || 600);
+
   const fields = {
     title,
     description: body.description ? String(body.description).trim() : null,
@@ -809,8 +820,9 @@ async function examSave(req, res, actor) {
     exam_close_ms: numOrNull(body.exam_close_ms),
     latest_start_ms: numOrNull(body.latest_start_ms),
     question_count: qCount,
-    seconds_per_question: clampInt(body.seconds_per_question, 5, 1800, d.seconds_per_question || 30),
-    total_seconds: clampInt(body.total_seconds, 30, 24 * 3600, d.total_seconds || 600),
+    seconds_per_question: spq,
+    total_seconds: totalSeconds,
+    duration_mode: durationMode,
     positive_marks: numOr(body.positive_marks, d.positive_marks != null ? d.positive_marks : 4),
     negative_marks: numOr(body.negative_marks, d.negative_marks != null ? d.negative_marks : 1),
     unanswered_marks: numOr(body.unanswered_marks, 0),
@@ -889,6 +901,129 @@ async function examDuplicate(req, res, actor) {
   const rows = await Q.sbInsert('quiz_exams', copy);
   await Q.logAudit(req, actor, 'EXAM_DUPLICATE', 'quiz_exams', rows[0].id, { from: src.id }, null);
   return Q.ok(res, { id: rows[0].id });
+}
+
+// Re-scheduling, separated from the full editor. The window may be adjusted at
+// any status — an examination that has to be pushed by an hour on the morning
+// itself should not need its paper rebuilt — so this deliberately sidesteps the
+// field lock in examSave, which exists to protect the frozen paper and the
+// marking, not the calendar.
+async function examSchedule(req, res, actor) {
+  const body = await Q.readJsonBody(req);
+  const id = String(body.id || '').trim();
+  const before = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(id));
+  if (!before) throw new Q.AppError('Examination not found.', 404);
+
+  const openMs   = numOrNull(body.exam_open_ms);
+  const closeMs  = numOrNull(body.exam_close_ms);
+  const latestMs = numOrNull(body.latest_start_ms);
+
+  if (openMs && closeMs && closeMs <= openMs) {
+    throw new Q.AppError('The examination closing time must be after its opening time.', 400);
+  }
+  if (latestMs && openMs && latestMs < openMs) {
+    throw new Q.AppError('The latest permitted start time cannot be before the examination opens.', 400);
+  }
+  if (latestMs && closeMs && latestMs > closeMs) {
+    throw new Q.AppError('The latest permitted start time cannot be after the examination closes.', 400);
+  }
+  // A window shorter than the paper means nobody can ever finish inside it.
+  if (openMs && closeMs && (closeMs - openMs) < before.total_seconds * 1000) {
+    throw new Q.AppError(
+      'The window is only ' + Math.round((closeMs - openMs) / 60000) + ' minute(s) long, but the ' +
+      'paper allows ' + Math.round(before.total_seconds / 60) + ' minute(s). Widen the window or ' +
+      'shorten the duration.', 400, 'WINDOW_TOO_SHORT');
+  }
+
+  // Moving the opening time once people are already inside would re-gate them
+  // mid-attempt, so that particular change is refused rather than silently applied.
+  const running = await Q.sbCount('quiz_attempts',
+    'exam_id=' + Q.eq(id) + '&mode=' + Q.eq('OFFICIAL') + '&status=' + Q.eq('IN_PROGRESS'));
+  if (running > 0 && openMs !== before.exam_open_ms) {
+    throw new Q.AppError(
+      running + ' attempt(s) are in progress, so the opening time can no longer be moved. ' +
+      'The closing and latest-start times may still be adjusted.', 409, 'ATTEMPTS_RUNNING');
+  }
+
+  const fields = {
+    exam_open_ms: openMs,
+    exam_close_ms: closeMs,
+    latest_start_ms: latestMs,
+    late_entry_allowed: body.late_entry_allowed !== false,
+    updated_at_ms: Date.now(),
+  };
+
+  // Putting a date on a draft is the moment it becomes a scheduled examination,
+  // but only once its paper is frozen — otherwise it would appear on dashboards
+  // with nothing behind it.
+  if (body.set_scheduled === true && before.status === 'DRAFT') {
+    const frozen = await Q.sbCount('quiz_exam_questions', 'exam_id=' + Q.eq(id));
+    if (frozen < before.question_count) {
+      throw new Q.AppError(
+        'Publish the question paper before scheduling — only ' + frozen + ' of ' +
+        before.question_count + ' questions are frozen.', 409, 'PAPER_NOT_READY');
+    }
+    fields.status = 'SCHEDULED';
+  }
+
+  await Q.sbUpdate('quiz_exams', 'id=' + Q.eq(id), fields, { returning: false });
+  await Q.logAudit(req, actor, 'EXAM_SCHEDULE', 'quiz_exams', id, {
+    exam_open_ms: before.exam_open_ms, exam_close_ms: before.exam_close_ms,
+    latest_start_ms: before.latest_start_ms, status: before.status,
+  }, fields);
+
+  return Q.ok(res, {
+    saved: true, id, status: fields.status || before.status,
+    message: fields.status === 'SCHEDULED'
+      ? 'Scheduled. Participants will see the countdown, and the examination opens itself at the time set.'
+      : 'Schedule updated.',
+  });
+}
+
+// Deleting an examination. Every child table (frozen paper, attempts, answers,
+// results) cascades from quiz_exams, so one delete takes the whole tree with it
+// — which is precisely why this needs the title typed back and refuses outright
+// once real candidates have sat the paper.
+async function examDelete(req, res, actor) {
+  const body = await Q.readJsonBody(req);
+  const id = String(body.id || '').trim();
+  const ex = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(id));
+  if (!ex) throw new Q.AppError('Examination not found.', 404);
+
+  const typed = String(body.confirm_title || '').trim();
+  if (typed.toLowerCase() !== String(ex.title || '').trim().toLowerCase()) {
+    throw new Q.AppError(
+      'Type the examination title exactly as it appears to confirm the deletion.',
+      400, 'CONFIRM_TITLE_MISMATCH');
+  }
+
+  const running = await Q.sbCount('quiz_attempts',
+    'exam_id=' + Q.eq(id) + '&mode=' + Q.eq('OFFICIAL') + '&status=' + Q.eq('IN_PROGRESS'));
+  if (running > 0) {
+    throw new Q.AppError(
+      running + ' attempt(s) are in progress. Cancel the examination and let them finish before ' +
+      'deleting it.', 409, 'ATTEMPTS_RUNNING');
+  }
+
+  const official = await Q.sbCount('quiz_attempts',
+    'exam_id=' + Q.eq(id) + '&mode=' + Q.eq('OFFICIAL'));
+  if (official > 0 && body.force !== true) {
+    throw new Q.AppError(
+      official + ' employee(s) have sat this examination. Deleting it would destroy their ' +
+      'attempts, answers and results for good. Cancel it instead, or pass force to override ' +
+      'deliberately.', 409, 'ALREADY_ATTEMPTED');
+  }
+
+  // The audit line is written first and on purpose: once the row is gone there
+  // is nothing left to record what was removed.
+  await Q.logAudit(req, actor, 'EXAM_DELETE', 'quiz_exams', id, ex,
+    { official_attempts_destroyed: official, forced: body.force === true });
+
+  await Q.sbDelete('quiz_exams', 'id=' + Q.eq(id));
+  return Q.ok(res, {
+    deleted: true, id,
+    message: 'Examination deleted' + (official ? ', along with ' + official + ' attempt(s).' : '.'),
+  });
 }
 
 // Pre-flight before publishing: does the bank actually hold enough valid,

@@ -66,6 +66,16 @@ It is idempotent (`create table if not exists` throughout), so re-running it is
 safe. It creates 18 tables, two helper functions and the seeded default
 settings.
 
+Then run the follow-up migration, which adds the automatic-duration flag used
+by the examination editor:
+
+```
+android-app/supabase/migration_v21_quiz_duration_mode.sql
+```
+
+It is likewise idempotent (`add column if not exists`), and existing
+examinations keep their hand-entered duration.
+
 ### Step 2 — Set the environment variables in Vercel
 
 Project → Settings → Environment Variables. All four are **required**; the
