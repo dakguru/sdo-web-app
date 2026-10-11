@@ -607,6 +607,13 @@ html.dark .q-footer .contact a:hover{background:rgba(129,140,248,.14)}
 .q-footer .contact a:hover{text-decoration:underline}
 .q-footer .sep{opacity:.4;margin:0 4px}
 .q-footer .org{margin-top:10px;font-size:11px;color:var(--faint);letter-spacing:.4px;line-height:1.6}
+/* Same inline-padding trick as the contact links: a real tap target without
+   adding height to the line. */
+.q-footer .org a.priv{
+  display:inline;padding:16px 7px;margin:0 -4px;
+  color:var(--muted);font-weight:700;text-decoration:none;border-radius:8px;white-space:nowrap;
+}
+.q-footer .org a.priv:hover{color:var(--indigo);text-decoration:underline}
 
 /* Keep the footer quiet while an examination is running. */
 body.exam-mode .q-footer{margin-top:20px;padding-top:14px;opacity:.72;border-top-style:dashed}

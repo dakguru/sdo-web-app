@@ -321,6 +321,22 @@
       "destination": "/Leave Orders/quiz/result.html"
     },
     {
+      "source": "/Quiz/privacy",
+      "destination": "/Leave Orders/quiz/privacy.html"
+    },
+    {
+      "source": "/Quiz/privacy/",
+      "destination": "/Leave Orders/quiz/privacy.html"
+    },
+    {
+      "source": "/quiz/privacy",
+      "destination": "/Leave Orders/quiz/privacy.html"
+    },
+    {
+      "source": "/quiz/privacy/",
+      "destination": "/Leave Orders/quiz/privacy.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/app/wwwroot/$1"
     }

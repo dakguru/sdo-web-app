@@ -284,7 +284,12 @@
             '<span class="sep">/</span>' +
             '<a href="mailto:arun18@live.in">arun18@live.in</a>' +
           '</div>' +
-          '<div class="org">' + esc(BRANDING.event) + ' &middot; ' + esc(BRANDING.sub) + '</div>' +
+          '<div class="org">' + esc(BRANDING.event) + ' &middot; ' + esc(BRANDING.sub) +
+            // Kept deliberately small, but present on every page: a privacy
+            // policy has to be reachable, and this URL is the one registered
+            // on the Google OAuth consent screen.
+            ' &middot; <a class="priv" href="/Quiz/privacy">Privacy Notice</a>' +
+          '</div>' +
         '</footer>';
     },
 
