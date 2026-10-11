@@ -384,8 +384,10 @@
         dt('Examination closes', 's_close', ex.exam_close_ms) +
       '</div>' +
       dt('Latest permitted start', 's_latest', ex.latest_start_ms) +
-      '<div class="hint" style="margin-top:-6px">Leave the latest start empty to let anyone begin ' +
-        'at any point in the window. Set it to the opening time to force a uniform start.</div>' +
+      '<div class="hint" style="margin-top:-6px">Leave the latest start empty to let anyone ' +
+        'begin at any point in the window &mdash; but then a candidate who starts late has their ' +
+        'countdown cut short by the closing time. To give everyone the full paper, set the latest ' +
+        'start to <b>closing time minus the duration</b>.</div>' +
 
       chk('Allow a late start after the opening time', 's_late', ex.late_entry_allowed !== false) +
 
