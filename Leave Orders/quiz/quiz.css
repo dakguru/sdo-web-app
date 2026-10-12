@@ -602,8 +602,10 @@ table.tbl .num{text-align:right;font-variant-numeric:tabular-nums}
   background:linear-gradient(180deg,transparent,rgba(79,70,229,.05));
 }
 .q-footer .dev{
-  font:800 clamp(13px,3.6vw,15.5px)/1.45 "Plus Jakarta Sans",sans-serif;
-  letter-spacing:.2px;
+  /* Deliberately small: the credit is a signature, not a headline, so it sits
+     just under the body text and is spaced out to stay legible at that size. */
+  font:700 clamp(10.5px,2.4vw,12px)/1.5 "Plus Jakarta Sans",sans-serif;
+  letter-spacing:.9px;
   /* Violet → royal blue → cyan, with a restrained golden highlight. */
   background:linear-gradient(100deg,#7c3aed 0%,#4f46e5 24%,#0891b2 48%,#f0b000 64%,#4f46e5 82%,#7c3aed 100%);
   background-size:260% 100%;
@@ -622,16 +624,16 @@ html.dark .q-footer .dev{
   color:var(--muted);padding-bottom:13px;border-bottom:1px solid var(--line);
 }
 
-.q-footer .contact{margin-top:2px;font-size:12.5px;color:var(--muted);line-height:1.5}
+.q-footer .contact{margin-top:3px;font-size:11px;letter-spacing:.3px;color:var(--faint);line-height:1.5}
 /* The phone number and email are the support route printed on every page, and
    they are tapped on a phone. Padding on an INLINE element enlarges the tap
    area without inflating the line box, so the credit and the contact line stay
    tight together while both links remain ~45px targets. */
 .q-footer .contact a{
-  /* 15px + a ~15px line box = a 45px tap target, while the line itself stays
-     12.5px so the credit and contact lines sit close together. */
-  display:inline;padding:15px 8px;margin:0 -4px;
-  font-weight:700;color:var(--indigo);text-decoration:none;
+  /* 16px + a ~13px line box still clears a 45px tap target, while the line
+     itself stays 11px so the credit and contact lines sit close together. */
+  display:inline;padding:16px 8px;margin:0 -4px;
+  font-weight:600;color:var(--indigo);text-decoration:none;
   border-radius:8px;white-space:nowrap;
 }
 .q-footer .contact a:hover{background:rgba(79,70,229,.1);text-decoration:underline}
@@ -649,7 +651,7 @@ html.dark .q-footer .contact a:hover{background:rgba(129,140,248,.14)}
 
 /* Keep the footer quiet while an examination is running. */
 body.exam-mode .q-footer{margin-top:20px;padding-top:14px;opacity:.72;border-top-style:dashed}
-body.exam-mode .q-footer .contact,body.exam-mode .q-footer .org{font-size:11px}
+body.exam-mode .q-footer .contact,body.exam-mode .q-footer .org{font-size:10px}
 
 /* ═══════════════════════════════════════════════════════════════════
    ACCESSIBILITY
