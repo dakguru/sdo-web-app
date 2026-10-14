@@ -21,6 +21,8 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const Q = require(path.join(ROOT, 'api', '_quizlib.js'));
 const participant = require(path.join(ROOT, 'api', 'quiz-participant.js'));
 const { examGate, eligible } = participant._internals;
+const admin = require(path.join(ROOT, 'api', 'quiz-admin.js'));
+const { rankWithin, buildLeaderboard } = admin._internals;
 
 let pass = 0, fail = 0;
 function test(name, fn) {
@@ -513,6 +515,131 @@ test('over an hour the clock reads h:mm:ss', () => {
 test('a negative remainder shows zero, never a minus sign', () => {
   assert.strictEqual(clock(-5000), '00:00');
   assert.strictEqual(clock(0), '00:00');
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   STAFF CATEGORY AND UNIT
+
+   The category decides which of the two prize lists an employee competes
+   in, so a spelling the roster happens to use must never quietly become
+   the wrong category — or no category at all when it is a valid one.
+   ═══════════════════════════════════════════════════════════════════ */
+group('Staff category and unit');
+
+test('every spelling of GDS the roster uses lands on GDS', () => {
+  for (const v of ['GDS', 'gds', 'G.D.S.', ' Gds ', 'Gramin Dak Sevak', 'Extra Departmental']) {
+    assert.strictEqual(Q.normCategory(v), 'GDS', v);
+  }
+});
+
+test('every spelling of Departmental lands on DEPARTMENTAL', () => {
+  for (const v of ['Departmental', 'departmental', 'DS', 'Dept', 'Regular']) {
+    assert.strictEqual(Q.normCategory(v), 'DEPARTMENTAL', v);
+  }
+});
+
+test('an unrecognised category becomes null rather than a guess', () => {
+  // Landing in the wrong prize list is worse than landing in none: null shows
+  // as "Unspecified", which an administrator can see and correct.
+  assert.strictEqual(Q.normCategory('Casual Labour'), null);
+  assert.strictEqual(Q.normCategory(''), null);
+  assert.strictEqual(Q.normCategory(null), null);
+  assert.strictEqual(Q.categoryLabel(null), 'Unspecified');
+});
+
+test('the Divisional Office is one unit, however the roster spells it', () => {
+  // The Karur roster carries both "DO Karur" and "KARUR DO"; left alone they
+  // would appear as two separate units on every unit-wise count.
+  assert.strictEqual(Q.normUnit('DO Karur'), 'DO Karur');
+  assert.strictEqual(Q.normUnit('KARUR DO'), 'DO Karur');
+  assert.strictEqual(Q.normUnit('karur do'), 'DO Karur');
+});
+
+test('an unknown unit keeps the words the roster used', () => {
+  assert.strictEqual(Q.normUnit('  Some New   Sub Division '), 'Some New Sub Division');
+  assert.strictEqual(Q.normUnit(''), null);
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY-WISE RANKING AND PRIZE LISTS
+   ═══════════════════════════════════════════════════════════════════ */
+group('Category-wise ranking and prize lists');
+
+const competitor = (id, category, score, secs, extra) => Object.assign({
+  attempt_id: id, category, score, elapsed_seconds: secs,
+  max_marks: 80, percentage: score, withheld: false, published: true,
+  employee: { employee_id: id, employee_name: 'Employee ' + id, designation: 'Postal Assistant',
+              office: 'Karur H.O', reg_code: 'NPW2026-' + id },
+}, extra || {});
+
+test('rank is by score, then by the faster time', () => {
+  const r = rankWithin([
+    competitor('a', 'GDS', 40, 300),
+    competitor('b', 'GDS', 60, 400),
+    competitor('c', 'GDS', 60, 200),
+  ]);
+  assert.deepStrictEqual(r.map(x => x.attempt_id), ['c', 'b', 'a']);
+});
+
+test('an exact tie shares a rank and the next place skips', () => {
+  // Two people on the same score AND the same time are genuinely level, so
+  // the list must read 1, 2, 2, 4 — not 1, 2, 3, 4.
+  const r = rankWithin([
+    competitor('a', 'GDS', 60, 200),
+    competitor('b', 'GDS', 50, 100),
+    competitor('c', 'GDS', 50, 100),
+    competitor('d', 'GDS', 10, 100),
+  ]);
+  assert.deepStrictEqual(r.map(x => x.rank), [1, 2, 2, 4]);
+});
+
+const field = [
+  competitor('d1', 'DEPARTMENTAL', 70, 200), competitor('d2', 'DEPARTMENTAL', 65, 300),
+  competitor('d3', 'DEPARTMENTAL', 60, 250), competitor('d4', 'DEPARTMENTAL', 55, 250),
+  competitor('g1', 'GDS', 50, 100), competitor('g2', 'GDS', 48, 120),
+  competitor('g3', 'GDS', 40, 500), competitor('g4', 'GDS', 39, 500),
+  competitor('u1', null, 75, 100),
+];
+
+test('Departmental and GDS are ranked separately, each from first place', () => {
+  const board = buildLeaderboard(rankWithin(field), 3);
+  assert.deepStrictEqual(board.map(b => b.category), ['DEPARTMENTAL', 'GDS', 'UNSPECIFIED']);
+  assert.deepStrictEqual(board[0].winners.map(w => w.employeeId), ['d1', 'd2', 'd3']);
+  assert.deepStrictEqual(board[1].winners.map(w => w.employeeId), ['g1', 'g2', 'g3']);
+  assert.deepStrictEqual(board[1].winners.map(w => w.rank), [1, 2, 3],
+    'the top GDS participant is first in GDS, not fifth overall');
+});
+
+test('an employee with no category is listed apart, not folded into a prize list', () => {
+  const board = buildLeaderboard(rankWithin(field), 3);
+  const unspecified = board.filter(b => b.category === 'UNSPECIFIED')[0];
+  assert.ok(unspecified, 'the uncategorised participant is still shown');
+  assert.strictEqual(unspecified.winners.length, 1);
+  assert.ok(!board[0].winners.some(w => w.employeeId === 'u1'),
+    'the highest score in the examination does not win a prize it has no category for');
+});
+
+test('a withheld result cannot win a prize, and the place passes to the next', () => {
+  const board = buildLeaderboard(rankWithin(
+    field.map(r => r.attempt_id === 'd1' ? Object.assign({}, r, { withheld: true }) : r)), 3);
+  assert.deepStrictEqual(board[0].winners.map(w => w.employeeId), ['d2', 'd3', 'd4']);
+});
+
+test('a tie for third shows both names — a top three can be four people long', () => {
+  const board = buildLeaderboard(rankWithin([
+    competitor('a', 'GDS', 70, 100), competitor('b', 'GDS', 60, 100),
+    competitor('c', 'GDS', 50, 100), competitor('d', 'GDS', 50, 100),
+    competitor('e', 'GDS', 10, 100),
+  ]), 3);
+  assert.deepStrictEqual(board[0].winners.map(w => w.employeeId), ['a', 'b', 'c', 'd']);
+  assert.deepStrictEqual(board[0].winners.map(w => w.rank), [1, 2, 3, 3]);
+});
+
+test('each category reports its own participant count and average', () => {
+  const board = buildLeaderboard(rankWithin(field), 3);
+  assert.deepStrictEqual(board.map(b => b.participants), [4, 4, 1]);
+  assert.strictEqual(board[0].average, 62.5);
+  assert.strictEqual(board[0].highest, 70);
 });
 
 /* ═══════════════════════════════════════════════════════════════════

@@ -123,6 +123,11 @@
           '<div class="me-rows">' +
             meRow('Employee ID', reg.employeeId) +
             meRow('Designation', reg.designation) +
+            // Shown because the prizes are awarded in this category — a
+            // participant should be able to see which list they are in, and
+            // tell the administrator early if it is wrong.
+            meRow('Category', reg.categoryLabel || '—') +
+            (reg.unit ? meRow('Sub Division', reg.unit) : '') +
             meRow('Office', reg.office) +
             meRow('Account', id.email || (id.provider === 'google' ? 'Google account' : 'Employee ID sign-in')) +
           '</div>' +

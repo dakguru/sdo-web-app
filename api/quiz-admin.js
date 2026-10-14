@@ -24,6 +24,8 @@ const ROUTES = {
   'import-jobs':           { role: 'QUIZ_VIEWER', fn: importJobs },
   // ── registrations ─────────────────────────────────────────
   'registrations-list':    { role: 'QUIZ_VIEWER', fn: registrationsList },
+  'registration-stats':    { role: 'QUIZ_VIEWER', fn: registrationStats },
+  'registrations-backfill':{ role: 'QUIZ_ADMIN',  fn: registrationsBackfill },
   'registration-status':   { role: 'QUIZ_ADMIN',  fn: registrationStatus },
   'registration-edit':     { role: 'QUIZ_ADMIN',  fn: registrationEdit },
   'registration-add':      { role: 'QUIZ_ADMIN',  fn: registrationAdd },
@@ -171,10 +173,16 @@ async function employeesList(req, res) {
     filter += '&or=(employee_id.ilike.*' + encodeURIComponent(safe) + '*,' +
               'employee_name.ilike.*' + encodeURIComponent(safe) + '*,' +
               'designation.ilike.*' + encodeURIComponent(safe) + '*,' +
+              'unit.ilike.*' + encodeURIComponent(safe) + '*,' +
               'office.ilike.*' + encodeURIComponent(safe) + '*)';
   }
   if (qp.office)      filter += '&office=' + Q.eq(qp.office);
   if (qp.designation) filter += '&designation=' + Q.eq(qp.designation);
+  if (qp.unit)        filter += '&unit=' + Q.eq(qp.unit);
+  // "Unspecified" is a real thing to filter by — it is how the administrator
+  // finds the people who would otherwise fall outside both prize categories.
+  if (qp.category === 'UNSPECIFIED') filter += '&category=is.null';
+  else if (qp.category)             filter += '&category=' + Q.eq(String(qp.category).toUpperCase());
   if (qp.active === 'true')  filter += '&active=is.true';
   if (qp.active === 'false') filter += '&active=is.false';
 
@@ -219,14 +227,34 @@ async function employeesImport(req, res, actor) {
     }
     seen.add(id);
 
+    // Category decides which prize list this employee competes in, so an
+    // unrecognised spelling is reported rather than stored as-is. The row is
+    // still imported — withholding an employee from the directory over a
+    // category typo would stop them registering at all.
+    const category = Q.normCategory(r.category);
+    if (r.category && !category) {
+      issues.push({
+        line, employee_id: id,
+        issue: 'Staff category "' + String(r.category).trim() + '" was not recognised — ' +
+               'imported without a category, please set it to Departmental or GDS',
+        skipped: false,
+      });
+    }
+
     clean.push({
       employee_id: id, employee_name: name, designation: desig, office,
       division: String(r.division || 'Karur Division').trim(),
-      category: r.category ? String(r.category).trim() : null,
+      category,
+      unit: Q.normUnit(r.unit),
       active: r.active === false ? false : true,
       created_at_ms: now, updated_at_ms: now,
     });
   });
+
+  // `skipped` must mean "this row is not in the directory". Category warnings
+  // ride along in the same list so the administrator sees them, but they are
+  // not failures and must not inflate the skipped count.
+  const skippedCount = issues.filter(i => i.skipped).length;
 
   // Which of these already exist? Needed for an honest inserted/updated split
   // and for safe re-import: running the same file twice updates, never doubles.
@@ -239,10 +267,24 @@ async function employeesImport(req, res, actor) {
   const inserted = clean.filter(c => !existingIds.has(c.employee_id)).length;
   const updated = clean.length - inserted;
 
+  // A preview is also where the administrator confirms the two columns that
+  // decide the prize lists landed on the right employees, so the category and
+  // unit breakdown of the file is reported before anything is written.
+  const tally = (field) => {
+    const out = {};
+    for (const c of clean) {
+      const k = c[field] || 'Unspecified';
+      out[k] = (out[k] || 0) + 1;
+    }
+    return out;
+  };
+  const breakdown = { byCategory: tally('category'), byUnit: tally('unit') };
+
   if (dryRun) {
     return Q.ok(res, {
       preview: true, mode,
-      summary: { total: rows.length, toInsert: inserted, toUpdate: updated, skipped: issues.length },
+      summary: { total: rows.length, toInsert: inserted, toUpdate: updated, skipped: skippedCount },
+      breakdown,
       issues: issues.slice(0, 200),
       sample: clean.slice(0, 20),
     });
@@ -250,7 +292,7 @@ async function employeesImport(req, res, actor) {
 
   const jobRows = await Q.sbInsert('quiz_import_jobs', {
     kind: 'EMPLOYEES', filename: body.filename || null, mode,
-    total_rows: rows.length, inserted, updated, skipped: issues.length, failed: 0,
+    total_rows: rows.length, inserted, updated, skipped: skippedCount, failed: 0,
     issues: issues.slice(0, 500),
     status: issues.length ? 'PARTIAL' : 'DONE',
     created_by: actor.username, created_ms: now,
@@ -268,16 +310,92 @@ async function employeesImport(req, res, actor) {
     await Q.sbInsert('quiz_employees', chunk, { onConflict: 'employee_id', returning: false });
   }
 
+  // Employees who registered BEFORE the roster carried a category would
+  // otherwise sit outside both prize lists. Filling the gap is the whole point
+  // of re-importing, so it happens here rather than waiting for a second
+  // deliberate click — and it only ever fills blanks (see backfillRegistrations).
+  const filled = await backfillRegistrations(false);
+
   await Q.logAudit(req, actor, 'EMPLOYEES_IMPORT', 'quiz_employees', jobId, null,
-    { mode, total: rows.length, inserted, updated, skipped: issues.length, filename: body.filename || null });
+    { mode, total: rows.length, inserted, updated, skipped: skippedCount,
+      backfilled: filled.updated, filename: body.filename || null });
 
   return Q.ok(res, {
     jobId, mode,
-    summary: { total: rows.length, inserted, updated, skipped: issues.length },
+    summary: { total: rows.length, inserted, updated, skipped: skippedCount },
+    breakdown,
+    backfilled: filled.updated,
     issues: issues.slice(0, 200),
     message: inserted + ' records imported, ' + updated + ' records updated, ' +
-             issues.length + ' rows requiring review.',
+             skippedCount + ' rows requiring review' +
+             (filled.updated
+               ? ', and ' + filled.updated + ' existing registration(s) given their category and unit.'
+               : '.'),
   });
+}
+
+// Copy category and unit from the directory onto registrations (and onto the
+// results already computed from them).
+//
+// `overwrite === false` — the normal case — writes ONLY where the registration
+// has no category or no unit yet. That is what makes it safe to run after every
+// import: a registration whose category an administrator corrected by hand, or
+// which was recorded under a category the employee has since moved out of, is
+// never rewritten. `overwrite === true` is the explicit "re-sync everything
+// from the directory" action, which is audited.
+async function backfillRegistrations(overwrite) {
+  const regs = await Q.sbSelect('quiz_registrations',
+    'select=id,employee_id,category,unit&limit=5000');
+  const targets = (regs || []).filter(r => overwrite || !r.category || !r.unit);
+  if (!targets.length) return { scanned: (regs || []).length, updated: 0, unmatched: 0 };
+
+  const empMap = {};
+  for (const chunk of chunked([...new Set(targets.map(r => r.employee_id))], 150)) {
+    const found = await Q.sbSelect('quiz_employees',
+      'select=employee_id,category,unit&employee_id=in.(' + chunk.map(csvQuote).join(',') + ')');
+    for (const e of found || []) empMap[e.employee_id] = e;
+  }
+
+  const now = Date.now();
+  let updated = 0, unmatched = 0;
+  for (const r of targets) {
+    const e = empMap[r.employee_id];
+    if (!e) { unmatched++; continue; }
+
+    const patch = {};
+    if ((overwrite || !r.category) && e.category && e.category !== r.category) patch.category = e.category;
+    if ((overwrite || !r.unit) && e.unit && e.unit !== r.unit) patch.unit = e.unit;
+    if (!Object.keys(patch).length) continue;
+
+    patch.updated_at_ms = now;
+    await Q.sbUpdate('quiz_registrations', 'id=' + Q.eq(r.id), patch, { returning: false });
+
+    // A result already computed for this registration carries its own copy, so
+    // that a published result sheet stays internally consistent. Keep it level.
+    const rp = {};
+    if (patch.category) rp.category = patch.category;
+    if (patch.unit) rp.unit = patch.unit;
+    await Q.sbUpdate('quiz_results', 'registration_id=' + Q.eq(r.id), rp, { returning: false });
+
+    updated++;
+  }
+  return { scanned: (regs || []).length, updated, unmatched };
+}
+
+// The same operation as an explicit, audited administrator action — used when
+// the directory has been corrected in place rather than re-imported.
+async function registrationsBackfill(req, res, actor) {
+  const body = await Q.readJsonBody(req);
+  const overwrite = body.overwrite === true;
+  const out = await backfillRegistrations(overwrite);
+
+  await Q.logAudit(req, actor, overwrite ? 'REGISTRATIONS_RESYNC' : 'REGISTRATIONS_BACKFILL',
+    'quiz_registrations', null, null, out);
+
+  return Q.ok(res, Object.assign({}, out, {
+    message: out.updated + ' registration(s) updated from the employee directory' +
+      (out.unmatched ? ', ' + out.unmatched + ' not found in the directory.' : '.'),
+  }));
 }
 
 // Correcting a designation or office must not disturb anyone's examination
@@ -291,9 +409,19 @@ async function employeeSave(req, res, actor) {
   const before = await Q.sbOne('quiz_employees', 'select=*&employee_id=' + Q.eq(id));
   const now = Date.now();
   const patch = { updated_at_ms: now };
-  for (const f of ['employee_name', 'designation', 'office', 'division', 'category']) {
+  for (const f of ['employee_name', 'designation', 'office', 'division']) {
     if (body[f] !== undefined) patch[f] = body[f] === null ? null : String(body[f]).trim();
   }
+  // Category and unit go through the same normalisation as an import, so a
+  // record corrected by hand and a record imported from Excel are identical.
+  if (body.category !== undefined) {
+    const c = Q.normCategory(body.category);
+    if (body.category && !c) {
+      throw new Q.AppError('Staff category must be Departmental or GDS (or left blank).', 400);
+    }
+    patch.category = c;
+  }
+  if (body.unit !== undefined) patch.unit = Q.normUnit(body.unit);
   if (body.active !== undefined) patch.active = !!body.active;
 
   if (before) {
@@ -328,12 +456,16 @@ async function registrationsList(req, res) {
   let f = 'select=*&order=created_at_ms.desc&limit=' + limit + '&offset=' + offset;
   if (qp.status) f += '&status=' + Q.eq(qp.status);
   if (qp.office) f += '&office=' + Q.eq(qp.office);
+  if (qp.unit)   f += '&unit=' + Q.eq(qp.unit);
+  if (qp.category === 'UNSPECIFIED') f += '&category=is.null';
+  else if (qp.category)              f += '&category=' + Q.eq(String(qp.category).toUpperCase());
   if (qp.q) {
     const safe = String(qp.q).replace(/[,()*]/g, ' ').trim();
     f += '&or=(employee_id.ilike.*' + encodeURIComponent(safe) + '*,' +
          'employee_name.ilike.*' + encodeURIComponent(safe) + '*,' +
          'reg_code.ilike.*' + encodeURIComponent(safe) + '*,' +
          'office.ilike.*' + encodeURIComponent(safe) + '*,' +
+         'unit.ilike.*' + encodeURIComponent(safe) + '*,' +
          'designation.ilike.*' + encodeURIComponent(safe) + '*)';
   }
 
@@ -353,6 +485,104 @@ async function registrationsList(req, res) {
   return Q.ok(res, {
     registrations: (rows || []).map(r => Object.assign({}, r, { identity: idMap[r.identity_id] || null })),
     total, limit, offset,
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  REGISTRATION DASHBOARD
+//
+//  Who has registered, broken down the way the division actually thinks about
+//  itself: by prize category (Departmental / GDS), by unit or sub division,
+//  and by both at once. Each line carries the directory strength beside the
+//  registration count, because "41 registered" means nothing on its own —
+//  41 of 198 and 41 of 45 are very different stories, and the second number is
+//  what tells a Sub Divisional Head whether to chase anybody.
+//
+//  Everything is counted in one pass over two full table reads rather than a
+//  count query per bucket: ~800 employees and a few hundred registrations is
+//  small, and forty sequential round trips to PostgREST would not be.
+// ═══════════════════════════════════════════════════════════════════
+async function registrationStats(req, res) {
+  const [employees, regs] = await Promise.all([
+    Q.sbSelect('quiz_employees', 'select=employee_id,office,unit,category,active&limit=5000'),
+    Q.sbSelect('quiz_registrations', 'select=employee_id,office,unit,category,status,created_at_ms&limit=5000'),
+  ]);
+
+  const active = (employees || []).filter(e => e.active !== false);
+  const KEY = v => v || 'Unspecified';
+
+  // One accumulator shape, used for every dimension.
+  const blank = () => ({
+    eligible: 0, registered: 0,
+    approved: 0, pending: 0, rejected: 0, suspended: 0, cancelled: 0,
+    departmental: 0, gds: 0, uncategorised: 0,
+  });
+  const bump = (bucket, reg) => {
+    bucket.registered++;
+    const s = String(reg.status || '').toLowerCase();
+    if (bucket[s] !== undefined) bucket[s]++;
+    if (reg.category === 'DEPARTMENTAL') bucket.departmental++;
+    else if (reg.category === 'GDS') bucket.gds++;
+    else bucket.uncategorised++;
+  };
+
+  const byCategory = {}, byUnit = {}, byOffice = {}, byUnitCategory = {};
+  for (const code of Q.CATEGORIES.concat(['Unspecified'])) byCategory[code] = blank();
+
+  for (const e of active) {
+    const c = e.category || 'Unspecified';
+    (byCategory[c] || (byCategory[c] = blank())).eligible++;
+    (byUnit[KEY(e.unit)] || (byUnit[KEY(e.unit)] = blank())).eligible++;
+    (byOffice[KEY(e.office)] || (byOffice[KEY(e.office)] = blank())).eligible++;
+    const uc = KEY(e.unit) + ' │ ' + c;
+    (byUnitCategory[uc] || (byUnitCategory[uc] = blank())).eligible++;
+  }
+
+  for (const r of regs || []) {
+    const c = r.category || 'Unspecified';
+    bump(byCategory[c] || (byCategory[c] = blank()), r);
+    bump(byUnit[KEY(r.unit)] || (byUnit[KEY(r.unit)] = blank()), r);
+    bump(byOffice[KEY(r.office)] || (byOffice[KEY(r.office)] = blank()), r);
+    const uc = KEY(r.unit) + ' │ ' + c;
+    bump(byUnitCategory[uc] || (byUnitCategory[uc] = blank()), r);
+  }
+
+  const shape = (map, labelKey) => Object.entries(map)
+    .map(([k, v]) => Object.assign({ [labelKey]: k }, v, {
+      coverage: v.eligible ? Math.round((v.registered / v.eligible) * 1000) / 10 : null,
+    }))
+    .sort((a, b) => b.registered - a.registered || b.eligible - a.eligible);
+
+  // Registrations per day, so the administrator can see whether the campaign
+  // is still moving or has gone quiet.
+  const byDay = {};
+  for (const r of regs || []) {
+    const d = new Date(r.created_at_ms).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    byDay[d] = (byDay[d] || 0) + 1;
+  }
+
+  const statusOf = s => (regs || []).filter(r => r.status === s).length;
+
+  return Q.ok(res, {
+    generatedMs: Date.now(),
+    totals: {
+      directory: (employees || []).length,
+      eligible: active.length,
+      registered: (regs || []).length,
+      approved: statusOf('APPROVED'),
+      pending: statusOf('PENDING'),
+      rejected: statusOf('REJECTED'),
+      suspended: statusOf('SUSPENDED'),
+      cancelled: statusOf('CANCELLED'),
+      uncategorised: (regs || []).filter(r => !r.category).length,
+      coverage: active.length
+        ? Math.round(((regs || []).length / active.length) * 1000) / 10 : null,
+    },
+    byCategory: shape(byCategory, 'category').filter(x => x.eligible || x.registered),
+    byUnit: shape(byUnit, 'unit'),
+    byUnitCategory: shape(byUnitCategory, 'bucket').filter(x => x.eligible || x.registered),
+    byOffice: shape(byOffice, 'office'),
+    byDay: Object.entries(byDay).sort().map(([date, count]) => ({ date, count })),
   });
 }
 
@@ -414,7 +644,26 @@ async function registrationEdit(req, res, actor) {
   for (const f of ['employee_name', 'designation', 'office', 'remarks']) {
     if (body[f] !== undefined) patch[f] = String(body[f] || '').trim();
   }
+  // Moving someone between prize categories is a real decision, so it is
+  // validated and audited like any other correction rather than accepted raw.
+  if (body.category !== undefined) {
+    const c = Q.normCategory(body.category);
+    if (body.category && !c) {
+      throw new Q.AppError('Staff category must be Departmental or GDS (or left blank).', 400);
+    }
+    patch.category = c;
+  }
+  if (body.unit !== undefined) patch.unit = Q.normUnit(body.unit);
+
   await Q.sbUpdate('quiz_registrations', 'id=' + Q.eq(id), patch, { returning: false });
+
+  // Any result already computed carries its own copy of both fields.
+  if (patch.category !== undefined || patch.unit !== undefined) {
+    const rp = {};
+    if (patch.category !== undefined) rp.category = patch.category;
+    if (patch.unit !== undefined) rp.unit = patch.unit;
+    await Q.sbUpdate('quiz_results', 'registration_id=' + Q.eq(id), rp, { returning: false });
+  }
   await Q.logAudit(req, actor, 'REGISTRATION_EDIT', 'quiz_registrations', id, before, patch);
   return Q.ok(res, { updated: true });
 }
@@ -452,6 +701,8 @@ async function registrationAdd(req, res, actor) {
     employee_name: emp.employee_name,
     designation: emp.designation,
     office: emp.office,
+    category: emp.category || null,
+    unit: emp.unit || null,
     status: 'PENDING',
     roster_verified: true,
     manual_entry: true,
@@ -1401,29 +1652,111 @@ async function resultsList(req, res) {
   if (!examId) throw new Q.AppError('An examination must be specified.', 400);
 
   const ex = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(examId));
+  const ranked = await rankedResultsFor(examId);
+
+  // Each prize category is ranked in its own right — rank 1 Departmental and
+  // rank 1 GDS are two different prizes, and neither is second to the other.
+  return Q.ok(res, {
+    exam: ex, results: ranked, total: ranked.length,
+    leaderboard: buildLeaderboard(ranked, clampInt(qp.top, 1, 50, 3)),
+  });
+}
+
+// Official results for one examination, each carrying its registration, its
+// category and unit, its overall rank and its rank within its own category.
+// Shared by the results table and by every score report, so a figure that
+// appears on screen and the same figure in the exported sheet cannot drift.
+async function rankedResultsFor(examId) {
   const rows = await Q.sbSelect('quiz_results',
     'select=*&exam_id=' + Q.eq(examId) + '&mode=' + Q.eq('OFFICIAL') +
-    '&order=score.desc,elapsed_seconds.asc&limit=2000');
+    '&order=score.desc,elapsed_seconds.asc&limit=3000');
 
-  const regIds = [...new Set((rows || []).map(r => r.registration_id).filter(Boolean))];
   const regMap = {};
-  for (const chunk of chunked(regIds, 100)) {
+  for (const chunk of chunked([...new Set((rows || []).map(r => r.registration_id).filter(Boolean))], 100)) {
     const regs = await Q.sbSelect('quiz_registrations',
-      'select=id,reg_code,employee_id,employee_name,designation,office&id=in.(' + chunk.join(',') + ')');
+      'select=id,reg_code,employee_id,employee_name,designation,office,category,unit&id=in.(' + chunk.join(',') + ')');
     for (const r of regs || []) regMap[r.id] = r;
   }
 
-  // Rank: score descending, then elapsed time ascending. Equal score AND equal
-  // time genuinely share a rank.
+  const ranked = rankWithin((rows || []).map(r => {
+    const e = regMap[r.registration_id] || null;
+    return Object.assign({}, r, {
+      employee: e,
+      category: r.category || (e && e.category) || null,
+      unit: r.unit || (e && e.unit) || null,
+    });
+  }));
+
+  const eligible = ranked.filter(r => !r.withheld);
+  for (const code of Q.CATEGORIES.concat(['UNSPECIFIED'])) {
+    const subset = rankWithin(eligible.filter(r => (r.category || 'UNSPECIFIED') === code));
+    const by = {};
+    for (const r of subset) by[r.attempt_id] = r.rank;
+    for (const r of ranked) {
+      if ((r.category || 'UNSPECIFIED') !== code) continue;
+      r.categoryRank = by[r.attempt_id] || null;
+      r.categoryOutOf = subset.length;
+    }
+  }
+  return ranked;
+}
+
+// Rank: score descending, then elapsed time ascending. Equal score AND equal
+// time genuinely share a rank, and the rank after a tie skips accordingly
+// (1, 2, 2, 4) — which is how a prize list has to read.
+function rankWithin(list) {
+  const sorted = list.slice().sort((a, b) =>
+    Number(b.score) - Number(a.score) || (a.elapsed_seconds || 0) - (b.elapsed_seconds || 0));
   let lastKey = null, lastRank = 0;
-  const ranked = (rows || []).map((r, i) => {
+  return sorted.map((r, i) => {
     const key = r.score + '|' + r.elapsed_seconds;
     const rank = key === lastKey ? lastRank : i + 1;
     lastKey = key; lastRank = rank;
-    return Object.assign({}, r, { rank, employee: regMap[r.registration_id] || null });
+    return Object.assign({}, r, { rank });
   });
+}
 
-  return Q.ok(res, { exam: ex, results: ranked, total: ranked.length });
+// The two published prize lists. `top` is the number of PLACES, not rows: if
+// two people tie for second, both appear and the list is four names long for a
+// top-3 — dropping the tie would misstate the result.
+//
+// A withheld result is under administrative review and cannot win a prize, so
+// it is left out of the prize list and out of its ranking. It stays visible in
+// the full results table above, flagged, which is where it belongs.
+function buildLeaderboard(ranked, top) {
+  const out = [];
+  const eligible = ranked.filter(r => !r.withheld);
+  for (const code of Q.CATEGORIES.concat(['UNSPECIFIED'])) {
+    const subset = rankWithin(eligible.filter(r => (r.category || 'UNSPECIFIED') === code));
+    if (!subset.length) continue;
+    out.push({
+      category: code,
+      label: code === 'UNSPECIFIED' ? 'Unspecified' : Q.categoryLabel(code),
+      participants: subset.length,
+      average: Math.round((subset.reduce((a, b) => a + Number(b.score), 0) / subset.length) * 100) / 100,
+      highest: Math.max.apply(null, subset.map(r => Number(r.score))),
+      winners: subset.filter(r => r.rank <= top).map(r => {
+        const e = r.employee || {};
+        return {
+          rank: r.rank,
+          attemptId: r.attempt_id,
+          regCode: e.reg_code || '',
+          employeeId: e.employee_id || r.employee_id || '',
+          employeeName: e.employee_name || '',
+          designation: e.designation || '',
+          office: e.office || '',
+          unit: r.unit || '',
+          score: Number(r.score),
+          maxMarks: Number(r.max_marks),
+          percentage: Number(r.percentage),
+          elapsedSeconds: r.elapsed_seconds,
+          published: !!r.published,
+          withheld: !!r.withheld,
+        };
+      }),
+    });
+  }
+  return out;
 }
 
 async function resultsPublish(req, res, actor) {
@@ -1575,9 +1908,14 @@ async function report(req, res, actor) {
 
   if (kind === 'registrations') {
     title = 'Registered Employees';
-    columns = ['Registration ID', 'Employee ID', 'Name', 'Designation', 'Office', 'Status',
+    columns = ['Registration ID', 'Employee ID', 'Name', 'Designation', 'Category',
+               'Unit / Sub Division', 'Office', 'Status',
                'Sign-in Method', 'Email', 'Registered On (IST)'];
-    const regs = await Q.sbSelect('quiz_registrations', 'select=*&order=office.asc,employee_name.asc&limit=3000');
+    let rf = 'select=*&order=unit.asc,office.asc,employee_name.asc&limit=3000';
+    if (qp.category === 'UNSPECIFIED') rf += '&category=is.null';
+    else if (qp.category)              rf += '&category=' + Q.eq(String(qp.category).toUpperCase());
+    if (qp.unit) rf += '&unit=' + Q.eq(qp.unit);
+    const regs = await Q.sbSelect('quiz_registrations', rf);
     const idMap = {};
     for (const chunk of chunked([...new Set((regs || []).map(r => r.identity_id).filter(Boolean))], 100)) {
       const found = await Q.sbSelect('quiz_identities', 'select=id,provider,email&id=in.(' + chunk.join(',') + ')');
@@ -1585,25 +1923,79 @@ async function report(req, res, actor) {
     }
     rows = (regs || []).map(r => {
       const i = idMap[r.identity_id] || {};
-      return [r.reg_code, r.employee_id, r.employee_name, r.designation, r.office, r.status,
+      return [r.reg_code, r.employee_id, r.employee_name, r.designation,
+              Q.categoryLabel(r.category), r.unit || '', r.office, r.status,
               i.provider === 'google' ? 'Google' : 'Employee ID', i.email || '', Q.istString(r.created_at_ms)];
     });
 
   } else if (kind === 'approved') {
     title = 'Approved Participants';
-    columns = ['Registration ID', 'Employee ID', 'Name', 'Designation', 'Office', 'Approved By', 'Approved On (IST)'];
+    columns = ['Registration ID', 'Employee ID', 'Name', 'Designation', 'Category',
+               'Unit / Sub Division', 'Office', 'Approved By', 'Approved On (IST)'];
     const regs = await Q.sbSelect('quiz_registrations',
-      'select=*&status=' + Q.eq('APPROVED') + '&order=office.asc,employee_name.asc&limit=3000');
+      'select=*&status=' + Q.eq('APPROVED') + '&order=unit.asc,office.asc,employee_name.asc&limit=3000');
     rows = (regs || []).map(r => [r.reg_code, r.employee_id, r.employee_name, r.designation,
-      r.office, r.approved_by || '', Q.istString(r.approved_at_ms)]);
+      Q.categoryLabel(r.category), r.unit || '', r.office,
+      r.approved_by || '', Q.istString(r.approved_at_ms)]);
+
+  } else if (kind === 'directory') {
+    title = 'Employee Directory';
+    columns = ['Employee ID', 'Name', 'Designation', 'Category', 'Unit / Sub Division',
+               'Office', 'Division', 'Active', 'Registered'];
+    const emps = await Q.sbSelect('quiz_employees',
+      'select=*&order=unit.asc,office.asc,employee_name.asc&limit=5000');
+    const regs = await Q.sbSelect('quiz_registrations', 'select=employee_id,status&limit=5000');
+    const regMap = {};
+    for (const r of regs || []) regMap[r.employee_id] = r.status;
+    rows = (emps || []).map(e => [e.employee_id, e.employee_name, e.designation,
+      Q.categoryLabel(e.category), e.unit || '', e.office, e.division || '',
+      e.active === false ? 'No' : 'Yes', regMap[e.employee_id] || 'Not registered']);
+
+  } else if (kind === 'category-registrations' || kind === 'unit-registrations') {
+    // Registration monitoring, which is a pre-examination report: it must work
+    // before any examination exists, so neither variant calls need().
+    const byUnitWise = kind === 'unit-registrations';
+    title = byUnitWise ? 'Unit / Sub Division-wise Registration' : 'Category-wise Registration';
+    const [emps, regs] = await Promise.all([
+      Q.sbSelect('quiz_employees', 'select=unit,category,active&limit=5000'),
+      Q.sbSelect('quiz_registrations', 'select=unit,category,status&limit=5000'),
+    ]);
+
+    const acc = {};
+    const at = k => acc[k] || (acc[k] = { eligible: 0, registered: 0, approved: 0, pending: 0,
+      departmental: 0, gds: 0, uncategorised: 0 });
+    const keyOf = r => byUnitWise ? (r.unit || 'Unspecified') : Q.categoryLabel(r.category);
+
+    for (const e of emps || []) { if (e.active !== false) at(keyOf(e)).eligible++; }
+    for (const r of regs || []) {
+      const b = at(keyOf(r));
+      b.registered++;
+      if (r.status === 'APPROVED') b.approved++;
+      if (r.status === 'PENDING') b.pending++;
+      if (r.category === 'DEPARTMENTAL') b.departmental++;
+      else if (r.category === 'GDS') b.gds++;
+      else b.uncategorised++;
+    }
+
+    columns = byUnitWise
+      ? ['Unit / Sub Division', 'Employees on Roll', 'Registered', 'Departmental', 'GDS',
+         'Uncategorised', 'Approved', 'Pending', 'Registration %']
+      : ['Category', 'Employees on Roll', 'Registered', 'Approved', 'Pending', 'Registration %'];
+
+    rows = Object.entries(acc).map(([k, v]) => byUnitWise
+      ? [k, v.eligible, v.registered, v.departmental, v.gds, v.uncategorised, v.approved, v.pending,
+         v.eligible ? Math.round((v.registered / v.eligible) * 1000) / 10 : 0]
+      : [k, v.eligible, v.registered, v.approved, v.pending,
+         v.eligible ? Math.round((v.registered / v.eligible) * 1000) / 10 : 0])
+      .sort((a, b) => b[2] - a[2]);
 
   } else if (kind === 'attendance') {
     need();
     title = 'Attendance and Non-attendance';
-    columns = ['Employee ID', 'Name', 'Designation', 'Office', 'Registration', 'Attended',
-               'Attempt Status', 'Started (IST)', 'Submitted (IST)'];
+    columns = ['Employee ID', 'Name', 'Designation', 'Category', 'Unit / Sub Division', 'Office',
+               'Registration', 'Attended', 'Attempt Status', 'Started (IST)', 'Submitted (IST)'];
     const regs = await Q.sbSelect('quiz_registrations',
-      'select=*&status=' + Q.eq('APPROVED') + '&order=office.asc,employee_name.asc&limit=3000');
+      'select=*&status=' + Q.eq('APPROVED') + '&order=unit.asc,office.asc,employee_name.asc&limit=3000');
     const attempts = await Q.sbSelect('quiz_attempts',
       'select=registration_id,status,started_ms,submitted_ms&exam_id=' + Q.eq(examId) +
       '&mode=' + Q.eq('OFFICIAL') + '&limit=3000');
@@ -1611,33 +2003,91 @@ async function report(req, res, actor) {
     for (const a of attempts || []) aMap[a.registration_id] = a;
     rows = (regs || []).map(r => {
       const a = aMap[r.id];
-      return [r.employee_id, r.employee_name, r.designation, r.office, r.reg_code,
+      return [r.employee_id, r.employee_name, r.designation, Q.categoryLabel(r.category),
+        r.unit || '', r.office, r.reg_code,
         a ? 'Yes' : 'No', a ? a.status : 'ABSENT',
         a ? Q.istString(a.started_ms) : '', a && a.submitted_ms ? Q.istString(a.submitted_ms) : ''];
     });
 
   } else if (kind === 'scores') {
     need();
-    title = 'Scores';
-    columns = ['Rank', 'Employee ID', 'Name', 'Designation', 'Office', 'Attempted', 'Correct',
+    const only = String(qp.category || '').toUpperCase();
+    title = only && only !== 'ALL'
+      ? 'Scores — ' + (only === 'UNSPECIFIED' ? 'Unspecified' : Q.categoryLabel(only))
+      : 'Scores';
+    columns = ['Overall Rank', 'Category Rank', 'Category', 'Employee ID', 'Name', 'Designation',
+               'Unit / Sub Division', 'Office', 'Attempted', 'Correct',
                'Wrong', 'Unanswered', 'Positive Marks', 'Negative Marks', 'Score', 'Out Of',
                'Percentage', 'Time Taken (s)', 'Published'];
-    const results = await Q.sbSelect('quiz_results',
-      'select=*&exam_id=' + Q.eq(examId) + '&mode=' + Q.eq('OFFICIAL') +
-      '&order=score.desc,elapsed_seconds.asc&limit=3000');
-    const regMap = {};
-    for (const chunk of chunked([...new Set((results || []).map(r => r.registration_id).filter(Boolean))], 100)) {
-      const regs = await Q.sbSelect('quiz_registrations',
-        'select=id,employee_id,employee_name,designation,office&id=in.(' + chunk.join(',') + ')');
-      for (const r of regs || []) regMap[r.id] = r;
+    let ranked = await rankedResultsFor(examId);
+    if (only && only !== 'ALL') {
+      ranked = ranked.filter(r => (r.category || 'UNSPECIFIED') === only);
     }
-    rows = (results || []).map((r, i) => {
-      const e = regMap[r.registration_id] || {};
-      return [i + 1, e.employee_id || r.employee_id || '', e.employee_name || '', e.designation || '',
-        e.office || '', r.attempted, r.correct, r.wrong, r.unanswered,
+    rows = ranked.map(r => {
+      const e = r.employee || {};
+      return [r.rank, r.categoryRank || '', Q.categoryLabel(r.category),
+        e.employee_id || r.employee_id || '', e.employee_name || '', e.designation || '',
+        r.unit || '', e.office || '', r.attempted, r.correct, r.wrong, r.unanswered,
         Number(r.positive_earned), Number(r.negative_deducted), Number(r.score),
-        Number(r.max_marks), Number(r.percentage), r.elapsed_seconds, r.published ? 'Yes' : 'No'];
+        Number(r.max_marks), Number(r.percentage), r.elapsed_seconds,
+        r.withheld ? 'Withheld' : (r.published ? 'Yes' : 'No')];
     });
+
+  } else if (kind === 'leaderboard') {
+    need();
+    // The prize list as it is meant to be read out: Departmental first, GDS
+    // second, each numbered from 1, ties shown in full.
+    const top = clampInt(qp.top, 1, 50, 3);
+    title = 'Leaderboard — Top ' + top + ' by Category';
+    columns = ['Category', 'Rank', 'Registration ID', 'Employee ID', 'Name', 'Designation',
+               'Unit / Sub Division', 'Office', 'Score', 'Out Of', 'Percentage',
+               'Time Taken (s)', 'Published'];
+    const board = buildLeaderboard(await rankedResultsFor(examId), top);
+    for (const group of board) {
+      for (const w of group.winners) {
+        rows.push([group.label, w.rank, w.regCode, w.employeeId, w.employeeName, w.designation,
+          w.unit, w.office, w.score, w.maxMarks, w.percentage, w.elapsedSeconds,
+          w.published ? 'Yes' : 'No']);
+      }
+    }
+
+  } else if (kind === 'category-participation' || kind === 'category-average' ||
+             kind === 'unit-participation' || kind === 'unit-average') {
+    need();
+    const byUnitWise = kind.startsWith('unit');
+    const byAverage = kind.endsWith('average');
+    const dimension = byUnitWise ? 'Unit / Sub Division' : 'Category';
+    title = dimension + (byAverage ? '-wise Average Scores' : '-wise Participation');
+
+    const regs = await Q.sbSelect('quiz_registrations',
+      'select=id,category,unit&status=' + Q.eq('APPROVED') + '&limit=3000');
+    const ranked = await rankedResultsFor(examId);
+    const resByReg = {};
+    for (const r of ranked) resByReg[r.registration_id] = r;
+
+    const acc = {};
+    const keyOf = r => byUnitWise ? (r.unit || 'Unspecified') : Q.categoryLabel(r.category);
+    for (const r of regs || []) {
+      const k = keyOf(r);
+      const b = acc[k] || (acc[k] = { eligible: 0, attended: 0, scores: [] });
+      b.eligible++;
+      const got = resByReg[r.id];
+      if (got) { b.attended++; b.scores.push(Number(got.score)); }
+    }
+
+    if (byAverage) {
+      columns = [dimension, 'Participants', 'Average Score', 'Highest Score', 'Lowest Score'];
+      rows = Object.entries(acc).filter(([, v]) => v.scores.length)
+        .map(([k, v]) => [k, v.scores.length,
+          Math.round((v.scores.reduce((a, b) => a + b, 0) / v.scores.length) * 100) / 100,
+          Math.max.apply(null, v.scores), Math.min.apply(null, v.scores)])
+        .sort((a, b) => b[2] - a[2]);
+    } else {
+      columns = [dimension, 'Approved Employees', 'Attended', 'Absent', 'Participation %'];
+      rows = Object.entries(acc).map(([k, v]) => [k, v.eligible, v.attended,
+        v.eligible - v.attended, v.eligible ? Math.round((v.attended / v.eligible) * 1000) / 10 : 0])
+        .sort((a, b) => b[4] - a[4]);
+    }
 
   } else if (kind === 'office-participation' || kind === 'office-average') {
     need();
@@ -1923,3 +2373,8 @@ function chunked(arr, size) {
 function csvQuote(v) {
   return '"' + String(v).replace(/"/g, '""') + '"';
 }
+
+// Exposed for the test harness in Leave Orders/quiz/selftest.js. Pure
+// functions with no database access — the handler above remains the only entry
+// point the HTTP layer uses.
+module.exports._internals = { rankWithin, buildLeaderboard };

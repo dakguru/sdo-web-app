@@ -27,6 +27,20 @@
   .toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
   .toolbar .input{flex:1;min-width:180px}
   .toolbar .select{max-width:200px}
+  /* Registration dashboard */
+  .bar{height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin:9px 0 6px}
+  .bar i{display:block;height:100%;border-radius:4px;
+    background:linear-gradient(90deg,var(--indigo),var(--teal))}
+  .mini-row{display:flex;gap:13px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+  .mini-row b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .spark{display:flex;gap:7px;align-items:flex-end;overflow-x:auto;padding-bottom:4px}
+  .spark-col{flex:none;width:44px;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .spark-col em{font-style:normal;font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums}
+  .spark-col .sb{width:100%;height:96px;display:flex;align-items:flex-end}
+  .spark-col .sb i{display:block;width:100%;border-radius:5px 5px 2px 2px;
+    background:linear-gradient(180deg,var(--indigo),var(--violet))}
+  .spark-col span{font-size:10px;color:var(--muted);white-space:nowrap}
+  details.card summary::-webkit-details-marker{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -39,8 +53,19 @@
   'use strict';
 
   var host = null;
-  var view = 'registrations';     // registrations | directory | import
+  var view = 'dashboard';         // dashboard | registrations | directory | import
   var parsed = null;              // the uploaded sheet, before saving
+  var facets = { units: [], categories: [] };   // filter options, from the directory
+
+  // The two prize categories, plus the bucket for anyone the roster did not
+  // classify. "Unspecified" is shown rather than hidden: an employee who is in
+  // neither list wins nothing, so the administrator has to be able to see them.
+  var CATEGORY_LABELS = { DEPARTMENTAL: 'Departmental', GDS: 'GDS', UNSPECIFIED: 'Unspecified' };
+  function catLabel(code) { return CATEGORY_LABELS[String(code || '').toUpperCase()] || 'Unspecified'; }
+  function catBadge(code) {
+    var c = String(code || '').toUpperCase();
+    return QuizUI.badge(catLabel(c), c === 'DEPARTMENTAL' ? 'ok' : c === 'GDS' ? '' : 'mute');
+  }
 
   QuizAdmin.boot({
     title: 'Employees & Registrations',
@@ -52,13 +77,21 @@
       host = h;
       var q = new URLSearchParams(location.search).get('view');
       if (q) view = q;
-      shell();
+      host.innerHTML = QuizUI.skeleton(3);
+      // The unit list in every filter comes from what has actually been
+      // imported, so it is fetched once before the first tab is drawn. A
+      // failure here is not fatal — the filters simply offer no units.
+      QuizAPI.admin('registration-stats')
+        .then(function (r) { facets.units = unitsOf(r); })
+        .catch(function () {})
+        .then(shell);
     }
   });
 
   function shell() {
     host.innerHTML =
       '<div class="subtabs">' +
+        tabBtn('dashboard', '&#128202; Registration Dashboard') +
         tabBtn('registrations', '&#128221; Registrations') +
         tabBtn('directory', '&#128193; Employee Directory') +
         (QuizAdmin.atLeast('QUIZ_ADMIN') ? tabBtn('import', '&#11014; Import from Excel') : '') +
@@ -70,7 +103,175 @@
 
     if (view === 'directory') renderDirectory();
     else if (view === 'import') renderImport();
-    else renderRegistrations();
+    else if (view === 'registrations') renderRegistrations();
+    else renderDashboard();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     REGISTRATION DASHBOARD
+
+     Category-wise and unit-wise registration, each line showing the count
+     against the strength on the roll. The percentage is the point of the
+     page: it is what says whether a sub division still has people to chase.
+     ═══════════════════════════════════════════════════════════════ */
+  function renderDashboard() {
+    pane().innerHTML = QuizUI.skeleton(4);
+    QuizAPI.admin('registration-stats').then(function (r) {
+      facets.units = unitsOf(r);
+      var t = r.totals;
+      var h = '';
+
+      if (t.uncategorised) {
+        h += QuizUI.alert('warn', '&#9888;',
+          '<b>' + t.uncategorised + ' registration(s) carry no staff category.</b><br>' +
+          'They cannot be placed in either prize list as things stand. Re-import the employee ' +
+          'list with the <b>Staff Category</b> column mapped, or set the category on each ' +
+          'record in the Employee Directory, then use <b>Sync from directory</b> on the ' +
+          'Import tab.');
+      }
+
+      h += '<div class="grid grid-4">' +
+        st2('Registered', t.registered, t.coverage == null ? '' : t.coverage + '% of the roll') +
+        st2('Approved', t.approved, t.pending + ' pending approval') +
+        st2('On the roll', t.eligible, 'active in the directory') +
+        st2('Uncategorised', t.uncategorised, 'not in a prize list') +
+      '</div>';
+
+      // ── Category-wise ──────────────────────────────────────────
+      h += '<div class="section-title">Category-wise registration</div>' +
+        '<div class="grid grid-' + Math.min(3, Math.max(2, r.byCategory.length)) + '">' +
+        r.byCategory.map(function (c) {
+          // The "Unspecified" bucket has nobody on the roll — everyone in the
+          // directory is classified — so a coverage bar for it would be a
+          // division by zero dressed up as 0%. It is simply omitted.
+          var known = c.eligible > 0;
+          return '<div class="card" style="margin:0">' +
+            '<div class="card-head"><div class="card-ic">' +
+              (c.category === 'GDS' ? '&#127968;' : c.category === 'DEPARTMENTAL' ? '&#127970;' : '&#10067;') +
+            '</div><div><div class="card-t">' + QuizUI.esc(catLabel(c.category)) + '</div>' +
+            '<div class="card-s">' + (known
+              ? c.registered + ' of ' + c.eligible + ' on the roll'
+              : 'registered without a category on the roll') + '</div>' +
+            '</div></div>' +
+            '<div style="font:800 30px/1 \'Plus Jakarta Sans\',sans-serif;font-variant-numeric:tabular-nums">' +
+              c.registered + '</div>' +
+            (known ? bar(c.coverage) : '<div style="height:13px"></div>') +
+            '<div class="mini-row">' +
+              '<span>Approved <b>' + c.approved + '</b></span>' +
+              '<span>Pending <b>' + c.pending + '</b></span>' +
+              (known ? '<span>Coverage <b>' + c.coverage + '%</b></span>' : '') +
+            '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>';
+
+      // ── Unit / sub division-wise ───────────────────────────────
+      h += '<div class="section-title">Unit / Sub Division-wise registration</div>' +
+        '<div class="card">' +
+        '<div class="tbl-wrap"><table class="tbl"><thead><tr>' +
+          '<th>Unit / Sub Division</th><th class="num">On roll</th><th class="num">Registered</th>' +
+          '<th class="num">Departmental</th><th class="num">GDS</th>' +
+          '<th class="num">Approved</th><th class="num">Pending</th><th>Coverage</th>' +
+        '</tr></thead><tbody>' +
+        r.byUnit.map(function (u) {
+          return '<tr>' +
+            '<td class="wrap"><b>' + QuizUI.esc(u.unit) + '</b></td>' +
+            '<td class="num">' + u.eligible + '</td>' +
+            '<td class="num"><b>' + u.registered + '</b></td>' +
+            '<td class="num">' + u.departmental + '</td>' +
+            '<td class="num">' + u.gds + '</td>' +
+            '<td class="num">' + u.approved + '</td>' +
+            '<td class="num">' + u.pending + '</td>' +
+            '<td style="min-width:120px">' +
+              (u.coverage == null
+                ? '<span style="font-size:11px;color:var(--muted)">—</span>'
+                : bar(u.coverage) + '<span style="font-size:11px;color:var(--muted)">' +
+                  u.coverage + '%</span>') + '</td>' +
+          '</tr>';
+        }).join('') +
+        '</tbody></table></div></div>';
+
+      // ── Unit x category, which is the grid prize distribution needs ──
+      h += '<div class="section-title">Unit &times; category</div>' +
+        '<div class="card">' +
+        QuizAdmin.table(['Unit / Sub Division │ Category', 'On roll', 'Registered',
+                         'Approved', 'Pending', 'Coverage %'],
+          r.byUnitCategory.map(function (b) {
+            return [b.bucket, b.eligible, b.registered, b.approved, b.pending,
+                    b.coverage == null ? '—' : b.coverage];
+          }), { wrapCols: [0], numCols: [1, 2, 3, 4, 5] }) +
+        '</div>';
+
+      // ── Office-wise, kept collapsed: ~190 offices is a lot of table ──
+      h += '<div class="section-title">Office-wise registration</div>' +
+        '<details class="card"><summary style="cursor:pointer;font-weight:700;font-size:13.5px">' +
+          'Show all ' + r.byOffice.length + ' office(s)</summary>' +
+          '<div style="margin-top:13px">' +
+          QuizAdmin.table(['Office', 'On roll', 'Registered', 'Approved', 'Pending', 'Coverage %'],
+            r.byOffice.map(function (o) {
+              return [o.office, o.eligible, o.registered, o.approved, o.pending,
+                      o.coverage == null ? '—' : o.coverage];
+            }), { wrapCols: [0], numCols: [1, 2, 3, 4, 5] }) +
+          '</div>' +
+        '</details>';
+
+      // ── Registrations per day ──────────────────────────────────
+      if (r.byDay.length) {
+        var peak = Math.max.apply(null, r.byDay.map(function (d) { return d.count; }));
+        h += '<div class="section-title">Registrations by day (IST)</div>' +
+          '<div class="card"><div class="spark">' +
+          r.byDay.map(function (d) {
+            return '<div class="spark-col" title="' + QuizUI.esc(d.date + ' — ' + d.count) + '">' +
+              '<em>' + d.count + '</em>' +
+              '<div class="sb"><i style="height:' +
+                Math.max(4, Math.round((d.count / peak) * 100)) + '%"></i></div>' +
+              '<span>' + QuizUI.esc(d.date.slice(5)) + '</span></div>';
+          }).join('') +
+          '</div></div>';
+      }
+
+      h += '<div class="btn-row" style="margin-top:16px">' +
+        '<button class="btn ghost sm" type="button" id="dxlCat">&#11015; Category-wise (Excel)</button>' +
+        '<button class="btn ghost sm" type="button" id="dxlUnit">&#11015; Unit-wise (Excel)</button>' +
+        '<button class="btn ghost sm" type="button" id="drefresh">Refresh</button>' +
+      '</div>';
+
+      pane().innerHTML = h;
+
+      document.getElementById('dxlCat').addEventListener('click', function () {
+        dlReport('category-registrations', 'Category-wise-Registration');
+      });
+      document.getElementById('dxlUnit').addEventListener('click', function () {
+        dlReport('unit-registrations', 'Unit-wise-Registration');
+      });
+      document.getElementById('drefresh').addEventListener('click', renderDashboard);
+    }).catch(function (e) {
+      pane().innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  function unitsOf(stats) {
+    return (stats.byUnit || []).map(function (u) { return u.unit; })
+      .filter(function (u) { return u && u !== 'Unspecified'; })
+      .sort();
+  }
+
+  function dlReport(kind, name) {
+    QuizUI.toast('Preparing the report…');
+    QuizAPI.admin('report', { kind: kind }).then(function (r) {
+      QuizAdmin.exportXlsx('Quiz-' + name + '-' + stamp() + '.xlsx', r.title, r.columns, r.rows);
+      QuizUI.toast(r.rows.length + ' row(s) exported.', 'ok');
+    }).catch(QuizUI.err);
+  }
+
+  function bar(pct) {
+    return '<div class="bar"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>';
+  }
+
+  function st2(k, v, n) {
+    return '<div class="stat"><div class="k">' + QuizUI.esc(k) + '</div>' +
+      '<div class="v">' + QuizUI.esc(v) + '</div>' +
+      '<div class="n">' + QuizUI.esc(n) + '</div></div>';
   }
 
   function tabBtn(v, label) {
@@ -95,6 +296,8 @@
           '<option value="SUSPENDED">Suspended</option>' +
           '<option value="CANCELLED">Cancelled</option>' +
         '</select>' +
+        categorySelect('rc') +
+        unitSelect('ru') +
         '<button class="btn sm ghost" type="button" id="rgo">Search</button>' +
         '<button class="btn sm ghost" type="button" id="rxl">&#11015; Excel</button>' +
         (QuizAdmin.atLeast('QUIZ_ADMIN')
@@ -109,6 +312,8 @@
       if (e.key === 'Enter') loadRegs();
     });
     document.getElementById('rs').addEventListener('change', loadRegs);
+    document.getElementById('rc').addEventListener('change', loadRegs);
+    document.getElementById('ru').addEventListener('change', loadRegs);
     document.getElementById('rxl').addEventListener('click', exportRegs);
 
     var add = document.getElementById('radd');
@@ -125,6 +330,8 @@
     QuizAPI.admin('registrations-list', {
       q: document.getElementById('rq').value.trim(),
       status: document.getElementById('rs').value,
+      category: document.getElementById('rc').value,
+      unit: document.getElementById('ru').value,
       limit: 500,
     }).then(function (r) {
       if (!r.registrations.length) {
@@ -138,7 +345,8 @@
         r.registrations.length + ' of ' + r.total + ' registration(s).</p>';
 
       html += '<div class="tbl-wrap"><table class="tbl"><thead><tr>' +
-        '<th>Registration</th><th>Employee</th><th>Designation</th><th>Office</th>' +
+        '<th>Registration</th><th>Employee</th><th>Designation</th><th>Category</th>' +
+        '<th>Unit / Sub Division</th><th>Office</th>' +
         '<th>Sign-in</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
 
       r.registrations.forEach(function (x) {
@@ -151,6 +359,8 @@
             '<span style="font-family:JetBrains Mono,monospace;font-size:11.5px">' +
             QuizUI.esc(x.employee_id) + '</span></td>' +
           '<td class="wrap">' + QuizUI.esc(x.designation) + '</td>' +
+          '<td>' + catBadge(x.category) + '</td>' +
+          '<td class="wrap">' + QuizUI.esc(x.unit || '—') + '</td>' +
           '<td class="wrap">' + QuizUI.esc(x.office) + '</td>' +
           '<td>' + (idn.provider === 'google'
               ? QuizUI.badge('Google', 'ok') + '<br><span style="font-size:10.5px;color:var(--muted)">' +
@@ -167,7 +377,9 @@
 
       Array.prototype.forEach.call(list.querySelectorAll('[data-act]'), function (b) {
         b.addEventListener('click', function () {
-          onAction(b.getAttribute('data-act'), b.getAttribute('data-id'), b.getAttribute('data-name'));
+          var id = b.getAttribute('data-id');
+          var row = r.registrations.filter(function (x) { return x.id === id; })[0];
+          onAction(b.getAttribute('data-act'), id, b.getAttribute('data-name'), row);
         });
       });
     }).catch(function (e) {
@@ -182,11 +394,73 @@
     if (x.status !== 'APPROVED') {
       out += mini('approve', x.id, n, 'Approve', 'ok');
     }
+    out += mini('category', x.id, n, 'Category', '');
     if (x.status !== 'SUSPENDED') out += mini('suspend', x.id, n, 'Suspend', '');
     if (x.status !== 'REJECTED') out += mini('reject', x.id, n, 'Reject', '');
     out += mini('unlink', x.id, n, 'Unlink', 'danger');
     out += '</div>';
     return out;
+  }
+
+  // Correcting the prize category on one registration. This is the registration's
+  // OWN record, not the directory: it is what the leaderboard reads, so a fix
+  // here takes effect immediately and is not undone by a later roster import.
+  function editCategory(x) {
+    QuizUI.modal('cmod', 'Category and unit — ' + (x.employee_name || ''),
+      QuizUI.alert('', '&#8505;',
+        'This changes the record this registration competes under. Use it when the roster had ' +
+        'the wrong category, or the employee has moved between units. The employee directory ' +
+        'is not altered; correct that separately if it is also wrong.') +
+      '<div class="field"><label for="c_cat">Staff category</label>' +
+        '<select class="select" id="c_cat">' +
+          '<option value=""' + (!x.category ? ' selected' : '') + '>— not set —</option>' +
+          '<option value="DEPARTMENTAL"' + (x.category === 'DEPARTMENTAL' ? ' selected' : '') +
+            '>Departmental</option>' +
+          '<option value="GDS"' + (x.category === 'GDS' ? ' selected' : '') + '>GDS</option>' +
+        '</select></div>' +
+      '<div class="field"><label for="c_unit">Unit / Sub Division</label>' +
+        '<input class="input" id="c_unit" list="unitList" value="' +
+          QuizUI.esc(x.unit || '') + '" placeholder="e.g. Karur Sub Division" />' +
+        unitDatalist() + '</div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'cmod\')">Cancel</button>' +
+      '<button class="btn" type="button" id="cok" style="flex:1">Save</button>');
+
+    document.getElementById('cok').addEventListener('click', function () {
+      QuizAPI.admin('registration-edit', null, {
+        id: x.id,
+        category: document.getElementById('c_cat').value,
+        unit: document.getElementById('c_unit').value.trim(),
+      }).then(function () {
+        QuizUI.closeModal('cmod');
+        QuizUI.toast('Registration updated.', 'ok');
+        loadRegs();
+      }).catch(QuizUI.err);
+    });
+  }
+
+  /* ── Shared filter controls ───────────────────────────────────── */
+  function categorySelect(id, label) {
+    return '<select class="select" id="' + id + '">' +
+      '<option value="">' + (label || 'All categories') + '</option>' +
+      '<option value="DEPARTMENTAL">Departmental</option>' +
+      '<option value="GDS">GDS</option>' +
+      '<option value="UNSPECIFIED">Unspecified</option>' +
+    '</select>';
+  }
+
+  function unitSelect(id) {
+    return '<select class="select" id="' + id + '">' +
+      '<option value="">All units / sub divisions</option>' +
+      facets.units.map(function (u) {
+        return '<option value="' + QuizUI.esc(u) + '">' + QuizUI.esc(u) + '</option>';
+      }).join('') +
+    '</select>';
+  }
+
+  function unitDatalist() {
+    return '<datalist id="unitList">' + facets.units.map(function (u) {
+      return '<option value="' + QuizUI.esc(u) + '"></option>';
+    }).join('') + '</datalist>';
   }
 
   function mini(act, id, name, label, cls) {
@@ -195,8 +469,9 @@
       label + '</button>';
   }
 
-  function onAction(act, id, name) {
+  function onAction(act, id, name, row) {
     if (act === 'unlink') return unlink(id, name);
+    if (act === 'category') return editCategory(row || { id: id, employee_name: name });
     var map = { approve: 'APPROVED', suspend: 'SUSPENDED', reject: 'REJECTED' };
     var status = map[act];
     if (!status) return;
@@ -288,8 +563,14 @@
     });
   }
 
+  // The export follows the filters on screen, so what is downloaded is what
+  // the administrator is looking at.
   function exportRegs() {
-    QuizAPI.admin('report', { kind: 'registrations' }).then(function (r) {
+    QuizAPI.admin('report', {
+      kind: 'registrations',
+      category: document.getElementById('rc').value,
+      unit: document.getElementById('ru').value,
+    }).then(function (r) {
       QuizAdmin.exportXlsx('Quiz-Registrations-' + stamp() + '.xlsx', 'Registrations', r.columns, r.rows);
       QuizUI.toast('Exported ' + r.rows.length + ' registration(s).', 'ok');
     }).catch(QuizUI.err);
@@ -301,7 +582,9 @@
   function renderDirectory() {
     pane().innerHTML =
       '<div class="toolbar">' +
-        '<input class="input" id="eq" placeholder="Search Employee ID, name, designation or office…" />' +
+        '<input class="input" id="eq" placeholder="Search Employee ID, name, designation, unit or office…" />' +
+        categorySelect('ec') +
+        unitSelect('eu') +
         '<button class="btn sm ghost" type="button" id="ego">Search</button>' +
         '<button class="btn sm ghost" type="button" id="exl">&#11015; Excel</button>' +
         (QuizAdmin.atLeast('QUIZ_ADMIN')
@@ -315,16 +598,12 @@
     document.getElementById('eq').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') loadDir();
     });
+    document.getElementById('ec').addEventListener('change', loadDir);
+    document.getElementById('eu').addEventListener('change', loadDir);
+    // The whole directory, server-side, so the export is not limited to the
+    // 300 rows the table happens to be showing.
     document.getElementById('exl').addEventListener('click', function () {
-      QuizAPI.admin('employees-list', { limit: 1000 }).then(function (r) {
-        QuizAdmin.exportXlsx('Quiz-Employee-Directory-' + stamp() + '.xlsx', 'Employees',
-          ['Employee ID', 'Name', 'Designation', 'Office', 'Division', 'Active'],
-          r.employees.map(function (e) {
-            return [e.employee_id, e.employee_name, e.designation, e.office,
-                    e.division || '', e.active ? 'Yes' : 'No'];
-          }));
-        QuizUI.toast('Exported ' + r.employees.length + ' employee(s).', 'ok');
-      }).catch(QuizUI.err);
+      dlReport('directory', 'Employee-Directory');
     });
 
     loadDir();
@@ -334,7 +613,10 @@
     var list = document.getElementById('elist');
     list.innerHTML = QuizUI.skeleton(4);
     QuizAPI.admin('employees-list', {
-      q: document.getElementById('eq').value.trim(), limit: 300,
+      q: document.getElementById('eq').value.trim(),
+      category: document.getElementById('ec').value,
+      unit: document.getElementById('eu').value,
+      limit: 300,
     }).then(function (r) {
       if (!r.total) {
         list.innerHTML = QuizUI.empty('&#128193;', 'Employee Directory Pending Import',
@@ -347,7 +629,8 @@
         '<p style="font-size:12.5px;color:var(--muted);margin-bottom:11px">Showing ' +
           r.employees.length + ' of ' + r.total + ' employee(s) in the directory.</p>' +
         '<div class="tbl-wrap"><table class="tbl"><thead><tr>' +
-          '<th>Employee ID</th><th>Name</th><th>Designation</th><th>Office</th>' +
+          '<th>Employee ID</th><th>Name</th><th>Designation</th><th>Category</th>' +
+          '<th>Unit / Sub Division</th><th>Office</th>' +
           '<th>Status</th>' + (canEdit ? '<th>Action</th>' : '') +
         '</tr></thead><tbody>' +
         r.employees.map(function (e) {
@@ -356,6 +639,8 @@
               QuizUI.esc(e.employee_id) + '</td>' +
             '<td class="wrap">' + QuizUI.esc(e.employee_name) + '</td>' +
             '<td class="wrap">' + QuizUI.esc(e.designation) + '</td>' +
+            '<td>' + catBadge(e.category) + '</td>' +
+            '<td class="wrap">' + QuizUI.esc(e.unit || '—') + '</td>' +
             '<td class="wrap">' + QuizUI.esc(e.office) + '</td>' +
             '<td>' + (e.active ? QuizUI.badge('Active', 'ok') : QuizUI.badge('Inactive', 'mute')) + '</td>' +
             (canEdit ? '<td><button class="btn sm ghost" type="button" data-emp="' +
@@ -396,9 +681,18 @@
         '<input class="input" id="e_desig" value="' + QuizUI.esc(e.designation || '') + '" /></div>' +
       '<div class="field"><label for="e_office">Office</label>' +
         '<input class="input" id="e_office" value="' + QuizUI.esc(e.office || '') + '" /></div>' +
-      '<div class="field"><label for="e_cat">Category (optional)</label>' +
-        '<input class="input" id="e_cat" value="' + QuizUI.esc(e.category || '') + '" ' +
-        'placeholder="e.g. DS or GDS" /></div>' +
+      '<div class="field"><label for="e_cat">Staff category</label>' +
+        '<select class="select" id="e_cat">' +
+          '<option value=""' + (!e.category ? ' selected' : '') + '>— not set —</option>' +
+          '<option value="DEPARTMENTAL"' + (e.category === 'DEPARTMENTAL' ? ' selected' : '') +
+            '>Departmental</option>' +
+          '<option value="GDS"' + (e.category === 'GDS' ? ' selected' : '') + '>GDS</option>' +
+        '</select>' +
+        '<div class="hint">Prizes are awarded separately in each category, so an employee ' +
+          'left unset competes in neither.</div></div>' +
+      '<div class="field"><label for="e_unit">Unit / Sub Division</label>' +
+        '<input class="input" id="e_unit" list="unitList" value="' + QuizUI.esc(e.unit || '') + '" ' +
+        'placeholder="e.g. Karur Sub Division" />' + unitDatalist() + '</div>' +
       '<div class="field"><div class="checkrow">' +
         '<input type="checkbox" id="e_active"' + (e.active === false ? '' : ' checked') + ' />' +
         '<label for="e_active" style="font-weight:500;margin:0">Active &mdash; may register for the ' +
@@ -422,7 +716,8 @@
         employee_name: document.getElementById('e_name').value.trim(),
         designation: document.getElementById('e_desig').value.trim(),
         office: document.getElementById('e_office').value.trim(),
-        category: document.getElementById('e_cat').value.trim() || null,
+        category: document.getElementById('e_cat').value || null,
+        unit: document.getElementById('e_unit').value.trim() || null,
         active: document.getElementById('e_active').checked,
       }).then(function () {
         QuizUI.closeModal('eed');
@@ -444,9 +739,11 @@
     pane().innerHTML =
       QuizUI.alert('', '&#8505;',
         'Upload the divisional employee list as <b>.xlsx</b> or <b>.csv</b>. The four required ' +
-        'columns are <b>Employee ID</b>, <b>Name</b>, <b>Designation</b> and <b>Office</b> &mdash; ' +
-        'the column names are mapped below, so your existing sheet does not need renaming. ' +
-        'Employee IDs are stored as text, so leading zeros survive.') +
+        'columns are <b>Employee ID</b>, <b>Name</b>, <b>Designation</b> and <b>Office</b>; ' +
+        '<b>Staff Category</b> and <b>Unit/ Sub Division</b> are strongly recommended, because ' +
+        'the prize lists are drawn up per category and registration is monitored per unit. ' +
+        'The column names are mapped below, so your existing sheet does not need renaming, and ' +
+        'Employee IDs are stored as text so leading zeros survive.') +
 
       '<div class="card">' +
         '<div class="drop" id="drop" tabindex="0" role="button" ' +
@@ -459,6 +756,23 @@
         '<div id="mapArea" style="margin-top:16px"></div>' +
       '</div>' +
       '<div id="impOut"></div>' +
+      '<div class="card">' +
+        '<div class="card-head"><div class="card-ic">&#128260;</div>' +
+          '<div><div class="card-t">Sync registrations from the directory</div>' +
+          '<div class="card-s">Fill in category and unit on registrations that have none</div></div></div>' +
+        '<p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:13px">' +
+          'Employees who registered before the roster carried a staff category sit outside both ' +
+          'prize lists until this is run. It copies category and unit from the employee directory ' +
+          'onto their registration and onto any result already computed. <b>Nothing else is ' +
+          'touched</b> &mdash; no status, no attempt, no score, and never a category an ' +
+          'administrator has already set by hand.' +
+        '</p>' +
+        '<div class="btn-row">' +
+          '<button class="btn ghost sm" type="button" id="bfill">Fill in the blanks</button>' +
+          '<button class="btn ghost sm" type="button" id="bresync">Re-sync everything</button>' +
+        '</div>' +
+        '<span id="bfOut" style="display:block;margin-top:10px;font-size:12.5px;color:var(--muted)"></span>' +
+      '</div>' +
       '<div class="card">' +
         '<div class="card-head"><div class="card-ic">&#128220;</div>' +
           '<div><div class="card-t">Recent imports</div>' +
@@ -486,7 +800,40 @@
       if (file.files && file.files[0]) handleFile(file.files[0]);
     });
 
+    document.getElementById('bfill').addEventListener('click', function () { backfill(false); });
+    document.getElementById('bresync').addEventListener('click', function () { backfill(true); });
+
     loadJobs();
+  }
+
+  function backfill(overwrite) {
+    var go = function () {
+      var out = document.getElementById('bfOut');
+      out.textContent = 'Working…';
+      QuizAPI.admin('registrations-backfill', null, { overwrite: overwrite })
+        .then(function (r) {
+          out.textContent = r.message;
+          QuizUI.toast(r.message, 'ok');
+        }).catch(function (e) { out.textContent = ''; QuizUI.err(e); });
+    };
+
+    if (!overwrite) return go();
+
+    // Re-syncing overwrites categories an administrator may have corrected by
+    // hand, so it asks first. Filling blanks cannot lose anything and does not.
+    QuizUI.modal('bfm', 'Re-sync every registration',
+      QuizUI.alert('warn', '&#9888;',
+        'This overwrites the category and unit on <b>every</b> registration with whatever the ' +
+        'employee directory currently says &mdash; including records an administrator has ' +
+        'corrected by hand. Use it only after re-importing a corrected roster. Statuses, ' +
+        'attempts and scores are not affected.'),
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'bfm\')">Cancel</button>' +
+      '<button class="btn danger" type="button" id="bfok" style="flex:1">Re-sync everything</button>');
+
+    document.getElementById('bfok').addEventListener('click', function () {
+      QuizUI.closeModal('bfm');
+      go();
+    });
   }
 
   function handleFile(f) {
@@ -513,11 +860,18 @@
       }
       return '';
     };
+    // Order matters here. "Office" must be guessed from `officedesc`/`office`
+    // BEFORE anything looks at `unit`, and the unit guess must not match
+    // "Office_desc" — the Karur Division sheet has both "Office_desc" and
+    // "Unit/ Sub Division", and swapping them would put every employee in the
+    // wrong sub division.
     var g = {
       employee_id: guess(['employeeid', 'empid', 'hrms', 'staffid', 'id']),
       employee_name: guess(['employeename', 'name', 'official']),
       designation: guess(['postdesc', 'designation', 'post', 'cadre']),
-      office: guess(['officedesc', 'office', 'unit', 'so', 'bo']),
+      office: guess(['officedesc', 'office', 'so', 'bo']),
+      unit: guess(['unitsubdivision', 'subdivision', 'unit']),
+      category: guess(['staffcategory', 'category', 'cadretype', 'employeetype']),
     };
 
     var opts = function (sel) {
@@ -535,7 +889,8 @@
       mapRow('Name', 'm_employee_name', opts(g.employee_name)) +
       mapRow('Designation', 'm_designation', opts(g.designation)) +
       mapRow('Office', 'm_office', opts(g.office)) +
-      mapRow('Category (optional)', 'm_category', opts(guess(['category', 'type', 'cadretype']))) +
+      mapRow('Staff Category', 'm_category', opts(g.category)) +
+      mapRow('Unit / Sub Division', 'm_unit', opts(g.unit)) +
       '<div class="field" style="margin-top:14px">' +
         '<label for="mode">If an Employee ID already exists</label>' +
         '<select class="select" id="mode">' +
@@ -569,10 +924,16 @@
       designation: pick('m_designation'),
       office: pick('m_office'),
       category: pick('m_category'),
+      unit: pick('m_unit'),
     };
     if (!m.employee_id || !m.employee_name || !m.designation || !m.office) {
       QuizUI.toast('Map Employee ID, Name, Designation and Office before importing.', 'err');
       return;
+    }
+    // Not fatal — the directory is still usable without it — but it is worth
+    // saying out loud, because the prize lists depend on it.
+    if (!m.category && !dryRun) {
+      QuizUI.toast('No Staff Category column mapped — nobody will be placed in a prize list.', 'err');
     }
 
     var rows = parsed.rows.map(function (r) {
@@ -582,6 +943,7 @@
         designation: r[m.designation],
         office: r[m.office],
         category: m.category ? r[m.category] : null,
+        unit: m.unit ? r[m.unit] : null,
       };
     });
 
@@ -610,6 +972,21 @@
       if (r.message) {
         h += '<p style="margin-top:14px;font-size:13.5px;font-weight:600">' +
           QuizUI.esc(r.message) + '</p>';
+      }
+
+      // Confirming that the two columns the prize lists depend on landed on the
+      // right people is the whole reason to preview before importing.
+      if (r.breakdown) {
+        h += '<div class="section-title">Staff category in this file</div>' +
+          QuizAdmin.table(['Category', 'Employees'],
+            Object.keys(r.breakdown.byCategory).sort().map(function (k) {
+              return [k === 'Unspecified' ? 'Unspecified' : catLabel(k), r.breakdown.byCategory[k]];
+            }), { numCols: [1] }) +
+          '<div class="section-title">Unit / Sub Division in this file</div>' +
+          QuizAdmin.table(['Unit / Sub Division', 'Employees'],
+            Object.keys(r.breakdown.byUnit).sort().map(function (k) {
+              return [k, r.breakdown.byUnit[k]];
+            }), { wrapCols: [0], numCols: [1] });
       }
 
       if (r.issues && r.issues.length) {

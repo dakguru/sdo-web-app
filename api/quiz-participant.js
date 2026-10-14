@@ -170,6 +170,10 @@ async function registerAction(req, res) {
       employee_name: emp.employee_name,
       designation: emp.designation,
       office: emp.office,
+      // Snapshotted for the same reason as designation and office: the prize
+      // category a participant competed in must not change under them later.
+      category: emp.category || null,
+      unit: emp.unit || null,
       status,
       roster_verified: true,
       manual_entry: false,
@@ -779,12 +783,22 @@ async function finaliseAttempt(req, attempt, status) {
   const autoPublish = ex && (ex.result_mode === 'AUTO' ||
     (ex.result_mode === 'SCHEDULED' && ex.result_publish_ms && now >= ex.result_publish_ms));
 
+  // The prize category travels with the result, taken from the registration as
+  // it stood when the examination was sat. A later correction to the directory
+  // cannot move somebody between prize lists after the event.
+  const reg = attempt.registration_id
+    ? await Q.sbOne('quiz_registrations',
+        'select=category,unit&id=' + Q.eq(attempt.registration_id))
+    : null;
+
   const row = Object.assign({
     attempt_id: attempt.id,
     exam_id: attempt.exam_id,
     registration_id: attempt.registration_id,
     employee_id: attempt.employee_id,
     mode: attempt.mode,
+    category: reg ? reg.category : null,
+    unit: reg ? reg.unit : null,
     elapsed_seconds: Math.max(0, Math.round((now - attempt.started_ms) / 1000)),
     published: !!autoPublish,
     withheld: false,
@@ -836,15 +850,28 @@ async function resultAction(req, res) {
 
   // Rank is computed live over published, non-withheld official results:
   // score descending, then elapsed time ascending.
-  let rank = null, outOf = null;
+  //
+  // Two ranks are reported. The overall one places the participant in the
+  // whole division; the category one places them among their own — Departmental
+  // or GDS — which is the rank the prizes are actually awarded on, so it is the
+  // one that matters to them.
+  let rank = null, outOf = null, categoryRank = null, categoryOutOf = null;
   if (ex && ex.rank_enabled && !isTest) {
     const peers = await Q.sbSelect('quiz_results',
-      'select=attempt_id,score,elapsed_seconds&exam_id=' + Q.eq(attempt.exam_id) +
+      'select=attempt_id,score,elapsed_seconds,category&exam_id=' + Q.eq(attempt.exam_id) +
       '&mode=' + Q.eq('OFFICIAL') + '&published=is.true&withheld=is.false' +
       '&order=score.desc,elapsed_seconds.asc');
     outOf = (peers || []).length;
     const idx = (peers || []).findIndex(p => p.attempt_id === attemptId);
     if (idx >= 0) rank = idx + 1;
+
+    const myCategory = result.category || (registration && registration.category) || null;
+    if (myCategory) {
+      const same = (peers || []).filter(p => p.category === myCategory);
+      categoryOutOf = same.length;
+      const ci = same.findIndex(p => p.attempt_id === attemptId);
+      if (ci >= 0) categoryRank = ci + 1;
+    }
   }
 
   let answerKey = null;
@@ -860,14 +887,20 @@ async function resultAction(req, res) {
       employeeId: registration.employee_id,
       designation: registration.designation,
       office: registration.office,
+      category: registration.category || null,
+      categoryLabel: Q.categoryLabel(registration.category),
+      unit: registration.unit || null,
       regCode: registration.reg_code,
     } : {
       // A TEST attempt has no registration — it is an administrator dry run.
       employeeName: attempt.actor_label || 'Administrator test',
       employeeId: '—', designation: 'TEST MODE', office: '—', regCode: 'TEST',
+      category: null, categoryLabel: 'Unspecified', unit: null,
     },
     result: shapeResult(result, ex),
     rank, outOf,
+    categoryRank, categoryOutOf,
+    categoryLabel: Q.categoryLabel(result.category || (registration && registration.category)),
     answerKey,
   });
 }
@@ -991,6 +1024,9 @@ function shapeRegistration(r) {
     employeeName: r.employee_name,
     designation: r.designation,
     office: r.office,
+    category: r.category || null,
+    categoryLabel: Q.categoryLabel(r.category),
+    unit: r.unit || null,
     status: r.status,
     rosterVerified: r.roster_verified,
     remarks: r.remarks,

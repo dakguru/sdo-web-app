@@ -76,6 +76,33 @@ android-app/supabase/migration_v21_quiz_duration_mode.sql
 It is likewise idempotent (`add column if not exists`), and existing
 examinations keep their hand-entered duration.
 
+Then run the staff category and unit migration, which is what makes the
+Departmental and GDS prize lists possible:
+
+```
+android-app/supabase/migration_v22_quiz_category_unit.sql
+```
+
+**Run this before deploying the code**, not after. It adds `unit` to
+`quiz_employees`, and `category` + `unit` to `quiz_registrations` and
+`quiz_results`; the application writes those columns from the moment it is
+deployed, so a submission that lands before the migration would fail.
+
+It is idempotent and additive. It backfills the new columns from the records
+already present and changes nothing else — every existing registration,
+attempt, answer and result survives exactly as it was. The one value it
+rewrites is a free-text `quiz_employees.category` that an earlier import left
+as, say, `ds` or `Gramin Dak Sevak`; those are normalised onto `DEPARTMENTAL`
+and `GDS`. Anything it cannot recognise is left alone and shows as
+**Unspecified** for an administrator to correct by hand.
+
+After deploying, go to **Employees → Import from Excel** and re-import
+`Karur Division Employee List.xlsx` with the **Staff Category** and
+**Unit/ Sub Division** columns mapped (the importer guesses both correctly from
+that sheet's headers). Use mode **MERGE** — nobody is deactivated, and the
+import finishes by filling in category and unit on the registrations that
+already exist.
+
 ### Step 2 — Set the environment variables in Vercel
 
 Project → Settings → Environment Variables. All four are **required**; the
@@ -191,10 +218,27 @@ per-user grants at `/Quiz/admin/settings` → **Quiz privileges**.
 
 Your file is already in the right shape — **782 employees, zero duplicates,
 zero blanks, 333 offices, 32 designations** — and the column guesser picks up
-`Employee_id / Employee_name / Post_desc / Office_desc` automatically.
+`Employee_id / Employee_name / Post_desc / Office_desc / Unit/ Sub Division /
+Staff Category` automatically.
+
+**Map Staff Category and Unit/ Sub Division.** They are not decoration:
+
+- **Staff Category** decides which of the two prize lists an employee competes
+  in. The roster's `Departmental` and `GDS` are normalised to the two codes the
+  module uses; so are `DS`, `Gramin Dak Sevak` and similar spellings. Anything
+  unrecognised is reported row by row and stored as **Unspecified** — the
+  employee can still register and sit the examination, but wins nothing until
+  an administrator sets the category.
+- **Unit/ Sub Division** is what the registration dashboard counts by. The
+  Divisional Office appears in the roster as both `DO Karur` and `KARUR DO`;
+  both are stored as **DO Karur**, so the unit is counted once, not twice.
+  The current file gives **7 units**: Karur, Kulithalai, Manaparai and
+  Aravakurichi Sub Divisions, Karur H.O, Kulittalai H.O and DO Karur.
 
 - Press **Preview** first: it reports what will be inserted, updated and
-  skipped, without writing anything.
+  skipped, **and the category and unit breakdown of the file**, without writing
+  anything. Check those two tables add up to 211 Departmental / 571 GDS before
+  importing.
 - Employee IDs are stored as **text**, so leading zeros survive.
 - **Merge** (recommended) updates existing records and keeps everyone else.
 - **Replace** marks everyone inactive first, then imports the file as the full
@@ -204,6 +248,42 @@ zero blanks, 333 offices, 32 designations** — and the column guesser picks up
 
 Nobody can register until this is done. Until then every page says
 *"Employee Directory Pending Import."*
+
+An import ends by **filling in category and unit on the registrations that
+already exist**, taking them from the directory record each one was created
+against. It only ever fills a blank — a category an administrator has corrected
+by hand is never overwritten — and it touches nothing else: no status, no
+attempt, no score. If the directory was corrected in place rather than
+re-imported, the same thing is available as **Sync registrations from the
+directory → Fill in the blanks** on the Import tab. **Re-sync everything** on
+that card is the deliberate override that *does* overwrite hand corrections;
+it asks before it runs and is written to the audit log.
+
+### 3.2a Watch registration on the dashboard
+
+`/Quiz/admin/employees` → **Registration Dashboard**
+
+The landing tab of the Employees page, and the thing to watch during the
+campaign. It shows:
+
+- **Category-wise registration** — Departmental and GDS, each against its
+  strength on the roll, with a coverage percentage. A third card appears only
+  if somebody has registered without a category, which is a problem to fix
+  before results are published.
+- **Unit / Sub Division-wise registration** — one line per unit with employees
+  on roll, registered, the Departmental/GDS split, approved, pending and
+  coverage. This is what tells a Sub Divisional Head whether there is anybody
+  left to chase.
+- **Unit × category** — the same figures crossed, which is the grid prize
+  distribution is planned from.
+- **Office-wise registration**, collapsed behind a disclosure because there are
+  over 300 offices.
+- **Registrations by day (IST)** — whether the campaign is still moving.
+
+Both breakdowns export to Excel from the buttons at the foot of the tab, and
+again from the Reports page. The Registrations and Employee Directory tabs
+carry matching **Category** and **Unit / Sub Division** filters, and a per-row
+**Category** button for correcting one registration.
 
 ### 3.3 Load the question bank
 
@@ -287,7 +367,8 @@ remains, and that the paper reads correctly on a phone.
 | Approve any pending registrations | `/Quiz/admin/employees` → **Approve all pending** |
 | Close attempts whose phone went away | `/Quiz/admin` → **Finalise expired attempts** |
 | Release results | `/Quiz/admin/reports` → **Publish all results** |
-| Export everything | `/Quiz/admin/reports` → nine Excel reports |
+| Read out the prize list | `/Quiz/admin/reports` → **Prize list — top 3 in each category** |
+| Export everything | `/Quiz/admin/reports` → seventeen Excel reports |
 
 Registration is set to **approve automatically on a roster match**, so
 employees can register and sit the quiz without waiting for you. You can still
@@ -298,6 +379,34 @@ instead, turn the setting off at `/Quiz/admin/settings`.
 *"Your examination has been submitted. Results will be published by the
 administrator."* until you publish. You can also withhold one individual result
 pending enquiry, with a recorded reason.
+
+### Results and the leaderboard are published in two categories
+
+Prizes go to the top three **Departmental** officials and the top three **GDS**
+separately, so the Reports page draws two prize lists side by side. Neither is
+ranked against the other: the first GDS participant is first in GDS, however
+many Departmental scores sit above theirs overall.
+
+- **Prizes per category** at the top of the page sets how many places each list
+  shows. It defaults to **Top 3**.
+- Rank is **score descending, then the faster time**. A genuine tie — identical
+  score *and* identical time — shares a place and both names appear, so a
+  "top 3" can legitimately be four people long. The place after a tie skips
+  (1, 2, 2, 4), as a prize list must read.
+- A **withheld** result cannot win a prize. It is excluded from its category
+  ranking and the place passes to the next person, while the result itself
+  stays visible, flagged, in the full table below.
+- Anybody whose category is **Unspecified** is shown in a third list of their
+  own, never folded into a prize list. If that list is not empty, fix the
+  categories before announcing anything.
+- The full results table shows **Category Rank** (which carries the medal) next
+  to the overall rank, with the category and unit on every row, and filters by
+  category.
+- **Download the prize list** exports exactly what is on screen; *Leaderboard
+  by Category* in the report grid does the same.
+
+Each participant sees their own standing in their category first, with their
+division-wide rank beside it, on `/Quiz/result/…`.
 
 ---
 
@@ -400,13 +509,16 @@ if anyone has already sat the examination. Duplicate the examination instead.
 node "Leave Orders/quiz/selftest.js"
 ```
 
-56 tests, no database or network required. They cover the parts where a silent
+68 tests, no database or network required. They cover the parts where a silent
 mistake would change somebody's marks or let them into a closed examination:
 the scoring formula (including the specification's worked example — 15 correct,
 3 wrong, 2 unanswered = **57 of 80**), the option permutation across all 24
 orderings, the eligibility and timing gate, the "whichever deadline falls
-first" rule, the IST conversion used by the scheduling form, and the countdown
-formatting. Run it after any change to `_quizlib.js` or the examination engine.
+first" rule, the IST conversion used by the scheduling form, the countdown
+formatting, the staff-category and unit normalisation, and the category-wise
+ranking and prize lists (ties, withheld results, and the rule that Departmental
+and GDS are never ranked against each other). Run it after any change to
+`_quizlib.js`, the examination engine or the ranking.
 
 ### Manual — what the tests cannot cover
 
@@ -492,6 +604,11 @@ Leave Orders/quiz/
 
 android-app/supabase/
   migration_v20_quiz.sql  18 tables, locked to the service role
+  migration_v21_quiz_duration_mode.sql
+                          automatic examination duration
+  migration_v22_quiz_category_unit.sql
+                          staff category + unit/sub division, and the backfill
+                          that gives the existing records theirs
 ```
 
 Three new serverless functions, bringing the project to five — well inside

@@ -21,6 +21,8 @@
     font:800 15px/1 "Plus Jakarta Sans",sans-serif;
     background:linear-gradient(135deg,rgba(245,158,11,.16),rgba(225,29,72,.12));
     border:1px solid rgba(245,158,11,.32);color:var(--ink)}
+  .rank-chip.alt{font-size:13px;font-weight:700;background:var(--card-2);
+    border-color:var(--line);color:var(--muted)}
   .math{font-size:12.5px;color:var(--muted);line-height:1.8;font-variant-numeric:tabular-nums}
   .math b{color:var(--ink)}
 </style>
@@ -116,8 +118,19 @@
       '<div class="score-big">' + QuizUI.esc(s.score) + '</div>' +
       '<div class="score-of">out of ' + QuizUI.esc(s.maxMarks) + ' marks</div>' +
       '<div class="score-pct">' + QuizUI.badge(pct + '%', tone) + '</div>' +
-      (r.rank ? '<div style="margin-top:14px"><span class="rank-chip">&#127942; Rank ' +
-        r.rank + ' of ' + r.outOf + '</span></div>' : '') +
+      // The category rank comes first: prizes are awarded separately to
+      // Departmental officials and to GDS, so that is the standing that counts.
+      ((r.categoryRank || r.rank)
+        ? '<div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">' +
+          (r.categoryRank
+            ? '<span class="rank-chip">&#127942; Rank ' + r.categoryRank + ' of ' +
+              r.categoryOutOf + ' &middot; ' + QuizUI.esc(r.categoryLabel || '') + '</span>'
+            : '') +
+          (r.rank
+            ? '<span class="rank-chip alt">Division-wide: ' + r.rank + ' of ' + r.outOf + '</span>'
+            : '') +
+          '</div>'
+        : '') +
     '</div>';
 
     // Tally
@@ -157,6 +170,8 @@
       '<div class="who-rows">' +
         row('Employee ID', p.employeeId) +
         row('Designation', p.designation) +
+        row('Category', p.categoryLabel || '—') +
+        (p.unit ? row('Sub Division', p.unit) : '') +
         row('Office', p.office) +
         row('Registration', p.regCode) +
         row('Published', s.publishedMs ? QuizTime.ist(s.publishedMs) + ' IST' : '—') +

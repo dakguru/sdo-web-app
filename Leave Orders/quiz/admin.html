@@ -47,7 +47,16 @@
   });
 
   function load(host, quiet) {
-    QuizAPI.admin('overview').then(function (r) {
+    // The registration breakdown is fetched alongside the overview so the
+    // category and unit summary appears with the rest of the page rather than
+    // popping in a moment later. It is not allowed to break the page: if it
+    // fails, the overview still renders without that one section.
+    Promise.all([
+      QuizAPI.admin('overview'),
+      QuizAPI.admin('registration-stats').catch(function () { return null; }),
+    ]).then(function (both) {
+      var r = both[0];
+      r.stats = both[1];
       QuizTime.anchor(r.serverTimeMs);
       render(host, r);
     }).catch(function (e) {
@@ -78,6 +87,10 @@
       stat('Active now', c.examsActive, 'open window') +
       stat('Flagged events', c.suspectEvents, 'for review') +
     '</div>';
+
+    // Registration at a glance, in the two dimensions the division cares
+    // about: the prize category, and the unit the registration came from.
+    if (r.stats) h += registrationSummary(r.stats);
 
     // Per-examination participation
     h += '<div class="section-title">Examinations</div>';
@@ -164,6 +177,53 @@
         });
       }
     }
+  }
+
+  function registrationSummary(s) {
+    var LABELS = { DEPARTMENTAL: 'Departmental', GDS: 'GDS', Unspecified: 'Unspecified' };
+    var h = '<div class="section-title">Registration by category</div>' +
+      '<div class="grid grid-' + Math.min(3, Math.max(2, s.byCategory.length)) + '">' +
+      s.byCategory.map(function (c) {
+        // "Unspecified" has nobody on the roll — everyone in the directory is
+        // classified — so a coverage bar for it would be meaningless.
+        var known = c.eligible > 0;
+        return '<div class="stat">' +
+          '<div class="k">' + QuizUI.esc(LABELS[c.category] || c.category) + '</div>' +
+          '<div class="v">' + c.registered + '</div>' +
+          '<div class="n">' + c.approved + ' approved &middot; ' +
+            (known ? c.eligible + ' on the roll' : 'no category on the roll') + '</div>' +
+          (known
+            ? '<div class="bar-mini"><i style="width:' + Math.min(100, c.coverage) + '%"></i></div>'
+            : '') +
+        '</div>';
+      }).join('') +
+      '</div>';
+
+    // Only the busiest units, with the rest a click away — the overview is a
+    // summary, and the full table lives on the registration dashboard.
+    var top = s.byUnit.slice(0, 6);
+    if (top.length) {
+      h += '<div class="section-title">Registration by unit / sub division</div><div class="card">';
+      top.forEach(function (u) {
+        var pct = u.coverage == null ? 0 : u.coverage;
+        h += '<div class="ex-row">' +
+          '<div class="en"><b>' + QuizUI.esc(u.unit) + '</b>' +
+            '<span>' + u.registered + ' of ' + u.eligible + ' on the roll</span>' +
+            '<div class="bar-mini"><i style="width:' + Math.min(100, pct) + '%"></i></div></div>' +
+          '<div class="mini">' +
+            '<span>Departmental <b>' + u.departmental + '</b></span>' +
+            '<span>GDS <b>' + u.gds + '</b></span>' +
+            '<span>Approved <b>' + u.approved + '</b></span>' +
+            '<span>Pending <b>' + u.pending + '</b></span>' +
+            '<span>Coverage <b>' + pct + '%</b></span>' +
+          '</div>' +
+        '</div>';
+      });
+      h += '<div style="margin-top:12px">' +
+        '<a class="btn sm ghost" href="/Quiz/admin/employees?view=dashboard">' +
+        'Open the registration dashboard &rarr;</a></div></div>';
+    }
+    return h;
   }
 
   function stat(k, v, n) {

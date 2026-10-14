@@ -604,6 +604,68 @@ function computeScore(attempt, answers) {
   };
 }
 
+// ───────────────────────────────────────────────────────────────────
+//  Staff category and unit / sub division
+//
+//  Prizes are awarded separately to Departmental officials and to GDS, so the
+//  category is not decoration — it decides which of the two prize lists an
+//  employee competes in. The roster spells it in whatever way the source
+//  system did ("GDS", "Gramin Dak Sevak", "DS", "Departmental"), so it is
+//  normalised ONCE, here, and every other file imports this function. An
+//  unrecognised value deliberately becomes null rather than a guess: it then
+//  shows as "Unspecified" and is corrected by hand, instead of silently
+//  competing in the wrong category.
+// ───────────────────────────────────────────────────────────────────
+const CATEGORIES = ['DEPARTMENTAL', 'GDS'];
+const CATEGORY_LABELS = { DEPARTMENTAL: 'Departmental', GDS: 'GDS' };
+
+function normCategory(value) {
+  const k = String(value == null ? '' : value).toLowerCase().replace(/[^a-z]/g, '');
+  if (!k) return null;
+  if (k.includes('gds') || k.includes('gramindaksevak') || k.includes('extradepartmental')) return 'GDS';
+  if (k.includes('departmental') || ['ds', 'dept', 'deptl', 'regular'].includes(k)) return 'DEPARTMENTAL';
+  return null;
+}
+
+function categoryLabel(code) {
+  return CATEGORY_LABELS[String(code || '').toUpperCase()] || 'Unspecified';
+}
+
+// Unit / Sub Division. The roster is mostly consistent, but the Divisional
+// Office appears as both "DO Karur" and "KARUR DO", which would otherwise
+// split one unit into two rows on every unit-wise count. Known spellings are
+// mapped to a canonical label; anything unknown keeps the words the roster
+// used and is only tidied for whitespace, so a new unit needs no code change.
+const UNIT_ALIASES = {
+  'do karur': 'DO Karur',
+  'karur do': 'DO Karur',
+  'divisional office karur': 'DO Karur',
+  'divisional office': 'DO Karur',
+  'karur ho': 'Karur H.O',
+  'karur h o': 'Karur H.O',
+  'kulittalai ho': 'Kulittalai H.O',
+  'kulittalai h o': 'Kulittalai H.O',
+  'kulithalai ho': 'Kulittalai H.O',
+  'kulithalai h o': 'Kulittalai H.O',
+  'karur sub division': 'Karur Sub Division',
+  'karur subdivision': 'Karur Sub Division',
+  'kulithalai sub division': 'Kulithalai Sub Division',
+  'kulithalai subdivision': 'Kulithalai Sub Division',
+  'kulittalai sub division': 'Kulithalai Sub Division',
+  'kulittalai subdivision': 'Kulithalai Sub Division',
+  'manaparai sub division': 'Manaparai Sub Division',
+  'manaparai subdivision': 'Manaparai Sub Division',
+  'aravakurichi sub division': 'Aravakurichi Sub Division',
+  'aravakurichi subdivision': 'Aravakurichi Sub Division',
+};
+
+function normUnit(value) {
+  const tidy = String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
+  if (!tidy) return null;
+  const key = tidy.toLowerCase().replace(/[._-]/g, ' ').replace(/\s+/g, ' ').trim();
+  return UNIT_ALIASES[key] || tidy;
+}
+
 // Normalised digest of a question, for duplicate detection on import.
 function questionHash(text) {
   const norm = String(text || '').toLowerCase().replace(/\s+/g, ' ')
@@ -637,4 +699,6 @@ module.exports = {
   rateLimit, logEvent, logAudit,
   clientIp, readJsonBody, json, ok, fail, requireJsonRequest,
   secureShuffle, randomInt, questionHash, istString, sha256, computeScore,
+  // category / unit
+  CATEGORIES, normCategory, categoryLabel, normUnit,
 };

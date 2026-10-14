@@ -26,6 +26,25 @@
   .rep span{font-size:12px;color:var(--muted);line-height:1.5}
   .medal{font-weight:800;font-variant-numeric:tabular-nums}
   .medal.g{color:#d97706}.medal.s{color:#64748b}.medal.b{color:#b45309}
+  /* Prize lists — one board per category, side by side on a wide screen */
+  .board-grid{display:grid;gap:13px;grid-template-columns:1fr}
+  @media(min-width:900px){.board-grid{grid-template-columns:repeat(2,1fr)}}
+  .winners{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+  .winners .w{display:flex;align-items:center;gap:11px;padding:10px 12px;
+    border:1px solid var(--line);border-radius:var(--r-md);background:var(--card-2)}
+  .winners .w.top{border-color:rgba(245,158,11,.38);
+    background:linear-gradient(135deg,rgba(245,158,11,.10),transparent 70%)}
+  .winners .wr{flex:none;width:34px;text-align:center;font:800 19px/1 "Plus Jakarta Sans",sans-serif;
+    font-variant-numeric:tabular-nums}
+  .winners .wn{flex:1;min-width:0}
+  .winners .wn b{display:block;font-size:14px;font-weight:700;overflow-wrap:break-word}
+  .winners .wn em{display:block;font-style:normal;font-size:11.5px;color:var(--muted);
+    margin-top:2px;overflow-wrap:break-word}
+  .winners .ws{flex:none;text-align:right;font:800 17px/1.2 "Plus Jakarta Sans",sans-serif;
+    font-variant-numeric:tabular-nums}
+  .winners .ws small{font-size:11.5px;font-weight:600;color:var(--muted)}
+  .winners .ws em{display:block;font-style:normal;font-size:11px;font-weight:600;color:var(--muted);
+    margin-top:3px}
 </style>
 </head>
 <body>
@@ -42,16 +61,41 @@
   var examId = '';
 
   var REPORTS = [
-    ['registrations',       '&#128221;', 'Registered Employees', 'Every registration with sign-in method and status.', false],
+    ['leaderboard',         '&#127942;', 'Leaderboard by Category', 'The prize list — top places in Departmental and in GDS, separately.', true],
+    ['registrations',       '&#128221;', 'Registered Employees', 'Every registration with category, unit, sign-in method and status.', false],
     ['approved',            '&#9989;', 'Approved Participants', 'Those cleared to sit the examination.', false],
+    ['directory',           '&#128193;', 'Employee Directory', 'The full roster with category, unit and registration state.', false],
+    ['category-registrations', '&#128101;', 'Category-wise Registration', 'Registration against strength on the roll, Departmental and GDS.', false],
+    ['unit-registrations',  '&#127970;', 'Unit-wise Registration', 'Registration by unit and sub division, split by category.', false],
     ['attendance',          '&#128203;', 'Attendance & Non-attendance', 'Who attended and who did not, per approved employee.', true],
-    ['scores',              '&#128202;', 'Scores', 'Ranked scores with the full marking breakdown.', true],
+    ['scores',              '&#128202;', 'Scores', 'Ranked scores with overall and category rank, and the full marking breakdown.', true],
+    ['category-participation', '&#128100;', 'Category-wise Participation', 'Attendance and participation rate, Departmental against GDS.', true],
+    ['category-average',    '&#128201;', 'Category-wise Average Scores', 'Average, highest and lowest score in each category.', true],
+    ['unit-participation',  '&#128205;', 'Unit-wise Participation', 'Attendance and participation rate by unit or sub division.', true],
+    ['unit-average',        '&#128202;', 'Unit-wise Average Scores', 'Average, highest and lowest score by unit or sub division.', true],
     ['office-participation','&#127970;', 'Office-wise Participation', 'Attendance and participation rate by office.', true],
     ['office-average',      '&#128200;', 'Office-wise Average Scores', 'Average, highest and lowest score by office.', true],
     ['question-stats',      '&#10067;', 'Question-wise Statistics', 'How each question performed across all attempts.', true],
     ['suspicious',          '&#128269;', 'Suspicious Activity Review', 'Flagged events for administrator review.', false],
     ['audit',               '&#128220;', 'Examination Audit History', 'Every administrative change, with who and when.', false],
   ];
+
+  // Prizes are awarded to the top three in each category. The number is a
+  // setting rather than a constant only so that a future year can change it
+  // without touching the ranking logic.
+  var topN = 3;
+  var catFilter = '';                 // '' | DEPARTMENTAL | GDS | UNSPECIFIED
+  var lastResults = null;
+
+  var CATEGORY_LABELS = { DEPARTMENTAL: 'Departmental', GDS: 'GDS', UNSPECIFIED: 'Unspecified' };
+  function catLabel(code) { return CATEGORY_LABELS[String(code || '').toUpperCase()] || 'Unspecified'; }
+  function catBadge(code) {
+    var c = String(code || '').toUpperCase();
+    return QuizUI.badge(catLabel(c), c === 'DEPARTMENTAL' ? 'ok' : c === 'GDS' ? '' : 'mute');
+  }
+  function medalFor(rank) {
+    return rank === 1 ? '&#129351;' : rank === 2 ? '&#129352;' : rank === 3 ? '&#129353;' : '';
+  }
 
   QuizAdmin.boot({
     title: 'Reports & Results',
@@ -90,7 +134,14 @@
               QuizUI.esc(e.title) + ' — ' + QuizUI.esc(e.status.replace(/_/g, ' ')) + '</option>';
           }).join('') +
         '</select>' +
+        '<label for="pz" style="font-size:12.5px;font-weight:700">Prizes per category</label>' +
+        '<select class="select" id="pz" style="max-width:110px">' +
+          [1, 2, 3, 5, 10].map(function (n) {
+            return '<option value="' + n + '"' + (n === topN ? ' selected' : '') + '>Top ' + n + '</option>';
+          }).join('') +
+        '</select>' +
       '</div>' +
+      '<div id="boardPane"></div>' +
       '<div id="resPane"></div>' +
       '<div class="section-title">Downloadable reports</div>' +
       '<div class="rep-grid" id="reps"></div>';
@@ -99,6 +150,10 @@
       examId = this.value;
       loadResults();
       renderReps();
+    });
+    document.getElementById('pz').addEventListener('change', function () {
+      topN = parseInt(this.value, 10) || 3;
+      loadResults();
     });
 
     renderReps();
@@ -126,7 +181,7 @@
 
   function download(kind) {
     QuizUI.toast('Preparing the report…');
-    QuizAPI.admin('report', { kind: kind, exam_id: examId }).then(function (r) {
+    QuizAPI.admin('report', { kind: kind, exam_id: examId, top: topN }).then(function (r) {
       if (!r.rows.length) {
         QuizUI.toast('That report has no rows yet.', 'err');
         return;
@@ -143,25 +198,96 @@
   /* ═══════════════════════════════════════════════════════════════
      RESULTS TABLE + PUBLICATION CONTROLS
      ═══════════════════════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════════════════
+     PRIZE LISTS
+
+     Departmental and GDS are two separate competitions with their own top
+     three, so they are drawn as two separate boards rather than one table
+     with a category column. Nothing about the two is ranked against the
+     other, and the layout says so.
+     ═══════════════════════════════════════════════════════════════ */
+  function renderBoard(board, ex) {
+    var pane = document.getElementById('boardPane');
+    if (!pane) return;
+    if (!board || !board.length) { pane.innerHTML = ''; return; }
+
+    var unpublished = (lastResults || []).some(function (x) { return !x.published && !x.withheld; });
+
+    pane.innerHTML =
+      '<div class="section-title">Prize list &mdash; top ' + topN + ' in each category</div>' +
+      (unpublished
+        ? QuizUI.alert('warn', '&#8505;',
+            'Some results in this examination are not published yet. The standing below is ' +
+            'computed from every official attempt and is provisional until they are.')
+        : '') +
+      '<div class="board-grid">' +
+      board.map(function (g) {
+        return '<div class="card board" style="margin:0">' +
+          '<div class="card-head"><div class="card-ic">' +
+            (g.category === 'GDS' ? '&#127968;' : g.category === 'DEPARTMENTAL' ? '&#127970;' : '&#10067;') +
+          '</div><div><div class="card-t">' + QuizUI.esc(g.label) + '</div>' +
+          '<div class="card-s">' + g.participants + ' participant(s) &middot; average ' +
+            g.average + ' &middot; highest ' + g.highest + '</div></div></div>' +
+          (g.winners.length
+            ? '<ol class="winners">' + g.winners.map(function (w) {
+                return '<li class="w' + (w.rank <= 3 ? ' top' : '') + '">' +
+                  '<span class="wr">' + (medalFor(w.rank) || w.rank) + '</span>' +
+                  '<span class="wn"><b>' + QuizUI.esc(w.employeeName || '—') + '</b>' +
+                    '<em>' + QuizUI.esc(w.designation || '') +
+                    (w.unit ? ' &middot; ' + QuizUI.esc(w.unit) : '') +
+                    (w.office ? ' &middot; ' + QuizUI.esc(w.office) : '') + '</em></span>' +
+                  '<span class="ws">' + w.score + '<small>/' + w.maxMarks + '</small>' +
+                    '<em>' + fmtDur(w.elapsedSeconds) + '</em></span>' +
+                '</li>';
+              }).join('') + '</ol>'
+            : '<p style="font-size:13px;color:var(--muted)">Nobody in this category has ' +
+              'completed the examination yet.</p>') +
+        '</div>';
+      }).join('') +
+      '</div>' +
+      '<div class="btn-row" style="margin-top:12px">' +
+        '<button class="btn sm ghost" type="button" id="dlBoard">&#11015; Download the prize list</button>' +
+      '</div>';
+
+    var d = document.getElementById('dlBoard');
+    if (d) d.addEventListener('click', function () { download('leaderboard'); });
+  }
+
   function loadResults() {
     var pane = document.getElementById('resPane');
     pane.innerHTML = '<div class="card">' + QuizUI.skeleton(4) + '</div>';
 
-    QuizAPI.admin('results-list', { exam_id: examId }).then(function (r) {
+    QuizAPI.admin('results-list', { exam_id: examId, top: topN }).then(function (r) {
       var ex = r.exam || {};
-      var rows = r.results || [];
+      lastResults = r.results || [];
+      renderBoard(r.leaderboard, ex);
+      var rows = (r.results || []).filter(function (x) {
+        return !catFilter || (x.category || 'UNSPECIFIED') === catFilter;
+      });
       var published = rows.filter(function (x) { return x.published; }).length;
       var scores = rows.map(function (x) { return Number(x.score); });
 
-      var h = '<div class="card">' +
-        '<div class="card-head"><div class="card-ic">&#127942;</div>' +
+      var h = '<div class="section-title">All results</div>' +
+        '<div class="card">' +
+        '<div class="card-head"><div class="card-ic">&#128202;</div>' +
           '<div><div class="card-t">' + QuizUI.esc(ex.title || 'Results') + '</div>' +
           '<div class="card-s">' + rows.length + ' completed attempt(s) &middot; ' +
-            published + ' published</div></div></div>';
+            published + ' published</div></div></div>' +
+        '<div class="toolbar" style="margin-bottom:12px">' +
+          '<label for="cf" style="font-size:12.5px;font-weight:700">Category</label>' +
+          '<select class="select" id="cf" style="max-width:200px">' +
+            [['', 'All categories'], ['DEPARTMENTAL', 'Departmental'], ['GDS', 'GDS'],
+             ['UNSPECIFIED', 'Unspecified']].map(function (o) {
+              return '<option value="' + o[0] + '"' + (o[0] === catFilter ? ' selected' : '') +
+                '>' + o[1] + '</option>';
+            }).join('') +
+          '</select>' +
+        '</div>';
 
       if (!rows.length) {
         h += QuizUI.empty('&#128202;', 'No results yet',
-          'Results appear here as employees complete the examination.');
+          catFilter ? 'No completed attempt in this category yet.'
+                    : 'Results appear here as employees complete the examination.');
       } else {
         h += '<div class="grid grid-4" style="margin-bottom:14px">' +
           sx('Attempts', rows.length) +
@@ -179,7 +305,8 @@
         }
 
         h += '<div class="tbl-wrap"><table class="tbl"><thead><tr>' +
-          '<th>Rank</th><th>Employee</th><th>Office</th><th class="num">Correct</th>' +
+          '<th>Category Rank</th><th>Overall</th><th>Employee</th><th>Category</th>' +
+          '<th>Unit / Sub Division</th><th>Office</th><th class="num">Correct</th>' +
           '<th class="num">Wrong</th><th class="num">Unans.</th><th class="num">Score</th>' +
           '<th class="num">%</th><th class="num">Time</th><th>Published</th>' +
           (QuizAdmin.atLeast('QUIZ_ADMIN') ? '<th>Action</th>' : '') +
@@ -187,12 +314,20 @@
 
         rows.forEach(function (x) {
           var e = x.employee || {};
-          var medal = x.rank === 1 ? 'g' : x.rank === 2 ? 's' : x.rank === 3 ? 'b' : '';
+          // The medal follows the CATEGORY rank, because that is the rank the
+          // prize is awarded on.
+          var cr = x.categoryRank;
+          var medal = cr === 1 ? 'g' : cr === 2 ? 's' : cr === 3 ? 'b' : '';
           h += '<tr>' +
-            '<td><span class="medal ' + medal + '">' + x.rank + '</span></td>' +
+            '<td><span class="medal ' + medal + '">' + (cr || '—') + '</span>' +
+              (x.categoryOutOf ? '<span style="font-size:10.5px;color:var(--muted)"> / ' +
+                x.categoryOutOf + '</span>' : '') + '</td>' +
+            '<td style="font-variant-numeric:tabular-nums;color:var(--muted)">' + x.rank + '</td>' +
             '<td class="wrap"><b>' + QuizUI.esc(e.employee_name || '—') + '</b><br>' +
               '<span style="font-family:JetBrains Mono,monospace;font-size:11px">' +
               QuizUI.esc(e.employee_id || x.employee_id || '') + '</span></td>' +
+            '<td>' + catBadge(x.category) + '</td>' +
+            '<td class="wrap">' + QuizUI.esc(x.unit || '—') + '</td>' +
             '<td class="wrap">' + QuizUI.esc(e.office || '') + '</td>' +
             '<td class="num">' + x.correct + '</td>' +
             '<td class="num">' + x.wrong + '</td>' +
@@ -213,6 +348,12 @@
       }
       h += '</div>';
       pane.innerHTML = h;
+
+      var cf = document.getElementById('cf');
+      if (cf) cf.addEventListener('change', function () {
+        catFilter = this.value;
+        loadResults();
+      });
 
       var pa = document.getElementById('pubAll');
       if (pa) pa.addEventListener('click', function () { publishAll(true); });
