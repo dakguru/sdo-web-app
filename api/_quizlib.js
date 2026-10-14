@@ -125,6 +125,51 @@ class DbError extends Error {
   }
 }
 
+// ───────────────────────────────────────────────────────────────────
+//  Schema capability probe
+//
+//  A deployment and a database migration cannot land at the same instant.
+//  Between them the code is ahead of the schema, and a column it writes does
+//  not exist yet — which, unguarded, means a participant who submits in that
+//  window has their attempt closed but no result written. That is not an
+//  acceptable failure mode for an examination.
+//
+//  So the features that depend on migration_v22 ask first, once per warm
+//  lambda, and degrade rather than fail. The answer is cached per table; a
+//  false is re-probed after a short interval so the module heals itself as
+//  soon as the migration is run, with no redeploy.
+// ───────────────────────────────────────────────────────────────────
+function isMissingColumn(err) {
+  return err instanceof DbError && err.status === 400 &&
+    /does not exist|42703|PGRST204|could not find .* column/i.test(err.message);
+}
+
+const _cols = {};                       // table -> { ready, at }
+const COLS_RETRY_MS = 30 * 1000;        // how soon to re-check a "not yet"
+
+async function columnsReady(table) {
+  const hit = _cols[table];
+  const now = Date.now();
+  if (hit && (hit.ready || now - hit.at < COLS_RETRY_MS)) return hit.ready;
+  try {
+    await sbSelect(table, 'select=category,unit&limit=1');
+    _cols[table] = { ready: true, at: now };
+  } catch (e) {
+    if (!isMissingColumn(e)) throw e;    // a real outage must not read as "not migrated"
+    _cols[table] = { ready: false, at: now };
+  }
+  return _cols[table].ready;
+}
+
+// Drop the category/unit keys from a row when the schema cannot hold them yet.
+// The rest of the row — the marks, which are what matter — still writes.
+function withoutCategory(row) {
+  const out = Object.assign({}, row);
+  delete out.category;
+  delete out.unit;
+  return out;
+}
+
 // PostgREST filter value escaping. Values containing commas, dots or parentheses
 // break the filter grammar unless quoted.
 function eq(value) {
@@ -701,4 +746,6 @@ module.exports = {
   secureShuffle, randomInt, questionHash, istString, sha256, computeScore,
   // category / unit
   CATEGORIES, normCategory, categoryLabel, normUnit,
+  // schema capability
+  isMissingColumn, columnsReady, withoutCategory,
 };

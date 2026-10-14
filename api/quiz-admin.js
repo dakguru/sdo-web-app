@@ -167,18 +167,22 @@ async function employeesList(req, res) {
   const offset = clampInt(qp.offset, 0, 1e6, 0);
   const search = String(qp.q || '').trim();
 
+  // `unit` only exists after migration_v22; filtering or searching on it
+  // before then would reject the whole query.
+  const hasUnit = await Q.columnsReady('quiz_employees');
+
   let filter = 'select=*&order=employee_name.asc&limit=' + limit + '&offset=' + offset;
   if (search) {
     const safe = search.replace(/[,()*]/g, ' ').trim();
     filter += '&or=(employee_id.ilike.*' + encodeURIComponent(safe) + '*,' +
               'employee_name.ilike.*' + encodeURIComponent(safe) + '*,' +
               'designation.ilike.*' + encodeURIComponent(safe) + '*,' +
-              'unit.ilike.*' + encodeURIComponent(safe) + '*,' +
+              (hasUnit ? 'unit.ilike.*' + encodeURIComponent(safe) + '*,' : '') +
               'office.ilike.*' + encodeURIComponent(safe) + '*)';
   }
   if (qp.office)      filter += '&office=' + Q.eq(qp.office);
   if (qp.designation) filter += '&designation=' + Q.eq(qp.designation);
-  if (qp.unit)        filter += '&unit=' + Q.eq(qp.unit);
+  if (qp.unit && hasUnit) filter += '&unit=' + Q.eq(qp.unit);
   // "Unspecified" is a real thing to filter by — it is how the administrator
   // finds the people who would otherwise fall outside both prize categories.
   if (qp.category === 'UNSPECIFIED') filter += '&category=is.null';
@@ -306,7 +310,15 @@ async function employeesImport(req, res, actor) {
       { active: false, updated_at_ms: now }, { returning: false });
   }
 
-  for (const chunk of chunked(clean.map(c => Object.assign({}, c, { import_job_id: jobId })), 200)) {
+  // Before migration_v22 the directory has no `unit` column. The import still
+  // runs — the roster is more useful than the one field — and `unit` lands on
+  // a later re-import once the migration has been applied.
+  const canStoreUnit = await Q.columnsReady('quiz_employees');
+  for (const chunk of chunked(clean.map(c => {
+    const row = Object.assign({}, c, { import_job_id: jobId });
+    if (!canStoreUnit) delete row.unit;
+    return row;
+  }), 200)) {
     await Q.sbInsert('quiz_employees', chunk, { onConflict: 'employee_id', returning: false });
   }
 
@@ -344,6 +356,11 @@ async function employeesImport(req, res, actor) {
 // never rewritten. `overwrite === true` is the explicit "re-sync everything
 // from the directory" action, which is audited.
 async function backfillRegistrations(overwrite) {
+  // Nothing to copy into until migration_v22 has run.
+  if (!await Q.columnsReady('quiz_registrations') || !await Q.columnsReady('quiz_employees')) {
+    return { scanned: 0, updated: 0, unmatched: 0, migrationPending: true };
+  }
+
   const regs = await Q.sbSelect('quiz_registrations',
     'select=id,employee_id,category,unit&limit=5000');
   const targets = (regs || []).filter(r => overwrite || !r.category || !r.unit);
@@ -389,6 +406,13 @@ async function registrationsBackfill(req, res, actor) {
   const overwrite = body.overwrite === true;
   const out = await backfillRegistrations(overwrite);
 
+  if (out.migrationPending) {
+    throw new Q.AppError(
+      'The staff category and unit columns do not exist in the database yet. Run ' +
+      'android-app/supabase/migration_v22_quiz_category_unit.sql in the Supabase SQL editor ' +
+      'first — it performs this backfill itself.', 409, 'MIGRATION_PENDING');
+  }
+
   await Q.logAudit(req, actor, overwrite ? 'REGISTRATIONS_RESYNC' : 'REGISTRATIONS_BACKFILL',
     'quiz_registrations', null, null, out);
 
@@ -421,7 +445,10 @@ async function employeeSave(req, res, actor) {
     }
     patch.category = c;
   }
-  if (body.unit !== undefined) patch.unit = Q.normUnit(body.unit);
+  // `category` predates migration_v22 on this table; `unit` does not.
+  if (body.unit !== undefined && await Q.columnsReady('quiz_employees')) {
+    patch.unit = Q.normUnit(body.unit);
+  }
   if (body.active !== undefined) patch.active = !!body.active;
 
   if (before) {
@@ -454,18 +481,22 @@ async function registrationsList(req, res) {
   const offset = clampInt(qp.offset, 0, 1e6, 0);
 
   let f = 'select=*&order=created_at_ms.desc&limit=' + limit + '&offset=' + offset;
+  const hasCategory = await Q.columnsReady('quiz_registrations');
+
   if (qp.status) f += '&status=' + Q.eq(qp.status);
   if (qp.office) f += '&office=' + Q.eq(qp.office);
-  if (qp.unit)   f += '&unit=' + Q.eq(qp.unit);
-  if (qp.category === 'UNSPECIFIED') f += '&category=is.null';
-  else if (qp.category)              f += '&category=' + Q.eq(String(qp.category).toUpperCase());
+  if (hasCategory) {
+    if (qp.unit) f += '&unit=' + Q.eq(qp.unit);
+    if (qp.category === 'UNSPECIFIED') f += '&category=is.null';
+    else if (qp.category)              f += '&category=' + Q.eq(String(qp.category).toUpperCase());
+  }
   if (qp.q) {
     const safe = String(qp.q).replace(/[,()*]/g, ' ').trim();
     f += '&or=(employee_id.ilike.*' + encodeURIComponent(safe) + '*,' +
          'employee_name.ilike.*' + encodeURIComponent(safe) + '*,' +
          'reg_code.ilike.*' + encodeURIComponent(safe) + '*,' +
          'office.ilike.*' + encodeURIComponent(safe) + '*,' +
-         'unit.ilike.*' + encodeURIComponent(safe) + '*,' +
+         (hasCategory ? 'unit.ilike.*' + encodeURIComponent(safe) + '*,' : '') +
          'designation.ilike.*' + encodeURIComponent(safe) + '*)';
   }
 
@@ -503,6 +534,21 @@ async function registrationsList(req, res) {
 //  small, and forty sequential round trips to PostgREST would not be.
 // ═══════════════════════════════════════════════════════════════════
 async function registrationStats(req, res) {
+  // Without migration_v22 there is nothing to break down by, and a generic
+  // 500 would leave the administrator guessing. Say exactly what is missing
+  // and exactly what to run.
+  if (!await Q.columnsReady('quiz_registrations') || !await Q.columnsReady('quiz_employees')) {
+    return Q.ok(res, {
+      migrationPending: true,
+      generatedMs: Date.now(),
+      message: 'The staff category and unit columns do not exist in the database yet. ' +
+               'Run android-app/supabase/migration_v22_quiz_category_unit.sql in the Supabase ' +
+               'SQL editor, then reload this page. Registration and the examination are ' +
+               'unaffected in the meantime.',
+      totals: null, byCategory: [], byUnit: [], byUnitCategory: [], byOffice: [], byDay: [],
+    });
+  }
+
   const [employees, regs] = await Promise.all([
     Q.sbSelect('quiz_employees', 'select=employee_id,office,unit,category,active&limit=5000'),
     Q.sbSelect('quiz_registrations', 'select=employee_id,office,unit,category,status,created_at_ms&limit=5000'),
@@ -646,6 +692,14 @@ async function registrationEdit(req, res, actor) {
   }
   // Moving someone between prize categories is a real decision, so it is
   // validated and audited like any other correction rather than accepted raw.
+  if (body.category !== undefined || body.unit !== undefined) {
+    if (!await Q.columnsReady('quiz_registrations')) {
+      throw new Q.AppError(
+        'The staff category and unit columns do not exist in the database yet. Run ' +
+        'android-app/supabase/migration_v22_quiz_category_unit.sql in the Supabase SQL ' +
+        'editor first.', 409, 'MIGRATION_PENDING');
+    }
+  }
   if (body.category !== undefined) {
     const c = Q.normCategory(body.category);
     if (body.category && !c) {
@@ -694,7 +748,7 @@ async function registrationAdd(req, res, actor) {
   });
 
   const count = await Q.sbCount('quiz_registrations');
-  const rows = await Q.sbInsert('quiz_registrations', {
+  const manual = {
     reg_code: prefix + '-M' + String(count + 1).padStart(4, '0'),
     identity_id: idRows[0].id,
     employee_id: emp.employee_id,
@@ -708,7 +762,9 @@ async function registrationAdd(req, res, actor) {
     manual_entry: true,
     remarks: 'Created manually by ' + actor.username + ' — awaiting account linking.',
     created_at_ms: now, updated_at_ms: now,
-  });
+  };
+  const rows = await Q.sbInsert('quiz_registrations',
+    await Q.columnsReady('quiz_registrations') ? manual : Q.withoutCategory(manual));
 
   await Q.logAudit(req, actor, 'REGISTRATION_MANUAL_ADD', 'quiz_registrations', rows[0].id, null,
     { employee_id: empId });
@@ -1671,10 +1727,15 @@ async function rankedResultsFor(examId) {
     'select=*&exam_id=' + Q.eq(examId) + '&mode=' + Q.eq('OFFICIAL') +
     '&order=score.desc,elapsed_seconds.asc&limit=3000');
 
+  // Before migration_v22 the ranking still works — there is simply one
+  // category, "Unspecified", and the overall order is unchanged.
+  const hasCategory = await Q.columnsReady('quiz_registrations');
+
   const regMap = {};
   for (const chunk of chunked([...new Set((rows || []).map(r => r.registration_id).filter(Boolean))], 100)) {
     const regs = await Q.sbSelect('quiz_registrations',
-      'select=id,reg_code,employee_id,employee_name,designation,office,category,unit&id=in.(' + chunk.join(',') + ')');
+      'select=id,reg_code,employee_id,employee_name,designation,office' +
+      (hasCategory ? ',category,unit' : '') + '&id=in.(' + chunk.join(',') + ')');
     for (const r of regs || []) regMap[r.id] = r;
   }
 
@@ -1906,15 +1967,23 @@ async function report(req, res, actor) {
 
   let columns = [], rows = [], title = '';
 
+  // Reports sort by unit so that a printed sheet groups itself. Before
+  // migration_v22 that column does not exist, so the ordering falls back to
+  // office — the report is still correct, just grouped one level coarser.
+  const hasUnit = await Q.columnsReady('quiz_registrations');
+  const byUnitThen = hasUnit ? 'unit.asc,office.asc,' : 'office.asc,';
+
   if (kind === 'registrations') {
     title = 'Registered Employees';
     columns = ['Registration ID', 'Employee ID', 'Name', 'Designation', 'Category',
                'Unit / Sub Division', 'Office', 'Status',
                'Sign-in Method', 'Email', 'Registered On (IST)'];
-    let rf = 'select=*&order=unit.asc,office.asc,employee_name.asc&limit=3000';
-    if (qp.category === 'UNSPECIFIED') rf += '&category=is.null';
-    else if (qp.category)              rf += '&category=' + Q.eq(String(qp.category).toUpperCase());
-    if (qp.unit) rf += '&unit=' + Q.eq(qp.unit);
+    let rf = 'select=*&order=' + byUnitThen + 'employee_name.asc&limit=3000';
+    if (hasUnit) {
+      if (qp.category === 'UNSPECIFIED') rf += '&category=is.null';
+      else if (qp.category)              rf += '&category=' + Q.eq(String(qp.category).toUpperCase());
+      if (qp.unit) rf += '&unit=' + Q.eq(qp.unit);
+    }
     const regs = await Q.sbSelect('quiz_registrations', rf);
     const idMap = {};
     for (const chunk of chunked([...new Set((regs || []).map(r => r.identity_id).filter(Boolean))], 100)) {
@@ -1933,7 +2002,7 @@ async function report(req, res, actor) {
     columns = ['Registration ID', 'Employee ID', 'Name', 'Designation', 'Category',
                'Unit / Sub Division', 'Office', 'Approved By', 'Approved On (IST)'];
     const regs = await Q.sbSelect('quiz_registrations',
-      'select=*&status=' + Q.eq('APPROVED') + '&order=unit.asc,office.asc,employee_name.asc&limit=3000');
+      'select=*&status=' + Q.eq('APPROVED') + '&order=' + byUnitThen + 'employee_name.asc&limit=3000');
     rows = (regs || []).map(r => [r.reg_code, r.employee_id, r.employee_name, r.designation,
       Q.categoryLabel(r.category), r.unit || '', r.office,
       r.approved_by || '', Q.istString(r.approved_at_ms)]);
@@ -1943,7 +2012,7 @@ async function report(req, res, actor) {
     columns = ['Employee ID', 'Name', 'Designation', 'Category', 'Unit / Sub Division',
                'Office', 'Division', 'Active', 'Registered'];
     const emps = await Q.sbSelect('quiz_employees',
-      'select=*&order=unit.asc,office.asc,employee_name.asc&limit=5000');
+      'select=*&order=' + byUnitThen + 'employee_name.asc&limit=5000');
     const regs = await Q.sbSelect('quiz_registrations', 'select=employee_id,status&limit=5000');
     const regMap = {};
     for (const r of regs || []) regMap[r.employee_id] = r.status;
@@ -1956,6 +2025,12 @@ async function report(req, res, actor) {
     // before any examination exists, so neither variant calls need().
     const byUnitWise = kind === 'unit-registrations';
     title = byUnitWise ? 'Unit / Sub Division-wise Registration' : 'Category-wise Registration';
+    if (!hasUnit) {
+      throw new Q.AppError(
+        'This report needs the staff category and unit columns. Run ' +
+        'android-app/supabase/migration_v22_quiz_category_unit.sql in the Supabase SQL ' +
+        'editor first.', 409, 'MIGRATION_PENDING');
+    }
     const [emps, regs] = await Promise.all([
       Q.sbSelect('quiz_employees', 'select=unit,category,active&limit=5000'),
       Q.sbSelect('quiz_registrations', 'select=unit,category,status&limit=5000'),
@@ -1995,7 +2070,7 @@ async function report(req, res, actor) {
     columns = ['Employee ID', 'Name', 'Designation', 'Category', 'Unit / Sub Division', 'Office',
                'Registration', 'Attended', 'Attempt Status', 'Started (IST)', 'Submitted (IST)'];
     const regs = await Q.sbSelect('quiz_registrations',
-      'select=*&status=' + Q.eq('APPROVED') + '&order=unit.asc,office.asc,employee_name.asc&limit=3000');
+      'select=*&status=' + Q.eq('APPROVED') + '&order=' + byUnitThen + 'employee_name.asc&limit=3000');
     const attempts = await Q.sbSelect('quiz_attempts',
       'select=registration_id,status,started_ms,submitted_ms&exam_id=' + Q.eq(examId) +
       '&mode=' + Q.eq('OFFICIAL') + '&limit=3000');

@@ -117,6 +117,30 @@
   function renderDashboard() {
     pane().innerHTML = QuizUI.skeleton(4);
     QuizAPI.admin('registration-stats').then(function (r) {
+      // The database migration has not been run yet. Say so plainly, with the
+      // file to run — a dashboard with no columns to count is not an error the
+      // administrator caused, and not one they should have to diagnose.
+      if (r.migrationPending) {
+        pane().innerHTML = QuizUI.alert('warn', '&#128295;',
+          '<b>Database migration pending.</b><br>' + QuizUI.esc(r.message)) +
+          '<div class="card"><div class="card-head"><div class="card-ic">&#128203;</div>' +
+          '<div><div class="card-t">What to run</div>' +
+          '<div class="card-s">Supabase &rarr; SQL editor</div></div></div>' +
+          '<pre style="margin:0;padding:12px;border-radius:10px;background:var(--card-2);' +
+            'border:1px solid var(--line);font:600 12.5px/1.6 JetBrains Mono,monospace;' +
+            'overflow-x:auto">android-app/supabase/migration_v22_quiz_category_unit.sql</pre>' +
+          '<p style="font-size:13px;color:var(--muted);line-height:1.6;margin:13px 0 0">' +
+            'It is additive and safe to re-run. It adds the staff category and unit columns, ' +
+            'then fills them in on the records that already exist. Registration and the ' +
+            'examination keep working while it is outstanding &mdash; only this dashboard and ' +
+            'the category-wise prize lists are waiting on it.</p>' +
+          '<div class="btn-row" style="margin-top:14px">' +
+            '<button class="btn ghost sm" type="button" id="dretry">Check again</button>' +
+          '</div></div>';
+        document.getElementById('dretry').addEventListener('click', renderDashboard);
+        return;
+      }
+
       facets.units = unitsOf(r);
       var t = r.totals;
       var h = '';

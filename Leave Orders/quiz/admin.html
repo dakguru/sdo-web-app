@@ -180,6 +180,15 @@
   }
 
   function registrationSummary(s) {
+    // Waiting on migration_v22 — the overview stays useful, with one line
+    // pointing at the page that explains what to run.
+    if (s.migrationPending) {
+      return QuizUI.alert('warn', '&#128295;',
+        '<b>Database migration pending.</b><br>The staff category and unit columns do not ' +
+        'exist yet, so category-wise registration and the prize lists are unavailable. ' +
+        'See <a href="/Quiz/admin/employees?view=dashboard">Registration Dashboard</a> for ' +
+        'the file to run. Registration and the examination are unaffected.');
+    }
     var LABELS = { DEPARTMENTAL: 'Departmental', GDS: 'GDS', Unspecified: 'Unspecified' };
     var h = '<div class="section-title">Registration by category</div>' +
       '<div class="grid grid-' + Math.min(3, Math.max(2, s.byCategory.length)) + '">' +

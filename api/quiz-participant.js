@@ -161,27 +161,36 @@ async function registerAction(req, res) {
   const now = Date.now();
   const regCode = await nextRegCode(regCfg.reg_code_prefix || 'NPW2026');
 
+  const newRegistration = {
+    reg_code: regCode,
+    identity_id: identity.id,
+    employee_id: emp.employee_id,
+    employee_name: emp.employee_name,
+    designation: emp.designation,
+    office: emp.office,
+    // Snapshotted for the same reason as designation and office: the prize
+    // category a participant competed in must not change under them later.
+    category: emp.category || null,
+    unit: emp.unit || null,
+    status,
+    roster_verified: true,
+    manual_entry: false,
+    approved_by: autoApprove ? 'auto:roster-match' : null,
+    approved_at_ms: autoApprove ? now : null,
+    created_at_ms: now,
+    updated_at_ms: now,
+  };
+
+  // Until migration_v22 has run the two new columns are dropped, and the
+  // backfill gives these registrations their category afterwards. Nobody is
+  // turned away from registering over a column that does not exist yet.
+  const payload = await Q.columnsReady('quiz_registrations')
+    ? newRegistration
+    : Q.withoutCategory(newRegistration);
+
   let rows;
   try {
-    rows = await Q.sbInsert('quiz_registrations', {
-      reg_code: regCode,
-      identity_id: identity.id,
-      employee_id: emp.employee_id,
-      employee_name: emp.employee_name,
-      designation: emp.designation,
-      office: emp.office,
-      // Snapshotted for the same reason as designation and office: the prize
-      // category a participant competed in must not change under them later.
-      category: emp.category || null,
-      unit: emp.unit || null,
-      status,
-      roster_verified: true,
-      manual_entry: false,
-      approved_by: autoApprove ? 'auto:roster-match' : null,
-      approved_at_ms: autoApprove ? now : null,
-      created_at_ms: now,
-      updated_at_ms: now,
-    });
+    rows = await Q.sbInsert('quiz_registrations', payload);
   } catch (e) {
     // The two UNIQUE constraints are the real duplicate guard — a race between
     // two tabs lands here rather than creating a second registration.
@@ -786,7 +795,13 @@ async function finaliseAttempt(req, attempt, status) {
   // The prize category travels with the result, taken from the registration as
   // it stood when the examination was sat. A later correction to the directory
   // cannot move somebody between prize lists after the event.
-  const reg = attempt.registration_id
+  //
+  // If migration_v22 has not been run yet, the columns are simply skipped. A
+  // result without a category can be given one later by the backfill; a result
+  // that was never written because the insert failed cannot be recovered at
+  // all, so the marks always take priority over the category.
+  const ready = attempt.registration_id && await Q.columnsReady('quiz_registrations');
+  const reg = ready
     ? await Q.sbOne('quiz_registrations',
         'select=category,unit&id=' + Q.eq(attempt.registration_id))
     : null;
@@ -805,7 +820,17 @@ async function finaliseAttempt(req, attempt, status) {
     computed_ms: now,
     published_ms: autoPublish ? now : null,
   }, tally);
-  await Q.sbInsert('quiz_results', row, { onConflict: 'attempt_id', returning: false });
+  // Belt and braces. The probe above is cached, so it can in principle be
+  // stale by a few seconds against a migration running right now; losing a
+  // result to that race is not acceptable, so a rejection on the two new
+  // columns is retried without them rather than propagated.
+  try {
+    await Q.sbInsert('quiz_results', row, { onConflict: 'attempt_id', returning: false });
+  } catch (e) {
+    if (!Q.isMissingColumn(e)) throw e;
+    await Q.sbInsert('quiz_results', Q.withoutCategory(row),
+      { onConflict: 'attempt_id', returning: false });
+  }
 
   await Q.logEvent(req, {
     attempt_id: attempt.id, registration_id: attempt.registration_id,
@@ -857,8 +882,12 @@ async function resultAction(req, res) {
   // one that matters to them.
   let rank = null, outOf = null, categoryRank = null, categoryOutOf = null;
   if (ex && ex.rank_enabled && !isTest) {
+    // Before migration_v22 the overall rank still works; only the category
+    // standing is unavailable, and it is simply not shown.
+    const haveCategory = await Q.columnsReady('quiz_results');
     const peers = await Q.sbSelect('quiz_results',
-      'select=attempt_id,score,elapsed_seconds,category&exam_id=' + Q.eq(attempt.exam_id) +
+      'select=attempt_id,score,elapsed_seconds' + (haveCategory ? ',category' : '') +
+      '&exam_id=' + Q.eq(attempt.exam_id) +
       '&mode=' + Q.eq('OFFICIAL') + '&published=is.true&withheld=is.false' +
       '&order=score.desc,elapsed_seconds.asc');
     outOf = (peers || []).length;
