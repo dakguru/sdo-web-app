@@ -1386,6 +1386,7 @@ async function examsList(req, res) {
   const tally = scopeReady ? await questionTally() : {};
   const allotReady = await allotmentReady();
   const allotTally = allotReady ? await allotmentTally() : {};
+  const attempts = await attemptTally();
   const out = [];
   for (const ex of rows || []) {
     const frozen = await Q.sbCount('quiz_exam_questions', 'exam_id=' + Q.eq(ex.id));
@@ -1397,6 +1398,9 @@ async function examsList(req, res) {
       ownQuestionCount: t.own, ownActiveCount: t.active,
       allotmentMode: allotReady ? String(ex.allotment_mode || 'ALL').toUpperCase() : 'ALL',
       allottedCount: allotTally[ex.id] || 0,
+      satCount: (attempts[ex.id] || {}).sat || 0,
+      liveAttempts: (attempts[ex.id] || {}).live || 0,
+      overdueAttempts: (attempts[ex.id] || {}).overdue || 0,
       maxMarks: Number(ex.positive_marks) * ex.question_count,
     }));
   }
@@ -1406,6 +1410,24 @@ async function examsList(req, res) {
     questionScopeReady: scopeReady, allotmentReady: allotReady,
     serverTimeMs: Date.now(),
   });
+}
+
+// How each examination's attempts stand, in one read: how many people have
+// sat it, how many are sitting it now, and how many were abandoned and never
+// finalised. Shown on the card and in the publish dialog, so that a refusal
+// to publish is never the first time an administrator hears about them.
+async function attemptTally() {
+  const now = Date.now();
+  const rows = await Q.sbSelect('quiz_attempts',
+    'select=exam_id,status,deadline_ms&mode=' + Q.eq('OFFICIAL') + '&limit=50000');
+  const out = {};
+  for (const r of rows || []) {
+    const t = out[r.exam_id] || (out[r.exam_id] = { sat: 0, live: 0, overdue: 0 });
+    if (r.status !== 'IN_PROGRESS') t.sat++;
+    else if (r.deadline_ms > now) t.live++;
+    else t.overdue++;
+  }
+  return out;
 }
 
 // How many employees are allotted to each examination, in one read.

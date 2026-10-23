@@ -169,6 +169,13 @@
               ? QuizUI.badge('Allotted: ' + ex.allottedCount, 'ok')
               : QuizUI.badge('Restricted — nobody allotted', 'warn'))
           : '') +
+        // What has already happened to this paper. An examination people have
+        // sat cannot be re-published casually, and that is worth knowing from
+        // the card rather than from a refusal.
+        (ex.satCount ? QuizUI.badge('Sat by ' + ex.satCount, 'mute') : '') +
+        (ex.liveAttempts ? QuizUI.badge(ex.liveAttempts + ' sitting now', 'warn') : '') +
+        (ex.overdueAttempts
+          ? QuizUI.badge(ex.overdueAttempts + ' overdue', 'warn') : '') +
       '</div>' +
       (ex.description ? '<p style="font-size:13px;color:var(--muted);line-height:1.55">' +
         QuizUI.esc(ex.description) + '</p>' : '') +
@@ -582,7 +589,14 @@
     });
   }
 
+  // Set only by the typed confirmation below. The server's message used to
+  // say "pass force to override deliberately", which was an instruction an
+  // administrator had no way to carry out — there was no force anywhere in
+  // the interface.
+  var pubForce = false;
+
   function publish(ex) {
+    pubForce = false;
     // Which set the paper will come from is the one thing worth being certain
     // about before freezing it, so it is stated first and in its own banner.
     var src = !questionScopeReady ? '' : (ex.ownQuestionCount
@@ -596,13 +610,36 @@
           'To give this test a paper of its own, upload one against it in the ' +
           '<a href="/Quiz/admin/questions?exam=' + QuizUI.esc(ex.id) + '">Question Bank</a> first.'));
 
-    QuizUI.modal('xpub', 'Publish the question paper',
-      src +
+    // What this examination has already been through. A paper that 199
+    // people have sat is a different proposition from a fresh draft, and an
+    // administrator should meet that fact before pressing the button, not
+    // as a refusal afterwards.
+    var sat = ex.satCount || 0;
+    var history = sat
+      ? QuizUI.alert('err', '&#9888;',
+          '<b>' + sat + ' employee(s) have already sat this examination.</b> Re-publishing ' +
+          'replaces the paper their answers were given against, so their results can no longer ' +
+          'be read question by question. Their marks are safe; the paper behind them is not.' +
+          '<br><br><b>Duplicate it instead.</b> The copy carries this examination\'s own ' +
+          'question set and its allotment, so a second sitting for a new batch starts ready ' +
+          'while these ' + sat + ' result(s) stay intact.')
+      : '';
+
+    // The dialog never used to name the examination, which with several on
+    // the page meant the administrator could not tell which one they were
+    // about to publish.
+    QuizUI.modal('xpub', 'Publish the question paper — ' + ex.title,
+      history + src +
       QuizUI.alert('', '&#128228;',
         'Publishing selects <b>' + ex.question_count + '</b> active question(s) at random and freezes ' +
         'an immutable copy for this examination. From that moment the examination and the general ' +
         'question bank are independent &mdash; later edits to the bank cannot change this paper or ' +
         'any attempt in progress.') +
+      (sat
+        ? '<div class="btn-row" style="margin-bottom:4px">' +
+            '<button class="btn" type="button" id="pubdup" style="flex:1">' +
+              '&#128203; Duplicate for a new sitting instead</button></div>'
+        : '') +
       '<div class="field"><label for="pstatus">Set the examination to</label>' +
         '<select class="select" id="pstatus">' +
           '<option value="SCHEDULED">Scheduled — visible, opens at its set time</option>' +
@@ -615,11 +652,28 @@
       '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'xpub\')">Cancel</button>' +
       '<button class="btn ok" type="button" id="pok" style="flex:1">Freeze paper &amp; publish</button>');
 
+    var dup = document.getElementById('pubdup');
+    if (dup) dup.addEventListener('click', function () {
+      var d = this;
+      d.disabled = true; d.textContent = 'Duplicating…';
+      QuizAPI.admin('exam-duplicate', null, { id: ex.id }).then(function (r) {
+        QuizUI.closeModal('xpub');
+        QuizUI.toast((r && r.message ? r.message : 'Duplicated.') +
+          ' Publish the copy — the original and its results are untouched.', 'ok');
+        load();
+      }).catch(function (e) {
+        d.disabled = false; d.textContent = '📋 Duplicate for a new sitting instead';
+        document.getElementById('puberr').innerHTML =
+          QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+      });
+    });
+
     document.getElementById('pok').addEventListener('click', function () {
       var b = this;
       b.disabled = true; b.textContent = 'Publishing…';
       QuizAPI.admin('exam-publish', null, {
         id: ex.id, status: document.getElementById('pstatus').value,
+        force: pubForce,
       }).then(function (r) {
         QuizUI.closeModal('xpub');
         QuizUI.toast(r.message, 'ok');
@@ -632,6 +686,34 @@
         // Abandoned attempts are the one refusal with a remedy the
         // administrator can apply right here, so it is offered rather than
         // described. Everything else is a decision, not a chore.
+        // A paper that has been sat can still be re-published, but only on
+        // purpose. The server names force; this is where it becomes something
+        // an administrator can actually do, behind a typed confirmation
+        // rather than a second click.
+        if (e.code === 'ALREADY_ATTEMPTED') {
+          box.innerHTML +=
+            '<div class="field" style="margin-top:11px">' +
+              '<label for="pubcfm">To replace the paper anyway, type <b>REPLACE</b></label>' +
+              '<input class="input" id="pubcfm" placeholder="REPLACE" autocomplete="off" />' +
+              '<div class="hint">Their marks are not changed. What is lost is the ability to ' +
+                'read those results question by question, because the paper they answered is ' +
+                'replaced. Duplicating avoids this entirely.</div>' +
+            '</div>' +
+            '<div class="btn-row">' +
+              '<button class="btn danger" type="button" id="pubforce">' +
+                'Replace the paper anyway</button></div>';
+
+          document.getElementById('pubforce').addEventListener('click', function () {
+            if (document.getElementById('pubcfm').value.trim().toUpperCase() !== 'REPLACE') {
+              QuizUI.toast('Type REPLACE to confirm.', 'err');
+              return;
+            }
+            pubForce = true;
+            document.getElementById('pok').click();
+          });
+          return;
+        }
+
         if (e.code === 'ATTEMPTS_OVERDUE' || /overdue/i.test(e.message || '')) {
           box.innerHTML += '<div class="btn-row">' +
             '<button class="btn sm" type="button" id="pubfin">' +

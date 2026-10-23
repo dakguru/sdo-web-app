@@ -448,6 +448,30 @@ before.
    glance.
 5. Set the status to **Scheduled** (visible, opens at its time) or **Live**.
 
+#### Re-using an examination people have already sat
+
+Allotment decides who may sit a paper **from now on**. It does not erase the
+sittings that have already happened, so restricting an examination to one
+employee does not make 199 earlier results go away — and publishing is still
+refused, because re-publishing replaces the paper those 199 answered.
+
+Their **marks are safe** either way; what re-publishing costs is the ability
+to read their results question by question, since the paper behind them is
+gone.
+
+So for a second sitting, **duplicate** rather than re-publish. The publish
+dialog offers it directly when the examination has been sat, and the copy
+carries that examination's own question set *and* its allotment — a new
+batch starts ready while the original's results stay intact.
+
+If the paper genuinely must be replaced in place, the dialog's refusal now
+carries the override: type **REPLACE** and press *Replace the paper anyway*.
+(The server has always accepted `force`; until now the message named it
+without the interface offering any way to do it.)
+
+The card carries the state so none of this arrives as a surprise:
+**Sat by n**, **n sitting now**, **n overdue**.
+
 #### Attempts that never ended
 
 An attempt is `IN_PROGRESS` from the moment it starts until something
@@ -707,6 +731,7 @@ if anyone has already sat the examination. Duplicate the examination instead.
 | An attempt is stuck *In progress* after the window closed | `/Quiz/admin` → **Finalise expired attempts**. |
 | *"N attempt(s) are past their deadline but have never been finalised"* when publishing | Candidates closed their browser without submitting, so their attempts never ended. Press **Finalise overdue attempts** in the same dialog. They are not sitting the paper. |
 | *"N attempt(s) are genuinely in progress"* | Those really do have time left on the clock. Wait, or cancel the examination. **Monitor** shows each one's remaining time. |
+| *"N employee(s) have already sat this examination"* | Allotting it to a new group does not erase past sittings. Press **Duplicate for a new sitting instead** in the same dialog — the copy carries the question set and the allotment. |
 | Everyone was signed out at once | `QUIZ_SESSION_SECRET` changed. |
 | Admin sign-in rejected with a correct password | The account has no quiz role. `/Quiz/admin/settings` → Quiz privileges. |
 
