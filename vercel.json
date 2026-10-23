@@ -61,6 +61,10 @@
       "destination": "/Leave Orders/phone-directory.html"
     },
     {
+      "source": "/mail-overseers",
+      "destination": "/Leave Orders/mo-beats.html"
+    },
+    {
       "source": "/office-management",
       "destination": "/Leave Orders/office-management.html"
     },

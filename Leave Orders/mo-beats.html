@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="auth-guard.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
+<title>Department of Posts &mdash; Mail Overseers, Karur Sub Division</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --indigo:#4f46e5; --violet:#7c3aed; --pink:#ec4899; --teal:#0d9488; --emerald:#059669;
+    --amber:#f59e0b; --rose:#e11d48; --sky:#0284c7; --cyan:#0891b2;
+    --bg:#eef2fb; --card:#ffffff; --ink:#0f172a; --ink-2:#1e293b; --muted:#64748b; --line:#e2e8f0;
+    --grad-bg:radial-gradient(1200px 600px at -10% -20%, #dbeafe 0%, transparent 60%),
+              radial-gradient(900px 500px at 110% 0%, #e0e7ff 0%, transparent 55%),
+              radial-gradient(800px 600px at 50% 120%, #ccfbf1 0%, transparent 60%),
+              linear-gradient(180deg,#eef2fb 0%,#f6f8fe 100%);
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04);
+    --shadow-md:0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
+    --shadow-lg:0 12px 32px rgba(15,23,42,.12), 0 4px 12px rgba(15,23,42,.06);
+    --over-bg:#fee2e2; --over-fg:#991b1b;
+    --soon-bg:#fef3c7; --soon-fg:#92400e;
+    --ok-bg:#dcfce7;   --ok-fg:#166534;
+    --none-bg:#f1f5f9; --none-fg:#475569;
+  }
+  html.dark{
+    --bg:#0a0e1a; --card:#141a2b; --ink:#f1f5f9; --ink-2:#e2e8f0; --muted:#94a3b8; --line:#26314b;
+    --grad-bg:radial-gradient(1100px 600px at -5% -15%, rgba(79,70,229,.17) 0%, transparent 60%),
+              radial-gradient(900px 500px at 108% -5%, rgba(14,116,144,.16) 0%, transparent 58%),
+              radial-gradient(800px 600px at 50% 120%, rgba(13,148,136,.14) 0%, transparent 60%),
+              linear-gradient(180deg,#0a0e1a 0%,#0f1729 100%);
+    --over-bg:rgba(225,29,72,.18);  --over-fg:#fda4af;
+    --soon-bg:rgba(245,158,11,.18); --soon-fg:#fcd34d;
+    --ok-bg:rgba(5,150,105,.18);    --ok-fg:#6ee7b7;
+    --none-bg:rgba(148,163,184,.15);--none-fg:#cbd5e1;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;color:var(--ink);font:14.5px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--grad-bg);background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+
+  .appbar{position:sticky;top:0;z-index:60;background:linear-gradient(90deg,rgba(9,20,40,.92),rgba(19,43,82,.92));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#fff;padding:8px 22px;display:flex;align-items:center;gap:12px;font:600 12.5px/1.2 'Inter',-apple-system,'Segoe UI',sans-serif;letter-spacing:.2px;border-bottom:1px solid rgba(255,255,255,.08);flex-wrap:wrap}
+  .appbar .switch{margin-left:auto;display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:11px;backdrop-filter:blur(8px);flex-wrap:wrap}
+  .appbar .pill{padding:6px 13px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.82);border-radius:7px;text-decoration:none;transition:background .2s,color .2s,box-shadow .2s}
+  .appbar .pill:hover{background:rgba(255,255,255,.12);color:#fff}
+  .appbar .pill.active{color:#0b1836;background:#fff;box-shadow:0 3px 10px rgba(0,0,0,.28)}
+
+  header{position:relative;overflow:hidden;color:#fff;padding:0;box-shadow:0 14px 34px rgba(9,20,40,.28)}
+  header::before{content:"";position:absolute;inset:0;z-index:0;background:
+    radial-gradient(880px 420px at 6% -60%, rgba(129,140,248,.50), transparent 60%),
+    radial-gradient(760px 420px at 102% -20%, rgba(34,211,238,.30), transparent 55%),
+    radial-gradient(700px 500px at 60% 140%, rgba(13,148,136,.30), transparent 60%),
+    linear-gradient(120deg,#0a1834 0%,#16307a 42%,#4f46e5 78%,#0e7490 100%)}
+  header::after{content:"";position:absolute;top:0;left:0;right:0;height:4px;z-index:3;background:linear-gradient(90deg,#FF9933 0 33.33%,#ffffff 33.33% 66.66%,#138808 66.66% 100%)}
+  .hdr-grain{position:absolute;inset:0;z-index:0;opacity:.5;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 0);background-size:22px 22px}
+  .header-inner{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:15px 22px 12px}
+  .gov-band{display:flex;align-items:center;gap:18px}
+  .gov-crest{height:60px;width:60px;flex:0 0 auto;border-radius:15px;background:#fff;padding:5px;object-fit:contain;box-shadow:0 8px 22px rgba(0,0,0,.30),0 0 0 1px rgba(255,255,255,.35)}
+  .gov-post{width:auto;max-width:150px;padding:7px 12px}
+  .gov-titles{flex:1 1 auto;min-width:0;text-align:center}
+  .gov-l1{font:800 11px/1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:3.4px;text-transform:uppercase;background:linear-gradient(90deg,#fde68a,#fcd34d,#fbbf24);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .gov-l2{font:800 clamp(19px,2.5vw,26px)/1.1 'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:.3px;margin-top:4px;background:linear-gradient(180deg,#ffffff 0%,#d7e1ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .gov-l3{font:600 12.5px/1.35 'Inter',sans-serif;color:rgba(255,255,255,.80);margin-top:5px}
+  .gov-l3 b{color:#fff;font-weight:800}
+  .gov-underline{width:78px;height:3px;margin:9px auto 0;border-radius:3px;background:linear-gradient(90deg,#FF9933,#fff,#138808);box-shadow:0 0 10px rgba(255,255,255,.25)}
+  .header-module{position:relative;z-index:1;max-width:1240px;margin:11px auto 0;padding:12px 22px 16px;border-top:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:13px;min-width:0}
+  .brand .logo{width:46px;height:46px;flex:0 0 auto;display:grid;place-items:center;font-size:23px;border-radius:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.26)}
+  .brand h1{margin:0;font:800 19px/1.15 'Plus Jakarta Sans','Inter',sans-serif}
+  .brand .sub{font-size:12.5px;color:rgba(255,255,255,.78);margin-top:2px}
+  .theme-btn{margin-left:auto;background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.3);color:#fff;width:40px;height:40px;border-radius:11px;font-size:18px;cursor:pointer;transition:background .2s,transform .2s}
+  .theme-btn:hover{background:rgba(255,255,255,.26);transform:translateY(-1px)}
+
+  main{max-width:1240px;margin:0 auto;padding:22px 22px 60px}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin-bottom:18px}
+  .tile{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow-sm);transition:transform .25s cubic-bezier(.22,1,.36,1),box-shadow .25s}
+  .tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+  .tile .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+  .tile .l{font-size:11.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--muted)}
+  .tile .n{font:800 27px/1.1 'Plus Jakarta Sans','Inter',sans-serif;margin-top:5px;letter-spacing:-.5px}
+  .tile .f{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .tile.t-over .bar{background:linear-gradient(180deg,#e11d48,#f97316)} .tile.t-over .n{color:var(--rose)}
+  .tile.t-soon .bar{background:linear-gradient(180deg,#f59e0b,#fbbf24)} .tile.t-soon .n{color:#b45309}
+  html.dark .tile.t-soon .n{color:#fbbf24}
+  .tile.t-ok .bar{background:linear-gradient(180deg,#059669,#34d399)}   .tile.t-ok .n{color:var(--emerald)}
+  .tile.t-all .bar{background:linear-gradient(180deg,#4f46e5,#0891b2)}
+
+  /* beat cards */
+  .beats{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;margin-bottom:20px}
+  .beat{position:relative;overflow:hidden;border-radius:18px;padding:18px;cursor:pointer;color:#fff;
+    background:linear-gradient(135deg,#16315c,#1f3864 55%,#0e7490);box-shadow:0 12px 30px rgba(9,20,40,.25);
+    transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s}
+  .beat:hover{transform:translateY(-4px);box-shadow:0 18px 44px rgba(9,20,40,.34)}
+  .beat .bt{font:800 18px/1.2 'Plus Jakarta Sans','Inter',sans-serif;display:flex;align-items:center;gap:9px}
+  .beat .bn{font-size:12.5px;color:rgba(255,255,255,.8);margin-top:3px}
+  .beat .bgrid{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
+  .beat .bstat{flex:1 1 72px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:9px 11px}
+  .beat .bstat .v{font:800 20px/1 'Plus Jakarta Sans','Inter',sans-serif}
+  .beat .bstat .k{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.75);margin-top:3px}
+  .beat .go{position:absolute;right:16px;top:18px;font-size:12px;font-weight:700;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.26);padding:5px 11px;border-radius:99px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:16px;box-shadow:var(--shadow-md);margin-bottom:16px}
+  .card h2{margin:0 0 4px;font:800 16px/1.2 'Plus Jakarta Sans','Inter',sans-serif;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .card h2 .sp{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
+  .card .hint{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+
+  .btn{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);font:700 12.5px/1 'Inter',sans-serif;padding:9px 13px;border-radius:11px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .2s;box-shadow:var(--shadow-sm);white-space:nowrap}
+  .btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);border-color:var(--indigo)}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+  .btn.primary{background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;border-color:transparent;box-shadow:0 6px 18px rgba(79,70,229,.30)}
+  .btn.danger{color:var(--rose);border-color:transparent;background:transparent;box-shadow:none}
+  .btn.danger:hover{background:var(--over-bg);border-color:transparent}
+  .btn.tiny{padding:6px 10px;font-size:11.5px}
+  .btn.ghost{background:transparent;box-shadow:none}
+
+  input[type=date],input[type=text],select,textarea{background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:11px;padding:10px 12px;font:600 13px/1.3 'Inter',sans-serif;outline:none;width:100%}
+  input:focus,select:focus,textarea:focus{border-color:var(--indigo);box-shadow:0 0 0 3.5px rgba(79,70,229,.14)}
+  textarea{resize:vertical;min-height:62px;font-weight:500}
+  label.fl{display:block;font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:0 0 5px}
+  .frow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .frow > div{flex:1 1 180px;min-width:0}
+
+  .pill{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:800;letter-spacing:.3px}
+  .pill.over{background:var(--over-bg);color:var(--over-fg)}
+  .pill.soon{background:var(--soon-bg);color:var(--soon-fg)}
+  .pill.ok{background:var(--ok-bg);color:var(--ok-fg)}
+  .pill.none{background:var(--none-bg);color:var(--none-fg)}
+  .pill.ghost{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+
+  /* office rows */
+  .orow{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:13px;
+    background:var(--card);box-shadow:var(--shadow-sm);margin-bottom:8px;cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s}
+  .orow:hover{transform:translateX(3px);box-shadow:var(--shadow-md);border-color:var(--indigo)}
+  .orow .sn{width:30px;height:30px;flex:0 0 auto;display:grid;place-items:center;border-radius:9px;background:var(--bg);border:1px solid var(--line);font:800 12px/1 'JetBrains Mono',monospace;color:var(--muted)}
+  .orow .on{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .orow .om{font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .orow .mid{flex:1;min-width:0}
+
+  /* visit rows */
+  .vrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .vrow:last-child{border-bottom:0}
+  .vrow .vd{font:700 13.5px/1 'JetBrains Mono',monospace;flex:1}
+  .vrow .vt{font-size:11px;color:var(--indigo);font-weight:700}
+
+  /* programme rows */
+  .prow{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line)}
+  .prow:last-child{border-bottom:0}
+  .prow .pdate{flex:0 0 96px;font:800 12.5px/1.3 'JetBrains Mono',monospace;color:var(--ink-2)}
+  .prow .pdate small{display:block;font-family:'Inter',sans-serif;font-weight:600;font-size:10.5px;color:var(--muted);letter-spacing:.3px}
+  .prow .pbody{flex:1;min-width:0}
+  .prow .ptext{font-size:13.5px;font-weight:600;word-break:break-word}
+  .prow .pmeta{font-size:11px;color:var(--muted);margin-top:3px}
+  .prow .pacts{display:flex;gap:5px;flex:0 0 auto}
+  .prow.today{background:linear-gradient(90deg,rgba(79,70,229,.07),transparent);border-radius:9px;padding-left:9px;padding-right:9px}
+
+  .ovl{position:fixed;inset:0;z-index:200;background:rgba(8,14,28,.62);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);display:none;align-items:center;justify-content:center;padding:20px}
+  .ovl.on{display:flex;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal{width:min(560px,100%);max-height:88vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 30px 80px rgba(2,8,23,.45);animation:pop .26s cubic-bezier(.22,1,.36,1)}
+  @keyframes pop{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+  .modal .mh{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:11px;padding:15px 18px;border-bottom:1px solid var(--line);background:var(--card);border-radius:20px 20px 0 0}
+  .modal .mh h3{margin:0;font:800 16px/1.2 'Plus Jakarta Sans','Inter',sans-serif}
+  .modal .mh .xx{margin-left:auto;cursor:pointer;width:32px;height:32px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--line);background:var(--bg);font-size:16px}
+  .modal .mh .xx:hover{background:var(--rose);color:#fff;border-color:var(--rose)}
+  .modal .mb{padding:16px 18px}
+  .modal .mf{display:flex;gap:9px;justify-content:flex-end;padding:13px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
+  .seg2{display:flex;gap:4px;padding:4px;background:var(--bg);border:1px solid var(--line);border-radius:12px}
+  .seg2 button{flex:1;appearance:none;border:0;background:transparent;color:var(--muted);font:700 12.5px/1 'Inter',sans-serif;padding:9px 10px;border-radius:9px;cursor:pointer;transition:all .2s}
+  .seg2 button.active{background:var(--card);color:var(--indigo);box-shadow:var(--shadow-sm)}
+  .dates{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+  .dchip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:6px 10px;font:700 12px/1 'JetBrains Mono',monospace}
+  .dchip .x{cursor:pointer;color:var(--muted);font-size:14px;line-height:1}
+  .dchip .x:hover{color:var(--rose)}
+
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(26px);z-index:300;opacity:0;pointer-events:none;
+    background:#0f172a;color:#fff;font:700 13px/1.4 'Inter',sans-serif;padding:12px 20px;border-radius:13px;box-shadow:0 18px 44px rgba(2,8,23,.45);transition:all .3s cubic-bezier(.22,1,.36,1);max-width:90vw;text-align:center}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{background:#9f1239}
+
+  .state{text-align:center;padding:56px 20px;color:var(--muted)}
+  .state .big{font-size:40px;margin-bottom:10px;opacity:.65}
+  .state .t{font:800 16px/1.3 'Plus Jakarta Sans','Inter',sans-serif;color:var(--ink);margin-bottom:5px}
+  .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--indigo);border-radius:50%;margin:0 auto 14px;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .foot{text-align:center;color:var(--muted);font-size:12px;padding:24px 10px 0;line-height:1.7}
+  .backlink{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;color:var(--indigo);cursor:pointer;margin-bottom:12px;background:none;border:0;padding:0}
+  .backlink:hover{text-decoration:underline}
+
+  .mo-hero{position:relative;overflow:hidden;border-radius:18px;padding:18px;color:#fff;margin-bottom:16px;
+    background:linear-gradient(135deg,#16315c,#1f3864 55%,#0e7490);box-shadow:0 12px 30px rgba(9,20,40,.25)}
+  .mo-hero h2{margin:0;font:800 20px/1.2 'Plus Jakarta Sans','Inter',sans-serif}
+  .mo-hero .hs{font-size:12.5px;color:rgba(255,255,255,.82);margin-top:3px}
+  .mo-hero .hp{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap}
+  .mo-hero .pill.ghost{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.22)}
+
+  @media (max-width:720px){
+    main{padding:16px 13px 50px}
+    .gov-band{gap:11px} .gov-crest{height:46px;width:46px} .gov-post{max-width:112px}
+    .appbar{padding:7px 13px} .header-inner{padding:12px 13px 10px} .header-module{padding:11px 13px 13px}
+    .prow{flex-wrap:wrap} .prow .pdate{flex-basis:100%}
+    .card h2 .sp{margin-left:0;width:100%}
+  }
+  @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms !important;transition-duration:.01ms !important} }
+</style>
+<!-- Liquid Glass design system -->
+<script src="/leave-orders/liquid-glass.js"></script>
+<link rel="stylesheet" href="/leave-orders/liquid-glass.css">
+</head>
+<body>
+
+<div class="appbar">
+  <a href="/" style="opacity:.9;color:#fff;text-decoration:none;font-weight:700;display:flex;align-items:center;gap:6px">&#x1F3E0; Home</a>
+  <span style="opacity:.35">|</span>
+  <span style="opacity:.75">Department of Posts &middot; Karur Sub Division</span>
+  <div class="switch">
+    <span class="pill active">Mail Overseers</span>
+    <a class="pill" href="/employees">Employee Directory</a>
+    <a class="pill" href="/phone-directory">Phone Directory</a>
+    <a class="pill" href="/office-management">Office Management</a>
+    <a class="pill" href="/arrangements">Arrangements</a>
+  </div>
+</div>
+
+<header>
+  <div class="hdr-grain"></div>
+  <div class="header-inner">
+    <div class="gov-band">
+      <img class="gov-crest" src="/assets/app-logo.jpg" alt="Government of India &mdash; Karur Sub Division" />
+      <div class="gov-titles">
+        <div class="gov-l1">Government of India</div>
+        <div class="gov-l2">Department of Posts</div>
+        <div class="gov-l3">O/o the Asst. Superintendent of Post Offices &middot; <b>Karur Sub Division</b> &middot; Karur &mdash; 639001</div>
+        <div class="gov-underline"></div>
+      </div>
+      <img class="gov-crest gov-post" src="/assets/india-post-logo.png" alt="India Post" />
+    </div>
+  </div>
+  <div class="header-module">
+    <div class="brand">
+      <div class="logo">&#128506;</div>
+      <div>
+        <h1>Mail Overseers</h1>
+        <div class="sub">Beat visit register &amp; date-wise tour programmes &mdash; shared live with the Android app</div>
+      </div>
+    </div>
+    <button class="theme-btn" id="themeBtn" title="Toggle theme" style="margin-left:auto">&#127769;</button>
+  </div>
+</header>
+
+<main>
+  <div id="app"><div class="state"><div class="spin"></div><div class="t">Loading the visit register&hellip;</div>
+    <div>Fetching beats, visits and tour programmes from the cloud.</div></div></div>
+
+  <div class="foot">
+    Visits and programmes are the same records the Android app reads and writes &mdash;
+    an update made here appears on the phone at its next sync, and vice versa.
+    An office falls due <b>3 months</b> after its last recorded visit.
+  </div>
+</main>
+
+<!-- Programme add / edit -->
+<div class="ovl" id="progOvl" role="dialog" aria-modal="true" aria-labelledby="progTitle">
+  <div class="modal">
+    <div class="mh"><span style="font-size:19px">&#128197;</span><h3 id="progTitle">Add programme</h3>
+      <span class="xx" data-close="progOvl" title="Close">&times;</span></div>
+    <div class="mb">
+      <label class="fl">Programme type</label>
+      <div class="seg2" id="progKind">
+        <button data-kind="BO" class="active">&#127970; BO Visit</button>
+        <button data-kind="HQ">&#127963; Head Quarters</button>
+        <button data-kind="OTHER">&#128221; Others</button>
+      </div>
+      <div id="kindBO" style="margin-top:13px">
+        <label class="fl">Branch office</label>
+        <select id="progBo"></select>
+        <div class="hint" style="margin:6px 0 0;font-size:11.5px;color:var(--muted)">Offices due for a visit are listed first.</div>
+      </div>
+      <div id="kindOTHER" style="margin-top:13px;display:none">
+        <label class="fl">Place / activity</label>
+        <input type="text" id="progPlace" placeholder="e.g. Sub Divisional Office, Karur" />
+      </div>
+      <div style="margin-top:13px">
+        <label class="fl" id="dateLbl">Date(s)</label>
+        <div class="frow">
+          <div><input type="date" id="progDate" /></div>
+          <div style="flex:0 0 auto"><button class="btn" id="addDate" type="button">&plus; Add date</button></div>
+        </div>
+        <div class="dates" id="dateChips"></div>
+      </div>
+      <div style="margin-top:13px">
+        <label class="fl">Remarks (optional)</label>
+        <textarea id="progDetails" placeholder="Anything to note about the day's programme"></textarea>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn ghost" data-close="progOvl">Cancel</button>
+      <button class="btn primary" id="progSave">Save programme</button>
+    </div>
+  </div>
+</div>
+
+<!-- Programme PDF period -->
+<div class="ovl" id="pdfOvl" role="dialog" aria-modal="true" aria-labelledby="pdfTitle">
+  <div class="modal" style="width:min(460px,100%)">
+    <div class="mh"><span style="font-size:19px">&#128196;</span><h3 id="pdfTitle">Tour programme report</h3>
+      <span class="xx" data-close="pdfOvl" title="Close">&times;</span></div>
+    <div class="mb">
+      <div class="hint" id="pdfBeatLbl" style="margin-bottom:12px"></div>
+      <div class="frow">
+        <div><label class="fl">From</label><input type="date" id="pdfFrom" /></div>
+        <div><label class="fl">To</label><input type="date" id="pdfTo" /></div>
+      </div>
+      <div class="hint" style="margin-top:10px">A date-wise programme sheet on the office letterhead, ready to print or file.</div>
+    </div>
+    <div class="mf">
+      <button class="btn ghost" data-close="pdfOvl">Cancel</button>
+      <button class="btn primary" id="pdfGo">&#128196; Download PDF</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="/leave-orders/supabase-sync.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mail Overseers — web twin of the Android MO module (ui/mo/MoScreens.kt).
+
+   The beat roster itself is a fixed seed transcribed from the MO Visit
+   Register 2026 and baked into the Android app (data/repo/MoBeatSeed.kt);
+   the cloud only stores what has CHANGED since. So this page starts from the
+   same seed and overlays:
+     · app_mo_visits  — the visit list per (beat, serial_no), last-write-wins
+     · app_programmes — date-wise tour programmes, soft-deleted
+   Both tables are the ones the phone reads and writes, so an edit made here
+   shows up on the phone at its next sync and vice versa.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const cln = v => (v == null ? '' : String(v)).trim();
+const esc = s => cln(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+const MO_I = 'MO_I', MO_II = 'MO_II';
+const BEAT_TITLE = { MO_I:'Mail Overseer I', MO_II:'Mail Overseer II' };
+const BEAT_SHORT = { MO_I:'MO I',            MO_II:'MO II' };
+/** An office falls due this many months after its last recorded visit. */
+const VISIT_CYCLE_MONTHS = 3;
+/** Within this many days of the due date an office counts as "due soon". */
+const DUE_SOON_DAYS = 30;
+
+/* ── beat seed, generated from android-app .../data/repo/MoBeatSeed.kt ──────
+   [serial, office name, office-master id, baseline visit dates]. Seven register
+   spellings differ from the office master and were resolved when the seed was
+   first transcribed; the ids below are the authoritative ones. */
+/* MO_I — 31 offices */
+const SEED_MO_I = [
+  [1, 'Kathalapatti', '29106813', ['2026-02-19','2026-05-19']],
+  [2, 'Emur', '29106770', ['2026-01-17','2026-04-15']],
+  [3, 'Koyampalli', '29106829', ['2026-03-10','2026-06-03']],
+  [4, 'Melapalayam', '29106857', ['2026-02-09','2026-05-11']],
+  [5, 'Puliyur', '29106933', ['2026-01-14','2026-04-13']],
+  [6, 'Somur', '29106970', ['2026-02-26','2026-05-27']],
+  [7, 'Uppidamangalam', '29106990', ['2026-03-05','2026-06-05']],
+  [8, 'Vedichipalayam', '29107002', ['2026-03-20','2026-06-29']],
+  [9, 'Veerarakkiam', '29107004', ['2026-02-16','2026-05-14']],
+  [10, 'Karuppur', '29106811', ['2026-01-07','2026-04-06']],
+  [11, 'Kattalai', '29106814', ['2026-01-30','2026-04-29']],
+  [12, 'Manavasi', '29106848', ['2026-03-07','2026-06-11']],
+  [13, 'Renganathapuram', '29106950', ['2026-02-13','2026-05-12']],
+  [14, 'Valayalkaranpudur', '29106996', ['2026-02-27','2026-05-25']],
+  [15, 'Manavadi', '29106847', ['2026-03-16','2026-06-15']],
+  [16, 'Mokkanankurichi', '29106865', ['2026-01-19','2026-04-18']],
+  [17, 'Paganatham', '29106898', ['2026-02-17','2026-05-15']],
+  [18, 'Kodangipatti', '29106821', ['2026-01-13','2026-04-10']],
+  [19, 'Appipalayam', '29106748', ['2026-03-02','2026-05-29']],
+  [20, 'Kakkavadi', '29106788', ['2026-01-22','2026-04-20']],
+  [21, 'Puthambur', '29106941', ['2026-02-05','2026-05-02']],
+  [22, 'Sukkaliyur', '29106972', ['2026-03-14','2026-06-13']],
+  [23, 'Thalapatti', '29106975', ['2026-03-26','2026-06-30']],
+  [24, 'Thoranakalpatti', '29106984', ['2026-02-24','2026-05-21']],
+  [25, 'Othaiyur', '29109278', ['2026-03-13','2026-06-08']],
+  [26, 'Nerur', '29106893', ['2026-01-02','2026-04-01']],
+  [27, 'Palaiyur', '29106899', ['2026-02-07','2026-05-05']],
+  [28, 'Panchamadevi', '29106908', ['2026-03-18','2026-06-19']],
+  [29, 'Renganathanpettai', '29106949', ['2026-01-28','2026-04-24']],
+  [30, 'Senapiratti', '29106961', ['2026-01-27','2026-04-22']],
+  [31, 'S.Vellalapatti', '29106952', ['2026-03-23','2026-06-23']],
+];
+
+/* MO_II — 29 offices */
+const SEED_MO_II = [
+  [1, 'Athur', '29106752', ['2026-03-05','2026-05-13']],
+  [2, 'Poolampalayam', '29106925', ['2026-01-02','2026-04-13']],
+  [3, 'Kuppuchipalayam', '29106834', ['2026-01-20','2026-04-15']],
+  [4, 'Vangal East', '29106998', ['2026-03-13','2026-05-18']],
+  [5, 'Minnampalli', '29106861', ['2026-02-18','2026-04-24']],
+  [6, 'Moolimangalam', '29106866', ['2026-02-23','2026-04-18']],
+  [7, 'Punnam', '29106939', ['2026-02-18','2026-07-09']],
+  [8, 'Punnam Chatram', '29106940', ['2026-02-23','2026-05-26']],
+  [9, 'Vennamalai', '29107013', ['2026-02-24','2026-07-14']],
+  [10, 'Kadaparai', '29106786', ['2026-01-06','2026-04-09']],
+  [11, 'Manmangalam', '29106853', ['2026-03-27','2026-07-02']],
+  [12, 'Nadayanur', '29106879', ['2026-02-27','2026-05-06']],
+  [13, 'Noyyal', '29106894', ['2026-01-09','2026-04-16']],
+  [14, 'Semangi', '29106959', ['2026-01-07','2026-04-07']],
+  [15, 'Vettamangalam', '29107015', ['2026-03-03','2026-05-19']],
+  [16, 'Dalavapalayam', '29106765', ['2026-02-28','2026-05-20']],
+  [17, 'East Thavittupalayam', '29106766', ['2026-02-25','2026-05-14']],
+  [18, 'Kadambankurichi', '29106785', ['2026-03-25']],
+  [19, 'Nanjaypugalur', '29106887', ['2026-03-19','2026-07-18']],
+  [20, 'Nanniyur', '29106889', ['2026-03-12','2026-07-13']],
+  [21, 'Punjaipugalur', '29106937', ['2026-03-17','2026-07-15']],
+  [22, 'Punjaithottakuruchi', '29106938', ['2026-03-26','2026-07-20']],
+  [23, 'West Orathai', '29107017', ['2026-03-07','2026-07-11']],
+  [24, 'Mudiganam', '29106867', ['2026-03-24','2026-05-21']],
+  [25, 'Pallamarudapatti', '29106904', ['2026-02-21','2026-05-05']],
+  [26, 'Pallapalayam', '29106905', ['2026-03-04','2026-05-08']],
+  [27, 'Pavithram', '29106914', ['2026-02-26','2026-04-21']],
+  [28, 'Thumbivadi', '29106986', ['2025-01-05','2026-04-06']],
+  [29, 'Viswanathapuri', '29107016', ['2025-01-12','2026-04-27']],
+];
+
+const state = {
+  offices: [],        // {beat, serial, name, officeId, visits[], updatedBy, updatedAt}
+  programmes: [],     // live (not deleted) app_programmes rows
+  master: new Map(),  // officeId -> office master row
+  moNames: {},        // beat -> display name of the tagged overseer
+  view: { name:'home' },
+  dlg: null           // in-flight programme dialog state
+};
+
+/* ── theme ─────────────────────────────────────────────────────────── */
+(function(){
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') document.documentElement.classList.add('dark');
+  $('#themeBtn').onclick = () => {
+    document.documentElement.classList.toggle('dark');
+    const d = document.documentElement.classList.contains('dark');
+    localStorage.setItem('theme', d ? 'dark' : 'light');
+    $('#themeBtn').innerHTML = d ? '&#9728;' : '&#127769;';
+  };
+  if (saved === 'dark') $('#themeBtn').innerHTML = '&#9728;';
+})();
+
+let toastT = null;
+function toast(msg, err){
+  const t = $('#toast'); t.textContent = msg; t.className = 'on' + (err ? ' err' : '');
+  clearTimeout(toastT); toastT = setTimeout(() => { t.className = ''; }, err ? 4200 : 2800);
+}
+function who(){
+  try { const u = AuthSession.user(); return cln(u && (u.displayName || u.username)) || 'web'; }
+  catch(e){ return 'web'; }
+}
+
+/* ── dates ─────────────────────────────────────────────────────────────
+   All stored dates are ISO yyyy-MM-dd. These helpers work on the string and
+   on a UTC-noon Date, so a browser in any timezone lands on the same day. */
+const iso = d => d.toISOString().slice(0,10);
+const dOf = s => new Date(cln(s) + 'T12:00:00Z');
+const todayIso = () => { const n = new Date();
+  return n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0'); };
+/** Add whole months, clamping the day to the target month — matches Java's LocalDate.plusMonths. */
+function addMonths(isoDate, n){
+  const [y,m,d] = isoDate.split('-').map(Number);
+  const total = (m - 1) + n, ny = y + Math.floor(total/12), nm = ((total % 12) + 12) % 12;
+  const last = new Date(Date.UTC(ny, nm + 1, 0)).getUTCDate();
+  return ny + '-' + String(nm+1).padStart(2,'0') + '-' + String(Math.min(d, last)).padStart(2,'0');
+}
+const daysBetween = (a,b) => Math.round((dOf(b) - dOf(a)) / 86400000);
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function fmtDate(isoDate){
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(cln(isoDate))) return cln(isoDate);
+  const [y,m,d] = isoDate.split('-');
+  return +d + ' ' + MONTHS[+m - 1] + ' ' + y;
+}
+const dayName = isoDate => DAYS[dOf(isoDate).getUTCDay()];
+function fmtStamp(ms){
+  if (!ms) return '';
+  const d = new Date(+ms);
+  let h = d.getHours(); const ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12;
+  return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() +
+         ', ' + h + ':' + String(d.getMinutes()).padStart(2,'0') + ' ' + ap;
+}
+
+/* ── due-status model (ported from MoScreens.kt buildRow) ──────────── */
+const STATUS = {
+  OVERDUE  : {key:'OVERDUE',   label:'Overdue',      cls:'over'},
+  DUE_SOON : {key:'DUE_SOON',  label:'Due soon',     cls:'soon'},
+  ON_TRACK : {key:'ON_TRACK',  label:'On track',     cls:'ok'},
+  NO_VISITS: {key:'NO_VISITS', label:'No visit yet', cls:'none'},
+};
+const STATUS_RANK = { OVERDUE:0, DUE_SOON:1, ON_TRACK:2, NO_VISITS:3 };
+
+function buildRow(o, today){
+  const visits = (o.visits || []).slice().sort();
+  const last = visits.length ? visits[visits.length - 1] : null;
+  const nextDue = last ? addMonths(last, VISIT_CYCLE_MONTHS) : null;
+  let status;
+  if (!last) status = STATUS.NO_VISITS;
+  else if (nextDue < today) status = STATUS.OVERDUE;
+  else if (nextDue <= addDays(today, DUE_SOON_DAYS)) status = STATUS.DUE_SOON;
+  else status = STATUS.ON_TRACK;
+  return { o, visits, last, nextDue, status };
+}
+function addDays(isoDate, n){ const d = dOf(isoDate); d.setUTCDate(d.getUTCDate() + n); return iso(d); }
+
+/** Due offices first (overdue, then soonest); never-visited offices fall to the end. */
+const sortByDue = rows => rows.slice().sort((a,b) =>
+  (a.status === STATUS.NO_VISITS) - (b.status === STATUS.NO_VISITS) ||
+  (a.nextDue || '9999').localeCompare(b.nextDue || '9999') ||
+  a.o.serial - b.o.serial);
+
+const rowsOf = beat => state.offices.filter(o => o.beat === beat).map(o => buildRow(o, todayIso()));
+const countBy = (rows, k) => rows.filter(r => r.status.key === k).length;
+
+/* ═════════════════════════ load ═════════════════════════ */
+function seedOffices(){
+  const mk = (beat, s) => ({
+    beat, serial:s[0], name:s[1], officeId:s[2],
+    visits:s[3].slice(), updatedBy:null, updatedAt:null
+  });
+  return [...SEED_MO_I.map(s => mk(MO_I, s)), ...SEED_MO_II.map(s => mk(MO_II, s))];
+}
+
+async function load(){
+  try{
+    await SB.init();
+    const offices = seedOffices();
+
+    const [visits, progs, offs, prefs, users] = await Promise.all([
+      SB.select('app_mo_visits', 'select=beat,serial_no,visits,updated_by,updated_at_ms').catch(() => []),
+      SB.select('app_programmes', 'select=id,beat,date,details,author,created_at,updated_at_ms,deleted').catch(() => []),
+      SB.getDataset('OFFICES').catch(() => null),
+      SB.select('app_prefs', 'select=key,value').catch(() => []),
+      SB.getUsers ? SB.getUsers().catch(() => []) : Promise.resolve([])
+    ]);
+
+    // Cloud visit rows replace the seed's list for that (beat, serial).
+    const byKey = new Map(offices.map(o => [o.beat + ':' + o.serial, o]));
+    for (const v of (visits || [])){
+      const o = byKey.get(cln(v.beat) + ':' + Number(v.serial_no));
+      if (!o) continue;
+      o.visits = cln(v.visits).split(',').map(s => s.trim()).filter(Boolean).sort();
+      o.updatedBy = cln(v.updated_by);
+      o.updatedAt = v.updated_at_ms ? Number(v.updated_at_ms) : null;
+    }
+    state.offices = offices;
+    state.programmes = (progs || []).filter(p => !p.deleted);
+
+    const offList = (offs && offs.data) || [];
+    state.master = new Map(offList.map(o => [cln(o.office_id), o]));
+
+    // The two overseers are tagged by an admin as app_prefs usernames.
+    const prefMap = {}; for (const p of (prefs || [])) prefMap[cln(p.key)] = cln(p.value);
+    const nameOf = {}; for (const u of (users || [])) nameOf[cln(u.username)] = cln(u.display_name || u.displayName);
+    state.moNames = {};
+    if (prefMap['mo_i_username'])  state.moNames[MO_I]  = nameOf[prefMap['mo_i_username']]  || prefMap['mo_i_username'];
+    if (prefMap['mo_ii_username']) state.moNames[MO_II] = nameOf[prefMap['mo_ii_username']] || prefMap['mo_ii_username'];
+
+    render();
+  }catch(err){
+    console.error(err);
+    $('#app').innerHTML = '<div class="state"><div class="big">&#9888;</div><div class="t">Could not load the register</div><div>' +
+      esc(err.message) + '</div></div>';
+  }
+}
+
+/* ═════════════════════════ render ═════════════════════════ */
+function render(){
+  const v = state.view;
+  if (v.name === 'beat')   return renderBeat(v.beat);
+  if (v.name === 'office') return renderOffice(v.beat, v.serial);
+  renderHome();
+}
+function go(view){ state.view = view; render(); window.scrollTo({top:0, behavior:'smooth'}); }
+
+function dueChip(r){
+  let extra = '';
+  const today = todayIso();
+  if (r.status === STATUS.OVERDUE && r.nextDue)  extra = ' ' + daysBetween(r.nextDue, today) + 'd';
+  if (r.status === STATUS.DUE_SOON && r.nextDue){ const d = daysBetween(today, r.nextDue); if (d > 0) extra = ' ' + d + 'd'; }
+  return '<span class="pill ' + r.status.cls + '">' + r.status.label + extra + '</span>';
+}
+
+function renderHome(){
+  const today = todayIso();
+  const rI = rowsOf(MO_I), rII = rowsOf(MO_II);
+  const all = rI.concat(rII);
+  const over = countBy(all,'OVERDUE'), soon = countBy(all,'DUE_SOON'), ok = countBy(all,'ON_TRACK');
+
+  const beatCard = (beat, rows) => {
+    const nm = state.moNames[beat];
+    return '<div class="beat" data-beat="' + beat + '">' +
+      '<span class="go">Open &rarr;</span>' +
+      '<div class="bt"><span>&#128508;</span>' + BEAT_TITLE[beat] + '</div>' +
+      '<div class="bn">' + (nm ? esc(nm) + ' &middot; ' : '') + rows.length + ' branch offices on this beat</div>' +
+      '<div class="bgrid">' +
+        '<div class="bstat"><div class="v">' + countBy(rows,'OVERDUE')  + '</div><div class="k">Overdue</div></div>' +
+        '<div class="bstat"><div class="v">' + countBy(rows,'DUE_SOON') + '</div><div class="k">Due soon</div></div>' +
+        '<div class="bstat"><div class="v">' + countBy(rows,'ON_TRACK') + '</div><div class="k">On track</div></div>' +
+      '</div></div>';
+  };
+
+  $('#app').innerHTML =
+    '<div class="tiles">' +
+      tile('t-over','Overdue for a visit',over,'across both beats') +
+      tile('t-soon','Due within ' + DUE_SOON_DAYS + ' days',soon,'plan these next') +
+      tile('t-ok','On track',ok,'visited inside the cycle') +
+      tile('t-all','Beat offices',all.length,'MO I ' + rI.length + ' &middot; MO II ' + rII.length) +
+    '</div>' +
+    '<div class="beats">' + beatCard(MO_I, rI) + beatCard(MO_II, rII) + '</div>' +
+    progrCard(MO_I) + progrCard(MO_II);
+
+  $$('#app .beat').forEach(el => el.onclick = () => go({name:'beat', beat:el.dataset.beat}));
+  wireProgramme();
+}
+function tile(cls,label,num,foot){
+  return '<div class="tile ' + cls + '"><div class="bar"></div><div class="l">' + label + '</div>' +
+         '<div class="n">' + num + '</div><div class="f">' + foot + '</div></div>';
+}
+
+/* ── programme card (one per beat) ─────────────────────────────────── */
+function progrCard(beat){
+  const today = todayIso();
+  const mine = state.programmes.filter(p => p.beat === beat);
+  const upcoming = mine.filter(p => p.date >= today).sort((a,b) => a.date.localeCompare(b.date));
+  const past = mine.filter(p => p.date < today).sort((a,b) => b.date.localeCompare(a.date));
+  const nm = state.moNames[beat];
+
+  const row = p => '<div class="prow' + (p.date === today ? ' today' : '') + '">' +
+    '<div class="pdate">' + fmtDate(p.date) + '<small>' + dayName(p.date) + (p.date === today ? ' &middot; TODAY' : '') + '</small></div>' +
+    '<div class="pbody"><div class="ptext">' + esc(p.details) + '</div>' +
+      '<div class="pmeta">' + (p.author ? 'Entered by ' + esc(p.author) : 'Entered by &mdash;') +
+      (p.updated_at_ms ? ' &middot; ' + fmtStamp(p.updated_at_ms) : '') + '</div></div>' +
+    '<div class="pacts">' +
+      '<button class="btn tiny ghost" data-pedit="' + esc(p.id) + '">&#9998;</button>' +
+      '<button class="btn tiny danger" data-pdel="' + esc(p.id) + '">&#128465;</button>' +
+    '</div></div>';
+
+  return '<div class="card" data-pcard="' + beat + '">' +
+    '<h2><span>&#128197;</span>' + BEAT_TITLE[beat] + ' &mdash; Tour programme' +
+      '<span class="sp">' +
+        '<button class="btn tiny" data-pdf="' + beat + '">&#128196; Report</button>' +
+        '<button class="btn tiny primary" data-padd="' + beat + '">&plus; Add programme</button>' +
+      '</span></h2>' +
+    '<div class="hint">' + (nm ? esc(nm) + ' &middot; ' : '') +
+      upcoming.length + ' current &amp; upcoming, ' + past.length + ' past</div>' +
+    (upcoming.length
+      ? upcoming.map(row).join('')
+      : '<div style="font-size:13px;color:var(--muted)">No current or upcoming programme. Use <b>Add programme</b> to plan a tour date.</div>') +
+    (past.length
+      ? '<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--indigo)">' +
+        'Show ' + past.length + ' past entr' + (past.length === 1 ? 'y' : 'ies') + '</summary><div style="margin-top:6px">' +
+        past.map(row).join('') + '</div></details>'
+      : '') +
+  '</div>';
+}
+
+/* ── beat office list ──────────────────────────────────────────────── */
+function renderBeat(beat){
+  const rows = sortByDue(rowsOf(beat));
+  const due = countBy(rows,'OVERDUE') + countBy(rows,'DUE_SOON');
+  const nm = state.moNames[beat];
+  $('#app').innerHTML =
+    '<button class="backlink" id="back">&larr; Back to MO beats</button>' +
+    '<div class="mo-hero"><h2>&#128508; ' + BEAT_TITLE[beat] + '</h2>' +
+      '<div class="hs">' + (nm ? esc(nm) + ' &middot; ' : '') + rows.length + ' offices &middot; ' +
+        due + ' due for a visit &middot; sorted by next visit due</div>' +
+      '<div class="hp">' +
+        '<span class="pill ghost">Overdue ' + countBy(rows,'OVERDUE') + '</span>' +
+        '<span class="pill ghost">Due soon ' + countBy(rows,'DUE_SOON') + '</span>' +
+        '<span class="pill ghost">On track ' + countBy(rows,'ON_TRACK') + '</span>' +
+      '</div></div>' +
+    rows.map(r => {
+      const m = state.master.get(cln(r.o.officeId));
+      const sub = r.last
+        ? ('Last visit ' + fmtDate(r.last) + (r.nextDue ? ' &middot; next due ' + fmtDate(r.nextDue) : ''))
+        : 'No visit recorded';
+      return '<div class="orow" data-serial="' + r.o.serial + '">' +
+        '<div class="sn">' + r.o.serial + '</div>' +
+        '<div class="mid"><div class="on">' + esc(r.o.name) +
+          (m ? ' <span style="font-weight:600;color:var(--muted);font-size:12px">' + esc(cln(m.office_name)) + '</span>' : '') +
+          '</div><div class="om">' + sub + '</div></div>' +
+        dueChip(r) + '</div>';
+    }).join('');
+  $('#back').onclick = () => go({name:'home'});
+  $$('#app .orow').forEach(el => el.onclick = () => go({name:'office', beat, serial:+el.dataset.serial}));
+}
+
+/* ── single office ─────────────────────────────────────────────────── */
+function renderOffice(beat, serial){
+  const o = state.offices.find(x => x.beat === beat && x.serial === serial);
+  if (!o) return go({name:'beat', beat});
+  const r = buildRow(o, todayIso());
+  const m = state.master.get(cln(o.officeId));
+
+  $('#app').innerHTML =
+    '<button class="backlink" id="back">&larr; Back to ' + BEAT_TITLE[beat] + '</button>' +
+    '<div class="mo-hero"><h2>&#127970; ' + esc(o.name) + '</h2>' +
+      '<div class="hs">' + BEAT_TITLE[beat] + ' &middot; beat serial ' + o.serial +
+        (m ? ' &middot; ' + esc(cln(m.office_name)) + (cln(m.pincode) ? ' &middot; ' + esc(cln(m.pincode)) : '') : '') + '</div>' +
+      '<div class="hp"><span class="pill ' + r.status.cls + '">' + r.status.label + '</span>' +
+        (r.last ? '<span class="pill ghost">Last ' + fmtDate(r.last) + '</span>' : '') +
+        (r.nextDue ? '<span class="pill ghost">Due ' + fmtDate(r.nextDue) + '</span>' : '') +
+      '</div></div>' +
+
+    '<div class="card"><h2><span>&#128197;</span>Record a visit</h2>' +
+      '<div class="hint">Adding a visit moves the next due date ' + VISIT_CYCLE_MONTHS +
+        ' months on, here and on the phone.</div>' +
+      '<div class="frow"><div><label class="fl">Date of visit</label>' +
+        '<input type="date" id="visitDate" max="' + todayIso() + '" value="' + todayIso() + '" /></div>' +
+        '<div style="flex:0 0 auto"><button class="btn primary" id="addVisit">&plus; Add visit</button></div></div></div>' +
+
+    '<div class="card"><h2><span>&#128221;</span>Visit history &middot; ' + r.visits.length + '</h2>' +
+      (o.updatedAt ? '<div class="hint">Last updated by ' + esc(o.updatedBy || '&mdash;') + ' &middot; ' + fmtStamp(o.updatedAt) + '</div>' : '') +
+      (r.visits.length
+        ? r.visits.slice().reverse().map(d =>
+            '<div class="vrow"><span style="opacity:.7">&#128197;</span>' +
+            '<span class="vd">' + fmtDate(d) + '</span>' +
+            (d === r.last ? '<span class="vt">Most recent</span>' : '') +
+            '<button class="btn tiny danger" data-rm="' + d + '">Remove</button></div>').join('')
+        : '<div style="font-size:13px;color:var(--muted)">No visits recorded yet.</div>') +
+    '</div>' +
+
+    (m ? '<div class="card"><h2><span>&#127970;</span>Office record</h2>' +
+      '<div class="hint">From the Karur Sub Division office master.</div>' +
+      kv('Office name', m.office_name) + kv('Office ID', m.office_id) + kv('Pincode', m.pincode) +
+      kv('Account office', m.so_name || m.ho_name) + kv('Head office', m.ho_name) +
+      kv('Village', m.village) + kv('Taluk', m.taluk) +
+      kv('Working hours', [cln(m.working_hours_from), cln(m.working_hours_to)].filter(Boolean).join(' – ')) +
+      '<div style="margin-top:11px"><a class="btn tiny" href="/office-management">Open in Office Management &rarr;</a></div>' +
+    '</div>' : '');
+
+  $('#back').onclick = () => go({name:'beat', beat});
+  $('#addVisit').onclick = () => {
+    const d = cln($('#visitDate').value);
+    if (!d) return toast('Pick the date of the visit first.', true);
+    if (d > todayIso()) return toast('A visit cannot be recorded in the future.', true);
+    if (o.visits.includes(d)) return toast(fmtDate(d) + ' is already recorded for this office.', true);
+    saveVisits(o, o.visits.concat(d).sort(), 'Visit on ' + fmtDate(d) + ' recorded.');
+  };
+  $$('#app [data-rm]').forEach(b => b.onclick = () => {
+    const d = b.dataset.rm;
+    if (!confirm('Remove the visit on ' + fmtDate(d) + ' from ' + o.name + '?\n\nThis also removes it on the Android app.')) return;
+    saveVisits(o, o.visits.filter(x => x !== d), 'Visit on ' + fmtDate(d) + ' removed.');
+  });
+}
+function kv(label, value){
+  const v = cln(value); if (!v) return '';
+  return '<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px">' +
+    '<span style="flex:0 0 150px;color:var(--muted);font-weight:600">' + label + '</span>' +
+    '<b style="flex:1;min-width:0">' + esc(v) + '</b></div>';
+}
+
+/* ═════════════════════════ writes ═════════════════════════ */
+async function saveVisits(o, dates, okMsg){
+  const prevVisits = o.visits, prevBy = o.updatedBy, prevAt = o.updatedAt;
+  const visits = [...new Set(dates)].sort();
+  const now = Date.now(), by = who();
+  o.visits = visits; o.updatedBy = by; o.updatedAt = now;
+  render();
+  try{
+    await SB.upsert('app_mo_visits', {
+      beat: o.beat, serial_no: o.serial, visits: visits.join(','),
+      updated_by: by, updated_at_ms: now
+    });
+    toast(okMsg);
+  }catch(e){
+    o.visits = prevVisits; o.updatedBy = prevBy; o.updatedAt = prevAt; render();
+    toast('Could not save: ' + e.message, true);
+  }
+}
+
+async function saveProgramme(rows, okMsg){
+  try{
+    await SB.upsert('app_programmes', rows);
+    for (const r of rows){
+      const i = state.programmes.findIndex(p => p.id === r.id);
+      if (r.deleted){ if (i >= 0) state.programmes.splice(i,1); }
+      else if (i >= 0) state.programmes[i] = r;
+      else state.programmes.push(r);
+    }
+    render(); toast(okMsg);
+  }catch(e){ toast('Could not save: ' + e.message, true); }
+}
+
+/* ═════════════════════════ programme dialog ═════════════════════════ */
+/* The stored `details` string is a single line the Android app composes the
+   same way, so an entry made on either side reads identically on the other:
+     BO Visit: <office> — <remarks>  |  Head Quarters — <remarks>  |  <place> — <remarks> */
+function composeProgramme(kind, place, details){
+  const tail = cln(details) ? ' — ' + cln(details) : '';
+  if (kind === 'BO') return 'BO Visit: ' + cln(place) + tail;
+  if (kind === 'HQ') return 'Head Quarters' + tail;
+  return cln(place) + tail;
+}
+/** Best-effort reverse of composeProgramme, to pre-fill the edit dialog. */
+function parseProgramme(stored){
+  const s = cln(stored);
+  const split = t => { const i = t.indexOf(' — ');
+    return i >= 0 ? [t.slice(0,i).trim(), t.slice(i+3).trim()] : [t.trim(), '']; };
+  if (s.startsWith('BO Visit:')){ const [p,d] = split(s.slice(9).trim()); return {kind:'BO', place:p, details:d}; }
+  if (s.startsWith('Head Quarters'))
+    return {kind:'HQ', place:'', details:s.slice(13).trim().replace(/^—/,'').trim()};
+  const [p,d] = split(s); return {kind:'OTHER', place:p, details:d};
+}
+
+/** Every beat office, offices due for a visit first, de-duplicated by name. */
+function boOptions(){
+  const today = todayIso();
+  return state.offices.map(o => ({ name:o.name, beat:o.beat, status:buildRow(o, today).status }))
+    .sort((a,b) => STATUS_RANK[a.status.key] - STATUS_RANK[b.status.key] || a.name.localeCompare(b.name))
+    .filter((o,i,arr) => arr.findIndex(x => x.name.toLowerCase() === o.name.toLowerCase()) === i);
+}
+
+function openProgDialog(beat, existing){
+  const parsed = existing ? parseProgramme(existing.details) : {kind:'BO', place:'', details:''};
+  state.dlg = { beat, existing, kind:parsed.kind, dates: existing ? [existing.date] : [] };
+
+  $('#progTitle').textContent = (existing ? 'Edit programme — ' : 'Add programme — ') + BEAT_TITLE[beat];
+  $('#progDetails').value = parsed.details;
+  $('#progPlace').value = parsed.kind === 'OTHER' ? parsed.place : '';
+  $('#progBo').innerHTML = boOptions().map(o =>
+    '<option value="' + esc(o.name) + '">' + esc(o.name) + ' — ' + o.status.label + ' (' + BEAT_SHORT[o.beat] + ')</option>'
+  ).join('');
+  if (parsed.kind === 'BO' && parsed.place) $('#progBo').value = parsed.place;
+  $('#progDate').value = existing ? existing.date : todayIso();
+  // An edit moves one entry; a new programme can cover several dates at once.
+  $('#dateLbl').textContent = existing ? 'Date' : 'Date(s) — add as many as the tour covers';
+  $('#addDate').style.display = existing ? 'none' : '';
+  setKind(parsed.kind); drawDateChips();
+  $('#progOvl').classList.add('on');
+}
+function setKind(kind){
+  state.dlg.kind = kind;
+  $$('#progKind button').forEach(b => b.classList.toggle('active', b.dataset.kind === kind));
+  $('#kindBO').style.display    = kind === 'BO'    ? '' : 'none';
+  $('#kindOTHER').style.display = kind === 'OTHER' ? '' : 'none';
+}
+function drawDateChips(){
+  const d = state.dlg;
+  $('#dateChips').innerHTML = d.existing ? '' : d.dates.map(x =>
+    '<span class="dchip">' + fmtDate(x) + '<span class="x" data-dx="' + x + '">&times;</span></span>').join('');
+  $$('#dateChips [data-dx]').forEach(el => el.onclick = () => {
+    state.dlg.dates = state.dlg.dates.filter(x => x !== el.dataset.dx); drawDateChips();
+  });
+}
+
+function wireProgramme(){
+  $$('#app [data-padd]').forEach(b => b.onclick = () => openProgDialog(b.dataset.padd, null));
+  $$('#app [data-pedit]').forEach(b => b.onclick = () => {
+    const p = state.programmes.find(x => x.id === b.dataset.pedit);
+    if (p) openProgDialog(p.beat, p);
+  });
+  $$('#app [data-pdel]').forEach(b => b.onclick = () => {
+    const p = state.programmes.find(x => x.id === b.dataset.pdel);
+    if (!p) return;
+    if (!confirm('Delete the programme for ' + fmtDate(p.date) + '?\n\n' + p.details +
+                 '\n\nThis also removes it on the Android app.')) return;
+    saveProgramme([Object.assign({}, p, {deleted:true, updated_at_ms:Date.now()})], 'Programme deleted.');
+  });
+  $$('#app [data-pdf]').forEach(b => b.onclick = () => openPdfDialog(b.dataset.pdf));
+}
+
+/* ═════════════════════════ PDF report ═════════════════════════ */
+let pdfLoad = null, pdfBeat = null;
+const loadScript = src => new Promise((res, rej) => {
+  const s = document.createElement('script'); s.src = src; s.onload = res;
+  s.onerror = () => rej(new Error('Could not load ' + src)); document.head.appendChild(s);
+});
+function ensurePdf(){
+  if (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable) return Promise.resolve();
+  if (!pdfLoad) pdfLoad = loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js')
+    .then(() => loadScript('https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js'))
+    .catch(e => { pdfLoad = null; throw e; });
+  return pdfLoad;
+}
+function openPdfDialog(beat){
+  pdfBeat = beat;
+  const t = todayIso();
+  $('#pdfBeatLbl').innerHTML = BEAT_TITLE[beat] + (state.moNames[beat] ? ' &middot; <b>' + esc(state.moNames[beat]) + '</b>' : '');
+  $('#pdfFrom').value = t.slice(0,8) + '01';          // 1st of the current month
+  $('#pdfTo').value = addDays(addMonths(t.slice(0,8) + '01', 1), -1);  // last day of it
+  $('#pdfOvl').classList.add('on');
+}
+function buildPdf(beat, from, to){
+  const rows = state.programmes
+    .filter(p => p.beat === beat && p.date >= from && p.date <= to)
+    .sort((a,b) => a.date.localeCompare(b.date));
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'pt', format:'a4' });
+  const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 40;
+  const moName = state.moNames[beat] || '';
+
+  // Letterhead band (navy, matching the Android report).
+  doc.setFillColor(22,49,92); doc.rect(0,0,W,96,'F');
+  doc.setFont('times','bold'); doc.setFontSize(8.5); doc.setTextColor(185,203,236);
+  doc.text('DEPARTMENT OF POSTS  ·  KARUR SUB DIVISION', M, 33);
+  doc.setFontSize(20); doc.setTextColor(255,255,255);
+  doc.text('Mail Overseer — Tour Programme', M, 60);
+  doc.setFont('times','normal'); doc.setFontSize(11); doc.setTextColor(220,228,245);
+  doc.text(BEAT_TITLE[beat] + (moName ? '  ·  ' + moName : ''), M, 79);
+
+  // Meta strip: period, entry count, generated-at.
+  doc.setFont('times','bold'); doc.setFontSize(8.5); doc.setTextColor(91,100,114);
+  doc.text('PERIOD', M, 124);
+  doc.text('GENERATED', W - M - 170, 124);
+  doc.setFontSize(12); doc.setTextColor(15,23,42);
+  doc.text(fmtDate(from) + '   –   ' + fmtDate(to), M, 140);
+  doc.text(fmtStamp(Date.now()), W - M - 170, 140);
+  doc.setTextColor(14,116,144);
+  const entries = rows.length + (rows.length === 1 ? ' entry' : ' entries');
+  doc.text(entries, W - M - doc.getTextWidth(entries), 158);
+
+  doc.autoTable({
+    startY: 170,
+    head: [['DATE','PROGRAMME','ENTERED BY']],
+    body: rows.length
+      ? rows.map(p => [fmtDate(p.date) + '\n' + dayName(p.date), p.details, cln(p.author) || '—'])
+      : [['—','No programme recorded for this period.','—']],
+    styles:{ font:'times', fontSize:11, cellPadding:7, overflow:'linebreak', textColor:[15,23,42], lineColor:[203,213,225], lineWidth:0.5 },
+    headStyles:{ fillColor:[31,56,100], textColor:255, fontStyle:'bold', fontSize:10 },
+    alternateRowStyles:{ fillColor:[243,246,251] },
+    columnStyles:{ 0:{cellWidth:118, fontStyle:'bold'}, 2:{cellWidth:102, textColor:[91,100,114], fontSize:10} },
+    margin:{ left:M, right:M, top:60, bottom:40 },
+  });
+
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++){
+    doc.setPage(i); doc.setFont('times','normal'); doc.setFontSize(9); doc.setTextColor(91,100,114);
+    doc.text('Generated from the Karur SDO portal · ' + BEAT_TITLE[beat], M, H - 20);
+    const pg = 'Page ' + i + ' of ' + n;
+    doc.text(pg, W - M - doc.getTextWidth(pg), H - 20);
+  }
+  doc.save(('MO-Tour-Programme_' + BEAT_SHORT[beat] + '_' + from + '_to_' + to)
+    .replace(/[^A-Za-z0-9._-]+/g,'-') + '.pdf');
+  return rows.length;
+}
+
+/* ═════════════════════════ dialog wiring ═════════════════════════ */
+$$('[data-close]').forEach(b => b.onclick = () => $('#' + b.dataset.close).classList.remove('on'));
+$$('.ovl').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('on'); }));
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') $$('.ovl.on').forEach(o => o.classList.remove('on'));
+});
+$$('#progKind button').forEach(b => b.onclick = () => setKind(b.dataset.kind));
+$('#addDate').onclick = () => {
+  const d = cln($('#progDate').value);
+  if (!d) return toast('Pick a date first.', true);
+  if (state.dlg.dates.includes(d)) return toast(fmtDate(d) + ' is already on the list.', true);
+  state.dlg.dates.push(d); state.dlg.dates.sort(); drawDateChips();
+};
+$('#progSave').onclick = async () => {
+  const d = state.dlg;
+  const place = d.kind === 'BO' ? cln($('#progBo').value) : cln($('#progPlace').value);
+  if (d.kind === 'BO' && !place)    return toast('Pick the branch office to be visited.', true);
+  if (d.kind === 'OTHER' && !place) return toast('Enter the place or activity.', true);
+
+  // A single date left in the picker counts even if "Add date" was never pressed.
+  let dates = d.existing ? [cln($('#progDate').value)] : d.dates.slice();
+  if (!d.existing && !dates.length){ const one = cln($('#progDate').value); if (one) dates = [one]; }
+  if (!dates.length || dates.some(x => !x)) return toast('Add at least one date.', true);
+
+  const details = composeProgramme(d.kind, place, $('#progDetails').value);
+  const now = Date.now(), author = who();
+  const rows = d.existing
+    ? [Object.assign({}, d.existing, { date:dates[0], details, updated_at_ms:now })]
+    : dates.map(date => ({
+        id: uuid(), beat: d.beat, date, details, author,
+        created_at: now, updated_at_ms: now, deleted: false
+      }));
+  $('#progOvl').classList.remove('on');
+  await saveProgramme(rows, d.existing ? 'Programme updated.'
+    : rows.length + ' programme ' + (rows.length === 1 ? 'entry' : 'entries') + ' saved.');
+};
+$('#pdfGo').onclick = async () => {
+  const from = cln($('#pdfFrom').value), to = cln($('#pdfTo').value);
+  if (!from || !to) return toast('Pick both dates.', true);
+  if (from > to)    return toast('The "from" date must come before the "to" date.', true);
+  const btn = $('#pdfGo'), old = btn.innerHTML;
+  btn.disabled = true; btn.textContent = 'Preparing…';
+  try{
+    await ensurePdf();
+    const n = buildPdf(pdfBeat, from, to);
+    $('#pdfOvl').classList.remove('on');
+    toast(n ? 'Tour programme report downloaded — ' + n + ' entries.' : 'Report downloaded — no entries in that period.');
+  }catch(e){ toast('PDF failed: ' + e.message, true); }
+  finally{ btn.disabled = false; btn.innerHTML = old; }
+};
+
+function uuid(){
+  if (crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+load();
+</script>
+</body>
+</html>
