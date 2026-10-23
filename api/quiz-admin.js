@@ -54,6 +54,9 @@ const ROUTES = {
   // changing who may sit a paper is an administrator's.
   'exam-allotment':        { role: 'QUIZ_VIEWER', fn: examAllotment },
   'exam-allotment-save':   { role: 'QUIZ_ADMIN',  fn: examAllotmentSave },
+  // Close the abandoned attempts of one examination, so they stop standing
+  // in the way of publishing, scheduling or deleting it.
+  'exam-finalise-expired': { role: 'QUIZ_ADMIN',  fn: examFinaliseExpired },
   // ── admin test mode ───────────────────────────────────────
   'test-start':            { role: 'QUIZ_EDITOR', fn: testStart },
   'test-reset':            { role: 'QUIZ_EDITOR', fn: testReset },
@@ -1638,12 +1641,12 @@ async function examSchedule(req, res, actor) {
 
   // Moving the opening time once people are already inside would re-gate them
   // mid-attempt, so that particular change is refused rather than silently applied.
-  const running = await Q.sbCount('quiz_attempts',
-    'exam_id=' + Q.eq(id) + '&mode=' + Q.eq('OFFICIAL') + '&status=' + Q.eq('IN_PROGRESS'));
+  const running = (await attemptPressure(id)).live;
   if (running > 0 && openMs !== before.exam_open_ms) {
     throw new Q.AppError(
-      running + ' attempt(s) are in progress, so the opening time can no longer be moved. ' +
-      'The closing and latest-start times may still be adjusted.', 409, 'ATTEMPTS_RUNNING');
+      running + ' attempt(s) are genuinely in progress, so the opening time can no longer ' +
+      'be moved. The closing and latest-start times may still be adjusted.',
+      409, 'ATTEMPTS_RUNNING');
   }
 
   const fields = {
@@ -1706,12 +1709,11 @@ async function examDelete(req, res, actor) {
       400, 'CONFIRM_TITLE_MISMATCH');
   }
 
-  const running = await Q.sbCount('quiz_attempts',
-    'exam_id=' + Q.eq(id) + '&mode=' + Q.eq('OFFICIAL') + '&status=' + Q.eq('IN_PROGRESS'));
+  const running = (await attemptPressure(id)).live;
   if (running > 0) {
     throw new Q.AppError(
-      running + ' attempt(s) are in progress. Cancel the examination and let them finish before ' +
-      'deleting it.', 409, 'ATTEMPTS_RUNNING');
+      running + ' attempt(s) are genuinely in progress — their time has not run out yet. ' +
+      'Cancel the examination and let them finish before deleting it.', 409, 'ATTEMPTS_RUNNING');
   }
 
   const official = await Q.sbCount('quiz_attempts',
@@ -1882,6 +1884,27 @@ async function examValidate(req, res) {
     });
   }
 
+  // Abandoned attempts, reported here rather than discovered on the publish
+  // button. They do not stop the examination being valid, so this is a note
+  // — but it is the note that explains a refusal to publish.
+  const pressure = await attemptPressure(ex.id);
+  if (pressure.live || pressure.overdue) {
+    checks.push({
+      label: 'Attempts outstanding on this examination',
+      ok: pressure.live === 0, informational: pressure.overdue > 0 && pressure.live === 0,
+      detail: (pressure.live
+        ? pressure.live + ' attempt(s) are genuinely in progress; the paper cannot be ' +
+          're-published until they finish. '
+        : '') +
+        (pressure.overdue
+          ? pressure.overdue + ' attempt(s) are past their deadline and were never ' +
+            'finalised — somebody closed their browser without submitting. Use ' +
+            '"Finalise overdue attempts" on the publish dialog, or /Quiz/admin → ' +
+            'Finalise expired attempts.'
+          : ''),
+    });
+  }
+
   checks.push({ label: 'Question paper frozen for this examination',
     ok: frozen >= ex.question_count,
     informational: true,
@@ -1905,15 +1928,30 @@ async function examPublish(req, res, actor) {
   const ex = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(id));
   if (!ex) throw new Q.AppError('Examination not found.', 404);
 
-  const running = await Q.sbCount('quiz_attempts',
-    'exam_id=' + Q.eq(id) + '&mode=' + Q.eq('OFFICIAL') + '&status=' + Q.eq('IN_PROGRESS'));
-  if (running > 0) {
+  // Only an attempt with time left on its clock can have the paper changed
+  // under its feet. An abandoned one cannot, and must not block publishing
+  // for ever — which is exactly what it used to do.
+  const { live, overdue } = await attemptPressure(id);
+  if (live > 0) {
     throw new Q.AppError(
-      running + ' attempt(s) are in progress. Re-publishing now would change the paper ' +
-      'under their feet. Wait for them to finish, or cancel the examination.', 409, 'ATTEMPTS_RUNNING');
+      live + ' attempt(s) are genuinely in progress — their time has not run out yet. ' +
+      'Re-publishing now would change the paper under their feet. Wait for them to finish, ' +
+      'or cancel the examination.' +
+      (overdue ? ' (A further ' + overdue + ' are overdue and can be finalised.)' : ''),
+      409, 'ATTEMPTS_RUNNING');
   }
+
+  // An overdue attempt is a sitting that has not been tallied, so it belongs
+  // with the completed ones: re-publishing replaces the paper their answers
+  // were given against, which is the same hazard, and the same override.
   const completed = await Q.sbCount('quiz_attempts',
     'exam_id=' + Q.eq(id) + '&mode=' + Q.eq('OFFICIAL') + '&status=neq.IN_PROGRESS');
+  if (overdue > 0 && body.force !== true) {
+    throw new Q.AppError(overdueNote(overdue) +
+      ' Once finalised, re-publishing is still a deliberate act, because their answers were ' +
+      'given against the paper it would replace.',
+      409, 'ATTEMPTS_OVERDUE');
+  }
   if (completed > 0 && body.force !== true) {
     throw new Q.AppError(
       completed + ' employee(s) have already sat this examination. Re-publishing would ' +
@@ -2026,6 +2064,41 @@ async function examStatus(req, res, actor) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+//  WHO IS ACTUALLY SITTING THE PAPER
+//
+//  An attempt stays IN_PROGRESS until something finalises it, and nothing
+//  does that at the moment a candidate closes their browser. So a paper sat
+//  last week can still show attempts "in progress" indefinitely, and every
+//  guard that reads IN_PROGRESS as "somebody is mid-paper right now" blocks
+//  for ever on people who left hours ago.
+//
+//  The deadline is what separates the two. An attempt whose clock still has
+//  time on it is genuinely being sat and must be protected. One whose clock
+//  ran out cannot be disturbed by anything an administrator does now — it is
+//  a finished sitting that has not been tallied yet.
+// ═══════════════════════════════════════════════════════════════════
+async function attemptPressure(examId) {
+  const now = Date.now();
+  const base = 'exam_id=' + Q.eq(examId) + '&mode=' + Q.eq('OFFICIAL') +
+               '&status=' + Q.eq('IN_PROGRESS');
+  const [live, overdue] = await Promise.all([
+    Q.sbCount('quiz_attempts', base + '&deadline_ms=gt.' + now),
+    Q.sbCount('quiz_attempts', base + '&deadline_ms=lte.' + now),
+  ]);
+  return { live, overdue, now };
+}
+
+// The sentence to add when overdue attempts are standing in the way. Written
+// once so that publish, schedule, delete and allotment all say the same
+// thing and name the same remedy.
+function overdueNote(n) {
+  return n + ' attempt(s) are past their deadline but have never been finalised — ' +
+    'somebody closed their browser without submitting. They are not sitting the paper ' +
+    'now. Finalise them first: use "Finalise overdue attempts" here, or ' +
+    '/Quiz/admin → Finalise expired attempts.';
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  EXAMINATION ALLOTMENT — naming who may sit a paper
 //
 //  Two states, held on the examination itself rather than inferred:
@@ -2123,14 +2196,15 @@ async function examAllotmentSave(req, res, actor) {
 
   // Changing who may sit a paper while people are sitting it would end an
   // attempt in progress. The list is therefore frozen for the duration, the
-  // same way the paper itself is.
-  const running = await Q.sbCount('quiz_attempts',
-    'exam_id=' + Q.eq(id) + '&mode=' + Q.eq('OFFICIAL') + '&status=' + Q.eq('IN_PROGRESS'));
+  // same way the paper itself is. Only a live attempt counts: somebody who
+  // abandoned the paper an hour ago cannot be removed from under themselves.
+  const running = (await attemptPressure(id)).live;
   if (running > 0 && body.force !== true) {
     throw new Q.AppError(
-      running + ' attempt(s) are in progress. Changing the allotment now could remove ' +
-      'somebody who is part-way through the paper. Wait for them to finish, or pass force ' +
-      'to override deliberately.', 409, 'ATTEMPTS_RUNNING');
+      running + ' attempt(s) are genuinely in progress — their time has not run out yet. ' +
+      'Changing the allotment now could remove somebody who is part-way through the paper. ' +
+      'Wait for them to finish, or pass force to override deliberately.',
+      409, 'ATTEMPTS_RUNNING');
   }
 
   const now = Date.now();
@@ -3049,6 +3123,40 @@ async function roleGrant(req, res, actor) {
 // Finalises attempts whose deadline has passed but whose browser never came
 // back. examStateAction already does this on each poll; this is the safety net
 // for a participant who simply closed the phone.
+// Close one attempt whose clock has run out, and write its result.
+//
+// The marks come from the answers already recorded against the attempt, not
+// from the examination's frozen paper — each answer carries its own
+// is_correct, decided when it was given. That is why finalising an overdue
+// attempt is safe even after the paper has been re-published.
+//
+// The status update is a claim: it only matches a row that is still
+// IN_PROGRESS, so two sweeps running at once cannot both finalise the same
+// attempt and write two results.
+async function finaliseExpiredAttempt(a, now) {
+  const claimed = await Q.sbUpdate('quiz_attempts',
+    'id=' + Q.eq(a.id) + '&status=' + Q.eq('IN_PROGRESS'),
+    { status: 'EXPIRED', submitted_ms: a.deadline_ms, finalized_ms: now });
+  if (!claimed || !claimed.length) return false;
+
+  const answers = await Q.sbSelect('quiz_answers',
+    'select=is_correct,chosen_slot&attempt_id=' + Q.eq(a.id));
+  const tally = Q.computeScore(a, answers);
+
+  const ex = await Q.sbOne('quiz_exams', 'select=result_mode,result_publish_ms&id=' + Q.eq(a.exam_id));
+  const autoPublish = ex && (ex.result_mode === 'AUTO' ||
+    (ex.result_mode === 'SCHEDULED' && ex.result_publish_ms && now >= ex.result_publish_ms));
+
+  await Q.sbInsert('quiz_results', Object.assign({
+    attempt_id: a.id, exam_id: a.exam_id, registration_id: a.registration_id,
+    employee_id: a.employee_id, mode: a.mode,
+    elapsed_seconds: Math.max(0, Math.round((a.deadline_ms - a.started_ms) / 1000)),
+    published: !!autoPublish, withheld: false,
+    computed_ms: now, published_ms: autoPublish ? now : null,
+  }, tally), { onConflict: 'attempt_id', returning: false });
+  return true;
+}
+
 async function sweepExpired(req, res, actor) {
   const now = Date.now();
   const stale = await Q.sbSelect('quiz_attempts',
@@ -3056,27 +3164,7 @@ async function sweepExpired(req, res, actor) {
 
   let finalised = 0;
   for (const a of stale || []) {
-    const claimed = await Q.sbUpdate('quiz_attempts',
-      'id=' + Q.eq(a.id) + '&status=' + Q.eq('IN_PROGRESS'),
-      { status: 'EXPIRED', submitted_ms: a.deadline_ms, finalized_ms: now });
-    if (!claimed || !claimed.length) continue;
-
-    const answers = await Q.sbSelect('quiz_answers',
-      'select=is_correct,chosen_slot&attempt_id=' + Q.eq(a.id));
-    const tally = Q.computeScore(a, answers);
-
-    const ex = await Q.sbOne('quiz_exams', 'select=result_mode,result_publish_ms&id=' + Q.eq(a.exam_id));
-    const autoPublish = ex && (ex.result_mode === 'AUTO' ||
-      (ex.result_mode === 'SCHEDULED' && ex.result_publish_ms && now >= ex.result_publish_ms));
-
-    await Q.sbInsert('quiz_results', Object.assign({
-      attempt_id: a.id, exam_id: a.exam_id, registration_id: a.registration_id,
-      employee_id: a.employee_id, mode: a.mode,
-      elapsed_seconds: Math.max(0, Math.round((a.deadline_ms - a.started_ms) / 1000)),
-      published: !!autoPublish, withheld: false,
-      computed_ms: now, published_ms: autoPublish ? now : null,
-    }, tally), { onConflict: 'attempt_id', returning: false });
-    finalised++;
+    if (await finaliseExpiredAttempt(a, now)) finalised++;
   }
 
   await Q.sbRpc('quiz_prune_expired', { now_ms: now }).catch(() => {});
@@ -3084,6 +3172,41 @@ async function sweepExpired(req, res, actor) {
     await Q.logAudit(req, actor, 'SWEEP_EXPIRED', 'quiz_attempts', null, null, { finalised });
   }
   return Q.ok(res, { finalised, scanned: (stale || []).length });
+}
+
+// The same sweep, confined to one examination. Reachable from the publish
+// dialog, because that is where an administrator discovers that abandoned
+// attempts are standing in the way.
+async function examFinaliseExpired(req, res, actor) {
+  const body = await Q.readJsonBody(req);
+  const id = String(body.id || '').trim();
+  const ex = await Q.sbOne('quiz_exams', 'select=id,title&id=' + Q.eq(id));
+  if (!ex) throw new Q.AppError('Examination not found.', 404);
+
+  const now = Date.now();
+  // `lte`, matching attemptPressure exactly. If this used `lt` while the
+  // guard counted `lte`, an attempt sitting on the millisecond of its
+  // deadline would be counted as blocking but never cleared by the button —
+  // a refusal with no remedy.
+  const stale = await Q.sbSelect('quiz_attempts',
+    'select=*&exam_id=' + Q.eq(id) + '&status=' + Q.eq('IN_PROGRESS') +
+    '&deadline_ms=lte.' + now + '&limit=500');
+
+  let finalised = 0;
+  for (const a of stale || []) {
+    if (await finaliseExpiredAttempt(a, now)) finalised++;
+  }
+  if (finalised) {
+    await Q.logAudit(req, actor, 'SWEEP_EXPIRED', 'quiz_exams', id, null,
+      { finalised, scope: 'exam' });
+  }
+  return Q.ok(res, {
+    finalised, scanned: (stale || []).length,
+    message: finalised
+      ? finalised + ' overdue attempt(s) finalised. Their answers have been marked and their ' +
+        'results recorded.'
+      : 'There were no overdue attempts to finalise.',
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════

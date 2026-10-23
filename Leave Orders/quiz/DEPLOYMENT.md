@@ -448,6 +448,32 @@ before.
    glance.
 5. Set the status to **Scheduled** (visible, opens at its time) or **Live**.
 
+#### Attempts that never ended
+
+An attempt is `IN_PROGRESS` from the moment it starts until something
+finalises it — and nothing does that when a candidate simply closes their
+browser. Their attempt stays open indefinitely, long after its clock ran out.
+
+The module distinguishes the two cases by the attempt's **deadline**, and
+only the first blocks anything:
+
+- **Genuinely in progress** — time still on the clock. Publishing,
+  re-scheduling the opening time, deleting, or changing the allotment are all
+  refused, because each would change the paper under somebody mid-attempt.
+- **Overdue** — the deadline has passed but it was never finalised. Nothing an
+  administrator does now can disturb it. **Validate** reports these, and the
+  publish dialog offers **Finalise overdue attempts** for that examination.
+
+Finalising marks the answers already recorded against the attempt and writes
+the result. It does **not** read the examination's frozen paper — each answer
+carries its own correctness, decided when it was given — so a finalised
+attempt keeps the right marks even if the paper is later re-published.
+
+Re-publishing after an overdue attempt is still a deliberate act requiring
+the override, because those answers were given against the paper it would
+replace. If the old results need to stay interpretable question by question,
+**duplicate** the examination instead of re-publishing it.
+
 #### Choosing who may sit a particular test
 
 **Examinations → 👥 Who can attempt**
@@ -679,6 +705,8 @@ if anyone has already sat the examination. Duplicate the examination instead.
 | *"Allotting an examination to named employees needs migration_v24…"* | Run `migration_v24_quiz_exam_allotments.sql`. |
 | Employee says the countdown never ended | They are on a cached page. The server decides; ask them to reload. |
 | An attempt is stuck *In progress* after the window closed | `/Quiz/admin` → **Finalise expired attempts**. |
+| *"N attempt(s) are past their deadline but have never been finalised"* when publishing | Candidates closed their browser without submitting, so their attempts never ended. Press **Finalise overdue attempts** in the same dialog. They are not sitting the paper. |
+| *"N attempt(s) are genuinely in progress"* | Those really do have time left on the clock. Wait, or cancel the examination. **Monitor** shows each one's remaining time. |
 | Everyone was signed out at once | `QUIZ_SESSION_SECRET` changed. |
 | Admin sign-in rejected with a correct password | The account has no quiz role. `/Quiz/admin/settings` → Quiz privileges. |
 

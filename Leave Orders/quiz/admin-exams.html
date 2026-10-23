@@ -626,8 +626,29 @@
         load();
       }).catch(function (e) {
         b.disabled = false; b.textContent = 'Freeze paper & publish';
-        document.getElementById('puberr').innerHTML =
-          QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+        var box = document.getElementById('puberr');
+        box.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+
+        // Abandoned attempts are the one refusal with a remedy the
+        // administrator can apply right here, so it is offered rather than
+        // described. Everything else is a decision, not a chore.
+        if (e.code === 'ATTEMPTS_OVERDUE' || /overdue/i.test(e.message || '')) {
+          box.innerHTML += '<div class="btn-row">' +
+            '<button class="btn sm" type="button" id="pubfin">' +
+              '&#9201; Finalise overdue attempts</button></div>';
+          document.getElementById('pubfin').addEventListener('click', function () {
+            var f = this;
+            f.disabled = true; f.textContent = 'Finalising…';
+            QuizAPI.admin('exam-finalise-expired', null, { id: ex.id }).then(function (r) {
+              QuizUI.toast(r.message, 'ok');
+              box.innerHTML = QuizUI.alert('ok', '&#9989;',
+                QuizUI.esc(r.message) + ' You can publish now.');
+            }).catch(function (err) {
+              f.disabled = false; f.textContent = '⏱ Finalise overdue attempts';
+              box.innerHTML += QuizUI.alert('err', '&#9888;', QuizUI.esc(err.message));
+            });
+          });
+        }
       });
     });
   }
