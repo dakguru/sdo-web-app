@@ -37,6 +37,8 @@ const ROUTES = {
   'question-duplicate':    { role: 'QUIZ_EDITOR', fn: questionDuplicate },
   'question-history':      { role: 'QUIZ_EDITOR', fn: questionHistory },
   'questions-import':      { role: 'QUIZ_EDITOR', fn: questionsImport },
+  // Deleting outright is an administrator's call; editors archive instead.
+  'questions-delete':      { role: 'QUIZ_ADMIN',  fn: questionsDelete },
   // ── examinations ──────────────────────────────────────────
   'exams-list':            { role: 'QUIZ_VIEWER', fn: examsList },
   'exam-save':             { role: 'QUIZ_ADMIN',  fn: examSave },
@@ -48,6 +50,10 @@ const ROUTES = {
   'exam-status':           { role: 'QUIZ_ADMIN',  fn: examStatus },
   'exam-paper':            { role: 'QUIZ_EDITOR', fn: examPaper },
   'exam-monitor':          { role: 'QUIZ_VIEWER', fn: examMonitor },
+  // Who may sit an examination. Reading the list is a viewer's business;
+  // changing who may sit a paper is an administrator's.
+  'exam-allotment':        { role: 'QUIZ_VIEWER', fn: examAllotment },
+  'exam-allotment-save':   { role: 'QUIZ_ADMIN',  fn: examAllotmentSave },
   // ── admin test mode ───────────────────────────────────────
   'test-start':            { role: 'QUIZ_EDITOR', fn: testStart },
   'test-reset':            { role: 'QUIZ_EDITOR', fn: testReset },
@@ -810,13 +816,92 @@ async function registrationUnlink(req, res, actor) {
 
 // ═══════════════════════════════════════════════════════════════════
 //  QUESTION BANK
+//
+//  A question either belongs to one examination or to the shared bank that
+//  any examination may draw from. `scope` is how the caller says which:
+//
+//    'ALL'     every question, whoever it belongs to — the plain list
+//    'SHARED'  the shared bank only (exam_id is null)
+//    <uuid>    the question set belonging to that examination
+//
+//  Everything below — the list, the counts, the category filter, saving,
+//  importing, duplicating and deleting — takes the same scope, so the page
+//  the administrator is looking at and the rows the action touches can never
+//  be two different things.
 // ═══════════════════════════════════════════════════════════════════
+
+// Has migration_v23 been run? Until it has, there is no exam_id column, so
+// every scope but 'ALL' is a question the database cannot answer.
+async function examScopeReady() {
+  return Q.columnsReady('quiz_questions', 'exam_id');
+}
+
+function normaliseScope(raw) {
+  const s = String(raw == null ? '' : raw).trim();
+  if (!s || s.toUpperCase() === 'ALL') return 'ALL';
+  if (s.toUpperCase() === 'SHARED') return 'SHARED';
+  return s;                                   // an examination id
+}
+
+// The PostgREST fragment for a scope, as a filter to append to a query.
+function scopeFilter(scope) {
+  if (scope === 'ALL') return '';
+  if (scope === 'SHARED') return '&exam_id=is.null';
+  return '&exam_id=' + Q.eq(scope);
+}
+
+// The exam_id a row saved into this scope should carry.
+function scopeExamId(scope) {
+  return (scope === 'ALL' || scope === 'SHARED') ? null : scope;
+}
+
+// A scope naming an examination has to name one that exists, or a typo in a
+// query string would quietly file questions against nothing.
+async function requireScopeExam(scope) {
+  if (scope === 'ALL' || scope === 'SHARED') return null;
+  const ex = await Q.sbOne('quiz_exams', 'select=id,title,status,question_count&id=' + Q.eq(scope));
+  if (!ex) throw new Q.AppError('That examination no longer exists.', 404, 'EXAM_NOT_FOUND');
+  return ex;
+}
+
+// The next free number for a qcode.
+//
+// This used to be derived from the row count, which holds only while nothing
+// is ever removed. Questions can now be deleted — a set uploaded against the
+// wrong examination has to be removable — and after a single deletion the
+// count points back at a number already in use, so the next insert would
+// collide with a unique qcode and the whole import would fail.
+//
+// The highest number actually in use is the only safe basis, so that is what
+// is asked for. qcode is unique and indexed, so this is one ordered read.
+async function nextQcodeNumber() {
+  const rows = await Q.sbSelect('quiz_questions',
+    'select=qcode&qcode=not.is.null&order=qcode.desc&limit=1');
+  const top = rows && rows[0] ? String(rows[0].qcode) : '';
+  const m = /^Q(\d+)$/.exec(top);
+  if (m) return parseInt(m[1], 10) + 1;
+  // A bank whose codes are not in the Q0000 form at all (or an empty one):
+  // fall back to the count, which is right for an empty table and no worse
+  // than what it replaces for anything else.
+  return (await Q.sbCount('quiz_questions')) + 1;
+}
+
+const SCOPE_PENDING =
+  'Separate question sets per examination need migration_v23_quiz_exam_questions.sql, ' +
+  'which has not been run on this database yet. Until it is, every question lives in ' +
+  'the one shared bank. Run the migration in the Supabase SQL editor and reload.';
+
 async function questionsList(req, res) {
   const qp = req.query || {};
   const limit = clampInt(qp.limit, 1, 500, 50);
   const offset = clampInt(qp.offset, 0, 1e6, 0);
 
-  let f = 'select=*&order=created_at_ms.desc&limit=' + limit + '&offset=' + offset;
+  const scopeReady = await examScopeReady();
+  const scope = scopeReady ? normaliseScope(qp.scope) : 'ALL';
+  if (scope !== 'ALL') await requireScopeExam(scope);
+  const sf = scopeFilter(scope);
+
+  let f = 'select=*&order=created_at_ms.desc&limit=' + limit + '&offset=' + offset + sf;
   if (qp.status)     f += '&status=' + Q.eq(qp.status);
   if (qp.category)   f += '&category=' + Q.eq(qp.category);
   if (qp.difficulty) f += '&difficulty=' + Q.eq(qp.difficulty);
@@ -828,21 +913,73 @@ async function questionsList(req, res) {
   }
 
   const rows = await Q.sbSelect('quiz_questions', f);
+
+  // The counts and the category list describe the scope on screen, not the
+  // whole table — a set of 25 questions for one examination should not report
+  // the division's entire bank above it.
+  const within = tail => (sf ? sf.slice(1) + (tail ? '&' + tail : '') : (tail || ''));
   const [total, active, draft, archived] = await Promise.all([
-    Q.sbCount('quiz_questions'),
-    Q.sbCount('quiz_questions', 'status=' + Q.eq('ACTIVE')),
-    Q.sbCount('quiz_questions', 'status=' + Q.eq('DRAFT')),
-    Q.sbCount('quiz_questions', 'status=' + Q.eq('ARCHIVED')),
+    Q.sbCount('quiz_questions', within('')),
+    Q.sbCount('quiz_questions', within('status=' + Q.eq('ACTIVE'))),
+    Q.sbCount('quiz_questions', within('status=' + Q.eq('DRAFT'))),
+    Q.sbCount('quiz_questions', within('status=' + Q.eq('ARCHIVED'))),
   ]);
 
-  const cats = await Q.sbSelect('quiz_questions', 'select=category');
+  const cats = await Q.sbSelect('quiz_questions', 'select=category' + sf);
   const categories = [...new Set((cats || []).map(c => c.category).filter(Boolean))].sort();
 
   return Q.ok(res, {
     questions: rows || [],
     counts: { total, active, draft, archived },
     categories, limit, offset,
+    scope, scopeReady,
+    scopePending: scopeReady ? null : SCOPE_PENDING,
+    scopes: await scopeOptions(scopeReady),
   });
+}
+
+// The picker at the top of the Question Bank: the shared bank, then every
+// examination with the size of its own set, so an administrator can see at a
+// glance which examinations have a paper of their own and which do not.
+async function scopeOptions(scopeReady) {
+  if (!scopeReady) return [];
+  const exams = await Q.sbSelect('quiz_exams',
+    'select=id,title,status,question_count&order=created_at_ms.desc&limit=200');
+  const tally = await questionTally();
+  const of = key => tally[key] || { own: 0, active: 0 };
+
+  const shared = of('SHARED');
+  const out = [{
+    id: 'SHARED', title: 'Shared bank — available to every examination',
+    status: null, question_count: null,
+    ownCount: shared.own, activeCount: shared.active,
+  }];
+  for (const ex of exams || []) {
+    const t = of(ex.id);
+    out.push({
+      id: ex.id, title: ex.title, status: ex.status,
+      question_count: ex.question_count,
+      ownCount: t.own, activeCount: t.active,
+    });
+  }
+  return out;
+}
+
+// How many questions each set holds, and how many of them are active.
+//
+// Counted in one read rather than two COUNT queries per examination: with the
+// 200 examinations the picker allows, the per-examination version was 400
+// round trips to draw a drop-down. Only two small columns are fetched.
+async function questionTally() {
+  const rows = await Q.sbSelect('quiz_questions', 'select=exam_id,status&limit=20000');
+  const out = {};
+  for (const r of rows || []) {
+    const key = r.exam_id || 'SHARED';
+    if (!out[key]) out[key] = { own: 0, active: 0 };
+    out[key].own++;
+    if (r.status === 'ACTIVE') out[key].active++;
+  }
+  return out;
 }
 
 function validateQuestion(body) {
@@ -878,6 +1015,14 @@ async function questionSave(req, res, actor) {
   const id = body.id ? String(body.id).trim() : null;
   const hash = Q.questionHash(v.text);
 
+  // Which set this question belongs to. On an edit the scope may be left out,
+  // and then the question stays where it is rather than being swept into the
+  // shared bank by an omission.
+  const scopeReady = await examScopeReady();
+  const scopeGiven = scopeReady && body.scope !== undefined;
+  const scope = scopeGiven ? normaliseScope(body.scope) : null;
+  if (scopeGiven && scope !== 'ALL') await requireScopeExam(scope);
+
   const fields = {
     question_text: v.text,
     option_a: v.opts.option_a, option_b: v.opts.option_b,
@@ -894,6 +1039,7 @@ async function questionSave(req, res, actor) {
     updated_by: actor.username,
     updated_at_ms: now,
   };
+  if (scopeGiven) fields.exam_id = scopeExamId(scope);
 
   if (id) {
     const before = await Q.sbOne('quiz_questions', 'select=*&id=' + Q.eq(id));
@@ -930,8 +1076,13 @@ async function questionSave(req, res, actor) {
     });
   }
 
-  const dupe = await Q.sbOne('quiz_questions', 'select=id,qcode&dedupe_hash=' + Q.eq(hash));
-  const count = await Q.sbCount('quiz_questions');
+  // Scoped: the same question may legitimately appear in two different
+  // papers, so "already exists" is asked within the set being added to, not
+  // across the division's entire bank.
+  const dupe = await Q.sbOne('quiz_questions',
+    'select=id,qcode&dedupe_hash=' + Q.eq(hash) +
+    (scopeGiven ? scopeFilter(scope) : ''));
+  const count = (await nextQcodeNumber()) - 1;
   const rows = await Q.sbInsert('quiz_questions', Object.assign({}, fields, {
     qcode: 'Q' + String(count + 1).padStart(4, '0'),
     version: 1, created_by: actor.username, created_at_ms: now,
@@ -961,14 +1112,29 @@ async function questionStatus(req, res, actor) {
   return Q.ok(res, { updated: ids.length });
 }
 
+// Duplicating is also how a new examination is seeded from an existing set:
+// with a target scope the copy lands in that examination's own questions, and
+// its text is kept verbatim because it is a copy into a different paper, not a
+// second version of the same one.
 async function questionDuplicate(req, res, actor) {
   const body = await Q.readJsonBody(req);
-  const id = String(body.id || '').trim();
+  const ids = Array.isArray(body.ids) ? body.ids.map(String).filter(Boolean)
+            : (body.id ? [String(body.id)] : []);
+  if (!ids.length) throw new Q.AppError('No question was specified.', 400);
+
+  const scopeReady = await examScopeReady();
+  const intoGiven = scopeReady && body.into !== undefined;
+  const into = intoGiven ? normaliseScope(body.into) : null;
+  const intoExam = intoGiven ? await requireScopeExam(into) : null;
+
+  if (ids.length > 1 || intoGiven) return duplicateMany(req, res, actor, ids, intoGiven, into, intoExam);
+
+  const id = ids[0];
   const src = await Q.sbOne('quiz_questions', 'select=*&id=' + Q.eq(id));
   if (!src) throw new Q.AppError('Question not found.', 404);
 
   const now = Date.now();
-  const count = await Q.sbCount('quiz_questions');
+  const count = (await nextQcodeNumber()) - 1;
   const rows = await Q.sbInsert('quiz_questions', {
     qcode: 'Q' + String(count + 1).padStart(4, '0'),
     question_text: src.question_text + ' (copy)',
@@ -978,9 +1144,74 @@ async function questionDuplicate(req, res, actor) {
     status: 'DRAFT', dedupe_hash: Q.questionHash(src.question_text + ' (copy)'),
     version: 1, created_by: actor.username, created_at_ms: now,
     updated_by: actor.username, updated_at_ms: now,
+    // A copy made in place stays in the set it was copied from. Without this
+    // it would land in the shared bank, where an examination's own question
+    // would suddenly be offered to every other examination.
+    ...(scopeReady ? { exam_id: src.exam_id || null } : {}),
   });
   await Q.logAudit(req, actor, 'QUESTION_DUPLICATE', 'quiz_questions', rows[0].id, { from: id }, null);
-  return Q.ok(res, { id: rows[0].id, qcode: rows[0].qcode });
+  return Q.ok(res, { id: rows[0].id, qcode: rows[0].qcode, copied: 1 });
+}
+
+// Copying a selection into another set — the usual way a new examination's
+// paper is started from an existing one.
+async function duplicateMany(req, res, actor, ids, intoGiven, into, intoExam) {
+  const scopeReady = await examScopeReady();
+  let src = [];
+  for (const chunk of chunked(ids, 100)) {
+    const rows = await Q.sbSelect('quiz_questions', 'select=*&id=in.(' + chunk.join(',') + ')');
+    src = src.concat(rows || []);
+  }
+  if (!src.length) throw new Q.AppError('None of those questions could be found.', 404);
+
+  const targetId = intoGiven ? scopeExamId(into) : null;
+
+  // Don't copy what is already there. Re-running "copy the shared bank into
+  // this examination" after adding three questions should copy three, not
+  // produce a second complete set.
+  let present = new Set();
+  if (scopeReady && intoGiven) {
+    const have = await Q.sbSelect('quiz_questions',
+      'select=dedupe_hash' + scopeFilter(into) + '&limit=5000');
+    present = new Set((have || []).map(h => h.dedupe_hash).filter(Boolean));
+  }
+
+  const now = Date.now();
+  const base = (await nextQcodeNumber()) - 1;
+  const fresh = [];
+  for (const q of src) {
+    const hash = q.dedupe_hash || Q.questionHash(q.question_text);
+    if (present.has(hash)) continue;
+    present.add(hash);
+    fresh.push({
+      qcode: 'Q' + String(base + fresh.length + 1).padStart(4, '0'),
+      question_text: q.question_text,
+      option_a: q.option_a, option_b: q.option_b, option_c: q.option_c, option_d: q.option_d,
+      correct_option: q.correct_option, explanation: q.explanation, source_ref: q.source_ref,
+      category: q.category, difficulty: q.difficulty,
+      // Copies arrive as drafts for review, exactly as an import does, so a
+      // paper is never filled by questions nobody has looked at in context.
+      status: 'DRAFT', dedupe_hash: hash,
+      version: 1, created_by: actor.username, created_at_ms: now,
+      updated_by: actor.username, updated_at_ms: now,
+      ...(scopeReady ? { exam_id: intoGiven ? targetId : (q.exam_id || null) } : {}),
+    });
+  }
+
+  for (const chunk of chunked(fresh, 100)) {
+    await Q.sbInsert('quiz_questions', chunk, { returning: false });
+  }
+  const setName = intoExam ? intoExam.title : (intoGiven ? 'the shared bank' : 'the same set');
+  await Q.logAudit(req, actor, 'QUESTION_DUPLICATE', 'quiz_questions', '', null,
+    { requested: ids.length, copied: fresh.length, into: setName });
+
+  return Q.ok(res, {
+    copied: fresh.length, skipped: src.length - fresh.length, setName,
+    message: fresh.length + ' question(s) copied into ' + setName + ' as drafts' +
+      (src.length - fresh.length
+        ? '; ' + (src.length - fresh.length) + ' already there and left alone.'
+        : '.'),
+  });
 }
 
 async function questionHistory(req, res) {
@@ -998,6 +1229,17 @@ async function questionsImport(req, res, actor) {
   if (!rows.length) throw new Q.AppError('No rows were received.', 400);
   if (rows.length > 2000) throw new Q.AppError('Please import at most 2000 questions per batch.', 413);
 
+  // The set this upload lands in. An upload meant for one examination must
+  // never spill into the shared bank, so a named scope that the schema cannot
+  // yet honour is refused outright rather than silently widened.
+  const scopeReady = await examScopeReady();
+  const scope = scopeReady ? normaliseScope(body.scope) : 'ALL';
+  if (!scopeReady && body.scope && normaliseScope(body.scope) !== 'ALL') {
+    throw new Q.AppError(SCOPE_PENDING, 409, 'MIGRATION_PENDING');
+  }
+  const scopeExam = await requireScopeExam(scope);
+  const examId = scopeExamId(scope);
+
   const now = Date.now();
   const issues = [];
   const clean = [];
@@ -1010,7 +1252,7 @@ async function questionsImport(req, res, actor) {
     const hash = Q.questionHash(v.text);
     if (hashes.has(hash)) return issues.push({ line, issue: 'Duplicate question within this file', skipped: true });
     hashes.add(hash);
-    clean.push({
+    const row = {
       question_text: v.text,
       option_a: v.opts.option_a, option_b: v.opts.option_b,
       option_c: v.opts.option_c, option_d: v.opts.option_d,
@@ -1024,30 +1266,36 @@ async function questionsImport(req, res, actor) {
       dedupe_hash: hash, version: 1,
       created_by: actor.username, created_at_ms: now,
       updated_by: actor.username, updated_at_ms: now,
-    });
+    };
+    if (scopeReady) row.exam_id = examId;
+    clean.push(row);
   });
 
-  // Flag questions that already exist in the bank, so a re-import does not
-  // silently double the paper.
+  // Flag questions that already exist in THIS set, so a re-import does not
+  // silently double the paper. Scoped deliberately: the same question in
+  // another examination's set is not a duplicate of this one.
   const existing = new Set();
   for (const chunk of chunked([...hashes], 100)) {
     const found = await Q.sbSelect('quiz_questions',
-      'select=dedupe_hash&dedupe_hash=in.(' + chunk.map(csvQuote).join(',') + ')');
+      'select=dedupe_hash&dedupe_hash=in.(' + chunk.map(csvQuote).join(',') + ')' +
+      (scopeReady ? scopeFilter(scope) : ''));
     for (const f of found || []) existing.add(f.dedupe_hash);
   }
   const fresh = clean.filter(c => !existing.has(c.dedupe_hash));
   const dupCount = clean.length - fresh.length;
 
+  const setName = scopeExam ? scopeExam.title : 'the shared bank';
+
   if (dryRun) {
     return Q.ok(res, {
-      preview: true,
+      preview: true, scope, setName,
       summary: { total: rows.length, toInsert: fresh.length, duplicates: dupCount, skipped: issues.length },
       issues: issues.slice(0, 200),
       sample: fresh.slice(0, 10),
     });
   }
 
-  const base = await Q.sbCount('quiz_questions');
+  const base = (await nextQcodeNumber()) - 1;
   fresh.forEach((c, i) => { c.qcode = 'Q' + String(base + i + 1).padStart(4, '0'); });
 
   const jobRows = await Q.sbInsert('quiz_import_jobs', {
@@ -1064,14 +1312,64 @@ async function questionsImport(req, res, actor) {
     await Q.sbInsert('quiz_questions', chunk, { returning: false });
   }
   await Q.logAudit(req, actor, 'QUESTIONS_IMPORT', 'quiz_questions', jobId, null,
-    { total: rows.length, inserted: fresh.length, duplicates: dupCount, skipped: issues.length });
+    { total: rows.length, inserted: fresh.length, duplicates: dupCount,
+      skipped: issues.length, scope, set: setName });
 
   return Q.ok(res, {
-    jobId,
+    jobId, scope, setName,
     summary: { total: rows.length, inserted: fresh.length, duplicates: dupCount, skipped: issues.length },
     issues: issues.slice(0, 200),
-    message: fresh.length + ' questions imported, ' + dupCount + ' duplicates skipped, ' +
-             issues.length + ' rows requiring review.',
+    message: fresh.length + ' question(s) imported into ' + setName + ', ' +
+             dupCount + ' duplicate(s) skipped, ' +
+             issues.length + ' row(s) requiring review.',
+  });
+}
+
+// Remove questions outright. Archiving is the usual course and stays the
+// default in the UI, but a set uploaded to the wrong examination, or a batch
+// imported from the wrong file, has no reason to sit in the bank for ever.
+//
+// A question frozen into a published paper is never deleted — a result refers
+// to it, and the evaluation record has to stay readable. Those are reported
+// back by name rather than skipped quietly, so the administrator knows which
+// ones remain and why.
+async function questionsDelete(req, res, actor) {
+  const body = await Q.readJsonBody(req);
+  const ids = Array.isArray(body.ids) ? body.ids.map(String).filter(Boolean)
+            : (body.id ? [String(body.id)] : []);
+  if (!ids.length) throw new Q.AppError('No question was specified.', 400);
+  if (ids.length > 2000) throw new Q.AppError('Please delete at most 2000 questions at once.', 413);
+
+  const protectedIds = new Set();
+  for (const chunk of chunked(ids, 100)) {
+    const used = await Q.sbSelect('quiz_exam_questions',
+      'select=question_id&question_id=in.(' + chunk.join(',') + ')');
+    for (const u of used || []) protectedIds.add(u.question_id);
+  }
+  const removable = ids.filter(i => !protectedIds.has(i));
+
+  let kept = [];
+  if (protectedIds.size) {
+    for (const chunk of chunked([...protectedIds], 100)) {
+      const rows = await Q.sbSelect('quiz_questions',
+        'select=id,qcode&id=in.(' + chunk.join(',') + ')');
+      kept = kept.concat((rows || []).map(r => r.qcode || r.id));
+    }
+  }
+
+  for (const chunk of chunked(removable, 100)) {
+    await Q.sbDelete('quiz_questions', 'id=in.(' + chunk.join(',') + ')');
+  }
+  await Q.logAudit(req, actor, 'QUESTIONS_DELETE', 'quiz_questions', removable.join(','), null,
+    { requested: ids.length, deleted: removable.length, kept: kept.length });
+
+  return Q.ok(res, {
+    deleted: removable.length, kept: kept.length, keptCodes: kept.slice(0, 50),
+    message: removable.length + ' question(s) deleted.' +
+      (kept.length
+        ? ' ' + kept.length + ' kept: they are frozen into a published paper and a result ' +
+          'refers to them. Archive those instead.'
+        : ''),
   });
 }
 
@@ -1080,16 +1378,46 @@ async function questionsImport(req, res, actor) {
 // ═══════════════════════════════════════════════════════════════════
 async function examsList(req, res) {
   const rows = await Q.sbSelect('quiz_exams', 'select=*&order=created_at_ms.desc');
+  const scopeReady = await examScopeReady();
+  // One read for every examination's own set, rather than two counts each.
+  const tally = scopeReady ? await questionTally() : {};
+  const allotReady = await allotmentReady();
+  const allotTally = allotReady ? await allotmentTally() : {};
   const out = [];
   for (const ex of rows || []) {
     const frozen = await Q.sbCount('quiz_exam_questions', 'exam_id=' + Q.eq(ex.id));
+    // The size of the examination's own set, so the card can say whether this
+    // test has a paper of its own or is still sharing the divisional bank.
+    const t = tally[ex.id] || { own: 0, active: 0 };
     out.push(Object.assign({}, ex, {
       frozenQuestionCount: frozen,
+      ownQuestionCount: t.own, ownActiveCount: t.active,
+      allotmentMode: allotReady ? String(ex.allotment_mode || 'ALL').toUpperCase() : 'ALL',
+      allottedCount: allotTally[ex.id] || 0,
       maxMarks: Number(ex.positive_marks) * ex.question_count,
     }));
   }
   const settings = await Q.getSettings();
-  return Q.ok(res, { exams: out, defaults: settings.exam_defaults || {}, serverTimeMs: Date.now() });
+  return Q.ok(res, {
+    exams: out, defaults: settings.exam_defaults || {},
+    questionScopeReady: scopeReady, allotmentReady: allotReady,
+    serverTimeMs: Date.now(),
+  });
+}
+
+// How many employees are allotted to each examination, in one read.
+async function allotmentTally() {
+  try {
+    const rows = await Q.sbSelect('quiz_exam_allotments', 'select=exam_id&limit=50000');
+    const out = {};
+    for (const r of rows || []) out[r.exam_id] = (out[r.exam_id] || 0) + 1;
+    return out;
+  } catch (e) {
+    // The table arrives with migration_v24; before that there is nothing to
+    // count, and the cards simply say nothing about allotment.
+    if (Q.isMissingColumn(e) || (e instanceof Q.DbError && e.status === 404)) return {};
+    throw e;
+  }
 }
 
 async function examSave(req, res, actor) {
@@ -1216,8 +1544,64 @@ async function examDuplicate(req, res, actor) {
   copy.updated_at_ms = now;
 
   const rows = await Q.sbInsert('quiz_exams', copy);
-  await Q.logAudit(req, actor, 'EXAM_DUPLICATE', 'quiz_exams', rows[0].id, { from: src.id }, null);
-  return Q.ok(res, { id: rows[0].id });
+  const newId = rows[0].id;
+
+  // A duplicated examination gets its own copy of the question set, not a
+  // share of the original's. Otherwise editing the copy's paper would silently
+  // edit the paper of the examination it was duplicated from — and duplicating
+  // is the normal way a new test is started from last year's.
+  //
+  // The frozen paper is deliberately not copied: the duplicate is a DRAFT and
+  // must be published in its own right, which is what freezes it.
+  let copiedQuestions = 0;
+  if (await examScopeReady()) {
+    const own = await Q.sbSelect('quiz_questions',
+      'select=*&exam_id=' + Q.eq(src.id) + '&limit=5000');
+    if ((own || []).length) {
+      const base = (await nextQcodeNumber()) - 1;
+      const clones = own.map((q, i) => ({
+        qcode: 'Q' + String(base + i + 1).padStart(4, '0'),
+        question_text: q.question_text,
+        option_a: q.option_a, option_b: q.option_b, option_c: q.option_c, option_d: q.option_d,
+        correct_option: q.correct_option, explanation: q.explanation, source_ref: q.source_ref,
+        category: q.category, difficulty: q.difficulty,
+        // Status carries over: a set that was ready to publish stays ready,
+        // which is the point of duplicating rather than starting again.
+        status: q.status, dedupe_hash: q.dedupe_hash,
+        exam_id: newId, version: 1,
+        created_by: actor.username, created_at_ms: now,
+        updated_by: actor.username, updated_at_ms: now,
+      }));
+      for (const chunk of chunked(clones, 100)) {
+        await Q.sbInsert('quiz_questions', chunk, { returning: false });
+      }
+      copiedQuestions = clones.length;
+    }
+  }
+
+  // The candidate list comes with the copy too. A test duplicated for a
+  // second batch is nearly always given to the same kind of group, and an
+  // empty list on a SELECTED copy would mean nobody could sit it at all.
+  let copiedAllotments = 0;
+  if (await allotmentReady()) {
+    const seats = await Q.sbSelect('quiz_exam_allotments',
+      'select=employee_id&exam_id=' + Q.eq(src.id) + '&limit=5000');
+    const ids = (seats || []).map(s => s.employee_id);
+    if (ids.length) {
+      copiedAllotments = ids.length - (await insertAllotments(newId, ids, actor, now)).length;
+    }
+  }
+
+  await Q.logAudit(req, actor, 'EXAM_DUPLICATE', 'quiz_exams', newId,
+    { from: src.id }, { questionsCopied: copiedQuestions, allotmentsCopied: copiedAllotments });
+
+  const parts = [];
+  if (copiedQuestions) parts.push('its own set of ' + copiedQuestions + ' question(s)');
+  if (copiedAllotments) parts.push(copiedAllotments + ' allotted employee(s)');
+  return Q.ok(res, {
+    id: newId, questionsCopied: copiedQuestions, allotmentsCopied: copiedAllotments,
+    message: parts.length ? 'Duplicated, along with ' + parts.join(' and ') + '.' : 'Duplicated.',
+  });
 }
 
 // Re-scheduling, separated from the full editor. The window may be adjusted at
@@ -1353,19 +1737,54 @@ async function examDelete(req, res, actor) {
 
 // Pre-flight before publishing: does the bank actually hold enough valid,
 // active questions to fill this paper?
+// Where this examination's paper is drawn from.
+//
+// If the examination has questions of its own, the paper comes only from
+// them — that is what "a question set per examination" means, and it is the
+// whole point of being able to upload a paper against one test. If it has
+// none, it falls back to the shared bank filtered by its category and
+// difficulty policy, which is how every examination behaved before.
+//
+// Returned as a description rather than a filter string so that validate,
+// publish and the UI all say the same thing about the same examination.
+async function paperSource(ex) {
+  const pool = ex.question_pool || {};
+  const scopeReady = await examScopeReady();
+
+  const ownCount = scopeReady
+    ? await Q.sbCount('quiz_questions', 'exam_id=' + Q.eq(ex.id))
+    : 0;
+
+  if (ownCount > 0) {
+    return {
+      own: true, ownCount, scopeReady,
+      filter: '&exam_id=' + Q.eq(ex.id),
+      label: 'this examination\'s own question set',
+    };
+  }
+
+  let filter = '';
+  if (scopeReady) filter += '&exam_id=is.null';
+  if (Array.isArray(pool.categories) && pool.categories.length) {
+    filter += '&category=in.(' + pool.categories.map(csvQuote).join(',') + ')';
+  }
+  if (Array.isArray(pool.difficulties) && pool.difficulties.length) {
+    filter += '&difficulty=in.(' + pool.difficulties.map(csvQuote).join(',') + ')';
+  }
+  return {
+    own: false, ownCount: 0, scopeReady, filter,
+    label: 'the shared question bank',
+  };
+}
+
 async function examValidate(req, res) {
   const id = String((req.query || {}).id || '').trim();
   const ex = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(id));
   if (!ex) throw new Q.AppError('Examination not found.', 404);
 
-  const pool = ex.question_pool || {};
-  let f = 'select=id,correct_option,option_a,option_b,option_c,option_d&status=' + Q.eq('ACTIVE');
-  if (Array.isArray(pool.categories) && pool.categories.length) {
-    f += '&category=in.(' + pool.categories.map(csvQuote).join(',') + ')';
-  }
-  if (Array.isArray(pool.difficulties) && pool.difficulties.length) {
-    f += '&difficulty=in.(' + pool.difficulties.map(csvQuote).join(',') + ')';
-  }
+  const source = await paperSource(ex);
+  const f = 'select=id,correct_option,option_a,option_b,option_c,option_d&status=' +
+    Q.eq('ACTIVE') + source.filter;
   const available = await Q.sbSelect('quiz_questions', f + '&limit=5000');
 
   const malformed = (available || []).filter(q =>
@@ -1376,9 +1795,27 @@ async function examValidate(req, res) {
   const frozen = await Q.sbCount('quiz_exam_questions', 'exam_id=' + Q.eq(id));
 
   const checks = [];
-  checks.push({ label: 'Question bank has enough active questions',
+  // Which set the paper will come from, stated before anything is counted —
+  // an administrator reading "12 usable of 25 required" has to know whether
+  // that is the shared bank or this examination's own questions.
+  checks.push({
+    label: 'Paper is drawn from ' + source.label,
+    ok: true, informational: true,
+    detail: source.own
+      ? source.ownCount + ' question(s) belong to this examination. The shared bank ' +
+        'is not used, and no other examination\'s questions can reach this paper.'
+      : (source.scopeReady
+          ? 'This examination has no questions of its own, so it falls back to the shared ' +
+            'bank. Upload a set against it in the Question Bank to give it its own paper.'
+          : 'Separate sets per examination need migration_v23; until it is run every ' +
+            'examination draws from the one shared bank.'),
+  });
+  checks.push({ label: 'Question set has enough active questions',
     ok: usable >= ex.question_count,
-    detail: usable + ' usable of ' + ex.question_count + ' required' });
+    detail: usable + ' usable of ' + ex.question_count + ' required, in ' + source.label +
+      (usable < ex.question_count && source.own
+        ? '. Add more questions to this examination, or activate the drafts already in its set.'
+        : '') });
   checks.push({ label: 'Every question has four options and one key',
     ok: malformed.length === 0,
     detail: malformed.length ? malformed.length + ' malformed question(s)' : 'All valid' });
@@ -1425,6 +1862,26 @@ async function examValidate(req, res) {
     });
   }
 
+  // Who may sit it. A restricted examination with nobody allotted is the one
+  // configuration that looks finished and admits no one, so it is a gating
+  // check rather than a note.
+  if (await allotmentReady()) {
+    const mode = String(ex.allotment_mode || 'ALL').toUpperCase();
+    const seats = mode === 'SELECTED'
+      ? await Q.sbCount('quiz_exam_allotments', 'exam_id=' + Q.eq(ex.id)) : 0;
+    checks.push({
+      label: 'Somebody can actually sit this examination',
+      ok: mode !== 'SELECTED' || seats > 0,
+      detail: mode === 'SELECTED'
+        ? (seats
+            ? 'Allotted to ' + seats + ' named employee(s); nobody else can sit it.'
+            : 'This examination is restricted to selected employees, but none have been ' +
+              'allotted — so nobody can sit it. Use "Who can attempt" to add them, or set ' +
+              'it back to open.')
+        : 'Open to everyone its office and designation rules allow.',
+    });
+  }
+
   checks.push({ label: 'Question paper frozen for this examination',
     ok: frozen >= ex.question_count,
     informational: true,
@@ -1436,6 +1893,7 @@ async function examValidate(req, res) {
     // stopped covering them the moment one was added.
     ready: checks.filter(c => !c.informational).every(c => c.ok),
     availableQuestions: usable, frozenQuestionCount: frozen,
+    paperSource: { own: source.own, ownCount: source.ownCount, label: source.label },
   });
 }
 
@@ -1463,14 +1921,11 @@ async function examPublish(req, res, actor) {
       'examination instead, or pass force to override deliberately.', 409, 'ALREADY_ATTEMPTED');
   }
 
-  const pool = ex.question_pool || {};
-  let f = 'select=*&status=' + Q.eq('ACTIVE');
-  if (Array.isArray(pool.categories) && pool.categories.length) {
-    f += '&category=in.(' + pool.categories.map(csvQuote).join(',') + ')';
-  }
-  if (Array.isArray(pool.difficulties) && pool.difficulties.length) {
-    f += '&difficulty=in.(' + pool.difficulties.map(csvQuote).join(',') + ')';
-  }
+  // The same rule validate reports: its own set if it has one, otherwise the
+  // shared bank. Both read it from one place so the paper that is frozen can
+  // never come from a different pool than the one just validated.
+  const source = await paperSource(ex);
+  const f = 'select=*&status=' + Q.eq('ACTIVE') + source.filter;
   const available = (await Q.sbSelect('quiz_questions', f + '&limit=5000')) || [];
   const usable = available.filter(q =>
     q.option_a && q.option_b && q.option_c && q.option_d &&
@@ -1478,8 +1933,11 @@ async function examPublish(req, res, actor) {
 
   if (usable.length < ex.question_count) {
     throw new Q.AppError(
-      'Only ' + usable.length + ' usable active question(s) are available, but this ' +
-      'examination needs ' + ex.question_count + '. Add or activate more questions first.',
+      'Only ' + usable.length + ' usable active question(s) are available in ' + source.label +
+      ', but this examination needs ' + ex.question_count + '. ' +
+      (source.own
+        ? 'Add more questions to this examination\'s set, or activate the drafts in it.'
+        : 'Add or activate more questions first.'),
       409, 'NOT_ENOUGH_QUESTIONS');
   }
 
@@ -1520,11 +1978,14 @@ async function examPublish(req, res, actor) {
     { status, published_at_ms: now, updated_at_ms: now }, { returning: false });
 
   await Q.logAudit(req, actor, 'EXAM_PUBLISH', 'quiz_exams', id,
-    { status: ex.status }, { status, questions: picked.length, forced: body.force === true });
+    { status: ex.status }, { status, questions: picked.length,
+      source: source.label, forced: body.force === true });
 
   return Q.ok(res, {
     published: true, status, questionCount: picked.length,
-    message: picked.length + ' questions frozen. The examination is ' + status +
+    paperSource: { own: source.own, label: source.label },
+    message: picked.length + ' question(s) frozen from ' + source.label +
+             '. The examination is ' + status +
              ' and opens at ' + Q.istString(ex.exam_open_ms) + ' IST.',
   });
 }
@@ -1562,6 +2023,209 @@ async function examStatus(req, res, actor) {
     { status, updated_at_ms: Date.now() }, { returning: false });
   await Q.logAudit(req, actor, 'EXAM_STATUS', 'quiz_exams', id, { status: before.status }, { status });
   return Q.ok(res, { updated: true, status });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  EXAMINATION ALLOTMENT — naming who may sit a paper
+//
+//  Two states, held on the examination itself rather than inferred:
+//
+//    ALL       the office and designation rules decide, as they always have
+//    SELECTED  only the employees named in quiz_exam_allotments may sit it
+//
+//  SELECTED with an empty list means nobody, not everybody. An administrator
+//  restricting an examination and an administrator who has not finished
+//  choosing look identical from the data, so the mode is what is obeyed.
+// ═══════════════════════════════════════════════════════════════════
+
+// Has migration_v24 been run?
+async function allotmentReady() {
+  return Q.columnsReady('quiz_exams', 'allotment_mode');
+}
+
+const ALLOTMENT_PENDING =
+  'Allotting an examination to named employees needs ' +
+  'migration_v24_quiz_exam_allotments.sql, which has not been run on this database yet. ' +
+  'Until it is, every examination stays open under its office and designation rules. ' +
+  'Run the migration in the Supabase SQL editor and reload.';
+
+async function examAllotment(req, res) {
+  const qp = req.query || {};
+  const id = String(qp.id || '').trim();
+  const ex = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(id));
+  if (!ex) throw new Q.AppError('Examination not found.', 404);
+
+  const ready = await allotmentReady();
+  if (!ready) {
+    return Q.ok(res, {
+      ready: false, pending: ALLOTMENT_PENDING,
+      mode: 'ALL', allotted: [], candidates: [], counts: { allotted: 0, candidates: 0 },
+    });
+  }
+
+  const rows = await Q.sbSelect('quiz_exam_allotments',
+    'select=employee_id,allotted_by,allotted_at_ms&exam_id=' + Q.eq(id) + '&limit=5000');
+  const ids = (rows || []).map(r => r.employee_id);
+
+  // The allotted employees, with the directory details that make a list of
+  // numbers readable. Fetched in chunks because an Employee ID list can be
+  // longer than one filter comfortably holds.
+  let detail = [];
+  for (const chunk of chunked(ids, 100)) {
+    const emps = await Q.sbSelect('quiz_employees',
+      'select=employee_id,employee_name,designation,office,category,unit,active' +
+      '&employee_id=in.(' + chunk.map(csvQuote).join(',') + ')');
+    detail = detail.concat(emps || []);
+  }
+  const byId = {};
+  for (const d of detail) byId[d.employee_id] = d;
+
+  const allotted = (rows || []).map(r => Object.assign(
+    { employee_id: r.employee_id, allotted_by: r.allotted_by, allotted_at_ms: r.allotted_at_ms },
+    byId[r.employee_id] || { employee_name: '(not in the directory)', active: false }
+  )).sort((a, b) => String(a.employee_name || '').localeCompare(String(b.employee_name || '')));
+
+  // The pool to choose from, for the picker. Capped: the picker searches
+  // rather than scrolling a whole division.
+  const search = String(qp.q || '').trim();
+  let cf = 'select=employee_id,employee_name,designation,office,category,unit,active' +
+    '&active=is.true&order=employee_name.asc&limit=' + clampInt(qp.limit, 1, 1000, 300);
+  if (qp.office)   cf += '&office=' + Q.eq(qp.office);
+  if (qp.category) cf += '&category=' + Q.eq(String(qp.category).toUpperCase());
+  if (qp.unit && await Q.columnsReady('quiz_employees')) cf += '&unit=' + Q.eq(qp.unit);
+  if (search) {
+    const safe = search.replace(/[,()*]/g, ' ').trim();
+    cf += '&or=(employee_id.ilike.*' + encodeURIComponent(safe) + '*,' +
+          'employee_name.ilike.*' + encodeURIComponent(safe) + '*,' +
+          'designation.ilike.*' + encodeURIComponent(safe) + '*,' +
+          'office.ilike.*' + encodeURIComponent(safe) + '*)';
+  }
+  const candidates = await Q.sbSelect('quiz_employees', cf);
+
+  return Q.ok(res, {
+    ready: true,
+    exam: { id: ex.id, title: ex.title, status: ex.status },
+    mode: String(ex.allotment_mode || 'ALL').toUpperCase(),
+    allotted,
+    allottedIds: ids,
+    candidates: candidates || [],
+    counts: { allotted: ids.length, candidates: (candidates || []).length },
+  });
+}
+
+async function examAllotmentSave(req, res, actor) {
+  const body = await Q.readJsonBody(req);
+  const id = String(body.id || '').trim();
+  const ex = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(id));
+  if (!ex) throw new Q.AppError('Examination not found.', 404);
+
+  if (!await allotmentReady()) throw new Q.AppError(ALLOTMENT_PENDING, 409, 'MIGRATION_PENDING');
+
+  // Changing who may sit a paper while people are sitting it would end an
+  // attempt in progress. The list is therefore frozen for the duration, the
+  // same way the paper itself is.
+  const running = await Q.sbCount('quiz_attempts',
+    'exam_id=' + Q.eq(id) + '&mode=' + Q.eq('OFFICIAL') + '&status=' + Q.eq('IN_PROGRESS'));
+  if (running > 0 && body.force !== true) {
+    throw new Q.AppError(
+      running + ' attempt(s) are in progress. Changing the allotment now could remove ' +
+      'somebody who is part-way through the paper. Wait for them to finish, or pass force ' +
+      'to override deliberately.', 409, 'ATTEMPTS_RUNNING');
+  }
+
+  const now = Date.now();
+  const before = String(ex.allotment_mode || 'ALL').toUpperCase();
+  const mode = body.mode !== undefined
+    ? (String(body.mode).toUpperCase() === 'SELECTED' ? 'SELECTED' : 'ALL')
+    : before;
+
+  const add    = Array.isArray(body.add)    ? [...new Set(body.add.map(String).filter(Boolean))]    : [];
+  const remove = Array.isArray(body.remove) ? [...new Set(body.remove.map(String).filter(Boolean))] : [];
+  // `replace` sets the list outright, which is what the Select-all and
+  // bulk-add buttons send.
+  const replace = Array.isArray(body.replace)
+    ? [...new Set(body.replace.map(String).filter(Boolean))] : null;
+
+  let added = 0, removed = 0, unknown = [];
+
+  if (replace) {
+    const existing = await Q.sbSelect('quiz_exam_allotments',
+      'select=employee_id&exam_id=' + Q.eq(id) + '&limit=5000');
+    const have = new Set((existing || []).map(r => r.employee_id));
+    const want = new Set(replace);
+    const toAdd = replace.filter(e => !have.has(e));
+    const toDrop = [...have].filter(e => !want.has(e));
+    unknown = await insertAllotments(id, toAdd, actor, now);
+    added = toAdd.length - unknown.length;
+    removed = await deleteAllotments(id, toDrop);
+  } else {
+    if (add.length) {
+      unknown = await insertAllotments(id, add, actor, now);
+      added = add.length - unknown.length;
+    }
+    if (remove.length) removed = await deleteAllotments(id, remove);
+  }
+
+  if (mode !== before) {
+    await Q.sbUpdate('quiz_exams', 'id=' + Q.eq(id),
+      { allotment_mode: mode, updated_at_ms: now }, { returning: false });
+  }
+
+  const total = await Q.sbCount('quiz_exam_allotments', 'exam_id=' + Q.eq(id));
+  await Q.logAudit(req, actor, 'EXAM_ALLOTMENT', 'quiz_exams', id,
+    { allotment_mode: before }, { allotment_mode: mode, added, removed, total });
+
+  return Q.ok(res, {
+    saved: true, mode, added, removed, total,
+    unknown: unknown.slice(0, 50),
+    // The one state worth warning about: restricted, and nobody on the list.
+    warning: mode === 'SELECTED' && total === 0
+      ? 'This examination is now restricted to selected employees, but nobody has been ' +
+        'allotted yet — so no one can sit it. Add the candidates, or set it back to open.'
+      : (unknown.length
+          ? unknown.length + ' Employee ID(s) are not in the directory and were not allotted. ' +
+            'Add them under Employees first.'
+          : null),
+    message: mode === 'SELECTED'
+      ? total + ' employee(s) may sit this examination.'
+      : 'This examination is open to everyone its office and designation rules allow.',
+  });
+}
+
+// Allot only employees who exist in the directory. An Employee ID that is not
+// there is reported back rather than inserted — the foreign key would reject
+// it anyway, and a rejection that names the ID is far more use than a 409.
+async function insertAllotments(examId, ids, actor, now) {
+  if (!ids.length) return [];
+  let known = new Set();
+  for (const chunk of chunked(ids, 100)) {
+    const found = await Q.sbSelect('quiz_employees',
+      'select=employee_id&employee_id=in.(' + chunk.map(csvQuote).join(',') + ')');
+    for (const f of found || []) known.add(f.employee_id);
+  }
+  const unknown = ids.filter(i => !known.has(i));
+  const rows = ids.filter(i => known.has(i)).map(employee_id => ({
+    exam_id: examId, employee_id,
+    allotted_by: actor.username, allotted_at_ms: now,
+  }));
+  for (const chunk of chunked(rows, 100)) {
+    // Upsert semantics by primary key: re-adding somebody already allotted is
+    // a no-op, so uploading the same list twice cannot fail.
+    await Q.sbInsert('quiz_exam_allotments', chunk,
+      { returning: false, onConflict: 'exam_id,employee_id' });
+  }
+  return unknown;
+}
+
+async function deleteAllotments(examId, ids) {
+  if (!ids.length) return 0;
+  let n = 0;
+  for (const chunk of chunked(ids, 100)) {
+    await Q.sbDelete('quiz_exam_allotments',
+      'exam_id=' + Q.eq(examId) + '&employee_id=in.(' + chunk.map(csvQuote).join(',') + ')');
+    n += chunk.length;
+  }
+  return n;
 }
 
 // Preview the frozen question paper WITH the key. QUIZ_EDITOR and above only,
@@ -2452,4 +3116,7 @@ function csvQuote(v) {
 // Exposed for the test harness in Leave Orders/quiz/selftest.js. Pure
 // functions with no database access — the handler above remains the only entry
 // point the HTTP layer uses.
-module.exports._internals = { rankWithin, buildLeaderboard };
+module.exports._internals = {
+  rankWithin, buildLeaderboard,
+  normaliseScope, scopeFilter, scopeExamId,
+};

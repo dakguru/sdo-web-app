@@ -103,6 +103,45 @@ that sheet's headers). Use mode **MERGE** — nobody is deactivated, and the
 import finishes by filling in category and unit on the registrations that
 already exist.
 
+Finally, run the migration that gives every examination a question set of its
+own:
+
+```
+android-app/supabase/migration_v23_quiz_exam_questions.sql
+```
+
+It adds one nullable column, `quiz_questions.exam_id`, plus its indexes. It
+writes no existing row and deletes nothing, so it is safe to run at any time
+— including on a database that already holds a published paper.
+
+Unlike v22 this one is **not urgent**. The code degrades without it: the
+Question Bank reports the migration as pending and names this file, the
+examination cards say nothing about sets that cannot exist yet, and every
+examination goes on drawing from the one shared bank exactly as before. An
+upload aimed at a single examination is refused rather than quietly widened
+into the shared bank. The probe re-checks every thirty seconds, so the module
+picks the migration up on its own, with no redeploy.
+
+Every question already in the bank keeps `exam_id` null, which *is* the shared
+bank — so after running it, every examination that exists today still publishes
+from precisely the pool it publishes from now. Nothing changes until you
+deliberately upload a set against one examination.
+
+And the migration that lets an examination name the employees who may sit it:
+
+```
+android-app/supabase/migration_v24_quiz_exam_allotments.sql
+```
+
+It adds `quiz_exams.allotment_mode` (defaulting to `ALL`) and the
+`quiz_exam_allotments` table. It writes no existing row and deletes nothing,
+so every examination keeps exactly the eligibility it has today.
+
+Also **not urgent**, and it degrades the same way: until it is run, the
+**Who can attempt** dialog reports the migration as pending and names the
+file, the cards say nothing about allotment, and eligibility stays with the
+office and designation rules.
+
 ### Step 2 — Set the environment variables in Vercel
 
 Project → Settings → Environment Variables. All four are **required**; the
@@ -249,6 +288,39 @@ Staff Category` automatically.
 Nobody can register until this is done. Until then every page says
 *"Employee Directory Pending Import."*
 
+#### Somebody who is not on the roster
+
+An employee who joined after the roster was exported — or anyone otherwise
+missing from it — cannot register, because registration is verified against
+the directory. Registration is refused with *"Employee ID … is not in the
+approved employee list."*
+
+Add them by hand, and they can then sign in and register themselves:
+
+**Employees → Registrations → + Add employee by ID**, or
+**Employees → Employee Directory → + Add employee**.
+
+Enter the Employee ID and it is looked up first:
+
+- **Not in the directory** — fill in name, designation, office and (for the
+  prize lists) staff category and unit. The record is created as **active**.
+  The employee then signs in at `/Quiz` with their own Google account and
+  registers with that Employee ID, and their registration is verified against
+  this record exactly like anyone imported from Excel.
+- **Already in the directory** — there is nothing to add; they can register
+  now. The dialog shows who they are, and says so if the record is inactive.
+
+> **Do not "reserve" the Employee ID for somebody who will be signing in.**
+> Reserving creates a pending registration that *claims* the ID, so when the
+> employee tries to register themselves they are refused with *"Employee ID …
+> has just been registered from another account"*, and an administrator has to
+> **Unlink** the reservation before they can proceed. Reserve an ID only to
+> record somebody who will not be signing in at all. The dialog says this at
+> the point of use.
+
+A hand-added employee is a normal directory record: a later **Merge** import
+updates it rather than duplicating it.
+
 An import ends by **filling in category and unit on the registrations that
 already exist**, taking them from the directory record each one was created
 against. It only ever fills a blank — a category an administrator has corrected
@@ -301,6 +373,59 @@ carry matching **Category** and **Unit / Sub Division** filters, and a per-row
 No placeholder or invented questions exist anywhere in this module. Until you
 load yours, the page says *"Question Bank Not Yet Uploaded."*
 
+#### A separate question paper for each examination
+
+The band at the top of the page — **Question set being edited** — decides
+where everything below it goes. There are two kinds of set:
+
+| Set | What it means |
+|---|---|
+| **Shared bank** | Questions belonging to no particular examination. Any examination that has none of its own draws its paper from here. |
+| **An examination** | Questions belonging to that test alone. Its paper is drawn **only** from them, and no other examination can reach them. |
+
+The rule the module applies when a paper is published follows from that, and
+there is nothing to configure:
+
+> **If an examination has questions of its own, its paper comes only from
+> them. If it has none, it falls back to the shared bank.**
+
+So to give one test its own paper:
+
+1. On `/Quiz/admin/exams`, press **📝 Questions** on that examination's card.
+   (Or choose it in the band at the top of the Question Bank.) The page opens
+   on that test's set, and the address carries `?exam=<id>` so it can be
+   bookmarked.
+2. **Template** downloads a blank sheet named after that test, so three
+   templates for three different tests do not all arrive as the same file.
+3. **Import** uploads it. The banner above the drop zone names the test the
+   questions will belong to before you choose a file; **Preview** still shows
+   what will land and what needs review.
+4. Activate them — only **Active** questions are drawn — and publish the
+   examination as usual.
+
+Two more set-level actions sit in the toolbar:
+
+- **Copy from…** copies an entire set into the one on screen, as drafts for
+  review. This is the usual way a new test is started: from the shared bank,
+  or from last year's paper. The original is untouched, and a question already
+  present is left alone rather than copied twice.
+- **Clear set** (administrators only) empties the set after a typed
+  confirmation — for an upload that went to the wrong test. A question already
+  frozen into a published paper is **kept**, because a result refers to it;
+  those are reported back by code.
+
+A question can be moved between sets at any time through **Belongs to** in its
+editor, and in the combined *All questions* view each card carries the name of
+the set that owns it.
+
+Duplicating an examination copies its question set too, so the copy has a
+paper of its own rather than sharing the original's — editing one would
+otherwise silently edit the other.
+
+Until `migration_v23_quiz_exam_questions.sql` has been run, this band says so
+and names the file; every question stays in the one shared bank, exactly as
+before.
+
 ### 3.4 Create and publish the examination
 
 `/Quiz/admin/exams`
@@ -311,12 +436,62 @@ load yours, the page says *"Question Bank Not Yet Uploaded."*
 2. Set the **schedule**. All date fields are **Indian Standard Time** —
    the form converts explicitly, so the browser's own timezone is irrelevant.
 3. **Validate** runs the pre-flight checks: enough active questions, four valid
-   options and one key on each, a sane window, timing that fits.
+   options and one key on each, a sane window, timing that fits. Its first
+   line names **which set the paper will be drawn from** — this examination's
+   own questions, or the shared bank — so a count like *"12 usable of 25
+   required"* can be read without guessing which pool it refers to.
 4. **Publish paper** selects the questions at random and **freezes an immutable
    copy**. From that moment the examination and the question bank are
    independent — later edits to the bank cannot change this paper, or any
-   attempt in progress.
+   attempt in progress. The dialog states the source again before you commit,
+   and the card badge (**Own set: n** / **Uses shared bank**) says it at a
+   glance.
 5. Set the status to **Scheduled** (visible, opens at its time) or **Live**.
+
+#### Choosing who may sit a particular test
+
+**Examinations → 👥 Who can attempt**
+
+An examination is in one of two states, and the state is stored explicitly —
+never guessed from whether a list happens to be empty:
+
+| | |
+|---|---|
+| **Open** | Eligibility is decided by the office and designation rules in **Edit**, as it always has been. This is the default, and what every existing examination is. |
+| **Allotted** | **Only** the employees named in the dialog may attempt it. |
+
+Allotment **overrides** the office and designation rules in both directions:
+an allotted employee sits the paper even if their office is outside the
+examination's office list, and an unallotted employee does not, even if
+their office is in it. The list *is* the eligibility.
+
+In the dialog: search the directory by name, Employee ID, designation or
+office; tick the candidates, or **Add all shown** after a search that
+already narrows to the group you want (one office, one designation). The
+chosen employees appear as chips above, removable individually or with
+**Remove all**. Nothing is written until **Save**.
+
+What an allotted employee sees: the examination appears on their dashboard
+normally. What everybody else sees: **nothing** — it is left off their
+dashboard entirely rather than shown as refused. Somebody removed from the
+list after sitting it still sees their own attempt and result, because that
+is their record.
+
+Two safeguards worth knowing:
+
+- **Allotted with nobody on the list means nobody can sit it.** That is the
+  honest reading of an administrator who has not finished choosing, and it is
+  deliberately *not* treated as "no restriction". The card shows
+  **Restricted — nobody allotted**, the dialog says so in red, and
+  **Validate** fails on it.
+- **The list is frozen while people are sitting the paper.** With an attempt
+  in progress the save is refused, so nobody is removed part-way through.
+
+Duplicating an examination copies its allotment as well as its question set,
+so a second batch of the same test starts ready rather than empty.
+
+Hiding is not the control: **exam-start** re-checks the allotment server-side,
+so a hand-made request cannot start a paper the employee was never allotted.
 
 Defaults, all configurable before publication:
 
@@ -494,6 +669,14 @@ if anyone has already sat the examination. Duplicate the examination instead.
 | Only a few accounts can sign in | The OAuth consent screen is still in **Testing**. Set it to **In production**. |
 | *"The employee directory has not been imported yet"* | Step 3.2. |
 | *"This examination is not ready — its question paper has not been fully published"* | Press **Publish paper**. |
+| A test drew questions meant for a different test | It has none of its own, so it fell back to the shared bank. Upload its paper against it: **Examinations → 📝 Questions**. The card badge says which it is using. |
+| *"Only n usable active question(s) are available in this examination's own set"* | The set is too small, or its questions are still Draft. Only **Active** questions are drawn. |
+| The Question Bank says separate sets are not switched on | Run `migration_v23_quiz_exam_questions.sql`. The page picks it up within thirty seconds; no redeploy. |
+| *"Employee ID … is not in the approved employee list"* | They are not in the directory. **Employees → + Add employee by ID**. |
+| *"Employee ID … has just been registered from another account"* | The ID was reserved manually, which claims it. **Unlink** the reservation, then let them register. |
+| An employee cannot see a test at all | It is allotted to selected employees and they are not among them. **Examinations → Who can attempt**. |
+| Nobody can see a test | It is Allotted with nobody on the list. The card reads *Restricted — nobody allotted*. |
+| *"Allotting an examination to named employees needs migration_v24…"* | Run `migration_v24_quiz_exam_allotments.sql`. |
 | Employee says the countdown never ended | They are on a cached page. The server decides; ask them to reload. |
 | An attempt is stuck *In progress* after the window closed | `/Quiz/admin` → **Finalise expired attempts**. |
 | Everyone was signed out at once | `QUIZ_SESSION_SECRET` changed. |
@@ -509,7 +692,7 @@ if anyone has already sat the examination. Duplicate the examination instead.
 node "Leave Orders/quiz/selftest.js"
 ```
 
-68 tests, no database or network required. They cover the parts where a silent
+86 tests, no database or network required. They cover the parts where a silent
 mistake would change somebody's marks or let them into a closed examination:
 the scoring formula (including the specification's worked example — 15 correct,
 3 wrong, 2 unanswered = **57 of 80**), the option permutation across all 24
@@ -517,8 +700,12 @@ orderings, the eligibility and timing gate, the "whichever deadline falls
 first" rule, the IST conversion used by the scheduling form, the countdown
 formatting, the staff-category and unit normalisation, and the category-wise
 ranking and prize lists (ties, withheld results, and the rule that Departmental
-and GDS are never ranked against each other). Run it after any change to
-`_quizlib.js`, the examination engine or the ranking.
+and GDS are never ranked against each other), the question-set scope that
+keeps one examination's paper out of another's, and the allotment gate —
+including the case that matters most, that an examination restricted to
+selected employees with nobody yet on the list admits **nobody**, and that
+anything short of an explicit allotment is not an allotment. Run it after any
+change to `_quizlib.js`, the examination engine, the ranking or the gate.
 
 ### Manual — what the tests cannot cover
 
@@ -609,6 +796,10 @@ android-app/supabase/
   migration_v22_quiz_category_unit.sql
                           staff category + unit/sub division, and the backfill
                           that gives the existing records theirs
+  migration_v23_quiz_exam_questions.sql
+                          a question set of its own for each examination
+  migration_v24_quiz_exam_allotments.sql
+                          naming the employees who may sit an examination
 ```
 
 Three new serverless functions, bringing the project to five — well inside

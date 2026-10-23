@@ -144,21 +144,28 @@ function isMissingColumn(err) {
     /does not exist|42703|PGRST204|could not find .* column/i.test(err.message);
 }
 
-const _cols = {};                       // table -> { ready, at }
+const _cols = {};                       // table + columns -> { ready, at }
 const COLS_RETRY_MS = 30 * 1000;        // how soon to re-check a "not yet"
 
-async function columnsReady(table) {
-  const hit = _cols[table];
+// `cols` defaults to the pair migration_v22 added, which is what every caller
+// written for that migration asks about. migration_v23 asks for exam_id on the
+// question bank, so the probe takes the columns rather than assuming them, and
+// caches each question separately — "has category and unit" and "has exam_id"
+// are different questions with different answers.
+async function columnsReady(table, cols) {
+  const want = cols || 'category,unit';
+  const key = table + '|' + want;
+  const hit = _cols[key];
   const now = Date.now();
   if (hit && (hit.ready || now - hit.at < COLS_RETRY_MS)) return hit.ready;
   try {
-    await sbSelect(table, 'select=category,unit&limit=1');
-    _cols[table] = { ready: true, at: now };
+    await sbSelect(table, 'select=' + want + '&limit=1');
+    _cols[key] = { ready: true, at: now };
   } catch (e) {
     if (!isMissingColumn(e)) throw e;    // a real outage must not read as "not migrated"
-    _cols[table] = { ready: false, at: now };
+    _cols[key] = { ready: false, at: now };
   }
-  return _cols[table].ready;
+  return _cols[key].ready;
 }
 
 // Drop the category/unit keys from a row when the schema cannot hold them yet.

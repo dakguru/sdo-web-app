@@ -252,9 +252,25 @@ async function dashboardAction(req, res) {
   const results = await Q.sbSelect('quiz_results',
     'select=*&registration_id=' + Q.eq(registration.id) + '&mode=' + Q.eq('OFFICIAL'));
 
+  const allotted = await myAllotments(registration.employee_id);
+
   const examViews = [];
-  for (const ex of exams || []) {
+  for (const raw of exams || []) {
+    const ex = withAllotment(raw, allotted);
     const mine = (attempts || []).filter(a => a.exam_id === ex.id);
+
+    // An examination allotted to a named group is not merely closed to
+    // everybody else — it is none of their business. It is left off the
+    // dashboard entirely rather than listed as refused.
+    //
+    // Unless they have sat it: somebody removed from the list afterwards must
+    // still be able to reach their own attempt and result, which is their
+    // record, not the examination's.
+    if (String(ex.allotment_mode || 'ALL').toUpperCase() === 'SELECTED' &&
+        ex.allottedToMe !== true && !mine.length) {
+      continue;
+    }
+
     const done = mine.filter(a => a.status !== 'IN_PROGRESS');
     const live = mine.find(a => a.status === 'IN_PROGRESS');
     const result = (results || []).find(r => r.exam_id === ex.id && r.published && !r.withheld);
@@ -300,6 +316,32 @@ async function dashboardAction(req, res) {
   });
 }
 
+// The examinations this employee has been allotted by name, as a Set of exam
+// ids. One indexed read; the dashboard needs it once for every examination it
+// shows, and exam-start needs it for one.
+//
+// Until migration_v24 has run the table does not exist. That is reported as
+// "no allotments", which is safe in both directions: without the column that
+// turns the restriction on, no examination is in SELECTED mode either, so
+// nothing is wrongly closed and nothing is wrongly opened.
+async function myAllotments(employeeId) {
+  if (!employeeId) return new Set();
+  try {
+    const rows = await Q.sbSelect('quiz_exam_allotments',
+      'select=exam_id&employee_id=' + Q.eq(employeeId) + '&limit=2000');
+    return new Set((rows || []).map(r => r.exam_id));
+  } catch (e) {
+    if (Q.isMissingColumn(e) || (e instanceof Q.DbError && e.status === 404)) return new Set();
+    throw e;
+  }
+}
+
+// Decorate an examination with this employee's allotment, which is what
+// `eligible` reads. Kept beside the gate so the two cannot drift apart.
+function withAllotment(ex, allotted) {
+  return Object.assign({}, ex, { allottedToMe: allotted.has(ex.id) });
+}
+
 // The single place that decides whether an employee may begin. Called from the
 // dashboard (to render) AND from exam-start (to authorise) — the button being
 // disabled is cosmetic; this function is the control.
@@ -313,7 +355,13 @@ function examGate(ex, registration, myAttempts, now) {
     };
   }
   if (!eligible(ex, registration)) {
-    return { canStart: false, phase: 'NOT_ELIGIBLE', reason: 'This examination is not open to your office or designation.' };
+    return {
+      canStart: false, phase: 'NOT_ELIGIBLE',
+      reason: String(ex.allotment_mode || 'ALL').toUpperCase() === 'SELECTED'
+        ? 'This examination is open only to the employees allotted to it. ' +
+          'Please contact the administrator if you believe you should be included.'
+        : 'This examination is not open to your office or designation.',
+    };
   }
   if (ex.status === 'CANCELLED') return { canStart: false, phase: 'CANCELLED', reason: 'This examination has been cancelled.' };
 
@@ -362,6 +410,20 @@ function examGate(ex, registration, myAttempts, now) {
 }
 
 function eligible(ex, registration) {
+  // An examination allotted to named candidates is open to them and to nobody
+  // else. This is checked before the office and designation rules and
+  // overrides them: the list IS the eligibility, so an allotted employee
+  // whose office is outside the examination's office list still sits it, and
+  // an unallotted employee inside that list does not.
+  //
+  // `allottedToMe` is attached by the caller, which knows this employee's
+  // allotments. It is read strictly: anything other than an explicit true
+  // means not allotted, so a failure to load them shuts the examination
+  // rather than opening it.
+  if (String(ex.allotment_mode || 'ALL').toUpperCase() === 'SELECTED') {
+    return ex.allottedToMe === true;
+  }
+
   const check = (list, value) => {
     if (!Array.isArray(list) || !list.length) return true;   // empty = everyone
     return list.map(x => String(x).trim().toLowerCase())
@@ -382,8 +444,13 @@ async function examStartAction(req, res) {
   const examId = String(body.exam_id || '').trim();
   if (!examId) throw new Q.AppError('No examination was specified.', 400);
 
-  const ex = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(examId));
-  if (!ex) throw new Q.AppError('Examination not found.', 404);
+  const raw = await Q.sbOne('quiz_exams', 'select=*&id=' + Q.eq(examId));
+  if (!raw) throw new Q.AppError('Examination not found.', 404);
+  // The dashboard hides an unallotted examination, but hiding is not a
+  // control. The same allotment is loaded again here, where starting is
+  // actually authorised, so a hand-made request cannot walk into a paper this
+  // employee was never allotted.
+  const ex = withAllotment(raw, await myAllotments(registration.employee_id));
 
   const now = Date.now();
   const mine = await Q.sbSelect('quiz_attempts',

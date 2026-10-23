@@ -29,6 +29,27 @@
   .chk .cd{font-size:11.5px;color:var(--muted)}
   .mon-row{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);
     font-size:13px;flex-wrap:wrap}
+
+  /* Who can attempt — the chosen employees, then the pool to choose from. */
+  .allotsel{display:flex;flex-wrap:wrap;gap:6px;max-height:168px;overflow:auto;padding:2px}
+  .allotsel .chip{display:inline-flex;align-items:center;gap:7px;padding:5px 7px 5px 10px;
+    border-radius:999px;background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.22);
+    font-size:12px;font-weight:600;color:var(--ok)}
+  .allotsel .chip .cid{font-family:JetBrains Mono,monospace;font-size:10.5px;opacity:.75}
+  .allotsel .chip .x{border:0;background:transparent;cursor:pointer;font-size:16px;line-height:1;
+    color:inherit;padding:0 2px;opacity:.7}
+  .allotsel .chip .x:hover{opacity:1}
+  .allotlist{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:var(--r-md)}
+  .allotrow{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;
+    padding:9px 11px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px}
+  .allotrow:last-child{border-bottom:0}
+  .allotrow:hover{background:var(--card-2)}
+  .allotrow.on{background:rgba(5,150,105,.07)}
+  .allotrow input{width:19px;height:19px;accent-color:var(--ok);grid-row:span 2}
+  .allotrow .an{font-weight:700;overflow-wrap:anywhere}
+  .allotrow .ai{font-family:JetBrains Mono,monospace;font-size:11px;color:var(--muted);
+    grid-row:span 2;text-align:right}
+  .allotrow .ad{grid-column:2;font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -43,6 +64,8 @@
   var host = null;
   var defaults = {};
   var monIv = null;
+  var questionScopeReady = true;
+  var allotmentReady = true;
 
   QuizAdmin.boot({
     title: 'Examinations',
@@ -58,6 +81,11 @@
     QuizAPI.admin('exams-list').then(function (r) {
       QuizTime.anchor(r.serverTimeMs);
       defaults = r.defaults || {};
+      // False until migration_v23 is run, and until then every examination
+      // still shares the one bank — so the card says nothing about sets that
+      // cannot exist yet rather than implying a choice was made.
+      questionScopeReady = r.questionScopeReady !== false;
+      allotmentReady = r.allotmentReady !== false;
       render(r.exams || []);
     }).catch(function (e) {
       host.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
@@ -97,12 +125,14 @@
         if (act === 'edit') editor(ex);
         else if (act === 'validate') validate(id);
         else if (act === 'publish') publish(ex);
-        else if (act === 'paper') paper(id);
+        else if (act === 'paper') paper(ex);
+        else if (act === 'pdf') paperPdf(ex);
         else if (act === 'test') startTest(id);
         else if (act === 'monitor') monitor(id);
         else if (act === 'dup') duplicate(id);
         else if (act === 'status') statusMenu(ex);
         else if (act === 'schedule') schedule(ex);
+        else if (act === 'allot') allotment(ex);
         else if (act === 'delete') removeExam(ex);
       });
     });
@@ -123,6 +153,22 @@
         QuizUI.statusBadge(ex.status) +
         (ready ? QuizUI.badge('Paper frozen: ' + ex.frozenQuestionCount, 'ok')
                : QuizUI.badge('Paper not published', 'warn')) +
+        // Where this test's paper comes from. An examination with questions of
+        // its own is drawn only from them; one without still shares the
+        // divisional bank, and that difference decides what editing the bank
+        // does to this test, so it belongs on the card.
+        (questionScopeReady
+          ? (ex.ownQuestionCount
+              ? QuizUI.badge('Own set: ' + ex.ownQuestionCount, 'ok')
+              : QuizUI.badge('Uses shared bank', 'mute'))
+          : '') +
+        // Who may sit it. A restricted examination with nobody allotted admits
+        // no one, so that state is flagged rather than shown as a count of 0.
+        (allotmentReady && ex.allotmentMode === 'SELECTED'
+          ? (ex.allottedCount
+              ? QuizUI.badge('Allotted: ' + ex.allottedCount, 'ok')
+              : QuizUI.badge('Restricted — nobody allotted', 'warn'))
+          : '') +
       '</div>' +
       (ex.description ? '<p style="font-size:13px;color:var(--muted);line-height:1.55">' +
         QuizUI.esc(ex.description) + '</p>' : '') +
@@ -139,8 +185,23 @@
         m('Randomise', (ex.randomize_questions ? 'Q' : '') + (ex.randomize_options ? '+O' : '') || 'No') +
       '</div>' +
       '<div class="exacts">' +
+        // First, because uploading and editing this test's own questions is
+        // where the work starts, before there is anything to validate.
+        (QuizAdmin.atLeast('QUIZ_EDITOR')
+          ? '<a class="btn sm ' + (ex.ownQuestionCount ? 'ghost' : '') + '" ' +
+            'href="/Quiz/admin/questions?exam=' + QuizUI.esc(ex.id) + '">' +
+            '&#128221; Questions' +
+            (ex.ownQuestionCount ? ' (' + ex.ownQuestionCount + ')' : ' — upload a paper') +
+            '</a>'
+          : '') +
+        (QuizAdmin.atLeast('QUIZ_ADMIN')
+          ? xb('allot', ex.id, '&#128101; Who can attempt' +
+              (allotmentReady && ex.allotmentMode === 'SELECTED'
+                ? ' (' + ex.allottedCount + ')' : ''))
+          : '') +
         xb('validate', ex.id, '&#9989; Validate') +
         xb('paper', ex.id, '&#128196; Preview paper') +
+        (QuizAdmin.atLeast('QUIZ_EDITOR') ? xb('pdf', ex.id, '&#128229; Download PDF') : '') +
         (QuizAdmin.atLeast('QUIZ_EDITOR') ? xb('test', ex.id, '&#129514; Run test attempt') : '') +
         xb('monitor', ex.id, '&#128065; Monitor') +
         (QuizAdmin.atLeast('QUIZ_ADMIN')
@@ -522,7 +583,21 @@
   }
 
   function publish(ex) {
+    // Which set the paper will come from is the one thing worth being certain
+    // about before freezing it, so it is stated first and in its own banner.
+    var src = !questionScopeReady ? '' : (ex.ownQuestionCount
+      ? QuizUI.alert('ok', '&#128221;',
+          'This paper will be drawn from <b>this examination\'s own set</b> of ' +
+          ex.ownQuestionCount + ' question(s) &mdash; ' + ex.ownActiveCount + ' of them active. ' +
+          'The shared bank is not used, and no other examination\'s questions can reach it.')
+      : QuizUI.alert('warn', '&#9888;',
+          'This examination has <b>no questions of its own</b>, so its paper will be drawn from ' +
+          'the <b>shared bank</b>, alongside every other examination in the same position. ' +
+          'To give this test a paper of its own, upload one against it in the ' +
+          '<a href="/Quiz/admin/questions?exam=' + QuizUI.esc(ex.id) + '">Question Bank</a> first.'));
+
     QuizUI.modal('xpub', 'Publish the question paper',
+      src +
       QuizUI.alert('', '&#128228;',
         'Publishing selects <b>' + ex.question_count + '</b> active question(s) at random and freezes ' +
         'an immutable copy for this examination. From that moment the examination and the general ' +
@@ -557,8 +632,17 @@
     });
   }
 
-  function paper(id) {
-    QuizUI.modal('xpap', 'Question paper (with answer key)', QuizUI.skeleton(4), '');
+  function paper(ex) {
+    var id = ex.id;
+    QuizUI.modal('xpap', 'Question paper (with answer key)', QuizUI.skeleton(4),
+      (QuizAdmin.atLeast('QUIZ_EDITOR')
+        ? '<button class="btn ghost" type="button" id="xpapclose">Close</button>' +
+          '<button class="btn" type="button" id="xpappdf" style="flex:1">&#128229; Download as PDF</button>'
+        : ''));
+    var xc = document.getElementById('xpapclose');
+    if (xc) xc.addEventListener('click', function () { QuizUI.closeModal('xpap'); });
+    var pb = document.getElementById('xpappdf');
+    if (pb) pb.addEventListener('click', function () { QuizUI.closeModal('xpap'); paperPdf(ex); });
     QuizAPI.admin('exam-paper', { id: id }).then(function (r) {
       var box = document.querySelector('#xpap .modal-body');
       if (!r.questions.length) {
@@ -593,6 +677,349 @@
       document.querySelector('#xpap .modal-body').innerHTML =
         QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
     });
+  }
+
+
+  /* ═══════════════════════════════════════════════════════════════
+     QUESTION PAPER AS PDF
+     Built in the browser from the same audited `exam-paper` endpoint the
+     preview uses, so a download is recorded in the audit log exactly as a
+     view is, and the paper can only ever be the frozen one participants sit.
+     Two variants: a clean copy for printing and circulation, and a
+     confidential copy carrying the answer key.
+     ═══════════════════════════════════════════════════════════════ */
+
+  var PDF_URLS = [
+    'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
+    'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js',
+  ];
+  var pdfEngine = null;
+
+  function loadScriptOnce(src) {
+    return new Promise(function (res, rej) {
+      var had = Array.prototype.some.call(document.scripts, function (s) { return s.src === src; });
+      if (had) return res();
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = function () { res(); };
+      s.onerror = function () { rej(new Error('Could not load the PDF engine — check your connection.')); };
+      document.head.appendChild(s);
+    });
+  }
+  function loadPdfEngine() {
+    if (pdfEngine) return pdfEngine;
+    pdfEngine = PDF_URLS.reduce(function (p, u) {
+      return p.then(function () { return loadScriptOnce(u); });
+    }, Promise.resolve()).catch(function (e) { pdfEngine = null; throw e; });
+    return pdfEngine;
+  }
+
+  // jsPDF's built-in Times is WinAnsi-encoded, so a character outside that set
+  // would be dropped silently by the viewer. The few that realistically appear
+  // in a postal paper are transliterated; anything else is counted, so the
+  // operator is told rather than left with a hole in a question.
+  var PDF_SUBST = {
+    '₹': 'Rs.', '✓': '(correct)', '✔': '(correct)',
+    '→': '->', '←': '<-', '⇒': '=>', '≤': '<=', '≥': '>=',
+    ' ': ' ', '−': '-', ' ': ' ', '​': '',
+  };
+  var PDF_DROP = /[^\t\n\x20-\xFF–—‘’‚“”„†‡•…‰‹›€™ŒœŠšŸŽžƒˆ˜]/g;
+
+  function pdfSafe(v) {
+    var t = String(v == null ? '' : v)
+      .replace(/[₹✓✔→←⇒≤≥ − ​]/g,
+        function (c) { return PDF_SUBST[c]; });
+    var n = 0;
+    t = t.replace(PDF_DROP, function () { n++; return ''; });
+    return { t: t, n: n };
+  }
+
+  function pdfFileName(ex, variant) {
+    var base = String(ex.title || 'Question paper') +
+      (variant === 'key' ? ' — Question paper with answer key' : ' — Question paper');
+    return base.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 150) + '.pdf';
+  }
+
+  // The chooser. `ex` is the row already rendered on the card, so the
+  // particulars printed on the paper match what the admin is looking at.
+  function paperPdf(ex) {
+    QuizUI.modal('xpdf', 'Download the question paper',
+      QuizUI.alert('', '&#128229;',
+        'The PDF is built from the <b>frozen paper</b> &mdash; precisely what participants sit. ' +
+        'It is produced inside this browser; nothing is uploaded anywhere.') +
+
+      '<div class="field"><label for="p_var">Which copy do you need?</label>' +
+        '<select class="input" id="p_var">' +
+          '<option value="plain">Question paper only &mdash; safe to print and circulate</option>' +
+          '<option value="key">Question paper with the answer key &mdash; confidential</option>' +
+        '</select></div>' +
+
+      '<div class="section-title">Include</div>' +
+      '<label class="chk"><span class="ci"><input type="checkbox" id="p_inst" checked /></span>' +
+        '<span>The instructions to participants, on the first page</span></label>' +
+      '<label class="chk"><span class="ci"><input type="checkbox" id="p_expl" checked /></span>' +
+        '<span>The explanation beneath each answer' +
+        '<div class="cd">Answer-key copy only.</div></span></label>' +
+      '<label class="chk"><span class="ci"><input type="checkbox" id="p_grid" checked /></span>' +
+        '<span>A compact answer grid at the end, for evaluators' +
+        '<div class="cd">Answer-key copy only.</div></span></label>',
+
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'xpdf\')">Cancel</button>' +
+      '<button class="btn" type="button" id="pgo" style="flex:1">Build the PDF</button>');
+
+    var sel = document.getElementById('p_var');
+    var keyOnly = [document.getElementById('p_expl'), document.getElementById('p_grid')];
+    function syncKeyOnly() {
+      var on = sel.value === 'key';
+      keyOnly.forEach(function (c) {
+        c.disabled = !on;
+        var row = c.closest('.chk');
+        if (row) row.style.opacity = on ? '' : '.45';
+      });
+    }
+    sel.addEventListener('change', syncKeyOnly);
+    syncKeyOnly();
+
+    document.getElementById('pgo').addEventListener('click', function () {
+      var b = this;
+      var opt = {
+        variant: sel.value,
+        instructions: document.getElementById('p_inst').checked,
+        explanations: document.getElementById('p_expl').checked,
+        grid: document.getElementById('p_grid').checked,
+      };
+      b.disabled = true; b.textContent = 'Building…';
+      Promise.all([loadPdfEngine(), QuizAPI.admin('exam-paper', { id: ex.id })])
+        .then(function (r) {
+          var paperRows = (r[1] && r[1].questions) || [];
+          if (!paperRows.length) {
+            throw new Error('No paper has been frozen yet. Publish the examination first.');
+          }
+          var lost = buildPaperPdf(Object.assign({}, (r[1] && r[1].exam) || {}, ex), paperRows, opt);
+          QuizUI.closeModal('xpdf');
+          QuizUI.toast(lost
+            ? 'PDF downloaded — but ' + lost + ' character(s) could not be drawn in the PDF font.'
+            : 'Question paper downloaded.', lost ? 'warn' : 'ok');
+        })
+        .catch(function (e) {
+          b.disabled = false; b.textContent = 'Build the PDF';
+          QuizUI.err(e);
+        });
+    });
+  }
+
+  function buildPaperPdf(ex, questions, opt) {
+    var JsPDF = window.jspdf.jsPDF;
+    var doc = new JsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    var W = doc.internal.pageSize.getWidth();
+    var H = doc.internal.pageSize.getHeight();
+    var SF = 'times';                 // printer-friendly; no font to bundle
+    var ML = 50, MR = 50, BOT = 52;
+    var CW = W - ML - MR;
+    var withKey = opt.variant === 'key';
+    var dropped = 0;
+
+    function S(v) { var r = pdfSafe(v); dropped += r.n; return r.t; }
+
+    var ORG = S(QuizUI.branding.org).toUpperCase();
+    var DIV = S(QuizUI.branding.division);
+    var titleLines = doc.splitTextToSize(S(ex.title || 'Question paper'), CW).slice(0, 2);
+    var who = (QuizAdmin.actor && QuizAdmin.actor.username) || 'the quiz administrator';
+    var stamp = S('Generated ' + new Date().toLocaleString('en-IN') + ' by ' + who);
+
+    // Header geometry is identical on every page, so the body always starts at
+    // the same y and nothing has to be re-measured as pages are added.
+    var TOP = 40 + 17 + titleLines.length * 14 + 14 + 10 + (withKey ? 14 : 0);
+
+    function header() {
+      var y = 40;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(SF, 'bold'); doc.setFontSize(14);
+      doc.text(ORG, W / 2, y, { align: 'center' }); y += 17;
+      doc.setFontSize(11.5);
+      titleLines.forEach(function (ln) { doc.text(ln, W / 2, y, { align: 'center' }); y += 14; });
+      doc.setFont(SF, 'normal'); doc.setFontSize(9.5);
+      doc.text(DIV, W / 2, y, { align: 'center' }); y += 8;
+      doc.setDrawColor(0, 0, 0); doc.setLineWidth(1);
+      doc.line(ML, y, W - MR, y);
+      if (withKey) {
+        doc.setFont(SF, 'bold'); doc.setFontSize(9);
+        doc.text('CONFIDENTIAL - ANSWER KEY - NOT FOR CIRCULATION', W / 2, y + 12, { align: 'center' });
+      }
+    }
+    function footer() {
+      doc.setFont(SF, 'normal'); doc.setFontSize(8); doc.setTextColor(90, 90, 90);
+      doc.text(stamp, ML, H - 22);
+      doc.text('Page ' + doc.internal.getCurrentPageInfo().pageNumber,
+        W - MR, H - 22, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
+    }
+    // autotable paginates on its own, so decoration has to be idempotent.
+    var decorated = {};
+    function decorate() {
+      var p = doc.internal.getCurrentPageInfo().pageNumber;
+      if (decorated[p]) return;
+      decorated[p] = 1;
+      header(); footer();
+    }
+
+    var y = 0;
+    function startPage() { doc.addPage(); decorate(); y = TOP; }
+    function need(h) { if (y + h > H - BOT) startPage(); }
+
+    decorate(); y = TOP;
+
+    // ── Particulars ────────────────────────────────────────────────
+    var maxMarks = ex.maxMarks != null
+      ? ex.maxMarks
+      : Number(ex.positive_marks || 0) * Number(ex.question_count || questions.length);
+    var rows = [
+      ['Date', QuizTime.istDate(ex.exam_open_ms)],
+      ['Timing', ex.exam_open_ms
+        ? QuizTime.istTime(ex.exam_open_ms) + ' to ' + QuizTime.istTime(ex.exam_close_ms)
+        : 'Not scheduled'],
+      ['Duration', Math.round(Number(ex.total_seconds || 0) / 60) + ' minutes' +
+        (Number(ex.seconds_per_question) ? ' (' + ex.seconds_per_question + ' seconds a question)' : '')],
+      ['Questions', String(questions.length)],
+      ['Maximum marks', String(maxMarks)],
+      ['Marking', '+' + ex.positive_marks + ' for a correct answer, ' +
+        (Number(ex.negative_marks) ? '-' + ex.negative_marks + ' for a wrong one' : 'no negative marking')],
+    ];
+    var LW = 108;
+    doc.setFontSize(10);
+    rows.forEach(function (r) {
+      need(15);
+      doc.setFont(SF, 'bold'); doc.text(S(r[0]), ML, y);
+      doc.setFont(SF, 'normal');
+      var vl = doc.splitTextToSize(S(r[1]), CW - LW);
+      vl.forEach(function (ln, i) { doc.text(ln, ML + LW, y + i * 12); });
+      y += Math.max(15, vl.length * 12 + 3);
+    });
+
+    if (ex.randomize_questions || ex.randomize_options) {
+      y += 4; need(34);
+      doc.setFont(SF, 'italic'); doc.setFontSize(9);
+      var shuffled = ex.randomize_questions && ex.randomize_options
+        ? 'questions and options are'
+        : (ex.randomize_questions ? 'questions are' : 'options are');
+      doc.splitTextToSize(S('Note: ' + shuffled + ' shuffled afresh for every participant. ' +
+        'This copy follows the canonical order of the frozen paper, which is the order the ' +
+        'answer key refers to.'), CW).forEach(function (ln) { doc.text(ln, ML, y); y += 11; });
+      doc.setFont(SF, 'normal');
+    }
+
+    // ── Instructions ───────────────────────────────────────────────
+    if (opt.instructions && ex.instructions) {
+      y += 10; need(40);
+      doc.setFont(SF, 'bold'); doc.setFontSize(11);
+      doc.text('Instructions to participants', ML, y); y += 6;
+      doc.setLineWidth(0.6); doc.line(ML, y, W - MR, y); y += 14;
+      doc.setFont(SF, 'normal'); doc.setFontSize(10);
+      String(ex.instructions).split(/\r?\n/).forEach(function (para) {
+        if (!para.trim()) { y += 5; return; }
+        doc.splitTextToSize(S(para), CW).forEach(function (ln) {
+          need(13); doc.text(ln, ML, y); y += 12.5;
+        });
+      });
+    }
+
+    // ── Questions ──────────────────────────────────────────────────
+    y += 14; need(44);
+    doc.setFont(SF, 'bold'); doc.setFontSize(11);
+    doc.text(withKey ? 'Question paper with answer key' : 'Question paper', ML, y); y += 6;
+    doc.setLineWidth(0.6); doc.line(ML, y, W - MR, y); y += 17;
+
+    var OPTS = ['a', 'b', 'c', 'd'];
+    questions.forEach(function (q, i) {
+      var num = String(q.seq != null ? q.seq : i + 1) + '.';
+      var qLines = doc.splitTextToSize(S(q.question_text), CW - 24);
+      var optLines = OPTS.map(function (k) {
+        return { k: k, lines: doc.splitTextToSize(S(q['option_' + k]), CW - 58) };
+      });
+
+      // Measured up front, so a question is never split across a page break
+      // when it would sit whole on the next page.
+      var hQ = qLines.length * 13;
+      var hO = optLines.reduce(function (a, o) { return a + o.lines.length * 12.5; }, 0) + 3;
+      var hK = 0;
+      if (withKey) {
+        hK = 14;
+        if (opt.explanations && q.explanation) {
+          hK += doc.splitTextToSize(S(q.explanation), CW - 24).length * 11 + 3;
+        }
+      }
+      var block = hQ + hO + hK + 12;
+      if (y + block > H - BOT && block <= H - BOT - TOP) startPage();
+      else need(hQ + 26);
+
+      doc.setFont(SF, 'bold'); doc.setFontSize(10.5);
+      doc.text(num, ML, y);
+      doc.setFont(SF, 'normal');
+      qLines.forEach(function (ln, k) { doc.text(ln, ML + 24, y + k * 13); });
+      y += hQ + 3;
+
+      doc.setFontSize(10);
+      optLines.forEach(function (o) {
+        need(o.lines.length * 12.5 + 2);
+        var isKey = withKey && String(q.correct_option || '').toUpperCase() === o.k.toUpperCase();
+        doc.setFont(SF, isKey ? 'bold' : 'normal');
+        doc.text((isKey ? '*' : ' ') + ' (' + o.k.toUpperCase() + ')', ML + 24, y);
+        o.lines.forEach(function (ln, k) { doc.text(ln, ML + 58, y + k * 12.5); });
+        y += o.lines.length * 12.5;
+      });
+      doc.setFont(SF, 'normal');
+
+      if (withKey) {
+        need(14); y += 3;
+        doc.setFont(SF, 'bold'); doc.setFontSize(9.5);
+        doc.text('Answer: ' + String(q.correct_option || '?').toUpperCase() +
+          (q.qcode ? '     Code: ' + S(q.qcode) : '') +
+          (q.category ? '     Category: ' + S(q.category) : '') +
+          (q.difficulty ? '     ' + S(q.difficulty) : ''), ML + 24, y);
+        y += 11;
+        if (opt.explanations && q.explanation) {
+          doc.setFont(SF, 'italic'); doc.setFontSize(9);
+          doc.splitTextToSize(S(q.explanation), CW - 24).forEach(function (ln) {
+            need(11); doc.text(ln, ML + 24, y); y += 11;
+          });
+          doc.setFont(SF, 'normal');
+        }
+      }
+      y += 12;
+    });
+
+    // ── Answer grid for evaluators ─────────────────────────────────
+    if (withKey && opt.grid) {
+      var PER = 5;
+      var head = [];
+      for (var c = 0; c < PER; c++) head.push('Q', 'Ans');
+      var body = [];
+      for (var a = 0; a < questions.length; a += PER) {
+        var row = [];
+        for (var b2 = 0; b2 < PER; b2++) {
+          var q2 = questions[a + b2];
+          row.push(q2 ? String(q2.seq != null ? q2.seq : a + b2 + 1) : '',
+                   q2 ? String(q2.correct_option || '').toUpperCase() : '');
+        }
+        body.push(row);
+      }
+      doc.addPage(); decorate();
+      doc.setFont(SF, 'bold'); doc.setFontSize(11);
+      doc.text('Answer grid', ML, TOP);
+      doc.autoTable({
+        head: [head], body: body,
+        startY: TOP + 12, margin: { top: TOP, left: ML, right: MR, bottom: BOT },
+        styles: { font: SF, fontSize: 10, cellPadding: 4, halign: 'center',
+          lineColor: [80, 80, 80], lineWidth: 0.6, textColor: [0, 0, 0] },
+        headStyles: { fillColor: [238, 238, 238], textColor: [0, 0, 0],
+          fontStyle: 'bold', lineColor: [80, 80, 80], lineWidth: 0.6 },
+        alternateRowStyles: { fillColor: [247, 247, 247] },
+        didDrawPage: decorate,
+      });
+    }
+
+    doc.save(pdfFileName(ex, opt.variant));
+    return dropped;
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -724,9 +1151,223 @@
     });
   }
 
+  /* ═══════════════════════════════════════════════════════════════
+     WHO CAN ATTEMPT
+     An examination is either open under its office and designation rules,
+     or allotted to employees named one by one. The mode is explicit: a
+     restricted examination with nobody on the list admits nobody, which is
+     what an administrator mid-way through choosing actually means.
+     ═══════════════════════════════════════════════════════════════ */
+
+  // The working copy of the list while the dialog is open. Nothing is sent
+  // until Save, so a mis-click is undone by closing the dialog.
+  var allotState = null;
+
+  function allotment(ex) {
+    allotState = null;
+    QuizUI.modal('xallot', 'Who can attempt — ' + ex.title, QuizUI.skeleton(4),
+      '<button class="btn ghost" type="button" id="alCancel">Cancel</button>' +
+      '<button class="btn" type="button" id="alSave" style="flex:1">Save</button>');
+
+    document.getElementById('alCancel').addEventListener('click', function () {
+      QuizUI.closeModal('xallot');
+    });
+    document.getElementById('alSave').addEventListener('click', function () {
+      saveAllotment(ex, this);
+    });
+
+    loadAllotment(ex, '');
+  }
+
+  function loadAllotment(ex, search) {
+    var box = document.querySelector('#xallot .modal-body');
+    QuizAPI.admin('exam-allotment', { id: ex.id, q: search || '', limit: 300 })
+      .then(function (r) {
+        if (!r.ready) {
+          box.innerHTML = QuizUI.alert('warn', '&#9888;', QuizUI.esc(r.pending));
+          var sb = document.getElementById('alSave');
+          if (sb) sb.disabled = true;
+          return;
+        }
+        // Keep the choices already made in this sitting; only refresh the
+        // candidate pool, which is what a new search changes.
+        if (!allotState) {
+          allotState = { mode: r.mode, chosen: {}, names: {} };
+          (r.allotted || []).forEach(function (a) {
+            allotState.chosen[a.employee_id] = true;
+            allotState.names[a.employee_id] = a;
+          });
+        }
+        (r.candidates || []).forEach(function (c) {
+          if (!allotState.names[c.employee_id]) allotState.names[c.employee_id] = c;
+        });
+        allotState.candidates = r.candidates || [];
+        renderAllotment(ex);
+      })
+      .catch(function (e) {
+        box.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+      });
+  }
+
+  function chosenIds() {
+    return Object.keys(allotState.chosen).filter(function (k) { return allotState.chosen[k]; });
+  }
+
+  function renderAllotment(ex) {
+    var box = document.querySelector('#xallot .modal-body');
+    var picked = chosenIds();
+    var restricted = allotState.mode === 'SELECTED';
+
+    box.innerHTML =
+      '<div class="field"><label for="alMode">This examination is</label>' +
+        '<select class="select" id="alMode">' +
+          '<option value="ALL"' + (restricted ? '' : ' selected') + '>' +
+            'Open — to everyone its office and designation rules allow</option>' +
+          '<option value="SELECTED"' + (restricted ? ' selected' : '') + '>' +
+            'Allotted — only the employees selected below may attempt it</option>' +
+        '</select></div>' +
+
+      (restricted
+        ? (picked.length
+            ? QuizUI.alert('ok', '&#128101;',
+                '<b>' + picked.length + ' employee(s) selected.</b> Only they will see this ' +
+                'examination on their dashboard, and only they can start it. Everybody else ' +
+                'is refused even if their office would otherwise qualify.')
+            : QuizUI.alert('err', '&#9888;',
+                '<b>Nobody is selected.</b> Saving now would mean no one can sit this ' +
+                'examination. Choose the candidates below, or set it back to Open.'))
+        : QuizUI.alert('', '&#8505;',
+            'Eligibility is decided by the office and designation rules in <b>Edit</b>. ' +
+            'Switch to <b>Allotted</b> to name the candidates instead — for a batch, a ' +
+            'single office, or a training group.')) +
+
+      (restricted ? allotPickerHtml(ex) : '') +
+      '<div id="alErr"></div>';
+
+    document.getElementById('alMode').addEventListener('change', function () {
+      allotState.mode = this.value;
+      renderAllotment(ex);
+    });
+    if (restricted) wireAllotPicker(ex);
+  }
+
+  function allotPickerHtml(ex) {
+    var picked = chosenIds();
+    var cands = allotState.candidates || [];
+
+    return '<div class="section-title">Selected &mdash; ' + picked.length + '</div>' +
+      (picked.length
+        ? '<div class="allotsel">' + picked.map(function (id) {
+            var e = allotState.names[id] || {};
+            return '<span class="chip">' +
+              QuizUI.esc(e.employee_name || id) +
+              '<span class="cid">' + QuizUI.esc(id) + '</span>' +
+              '<button type="button" class="x" data-aldrop="' + QuizUI.esc(id) + '" ' +
+                'title="Remove">&times;</button></span>';
+          }).join('') + '</div>' +
+          '<div class="btn-row" style="margin:9px 0 4px">' +
+            '<button class="btn sm ghost" type="button" id="alClear">Remove all</button></div>'
+        : '<p style="font-size:12.5px;color:var(--muted);margin-bottom:11px">' +
+          'Nobody selected yet.</p>') +
+
+      '<div class="section-title">Add employees</div>' +
+      '<div class="toolbar" style="margin-bottom:10px">' +
+        '<input class="input" id="alQ" placeholder="Search name, Employee ID, designation or office…" ' +
+          'value="" />' +
+        '<button class="btn sm ghost" type="button" id="alGo">Search</button>' +
+        '<button class="btn sm ghost" type="button" id="alAll">Add all ' +
+          (cands.length || 0) + ' shown</button>' +
+      '</div>' +
+      (cands.length
+        ? '<div class="allotlist">' + cands.map(function (c) {
+            var on = !!allotState.chosen[c.employee_id];
+            return '<label class="allotrow' + (on ? ' on' : '') + '">' +
+              '<input type="checkbox" data-alpick="' + QuizUI.esc(c.employee_id) + '"' +
+                (on ? ' checked' : '') + ' />' +
+              '<span class="an">' + QuizUI.esc(c.employee_name || '') + '</span>' +
+              '<span class="ad">' + QuizUI.esc(c.designation || '') +
+                (c.office ? ' &middot; ' + QuizUI.esc(c.office) : '') + '</span>' +
+              '<span class="ai">' + QuizUI.esc(c.employee_id) + '</span>' +
+            '</label>';
+          }).join('') + '</div>' +
+          '<p style="font-size:11.5px;color:var(--muted);margin-top:8px">' +
+            'Showing ' + cands.length + ' active employee(s). Narrow the search to find more.</p>'
+        : QuizUI.alert('', '&#128269;',
+            'No active employee matches that search. Anybody missing from the directory has ' +
+            'to be added under <a href="/Quiz/admin/employees">Employees</a> first.'));
+  }
+
+  function wireAllotPicker(ex) {
+    var box = document.querySelector('#xallot .modal-body');
+
+    Array.prototype.forEach.call(box.querySelectorAll('[data-alpick]'), function (cb) {
+      cb.addEventListener('change', function () {
+        allotState.chosen[cb.getAttribute('data-alpick')] = cb.checked;
+        renderAllotment(ex);
+      });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-aldrop]'), function (b) {
+      b.addEventListener('click', function () {
+        allotState.chosen[b.getAttribute('data-aldrop')] = false;
+        renderAllotment(ex);
+      });
+    });
+
+    var go = document.getElementById('alGo');
+    var q = document.getElementById('alQ');
+    if (go) go.addEventListener('click', function () { loadAllotment(ex, q.value.trim()); });
+    if (q) q.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); loadAllotment(ex, q.value.trim()); }
+    });
+
+    var all = document.getElementById('alAll');
+    if (all) all.addEventListener('click', function () {
+      (allotState.candidates || []).forEach(function (c) {
+        allotState.chosen[c.employee_id] = true;
+      });
+      renderAllotment(ex);
+    });
+
+    var clr = document.getElementById('alClear');
+    if (clr) clr.addEventListener('click', function () {
+      allotState.chosen = {};
+      renderAllotment(ex);
+    });
+  }
+
+  function saveAllotment(ex, b) {
+    if (!allotState) return;
+    var picked = chosenIds();
+    b.disabled = true;
+    b.textContent = 'Saving…';
+
+    // `replace` rather than add/remove: the dialog shows the whole list, so
+    // the whole list is what it means.
+    QuizAPI.admin('exam-allotment-save', null, {
+      id: ex.id,
+      mode: allotState.mode,
+      replace: allotState.mode === 'SELECTED' ? picked : undefined,
+    }).then(function (r) {
+      QuizUI.closeModal('xallot');
+      QuizUI.toast(r.warning || r.message, r.warning ? '' : 'ok');
+      load();
+    }).catch(function (e) {
+      b.disabled = false;
+      b.textContent = 'Save';
+      document.getElementById('alErr').innerHTML =
+        QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
   function duplicate(id) {
     QuizAPI.admin('exam-duplicate', null, { id: id })
-      .then(function () { QuizUI.toast('Duplicated as a new draft.', 'ok'); load(); })
+      .then(function (r) {
+        // The copy gets its own questions, not a share of the original's, so
+        // the count is worth saying: it is the difference between a new test
+        // ready to publish and an empty one.
+        QuizUI.toast((r && r.message) || 'Duplicated as a new draft.', 'ok');
+        load();
+      })
       .catch(QuizUI.err);
   }
 })();

@@ -325,7 +325,7 @@
         '<button class="btn sm ghost" type="button" id="rgo">Search</button>' +
         '<button class="btn sm ghost" type="button" id="rxl">&#11015; Excel</button>' +
         (QuizAdmin.atLeast('QUIZ_ADMIN')
-          ? '<button class="btn sm" type="button" id="radd">+ Add manually</button>' +
+          ? '<button class="btn sm" type="button" id="radd">+ Add employee by ID</button>' +
             '<button class="btn sm ok" type="button" id="rbulk">Approve all pending</button>'
           : '') +
       '</div>' +
@@ -567,23 +567,162 @@
     }).catch(QuizUI.err);
   }
 
-  function addManual() {
-    QuizUI.modal('amod', 'Add a registration manually',
-      QuizUI.alert('warn', '&#8505;',
-        'A manually added registration stays <b>Pending</b> and is marked unverified, because it ' +
-        'is not yet linked to the employee&rsquo;s own account. The employee must still sign in; ' +
-        'this only reserves their Employee ID.') +
-      '<div class="field"><label for="mid">Employee ID</label>' +
-      '<input class="input mono" id="mid" placeholder="e.g. 10003963" /></div>',
-      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'amod\')">Cancel</button>' +
-      '<button class="btn" type="button" id="mok" style="flex:1">Add</button>');
+  /* ═══════════════════════════════════════════════════════════════
+     ADD AN EMPLOYEE BY ID
+     The Employee ID is looked up first, because the two cases it leads to
+     are completely different work:
 
-    document.getElementById('mok').addEventListener('click', function () {
-      var id = document.getElementById('mid').value.trim();
-      if (!id) { QuizUI.toast('Enter an Employee ID.', 'err'); return; }
-      QuizAPI.admin('registration-add', null, { employee_id: id })
-        .then(function () { QuizUI.closeModal('amod'); QuizUI.toast('Registration added.', 'ok'); loadRegs(); })
-        .catch(QuizUI.err);
+       already in the directory  — there is nothing to add. Their ID can be
+                                   reserved, which is the old behaviour.
+       not in the directory      — they need a directory record before they
+                                   can register at all. That is this dialog's
+                                   main job: an employee who joined after the
+                                   roster was imported signs in with Google
+                                   and registers against the record added
+                                   here.
+
+     Reserving is deliberately NOT the default. A reserved Employee ID is
+     already taken, so the employee's own registration is then refused and an
+     administrator has to Unlink before they can proceed — the opposite of
+     what adding them was for.
+     ═══════════════════════════════════════════════════════════════ */
+  function addManual() {
+    QuizUI.modal('amod', 'Add an employee by Employee ID',
+      QuizUI.alert('', '&#8505;',
+        'Enter the Employee ID. If it is not in the directory you can add the employee here, ' +
+        'and they will then be able to sign in with their Google account and register for a ' +
+        'test themselves.') +
+      '<div class="field"><label for="mid">Employee ID</label>' +
+        '<input class="input mono" id="mid" placeholder="e.g. 10003963" autocomplete="off" /></div>' +
+      '<div id="mout"></div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'amod\')">Cancel</button>' +
+      '<button class="btn" type="button" id="mok" style="flex:1">Look up</button>');
+
+    var input = document.getElementById('mid');
+    document.getElementById('mok').addEventListener('click', function () { lookupEmp(); });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); lookupEmp(); }
+    });
+    input.focus();
+  }
+
+  function lookupEmp() {
+    var id = document.getElementById('mid').value.trim();
+    var out = document.getElementById('mout');
+    if (!id) { QuizUI.toast('Enter an Employee ID.', 'err'); return; }
+
+    out.innerHTML = QuizUI.skeleton(2);
+    QuizAPI.admin('employees-list', { q: id, limit: 50 }).then(function (r) {
+      // The search is a partial match across several columns, so the exact
+      // Employee ID has to be picked out of the results rather than trusted
+      // from the count.
+      var hit = (r.employees || []).filter(function (e) {
+        return String(e.employee_id).toLowerCase() === id.toLowerCase();
+      })[0];
+      if (hit) existingEmp(hit); else newEmp(id);
+    }).catch(function (e) {
+      out.innerHTML = QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+    });
+  }
+
+  // Already on the roster: nothing to create. Offer the reservation, with
+  // what it actually costs stated plainly.
+  function existingEmp(e) {
+    document.getElementById('mout').innerHTML =
+      QuizUI.alert('ok', '&#9989;',
+        '<b>' + QuizUI.esc(e.employee_name) + '</b> is already in the directory &mdash; ' +
+        QuizUI.esc(e.designation || '') + (e.office ? ', ' + QuizUI.esc(e.office) : '') + '.' +
+        (e.active === false
+          ? '<br><br><b>This record is inactive</b>, so they cannot register. Make it active ' +
+            'under <b>Employee Directory</b> first.'
+          : '<br><br>They can sign in with their Google account and register for a test now. ' +
+            'Nothing further is needed.')) +
+      QuizUI.alert('warn', '&#9888;',
+        '<b>Reserving the ID is usually not what you want.</b> It marks the Employee ID as ' +
+        'taken, so when the employee tries to register themselves they are refused and you ' +
+        'have to <b>Unlink</b> the reservation first. Reserve it only to record somebody who ' +
+        'will not be signing in at all.') +
+      '<div class="btn-row">' +
+        '<button class="btn sm ghost" type="button" id="mres">Reserve the ID anyway</button>' +
+      '</div>';
+
+    document.getElementById('mres').addEventListener('click', function () {
+      var b = this;
+      b.disabled = true; b.textContent = 'Reserving…';
+      QuizAPI.admin('registration-add', null, { employee_id: e.employee_id })
+        .then(function () {
+          QuizUI.closeModal('amod');
+          QuizUI.toast('Employee ID reserved — a pending registration was created.', 'ok');
+          loadRegs();
+        })
+        .catch(function (err) {
+          b.disabled = false; b.textContent = 'Reserve the ID anyway';
+          document.getElementById('mout').innerHTML +=
+            QuizUI.alert('err', '&#9888;', QuizUI.esc(err.message));
+        });
+    });
+  }
+
+  // Not on the roster: this is the case the dialog exists for.
+  function newEmp(id) {
+    document.getElementById('mout').innerHTML =
+      QuizUI.alert('warn', '&#128269;',
+        'Employee ID <b>' + QuizUI.esc(id) + '</b> is <b>not in the directory</b>, so nobody ' +
+        'can register with it yet. Fill in their details below to add them.') +
+      '<div class="field"><label for="m_name">Name</label>' +
+        '<input class="input" id="m_name" placeholder="As it should appear on the result" /></div>' +
+      '<div class="field"><label for="m_desig">Designation</label>' +
+        '<input class="input" id="m_desig" placeholder="e.g. Postman" /></div>' +
+      '<div class="field"><label for="m_office">Office</label>' +
+        '<input class="input" id="m_office" placeholder="e.g. Karur H.O" /></div>' +
+      '<div class="field"><label for="m_cat">Staff category</label>' +
+        '<select class="select" id="m_cat">' +
+          '<option value="">— not set —</option>' +
+          '<option value="DEPARTMENTAL">Departmental</option>' +
+          '<option value="GDS">GDS</option>' +
+        '</select>' +
+        '<div class="hint">Prizes are awarded separately in each category, so an employee ' +
+          'left unset competes in neither.</div></div>' +
+      '<div class="field"><label for="m_unit">Unit / Sub Division</label>' +
+        '<input class="input" id="m_unit" list="unitList" placeholder="e.g. Karur Sub Division" />' +
+        unitDatalist() + '</div>' +
+      QuizUI.alert('', '&#9989;',
+        'Once added, the employee signs in at <b>/Quiz</b> with their Google account and ' +
+        'registers using this Employee ID. Their registration is then verified against this ' +
+        'record, exactly like anyone imported from the roster.') +
+      '<div class="btn-row">' +
+        '<button class="btn" type="button" id="mcreate" style="flex:1">Add ' +
+          QuizUI.esc(id) + ' to the directory</button>' +
+      '</div>';
+
+    document.getElementById('mcreate').addEventListener('click', function () {
+      var b = this;
+      var name = document.getElementById('m_name').value.trim();
+      var desig = document.getElementById('m_desig').value.trim();
+      var office = document.getElementById('m_office').value.trim();
+      if (!name || !desig || !office) {
+        QuizUI.toast('Name, designation and office are all required.', 'err');
+        return;
+      }
+      b.disabled = true; b.textContent = 'Adding…';
+      QuizAPI.admin('employee-save', null, {
+        employee_id: id,
+        employee_name: name,
+        designation: desig,
+        office: office,
+        category: document.getElementById('m_cat').value || null,
+        unit: document.getElementById('m_unit').value.trim() || null,
+        active: true,
+      }).then(function () {
+        QuizUI.closeModal('amod');
+        QuizUI.toast(name + ' added to the directory. They can now sign in and register ' +
+          'with Employee ID ' + id + '.', 'ok');
+        loadRegs();
+      }).catch(function (err) {
+        b.disabled = false; b.textContent = 'Add ' + id + ' to the directory';
+        document.getElementById('mout').innerHTML +=
+          QuizUI.alert('err', '&#9888;', QuizUI.esc(err.message));
+      });
     });
   }
 

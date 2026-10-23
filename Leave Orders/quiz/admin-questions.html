@@ -32,6 +32,17 @@
   .drop{border:2px dashed var(--line-2);border-radius:var(--r-lg);padding:24px 18px;text-align:center;
     background:var(--card-2);cursor:pointer}
   .drop.over{border-color:var(--indigo);background:rgba(79,70,229,.06)}
+  /* The set being worked on is the single most important thing on this page:
+     every upload, edit and deletion below belongs to whichever one is chosen
+     here, so it is given its own band rather than a slot in the toolbar. */
+  .scopebar{border:1px solid var(--line);border-left:5px solid var(--indigo);
+    border-radius:var(--r-lg);padding:14px 16px;margin-bottom:14px;background:var(--card)}
+  .scopebar .sl{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:7px}
+  .scopebar .srow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .scopebar select{flex:1;min-width:230px}
+  .scopebar .sd{font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:9px}
+  .scopebar .sd b{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -47,6 +58,16 @@
   var parsed = null;
   var categories = [];
 
+  // Which question set is on screen. 'ALL' is every question whoever it
+  // belongs to, 'SHARED' the bank any examination may draw from, and anything
+  // else the id of the examination whose own set this is. The Examinations
+  // page links straight here with ?exam=<id>, which is how an administrator
+  // gets to one test's paper in a single click.
+  var scope = new URLSearchParams(location.search).get('exam') || 'ALL';
+  var scopes = [];
+  var scopeReady = true;
+  var scopeKey = '';          // signature of the picker, to avoid rebuilding it
+
   QuizAdmin.boot({
     title: 'Question Bank',
     subtitle: 'Create, import, validate and publish examination questions',
@@ -58,6 +79,8 @@
 
   function shell() {
     host.innerHTML =
+      '<div class="scopebar" id="scopeBar"></div>' +
+
       // The official questions come from the administrator. Nothing is invented
       // here, and this notice stays visible so that stays clear.
       QuizUI.alert('', '&#8505;',
@@ -79,6 +102,9 @@
         '<button class="btn sm" type="button" id="add">+ Add question</button>' +
         '<button class="btn sm ghost" type="button" id="imp">&#11014; Import</button>' +
         '<button class="btn sm ghost" type="button" id="tpl">&#11015; Template</button>' +
+        '<button class="btn sm ghost" type="button" id="cpy">&#128203; Copy from…</button>' +
+        (QuizAdmin.atLeast('QUIZ_ADMIN')
+          ? '<button class="btn sm danger" type="button" id="clr">&#128465; Clear set</button>' : '') +
       '</div>' +
       '<div id="counts" class="grid grid-4" style="margin-bottom:16px"></div>' +
       '<div id="impArea"></div>' +
@@ -93,8 +119,109 @@
     document.getElementById('add').addEventListener('click', function () { editor(null); });
     document.getElementById('imp').addEventListener('click', renderImport);
     document.getElementById('tpl').addEventListener('click', downloadTemplate);
+    document.getElementById('cpy').addEventListener('click', copyFrom);
+    var cb = document.getElementById('clr');
+    if (cb) cb.addEventListener('click', clearSet);
 
     load();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SCOPE — which examination's question set is being worked on
+     ═══════════════════════════════════════════════════════════════ */
+
+  // The examination row for the current scope, or null for the shared bank
+  // and the combined view.
+  function currentScope() {
+    for (var i = 0; i < scopes.length; i++) {
+      if (scopes[i].id === scope) return scopes[i];
+    }
+    return null;
+  }
+  function isExamScope() { return scope !== 'ALL' && scope !== 'SHARED'; }
+
+  function scopeName() {
+    var s = currentScope();
+    if (scope === 'ALL') return 'every question set';
+    if (scope === 'SHARED') return 'the shared bank';
+    return s ? s.title : 'this examination';
+  }
+
+  function renderScopeBar() {
+    var bar = document.getElementById('scopeBar');
+    if (!bar) return;
+
+    // Rebuild the <select> only when the options themselves change, so that
+    // reloading the list does not throw away a selection mid-interaction.
+    var key = scope + '|' + scopes.map(function (s) {
+      return s.id + ':' + s.ownCount + ':' + s.title;
+    }).join('|');
+    if (key !== scopeKey) {
+      scopeKey = key;
+      var opts = '<option value="ALL"' + (scope === 'ALL' ? ' selected' : '') + '>' +
+        'All questions — every set together</option>';
+      scopes.forEach(function (s) {
+        var label = s.id === 'SHARED'
+          ? s.title + ' (' + s.ownCount + ')'
+          : s.title + ' — ' + s.ownCount + ' of its own' +
+            (s.question_count ? ', paper needs ' + s.question_count : '');
+        opts += '<option value="' + QuizUI.esc(s.id) + '"' +
+          (s.id === scope ? ' selected' : '') + '>' + QuizUI.esc(label) + '</option>';
+      });
+      bar.innerHTML =
+        '<div class="sl">Question set being edited</div>' +
+        '<div class="srow"><select class="select" id="scopeSel">' + opts + '</select>' +
+          (isExamScope()
+            ? '<a class="btn sm ghost" href="/Quiz/admin/exams?exam=' + QuizUI.esc(scope) + '">' +
+              '&#128198; Open this examination</a>' : '') +
+        '</div>' +
+        '<div class="sd" id="scopeDesc"></div>';
+      document.getElementById('scopeSel').addEventListener('change', function () {
+        scope = this.value;
+        // The address bar follows the selection, so the page can be
+        // bookmarked and shared on one examination's set.
+        var url = scope === 'ALL' ? location.pathname
+          : location.pathname + '?exam=' + encodeURIComponent(scope);
+        history.replaceState(null, '', url);
+        document.getElementById('impArea').innerHTML = '';
+        parsed = null;
+        load();
+      });
+    }
+
+    var s = currentScope();
+    var desc;
+    if (!scopeReady) {
+      desc = '<b>Separate sets per examination are not switched on yet.</b> Run ' +
+        '<b>migration_v23_quiz_exam_questions.sql</b> in the Supabase SQL editor; until then ' +
+        'every question lives in one shared bank, exactly as before.';
+    } else if (scope === 'ALL') {
+      desc = 'Showing every question in the module, whichever set it belongs to. ' +
+        'Choose an examination above to upload or edit <b>its own paper</b>, separately from ' +
+        'every other test.';
+    } else if (scope === 'SHARED') {
+      desc = 'The <b>shared bank</b>. An examination that has no questions of its own draws its ' +
+        'paper from here. Anything added here is offered to every such examination.';
+    } else {
+      desc = 'Questions belonging to <b>' + QuizUI.esc(s ? s.title : '') + '</b> alone. ' +
+        (s && s.ownCount
+          ? 'Its paper is drawn <b>only</b> from this set — the shared bank is not used, and no ' +
+            'other examination can reach these questions. ' +
+            (s.question_count
+              ? '<b>' + s.activeCount + '</b> active here, and the paper needs <b>' +
+                s.question_count + '</b>.'
+              : '')
+          : 'This set is empty, so the examination still falls back to the shared bank. ' +
+            'Upload or add questions here to give it a paper of its own.');
+    }
+    var box = document.getElementById('scopeDesc');
+    if (box) box.innerHTML = desc;
+
+    // "Clear set" only means anything for one examination's own questions.
+    var cb = document.getElementById('clr');
+    if (cb) cb.style.display = isExamScope() ? '' : 'none';
+    var cp = document.getElementById('cpy');
+    if (cp) cp.style.display = (scopeReady && scope !== 'ALL') ? '' : 'none';
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -108,9 +235,18 @@
       q: document.getElementById('q').value.trim(),
       status: document.getElementById('st').value,
       category: document.getElementById('cat').value,
+      scope: scope,
       limit: 100,
     }).then(function (r) {
       var c = r.counts;
+
+      // The server is the authority on the scope: if migration_v23 has not
+      // been run it answers 'ALL' whatever was asked for, and the bar then
+      // says so rather than the page pretending to a set that cannot exist.
+      scopes = r.scopes || [];
+      scopeReady = r.scopeReady !== false;
+      scope = r.scope || 'ALL';
+      renderScopeBar();
       document.getElementById('counts').innerHTML =
         st('Total', c.total) + st('Active', c.active) + st('Draft', c.draft) + st('Archived', c.archived);
 
@@ -126,10 +262,16 @@
       }
 
       if (!c.total) {
-        list.innerHTML = QuizUI.empty('&#10067;', 'Question Bank Not Yet Uploaded',
-          'No questions have been added yet. Use <b>+ Add question</b> for a single question, ' +
-          'or <b>Import</b> to upload the question bank from Excel. ' +
-          'Download the template first if you would like the exact column layout.');
+        list.innerHTML = isExamScope()
+          ? QuizUI.empty('&#128196;', 'No question paper for this examination yet',
+              '<b>' + QuizUI.esc(scopeName()) + '</b> has no questions of its own, so it would ' +
+              'fall back to the shared bank. Use <b>Template</b> for the exact column layout, ' +
+              '<b>Import</b> to upload this test\'s paper from Excel, <b>+ Add question</b> to ' +
+              'type one, or <b>Copy from…</b> to start from a set that already exists.')
+          : QuizUI.empty('&#10067;', 'Question Bank Not Yet Uploaded',
+              'No questions have been added yet. Use <b>+ Add question</b> for a single question, ' +
+              'or <b>Import</b> to upload the question bank from Excel. ' +
+              'Download the template first if you would like the exact column layout.');
         return;
       }
       if (!r.questions.length) {
@@ -140,7 +282,7 @@
 
       list.innerHTML =
         '<p style="font-size:12.5px;color:var(--muted);margin-bottom:11px">Showing ' +
-          r.questions.length + ' question(s).</p>' +
+          r.questions.length + ' question(s) in ' + QuizUI.esc(scopeName()) + '.</p>' +
         r.questions.map(qCard).join('');
 
       Array.prototype.forEach.call(list.querySelectorAll('[data-qa]'), function (b) {
@@ -151,6 +293,7 @@
           if (act === 'edit') editor(q);
           else if (act === 'dup') duplicate(id);
           else if (act === 'hist') history(id);
+          else if (act === 'del') removeOne(q);
           else setStatus(id, act);
         });
       });
@@ -177,6 +320,9 @@
         QuizUI.statusBadge(q.status) +
         (q.category ? QuizUI.badge(q.category) : '') +
         QuizUI.badge(q.difficulty || 'MEDIUM', q.difficulty === 'HARD' ? 'warn' : 'mute') +
+        // In the combined view the owning set is the thing you cannot work out
+        // from the question itself, so it is named on the card.
+        (scope === 'ALL' && scopeReady ? QuizUI.badge(setLabel(q.exam_id), 'mute') : '') +
         '<span style="margin-left:auto;font-size:10.5px;color:var(--muted)">v' + q.version + '</span>' +
       '</div>' +
       '<div class="qt">' + QuizUI.esc(q.question_text) + '</div>' +
@@ -193,12 +339,23 @@
         (q.status !== 'ARCHIVED' ? btn('ARCHIVED', q.id, 'Archive') : '') +
         btn('dup', q.id, 'Duplicate') +
         btn('hist', q.id, 'History') +
+        (QuizAdmin.atLeast('QUIZ_ADMIN') ? btn('del', q.id, '&#128465; Delete', 'danger') : '') +
       '</div>' +
     '</div>';
   }
 
+  // The name of the set a question belongs to, for the combined view.
+  function setLabel(examId) {
+    if (!examId) return 'Shared bank';
+    for (var i = 0; i < scopes.length; i++) {
+      if (scopes[i].id === examId) return scopes[i].title;
+    }
+    return 'An examination';
+  }
+
   function btn(act, id, label, cls) {
-    return '<button class="btn sm ' + (cls === 'ok' ? 'ok' : 'ghost') + '" type="button" ' +
+    return '<button class="btn sm ' +
+      (cls === 'ok' ? 'ok' : cls === 'danger' ? 'danger' : 'ghost') + '" type="button" ' +
       'data-qa="' + act + '" data-id="' + id + '">' + label + '</button>';
   }
 
@@ -210,6 +367,15 @@
   /* ═══════════════════════════════════════════════════════════════
      EDITOR
      ═══════════════════════════════════════════════════════════════ */
+  // <option> list of every set a question can be filed under.
+  function scopeChoices(selected) {
+    return scopes.map(function (s) {
+      var label = s.id === 'SHARED' ? 'Shared bank — any examination may use it' : s.title;
+      return '<option value="' + QuizUI.esc(s.id) + '"' +
+        (s.id === selected ? ' selected' : '') + '>' + QuizUI.esc(label) + '</option>';
+    }).join('');
+  }
+
   function editor(q) {
     var e = q || {};
     var correct = e.correct_option || '';
@@ -264,6 +430,15 @@
         '</select>' +
         '<div class="hint">Only <b>Active</b> questions can be drawn into an examination.</div>' +
       '</div>' +
+      // Which set it belongs to, editable here so a question written against
+      // the wrong test can be moved without being retyped.
+      (scopeReady ? '<div class="field"><label for="qscope">Belongs to</label>' +
+        '<select class="select" id="qscope">' +
+          scopeChoices(q ? (e.exam_id || 'SHARED') : (scope === 'ALL' ? 'SHARED' : scope)) +
+        '</select>' +
+        '<div class="hint">An examination with a set of its own draws its paper <b>only</b> from ' +
+          'that set. The shared bank is used by examinations that have none.</div>' +
+      '</div>' : '') +
       (q ? '<div class="field"><label for="qnote">Change note (recorded in the history)</label>' +
         '<input class="input" id="qnote" placeholder="e.g. Corrected option C per Directorate letter" /></div>' : '') +
       '<div id="qerr"></div>',
@@ -288,6 +463,8 @@
         status: document.getElementById('qstat').value,
         change_note: q ? document.getElementById('qnote').value : undefined,
       };
+      var sc = document.getElementById('qscope');
+      if (sc) payload.scope = sc.value;
 
       var b = this;
       b.disabled = true; b.textContent = 'Saving…';
@@ -313,6 +490,132 @@
     QuizAPI.admin('question-duplicate', null, { id: id })
       .then(function (r) { QuizUI.toast('Duplicated as ' + r.qcode + ' (draft).', 'ok'); load(); })
       .catch(QuizUI.err);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SET-LEVEL ACTIONS
+     Starting one test's paper from another, emptying a set that was
+     uploaded by mistake, and removing a single question outright.
+     ═══════════════════════════════════════════════════════════════ */
+
+  // Copy a whole set into the one on screen. This is how a new test's paper
+  // is normally started: from last year's, or from the shared bank.
+  function copyFrom() {
+    var others = scopes.filter(function (s) { return s.id !== scope; });
+    if (!others.length) {
+      QuizUI.toast('There is no other question set to copy from yet.', '');
+      return;
+    }
+    QuizUI.modal('qcp', 'Copy questions into ' + scopeName(),
+      QuizUI.alert('', '&#128203;',
+        'Every question in the set you choose is copied into <b>' + QuizUI.esc(scopeName()) +
+        '</b> as a <b>draft</b>, for you to review and activate. The original set is not ' +
+        'touched, and a question already present here is left alone rather than copied twice.') +
+      '<div class="field"><label for="cpFrom">Copy from</label>' +
+        '<select class="select" id="cpFrom">' +
+          others.map(function (s) {
+            var label = s.id === 'SHARED' ? 'Shared bank' : s.title;
+            return '<option value="' + QuizUI.esc(s.id) + '">' +
+              QuizUI.esc(label + ' — ' + s.ownCount + ' question(s)') + '</option>';
+          }).join('') +
+        '</select></div>' +
+      '<div id="cperr"></div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'qcp\')">Cancel</button>' +
+      '<button class="btn" type="button" id="cpgo" style="flex:1">Copy questions</button>');
+
+    document.getElementById('cpgo').addEventListener('click', function () {
+      var b = this;
+      var from = document.getElementById('cpFrom').value;
+      b.disabled = true; b.textContent = 'Copying…';
+
+      // The ids are fetched here rather than on the server so that the copy
+      // is of exactly the set the administrator was shown.
+      QuizAPI.admin('questions-list', { scope: from, limit: 500 }).then(function (r) {
+        var ids = (r.questions || []).map(function (q) { return q.id; });
+        if (!ids.length) throw new Error('That set has no questions to copy.');
+        return QuizAPI.admin('question-duplicate', null, { ids: ids, into: scope });
+      }).then(function (r) {
+        QuizUI.closeModal('qcp');
+        QuizUI.toast(r.message, 'ok');
+        load();
+      }).catch(function (e) {
+        b.disabled = false; b.textContent = 'Copy questions';
+        document.getElementById('cperr').innerHTML =
+          QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+      });
+    });
+  }
+
+  // Empty this examination's set. Questions already frozen into a published
+  // paper are kept by the server and reported back; a result refers to them.
+  function clearSet() {
+    if (!isExamScope()) return;
+    var s = currentScope();
+    var n = s ? s.ownCount : 0;
+    if (!n) { QuizUI.toast('This set is already empty.', ''); return; }
+
+    QuizUI.modal('qclr', 'Clear the question set',
+      QuizUI.alert('err', '&#9888;',
+        'This deletes <b>' + n + ' question(s)</b> belonging to <b>' +
+        QuizUI.esc(scopeName()) + '</b>. It cannot be undone.<br><br>' +
+        'Any question already frozen into a published paper is <b>kept</b> — a result refers ' +
+        'to it and the evaluation record has to stay readable. Those are reported back to you.' +
+        '<br><br>With the set empty, this examination falls back to the shared bank again.') +
+      '<div class="field"><label for="clrCfm">Type <b>CLEAR</b> to confirm</label>' +
+        '<input class="input" id="clrCfm" placeholder="CLEAR" autocomplete="off" /></div>' +
+      '<div id="clrerr"></div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'qclr\')">Cancel</button>' +
+      '<button class="btn danger" type="button" id="clrgo" style="flex:1">Delete these questions</button>');
+
+    document.getElementById('clrgo').addEventListener('click', function () {
+      var b = this;
+      if (document.getElementById('clrCfm').value.trim().toUpperCase() !== 'CLEAR') {
+        document.getElementById('clrerr').innerHTML =
+          QuizUI.alert('err', '&#9888;', 'Type CLEAR to confirm.');
+        return;
+      }
+      b.disabled = true; b.textContent = 'Deleting…';
+      QuizAPI.admin('questions-list', { scope: scope, limit: 500 }).then(function (r) {
+        var ids = (r.questions || []).map(function (q) { return q.id; });
+        if (!ids.length) throw new Error('This set has no questions to delete.');
+        return QuizAPI.admin('questions-delete', null, { ids: ids });
+      }).then(function (r) {
+        QuizUI.closeModal('qclr');
+        QuizUI.toast(r.message, r.kept ? '' : 'ok');
+        load();
+      }).catch(function (e) {
+        b.disabled = false; b.textContent = 'Delete these questions';
+        document.getElementById('clrerr').innerHTML =
+          QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+      });
+    });
+  }
+
+  function removeOne(q) {
+    QuizUI.modal('qdel', 'Delete question ' + (q.qcode || ''),
+      QuizUI.alert('err', '&#9888;',
+        'This removes the question permanently. <b>Archiving</b> is usually the better course ' +
+        'and keeps it out of every paper while leaving the record intact.<br><br>' +
+        'If it is already frozen into a published paper it will be kept, not deleted.') +
+      '<div class="rev" style="border-left:4px solid var(--line-2)">' +
+        '<div class="rq">' + QuizUI.esc(q.question_text) + '</div></div>' +
+      '<div id="qderr"></div>',
+      '<button class="btn ghost" type="button" onclick="QuizUI.closeModal(\'qdel\')">Cancel</button>' +
+      '<button class="btn danger" type="button" id="qdgo" style="flex:1">Delete permanently</button>');
+
+    document.getElementById('qdgo').addEventListener('click', function () {
+      var b = this;
+      b.disabled = true; b.textContent = 'Deleting…';
+      QuizAPI.admin('questions-delete', null, { id: q.id }).then(function (r) {
+        QuizUI.closeModal('qdel');
+        QuizUI.toast(r.message, r.kept ? '' : 'ok');
+        load();
+      }).catch(function (e) {
+        b.disabled = false; b.textContent = 'Delete permanently';
+        document.getElementById('qderr').innerHTML =
+          QuizUI.alert('err', '&#9888;', QuizUI.esc(e.message));
+      });
+    });
   }
 
   function history(id) {
@@ -361,8 +664,14 @@
       'Post Office Act 2023',
       'MEDIUM'
     ]];
-    QuizAdmin.exportXlsx('Quiz-Question-Bank-Template.xlsx', 'Questions', columns, sample);
-    QuizUI.toast('Template downloaded. Replace the sample row with your questions.', 'ok');
+    // Named after the set it is meant for, so that three downloaded templates
+    // for three different tests do not all arrive as the same filename.
+    var tag = isExamScope()
+      ? scopeName().replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48)
+      : 'Question-Bank';
+    QuizAdmin.exportXlsx('Quiz-' + tag + '-Template.xlsx', 'Questions', columns, sample);
+    QuizUI.toast('Template downloaded for ' + scopeName() +
+      '. Replace the sample row with your questions.', 'ok');
   }
 
   function renderImport() {
@@ -370,8 +679,19 @@
     area.innerHTML =
       '<div class="card">' +
         '<div class="card-head"><div class="card-ic">&#11014;</div>' +
-          '<div><div class="card-t">Import questions from Excel</div>' +
+          '<div><div class="card-t">Import questions into ' + QuizUI.esc(scopeName()) + '</div>' +
           '<div class="card-s">.xlsx or .csv, up to 2000 questions per batch</div></div></div>' +
+        // Where the upload will land, stated above the drop zone rather than
+        // after the fact — an import into the wrong test is tedious to undo.
+        (isExamScope()
+          ? QuizUI.alert('ok', '&#128196;',
+              'These questions will belong to <b>' + QuizUI.esc(scopeName()) + '</b> alone. ' +
+              'No other examination can draw on them, and this examination\'s paper will be ' +
+              'drawn only from this set.')
+          : QuizUI.alert('warn', '&#9888;',
+              'These questions will go into <b>the shared bank</b>, which every examination ' +
+              'without a set of its own draws from. To upload a paper for one test only, ' +
+              'choose that examination at the top of the page first.')) +
         QuizUI.alert('', '&#8505;',
           'Required columns: <b>question_text</b>, <b>option_a</b> to <b>option_d</b> and ' +
           '<b>correct_option</b> (A, B, C or D). Optional: explanation, source_ref, category, ' +
@@ -421,7 +741,8 @@
         '</div></div>' +
         '<div class="btn-row">' +
           '<button class="btn ghost" type="button" id="qprev">Preview</button>' +
-          '<button class="btn" type="button" id="qsave2" style="flex:1">Import</button>' +
+          '<button class="btn" type="button" id="qsave2" style="flex:1">Import into ' +
+            QuizUI.esc(scopeName()) + '</button>' +
         '</div>' +
         '<div id="qres" style="margin-top:14px"></div>';
 
@@ -439,6 +760,7 @@
     QuizAPI.admin('questions-import', null, {
       rows: parsed.rows,
       filename: parsed.file.name,
+      scope: scope === 'ALL' ? 'SHARED' : scope,
       activate: document.getElementById('activate').checked,
       dry_run: !!dryRun,
     }).then(function (r) {
@@ -466,7 +788,10 @@
 
       var c = document.getElementById('qcfm');
       if (c) c.addEventListener('click', function () { doImport(false); });
-      if (!dryRun) { QuizUI.toast(r.message, 'ok'); load(); }
+      if (!dryRun) {
+        QuizUI.toast(r.message, 'ok');
+        load();
+      }
     }).catch(function (e) {
       res.innerHTML = QuizUI.alert('err', '&#9888;', '<b>Import failed.</b><br>' + QuizUI.esc(e.message));
     });

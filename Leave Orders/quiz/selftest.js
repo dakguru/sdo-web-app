@@ -643,6 +643,166 @@ test('each category reports its own participant count and average', () => {
 });
 
 /* ═══════════════════════════════════════════════════════════════════
+   ALLOTMENT — naming who may sit an examination
+   The list IS the eligibility here, so these are the tests that matter most
+   in the file: a mistake either lets somebody into a paper they were never
+   allotted, or shuts out the people it was written for. The failure that is
+   checked hardest is the quiet one — a restricted examination reading as
+   open because its list happens to be empty, or because the allotments
+   could not be loaded.
+   ═══════════════════════════════════════════════════════════════════ */
+group('Allotment — only the selected employees may attempt');
+
+test('without allotment an examination behaves exactly as it always has', () => {
+  // The default, and the state of every examination before migration_v24.
+  assert.strictEqual(eligible(EX(), REG()), true);
+  assert.strictEqual(eligible(EX({ allotment_mode: 'ALL' }), REG()), true);
+});
+
+test('a SELECTED examination admits an allotted employee', () => {
+  assert.strictEqual(
+    eligible(EX({ allotment_mode: 'SELECTED', allottedToMe: true }), REG()), true);
+});
+
+test('a SELECTED examination refuses everybody not allotted', () => {
+  assert.strictEqual(
+    eligible(EX({ allotment_mode: 'SELECTED', allottedToMe: false }), REG()), false);
+});
+
+test('SELECTED with nobody allotted admits nobody — never everybody', () => {
+  // The dangerous reading: an empty list is "none chosen yet", and must not
+  // be mistaken for "no restriction".
+  assert.strictEqual(
+    eligible(EX({ allotment_mode: 'SELECTED' }), REG()), false);
+  assert.strictEqual(
+    eligible(EX({ allotment_mode: 'SELECTED', allottedToMe: undefined }), REG()), false);
+  assert.strictEqual(
+    eligible(EX({ allotment_mode: 'SELECTED', allottedToMe: null }), REG()), false);
+});
+
+test('anything short of an explicit true is not an allotment', () => {
+  // A failure to load allotments must shut the examination, not open it.
+  for (const v of [0, '', 'true', 'yes', 1, {}, []]) {
+    assert.strictEqual(
+      eligible(EX({ allotment_mode: 'SELECTED', allottedToMe: v }), REG()), false,
+      JSON.stringify(v) + ' must not count as allotted');
+  }
+});
+
+test('the allotment overrides the office rule in both directions', () => {
+  // Allotted but in the "wrong" office: the list wins, so they sit it.
+  assert.strictEqual(eligible(EX({
+    allotment_mode: 'SELECTED', allottedToMe: true,
+    eligible_offices: ['Kulittalai H.O'],
+  }), REG()), true);
+  // In the right office but not allotted: the list wins, so they do not.
+  assert.strictEqual(eligible(EX({
+    allotment_mode: 'SELECTED', allottedToMe: false,
+    eligible_offices: ['Karur H.O'],
+  }), REG()), false);
+});
+
+test('the mode is read whatever its case, and an unknown mode is not a restriction', () => {
+  assert.strictEqual(
+    eligible(EX({ allotment_mode: 'selected', allottedToMe: false }), REG()), false);
+  // A value the schema check would reject anyway: treated as open, which is
+  // the pre-migration behaviour rather than a silent lock-out.
+  assert.strictEqual(
+    eligible(EX({ allotment_mode: 'SOMETHING_ELSE' }), REG()), true);
+});
+
+test('an unallotted employee is refused by the gate, and told it is by allotment', () => {
+  const g = examGate(EX({ allotment_mode: 'SELECTED', allottedToMe: false }), REG(), [], NOW);
+  assert.strictEqual(g.canStart, false);
+  assert.strictEqual(g.phase, 'NOT_ELIGIBLE');
+  assert.match(g.reason, /allotted/i);
+});
+
+test('an allotted employee passes the gate and may start', () => {
+  const g = examGate(EX({ allotment_mode: 'SELECTED', allottedToMe: true }), REG(), [], NOW);
+  assert.strictEqual(g.canStart, true);
+  assert.strictEqual(g.phase, 'OPEN');
+});
+
+test('allotment does not bypass approval, the window or the attempt limit', () => {
+  // Being on the list is permission to sit the paper, not permission to
+  // ignore everything else.
+  assert.strictEqual(examGate(EX({ allotment_mode: 'SELECTED', allottedToMe: true }),
+    REG({ status: 'PENDING' }), [], NOW).canStart, false);
+  assert.strictEqual(examGate(EX({ allotment_mode: 'SELECTED', allottedToMe: true,
+    exam_open_ms: NOW + HOUR, exam_close_ms: NOW + 2 * HOUR }), REG(), [], NOW).canStart, false);
+  assert.strictEqual(examGate(EX({ allotment_mode: 'SELECTED', allottedToMe: true }),
+    REG(), [{ status: 'SUBMITTED' }], NOW).canStart, false);
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   QUESTION SET SCOPE
+   A question belongs either to one examination or to the shared bank, and
+   every list, upload, edit and deletion is filtered by that. A mistake here
+   would put one test's paper into another's — or, worse, quietly widen an
+   upload meant for a single examination into the bank every examination
+   draws on. The filter is therefore pinned down exactly.
+   ═══════════════════════════════════════════════════════════════════ */
+group('Question set scope — normaliseScope / scopeFilter / scopeExamId');
+
+const { normaliseScope, scopeFilter, scopeExamId } = admin._internals;
+const EXAM = '7f1c9a52-0000-4000-8000-000000000001';
+
+test('an absent, blank or ALL scope means every set together', () => {
+  assert.strictEqual(normaliseScope(undefined), 'ALL');
+  assert.strictEqual(normaliseScope(null), 'ALL');
+  assert.strictEqual(normaliseScope(''), 'ALL');
+  assert.strictEqual(normaliseScope('  '), 'ALL');
+  assert.strictEqual(normaliseScope('all'), 'ALL');
+  assert.strictEqual(normaliseScope('All'), 'ALL');
+});
+
+test('SHARED is recognised whatever its case, and is not read as an exam id', () => {
+  assert.strictEqual(normaliseScope('SHARED'), 'SHARED');
+  assert.strictEqual(normaliseScope('shared'), 'SHARED');
+  assert.strictEqual(normaliseScope(' Shared '), 'SHARED');
+});
+
+test('anything else is an examination id, carried through untouched', () => {
+  assert.strictEqual(normaliseScope(EXAM), EXAM);
+  assert.strictEqual(normaliseScope(' ' + EXAM + ' '), EXAM);
+});
+
+test('ALL filters nothing — the combined view really is every question', () => {
+  assert.strictEqual(scopeFilter('ALL'), '');
+});
+
+test('SHARED selects only unowned questions, never one belonging to a test', () => {
+  // `is.null` and not `eq.null`: PostgREST treats the two differently, and
+  // eq.null would match nothing at all, silently emptying the shared bank.
+  assert.strictEqual(scopeFilter('SHARED'), '&exam_id=is.null');
+});
+
+test('an examination scope selects that examination alone', () => {
+  assert.strictEqual(scopeFilter(EXAM), '&exam_id=' + Q.eq(EXAM));
+  assert.ok(scopeFilter(EXAM).includes(EXAM));
+});
+
+test('rows saved into ALL or SHARED are unowned; into an examination, owned by it', () => {
+  // This is the line that keeps an upload meant for one test out of the
+  // shared bank, and vice versa.
+  assert.strictEqual(scopeExamId('ALL'), null);
+  assert.strictEqual(scopeExamId('SHARED'), null);
+  assert.strictEqual(scopeExamId(EXAM), EXAM);
+});
+
+test('a scope filter is appendable to a query without colliding with it', () => {
+  // Every caller concatenates this onto an existing query string, so it has
+  // to start with its own separator and carry no stray one.
+  for (const s of ['SHARED', EXAM]) {
+    const f = scopeFilter(s);
+    assert.ok(f.startsWith('&'), s + ' must start with &');
+    assert.ok(!f.endsWith('&'), s + ' must not end with &');
+    assert.ok(!f.includes('?'), s + ' must not contain a query separator');
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════════════
    CONFIGURATION GUARD
    ═══════════════════════════════════════════════════════════════════ */
 group('Configuration guard');
