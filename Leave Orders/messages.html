@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<script src="/leave-orders/auth-guard.js"></script>
+<title>Message — Karur SDO</title>
+<script defer src="/leave-orders/supabase-sync.js"></script>
+<link rel="stylesheet" href="/leave-orders/liquid-glass.css?v=6">
+<script src="/leave-orders/liquid-glass.js?v=6"></script>
+<style>
+  /* Liquid Glass tokens throughout — the thread and composer are the same
+     material as the rest of the portal, in both light and dark. */
+  body { margin: 0; }
+
+  #thread {
+    display: flex; flex-direction: column; gap: 8px;
+    /* Clear the floating composer, which itself floats above the tab bar. */
+    padding: 12px 14px calc(
+      var(--ksd-nav-h, 0px) + var(--ksd-nav-gap, 0px) * 2
+      + var(--ksd-safe-bottom, 0px) + 72px
+    );
+    max-width: 720px; margin: 0 auto;
+  }
+
+  .day {
+    align-self: center;
+    margin: 10px 0 2px;
+    padding: 5px 13px;
+    border-radius: var(--lg-r-pill);
+    font-size: 10.5px; font-weight: 700; letter-spacing: .5px;
+    color: var(--lg-ink-3);
+    background: var(--lg-mat-lo);
+    box-shadow: inset 0 0 0 1px var(--lg-rim);
+    -webkit-backdrop-filter: var(--lg-filter-thin, blur(16px) saturate(190%));
+    backdrop-filter: var(--lg-filter-thin, blur(16px) saturate(190%));
+  }
+
+  .msg {
+    max-width: 84%;
+    align-self: flex-start;
+    padding: 10px 14px;
+    color: var(--lg-ink);
+    border-radius: var(--lg-r-md);
+    border-bottom-left-radius: var(--lg-r-xs);
+    background-color: var(--lg-mat);
+    background-image: var(--lg-sheet);
+    -webkit-backdrop-filter: var(--lg-filter);
+    backdrop-filter: var(--lg-filter);
+    box-shadow: var(--lg-edge), var(--lg-shadow-1);
+  }
+  /* My own messages are the accent-lit pane of the same material. */
+  .msg.mine {
+    align-self: flex-end;
+    border-bottom-left-radius: var(--lg-r-md);
+    border-bottom-right-radius: var(--lg-r-xs);
+    background-color: var(--lg-accent-soft);
+    background-image: var(--lg-sheet);
+  }
+  .msg .who { font-size: 10.5px; font-weight: 700; letter-spacing: .4px; color: var(--lg-accent); margin-bottom: 3px; }
+  .msg .txt { font-size: 14.5px; line-height: 21px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .msg .at { font-size: 10px; color: var(--lg-ink-3); text-align: right; margin-top: 3px; }
+
+  #empty { text-align: center; color: var(--lg-ink-3); padding: 56px 16px; font-size: 14.5px; }
+
+  /* Composer — a floating glass slab above the tab bar, lifted by the keyboard. */
+  #composer {
+    position: fixed;
+    left: var(--ksd-nav-gap, 10px);
+    right: var(--ksd-nav-gap, 10px);
+    bottom: calc(
+      var(--ksd-nav-h, 0px) + var(--ksd-nav-gap, 0px) * 2
+      + var(--ksd-safe-bottom, 0px) + var(--kb, 0px) + 6px
+    );
+    z-index: 800;
+    display: flex; gap: 8px; align-items: flex-end;
+    padding: 6px;
+    border-radius: var(--lg-r-xl);
+    background-color: var(--lg-mat-thick);
+    background-image: var(--lg-sheet);
+    -webkit-backdrop-filter: var(--lg-filter-thick, blur(48px) saturate(190%));
+    backdrop-filter: var(--lg-filter-thick, blur(48px) saturate(190%));
+    box-shadow: var(--lg-edge), var(--lg-shadow-3);
+    transition: bottom var(--lg-t-fast) var(--lg-glide);
+  }
+  #composer textarea {
+    flex: 1; resize: none; max-height: 120px; min-height: 42px;
+    /* 16px keeps iOS from zooming the page when the field takes focus. */
+    font: 400 16px/21px inherit;
+    font-family: inherit;
+    padding: 10px 14px;
+    border: none;
+    border-radius: var(--lg-r-lg);
+    background: var(--lg-mat-lo);
+    box-shadow: inset 0 0 0 1px var(--lg-rim);
+    color: var(--lg-ink);
+  }
+  #composer textarea::placeholder { color: var(--lg-ink-3); }
+  #composer textarea:focus { outline: none; box-shadow: inset 0 0 0 1px var(--lg-accent); }
+  #send {
+    flex: none; width: 44px; height: 44px;
+    border: none; border-radius: 50%;
+    background: var(--lg-accent); color: #fff;
+    display: grid; place-items: center;
+    transition: opacity var(--lg-t-base) var(--lg-glide), transform var(--lg-t-fast) var(--lg-spring);
+  }
+  #send:active { transform: scale(.92); }
+  #send:disabled { opacity: .4; }
+  #send svg { width: 21px; height: 21px; fill: currentColor; }
+
+  @media (min-width: 901px) {
+    /* No app chrome on desktop, so the composer sits at the page bottom. */
+    #composer { left: 0; right: 0; bottom: 0; max-width: 720px; margin: 0 auto; border-radius: var(--lg-r-xl) var(--lg-r-xl) 0 0; }
+    #thread { padding-top: 16px; }
+  }
+</style>
+
+<!-- ksd-pwa — installable Karur SDO app: manifest, iPhone home-screen, Liquid Glass shell -->
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#06080f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Karur SDO" />
+<link rel="apple-touch-icon" href="/assets/pwa/icon-180.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png" />
+<link rel="stylesheet" href="/leave-orders/pwa/android-shell.css?v=6" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1320x2868.png" media="(device-width:440px) and (device-height:956px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1206x2622.png" media="(device-width:402px) and (device-height:874px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1290x2796.png" media="(device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1179x2556.png" media="(device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1284x2778.png" media="(device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1170x2532.png" media="(device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1125x2436.png" media="(device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1242x2688.png" media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-828x1792.png" media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-750x1334.png" media="(device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1242x2208.png" media="(device-width:414px) and (device-height:736px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-640x1136.png" media="(device-width:320px) and (device-height:568px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" />
+<script defer src="/leave-orders/pwa/android-shell.js?v=6"></script>
+<!-- /ksd-pwa -->
+</head>
+<body data-ksd-title="Message">
+
+<div id="thread" aria-live="polite"></div>
+<div id="empty" hidden>No messages yet. Say hello to the division.</div>
+
+<form id="composer" autocomplete="off">
+  <textarea id="input" rows="1" placeholder="Message the division…" aria-label="Message"></textarea>
+  <button id="send" type="submit" aria-label="Send" disabled>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+  </button>
+</form>
+
+<script>
+(function () {
+  'use strict';
+
+  var POLL_MS = 5000;
+  var LS_READ = 'ksd.chat.lastRead';
+
+  var thread = document.getElementById('thread');
+  var empty = document.getElementById('empty');
+  var input = document.getElementById('input');
+  var sendBtn = document.getElementById('send');
+  var form = document.getElementById('composer');
+
+  var me = (window.AuthSession && window.AuthSession.user()) || { username: 'web', displayName: 'Web user' };
+  var seen = Object.create(null);  // id -> true, so a poll never double-renders
+  var lastCreatedAt = 0;
+  var lastDayKey = '';
+  var firstPaint = true;           // open on the newest message, like any chat app
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  function timeOf(ms) {
+    return new Date(ms).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function dayKeyOf(ms) {
+    var d = new Date(ms);
+    return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+  }
+
+  function dayLabel(ms) {
+    var d = new Date(ms);
+    var today = new Date();
+    var y = new Date(today.getTime() - 86400000);
+    if (dayKeyOf(ms) === dayKeyOf(today.getTime())) return 'Today';
+    if (dayKeyOf(ms) === dayKeyOf(y.getTime())) return 'Yesterday';
+    return d.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function atBottom() {
+    return window.innerHeight + window.scrollY >= document.body.scrollHeight - 80;
+  }
+
+  function render(rows) {
+    var stick = atBottom();
+    var added = 0;
+
+    rows.forEach(function (m) {
+      if (!m || !m.id || seen[m.id]) return;
+      seen[m.id] = true;
+      var at = Number(m.created_at) || Date.now();
+      if (at > lastCreatedAt) lastCreatedAt = at;
+
+      var key = dayKeyOf(at);
+      if (key !== lastDayKey) {
+        lastDayKey = key;
+        var sep = document.createElement('div');
+        sep.className = 'day';
+        sep.textContent = dayLabel(at);
+        thread.appendChild(sep);
+      }
+
+      var mine = m.username === me.username;
+      var el = document.createElement('div');
+      el.className = 'msg' + (mine ? ' mine' : '');
+      el.innerHTML =
+        (mine ? '' : '<div class="who">' + esc(m.display_name || m.username) + '</div>') +
+        '<div class="txt">' + esc(m.body || '') + '</div>' +
+        '<div class="at">' + timeOf(at) + '</div>';
+      thread.appendChild(el);
+      added++;
+    });
+
+    if (added) {
+      empty.hidden = true;
+      if (stick || firstPaint) {
+        // Let layout settle before measuring, or the jump lands short.
+        requestAnimationFrame(function () {
+          window.scrollTo(0, document.documentElement.scrollHeight);
+        });
+        firstPaint = false;
+      }
+    } else if (!Object.keys(seen).length) {
+      empty.hidden = false;
+    }
+    markRead();
+  }
+
+  /** This screen is the chat, so anything shown here counts as read. */
+  function markRead() {
+    if (document.visibilityState !== 'visible') return;
+    localStorage.setItem(LS_READ, String(lastCreatedAt));
+    if (window.KSD) window.KSD.setUnread(0);
+  }
+
+  async function poll() {
+    if (typeof SB === 'undefined') return;
+    try {
+      var rows = await SB.getMessages(lastCreatedAt || undefined);
+      if (rows && rows.length) render(rows);
+    } catch (e) {
+      /* offline or Supabase unreachable — the next tick tries again */
+    }
+  }
+
+  // ── Sending ─────────────────────────────────────────────────────────
+  function uuid() {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = (Math.random() * 16) | 0;
+      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+  }
+
+  input.addEventListener('input', function () {
+    sendBtn.disabled = !input.value.trim();
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+
+  input.addEventListener('keydown', function (e) {
+    // Enter sends on a physical keyboard; on a phone it should make a new line.
+    if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 900) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var text = input.value.trim();
+    if (!text || typeof SB === 'undefined') return;
+
+    var now = Date.now();
+    var row = {
+      id: uuid(),
+      username: me.username,
+      display_name: me.displayName || me.username,
+      body: text,
+      created_at: now,
+      updated_at_ms: now,
+      deleted: false,
+    };
+
+    sendBtn.disabled = true;
+    input.value = '';
+    input.style.height = 'auto';
+    render([row]); // show it immediately; the poll will not duplicate it
+
+    try {
+      await SB.postMessage(row);
+      // Tell the server to push this to everyone else. It re-reads the row and
+      // builds the text itself, so nothing here can dictate the notification.
+      if (window.KSD) window.KSD.push.notify('chat', row.id);
+    } catch (err) {
+      if (window.KSD) window.KSD.snack('Message not sent — check your connection.', 5000);
+    }
+  });
+
+  // ── Keyboard handling (iOS) ─────────────────────────────────────────
+  if (window.visualViewport) {
+    var vv = window.visualViewport;
+    var onViewport = function () {
+      var overlap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      document.documentElement.style.setProperty('--kb', overlap + 'px');
+      if (overlap > 0) window.scrollTo(0, document.body.scrollHeight);
+    };
+    vv.addEventListener('resize', onViewport);
+    vv.addEventListener('scroll', onViewport);
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') { markRead(); poll(); }
+  });
+
+  function start() {
+    poll();
+    setInterval(poll, POLL_MS);
+  }
+
+  if (document.readyState === 'complete') start();
+  else window.addEventListener('load', start);
+})();
+</script>
+</body>
+</html>
