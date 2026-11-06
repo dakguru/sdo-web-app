@@ -101,6 +101,7 @@ import com.karursdo.data.repo.PliMasterDto
 import com.karursdo.data.repo.SessionManager
 import com.karursdo.report.CpvReportMeta
 import com.karursdo.report.CpvReportPdf
+import com.karursdo.report.CpvReportXlsx
 import com.karursdo.ui.components.EmptyState
 import com.karursdo.ui.components.KsdSearchField
 import com.karursdo.ui.components.Pill
@@ -255,6 +256,13 @@ class CpvListViewModel @Inject constructor(
     /** Fetch one office's verified+pending rows across all categories (for the consolidated download). */
     suspend fun consolidated(branch: String): CpvOfficeConsolidated = repo.loadOfficeConsolidated(branch)
 
+    /** …and the same across every office this user may see, reporting office i of n as it goes. */
+    suspend fun consolidatedAll(onProgress: (Int, Int) -> Unit): CpvOfficeConsolidated {
+        val branches = _state.value.batches.map { it.branch_id ?: "" }.distinct()
+        val scope = if (_state.value.isMO) "My Allotted Offices" else "Karur Sub Division"
+        return repo.loadDivisionConsolidated(branches, scope, onProgress)
+    }
+
     fun clearMessage() { _state.value = _state.value.copy(message = null) }
 }
 
@@ -271,24 +279,53 @@ fun CpvListScreen(
     val snackHost = remember { androidx.compose.material3.SnackbarHostState() }
     var allotFor by remember { mutableStateOf<Triple<String, String, String>?>(null) }
     var downloading by remember { mutableStateOf(false) }
+    var dlProgress by remember { mutableStateOf("") }
+    var hugePdf by remember { mutableStateOf<Pair<CpvOfficeConsolidated, String>?>(null) }
 
     LaunchedEffect(state.message) {
         state.message?.let { snackHost.showSnackbar(it); vm.clearMessage() }
     }
 
-    fun runDownload(branch: String, office: String, sol: String, kind: String) {
+    // Building the file once the rows are in hand — shared by the per-office and the
+    // division-wide buttons, which differ only in how the rows were gathered.
+    suspend fun emit(data: CpvOfficeConsolidated, kind: String, excel: Boolean, fallbackOffice: String, branch: String, sol: String) {
+        val rows = if (kind == "Verified") data.verified else data.pending
+        val where = data.officeName.ifBlank { fallbackOffice }
+        if (rows.isEmpty()) { snackHost.showSnackbar("No ${kind.lowercase()} accounts in $where."); return }
+        val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            if (excel) CpvReportXlsx.generateConsolidated(context, where, kind, rows, data.wholeDivision)
+            else CpvReportPdf.generateConsolidated(
+                context, where, data.sol.ifBlank { sol }, branch, kind, rows, data.wholeDivision, data.offices
+            )
+        }
+        CpvReportPdf.open(context, file)
+    }
+
+    fun runDownload(branch: String, office: String, sol: String, kind: String, excel: Boolean) {
+        if (downloading) return
+        downloading = true
+        scope.launch {
+            runCatching { emit(vm.consolidated(branch), kind, excel, office, branch, sol) }
+                .onFailure { snackHost.showSnackbar("Could not build report: ${it.message}") }
+            downloading = false
+        }
+    }
+
+    // The division-wide one takes a request per office, so the button counts its way through;
+    // and a PDF of every unverified account in the division would run to a thousand pages, so
+    // past a point it asks first and points at the spreadsheet instead.
+    fun runDownloadAll(kind: String, excel: Boolean) {
         if (downloading) return
         downloading = true
         scope.launch {
             runCatching {
-                val data = vm.consolidated(branch)
+                val data = vm.consolidatedAll { i, n -> dlProgress = "$i/$n" }
+                dlProgress = ""
                 val rows = if (kind == "Verified") data.verified else data.pending
-                if (rows.isEmpty()) { snackHost.showSnackbar("No ${kind.lowercase()} accounts in $office."); return@runCatching }
-                val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    CpvReportPdf.generateConsolidated(context, data.officeName.ifBlank { office }, data.sol.ifBlank { sol }, branch, kind, rows)
-                }
-                CpvReportPdf.open(context, file)
+                if (!excel && rows.size > BIG_PDF_ROWS) { hugePdf = data to kind; return@runCatching }
+                emit(data, kind, excel, "Karur Sub Division", "", "")
             }.onFailure { snackHost.showSnackbar("Could not build report: ${it.message}") }
+            dlProgress = ""
             downloading = false
         }
     }
@@ -331,6 +368,15 @@ fun CpvListScreen(
             if (!state.loading && state.error == null) {
                 item { CpvScopeBanner(state) }
                 item { CpvOverviewCard(state) }
+            }
+            if (!state.loading && state.error == null && state.batches.isNotEmpty()) {
+                item {
+                    CpvConsolidatedBar(
+                        busy = downloading,
+                        progress = dlProgress,
+                        onPick = { kind, excel -> runDownloadAll(kind, excel) }
+                    )
+                }
             }
             item { KsdSearchField(query, { query = it }, "Search office, SOL ID, branch…") }
             when {
@@ -412,15 +458,14 @@ fun CpvListScreen(
                             }
                             // Per-office consolidated download (all categories)
                             HorizontalDivider(Modifier.padding(vertical = 10.dp))
-                            Text("⬇ Consolidated · all categories", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("⬇ All ${items.size} categories together", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.height(6.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(onClick = { runDownload(branch, g.office_name, g.sol_id ?: "", "Verified") }, enabled = !downloading, modifier = Modifier.weight(1f)) {
-                                    Icon(Icons.Rounded.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Verified")
-                                }
-                                OutlinedButton(onClick = { runDownload(branch, g.office_name, g.sol_id ?: "", "Pending") }, enabled = !downloading, modifier = Modifier.weight(1f)) {
-                                    Icon(Icons.Rounded.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Pending")
-                                }
+                            CpvDownloadPair("✓ Verified", !downloading) { excel ->
+                                runDownload(branch, g.office_name, g.sol_id ?: "", "Verified", excel)
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            CpvDownloadPair("⏳ Unverified", !downloading) { excel ->
+                                runDownload(branch, g.office_name, g.sol_id ?: "", "Unverified", excel)
                             }
                         }
                     }
@@ -428,6 +473,40 @@ fun CpvListScreen(
             }
             item { Spacer(Modifier.height(24.dp)) }
         }
+    }
+
+    // A PDF this long is slow to build and slower to open — offer the spreadsheet instead.
+    hugePdf?.let { (data, kind) ->
+        val rows = if (kind == "Verified") data.verified.size else data.pending.size
+        AlertDialog(
+            onDismissRequest = { hugePdf = null },
+            title = { Text("That is a very long PDF") },
+            text = {
+                Text("${kind.lowercase().replaceFirstChar { it.uppercase() }} accounts across " +
+                    "${data.offices} offices come to $rows rows — roughly ${(rows / 11) + 1} pages. " +
+                    "The Excel file handles this size far better.")
+            },
+            confirmButton = {
+                Button(onClick = {
+                    hugePdf = null; downloading = true
+                    scope.launch {
+                        runCatching { emit(data, kind, true, "Karur Sub Division", "", "") }
+                            .onFailure { snackHost.showSnackbar("Could not build report: ${it.message}") }
+                        downloading = false
+                    }
+                }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)) { Text("Excel instead") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    hugePdf = null; downloading = true
+                    scope.launch {
+                        runCatching { emit(data, kind, false, "Karur Sub Division", "", "") }
+                            .onFailure { snackHost.showSnackbar("Could not build report: ${it.message}") }
+                        downloading = false
+                    }
+                }) { Text("Build the PDF") }
+            }
+        )
     }
 
     // Allotment dialog (managers)
@@ -439,6 +518,43 @@ fun CpvListScreen(
             onDismiss = { allotFor = null },
             onSave = { selected -> vm.saveAllotment(branch, office, sol, selected); allotFor = null }
         )
+    }
+}
+
+/** Past this many rows a consolidated PDF stops being a sensible thing to build on a phone. */
+private const val BIG_PDF_ROWS = 4000
+
+/** One labelled pair of Excel / PDF buttons. [onPick] is called with excel = true or false. */
+@Composable
+private fun CpvDownloadPair(label: String, enabled: Boolean, onPick: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
+            modifier = Modifier.width(84.dp), maxLines = 1)
+        OutlinedButton(onClick = { onPick(true) }, enabled = enabled, modifier = Modifier.weight(1f)) { Text("Excel") }
+        OutlinedButton(onClick = { onPick(false) }, enabled = enabled, modifier = Modifier.weight(1f)) {
+            Icon(Icons.Rounded.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp)); Text("PDF")
+        }
+    }
+}
+
+/**
+ * The division-wide consolidated download — every scheme category of every office the viewer
+ * may see, in one file. While it gathers, the card shows which office it is on.
+ */
+@Composable
+private fun CpvConsolidatedBar(busy: Boolean, progress: String, onPick: (String, Boolean) -> Unit) {
+    SectionCard("⬇ Consolidated list") {
+        Text(
+            if (busy && progress.isNotBlank()) "Gathering office $progress…"
+            else "Every scheme category of every office you can see, in one file.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (busy) { Spacer(Modifier.height(8.dp)); LinearProgressIndicator(Modifier.fillMaxWidth()) }
+        Spacer(Modifier.height(10.dp))
+        CpvDownloadPair("✓ Verified", !busy) { excel -> onPick("Verified", excel) }
+        Spacer(Modifier.height(6.dp))
+        CpvDownloadPair("⏳ Unverified", !busy) { excel -> onPick("Unverified", excel) }
     }
 }
 

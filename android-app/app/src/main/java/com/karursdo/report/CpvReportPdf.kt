@@ -389,7 +389,10 @@ object CpvReportPdf {
         sol: String,
         branch: String,
         kind: String,
-        rows: List<com.karursdo.data.repo.CpvConsRow>
+        rows: List<com.karursdo.data.repo.CpvConsRow>,
+        /** Division-wide: every row names the office it came from, in a column of its own. */
+        withOffice: Boolean = false,
+        offices: Int = 1
     ): File {
         val verified = kind.equals("Verified", true)
         val serif = loadFont(context, "fonts/pala.ttf") ?: Typeface.SERIF
@@ -409,9 +412,17 @@ object CpvReportPdf {
         val footPaint = paint(MUTED, 8f, serif)
 
         val right = PAGE_W - MARGIN
-        val wSl = 24f; val wSch = 52f; val wAcct = 90f; val wName = 140f; val wType = 64f; val wBal = 76f; val wStatus = 84f
+        val wSl = 24f
+        val wOff = if (withOffice) 84f else 0f
+        val wSch = 52f
+        val wAcct = 90f
+        val wName = if (withOffice) 116f else 140f
+        val wType = if (withOffice) 52f else 64f
+        val wBal = 76f
+        val wStatus = if (withOffice) 72f else 84f
         val xSl = MARGIN
-        val xSch = xSl + wSl
+        val xOff = xSl + wSl
+        val xSch = xOff + wOff
         val xAcct = xSch + wSch
         val xName = xAcct + wAcct
         val xType = xName + wName
@@ -419,7 +430,7 @@ object CpvReportPdf {
         val xStatus = xBal + wBal
         val xExtra = xStatus + wStatus
         val wExtra = right - xExtra
-        val wVer = if (verified) 130f else wExtra
+        val wVer = if (verified) (if (withOffice) 112f else 130f) else wExtra
         val xRmk = xExtra + wVer
         val wRmk = right - xRmk
 
@@ -444,6 +455,7 @@ object CpvReportPdf {
             c.drawText("Cent Percent Verification — $kind Accounts", MARGIN, 40f, titlePaint)
             val sub = buildString {
                 append(officeName); append("   ·   All categories")
+                if (withOffice) append("   ·   $offices office(s)")
                 if (sol.isNotBlank()) append("   ·   SOL $sol")
                 if (branch.isNotBlank()) append("   ·   Branch $branch")
             }
@@ -458,6 +470,7 @@ object CpvReportPdf {
             c.drawRect(xSl, top, right, top + h, fill(NAVY_DEEP))
             val by = top + h / 2f + (-thHead.fontMetrics.ascent - thHead.fontMetrics.descent) / 2f
             c.drawText("#", xSl + CELL_PAD, by, thHead)
+            if (withOffice) c.drawText("OFFICE", xOff + CELL_PAD, by, thHead)
             c.drawText("SCHEME", xSch + CELL_PAD, by, thHead)
             c.drawText("ACCOUNT / POLICY", xAcct + CELL_PAD, by, thHead)
             c.drawText("NAME", xName + CELL_PAD, by, thHead)
@@ -484,6 +497,7 @@ object CpvReportPdf {
 
         rows.forEachIndexed { idx, r ->
             val nameLines = wrap(r.name.ifBlank { "—" }, tdBold, wName - 2 * CELL_PAD)
+            val offLines = if (withOffice) wrap(r.office.ifBlank { "—" }, tdMuted, wOff - 2 * CELL_PAD) else emptyList()
             val statusLines = wrap(r.status.ifBlank { "—" }, tdMuted, wStatus - 2 * CELL_PAD)
             val extraText = if (verified) {
                 buildString {
@@ -494,13 +508,14 @@ object CpvReportPdf {
             } else r.date.ifBlank { "—" }
             val extraLines = wrap(extraText, if (verified) tdGreen else tdMuted, wVer - 2 * CELL_PAD)
             val rmkLines = if (verified) wrap(r.remarks.ifBlank { "—" }, tdBody, wRmk - 2 * CELL_PAD) else emptyList()
-            val lines = maxOf(nameLines.size, statusLines.size, extraLines.size, rmkLines.size, 1)
+            val lines = maxOf(nameLines.size, offLines.size, statusLines.size, extraLines.size, rmkLines.size, 1)
             val rowH = lines * LINE_H + 6f
             if (y + rowH > PAGE_H - 32f) newPage()
             val c = canvas!!
             if (idx % 2 == 1) c.drawRect(xSl, y, right, y + rowH, fill(ROW_ALT))
             val baseY = y + LINE_H
             c.drawText("${idx + 1}", xSl + CELL_PAD, baseY, tdMuted)
+            offLines.forEachIndexed { i, ln -> c.drawText(ln, xOff + CELL_PAD, baseY + i * LINE_H, tdMuted) }
             c.drawText(r.scheme, xSch + CELL_PAD, baseY, tdMuted)
             c.drawText(r.acct.ifBlank { "—" }, xAcct + CELL_PAD, baseY, tdBold)
             nameLines.forEachIndexed { i, ln -> c.drawText(ln, xName + CELL_PAD, baseY + i * LINE_H, tdBold) }
@@ -569,15 +584,22 @@ object CpvReportPdf {
     fun open(context: Context, file: File) = launch(context, file, Intent.ACTION_VIEW)
     fun share(context: Context, file: File) = launch(context, file, Intent.ACTION_SEND)
 
+    /** Reports are no longer all PDFs, and a spreadsheet handed over as one opens nowhere. */
+    private fun mimeOf(file: File): String =
+        if (file.name.endsWith(".xlsx", true))
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        else "application/pdf"
+
     private fun launch(context: Context, file: File, action: String) {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val mime = mimeOf(file)
         val intent = Intent(action).apply {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             if (action == Intent.ACTION_SEND) {
-                type = "application/pdf"
+                type = mime
                 putExtra(Intent.EXTRA_STREAM, uri)
             } else {
-                setDataAndType(uri, "application/pdf")
+                setDataAndType(uri, mime)
             }
         }
         val title = if (action == Intent.ACTION_SEND) "Share report" else "Open report"

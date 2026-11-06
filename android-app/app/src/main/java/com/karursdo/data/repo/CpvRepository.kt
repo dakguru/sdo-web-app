@@ -95,6 +95,8 @@ private data class OfficeKeyDto(val office_key: String = "")
 
 /** One flattened account row for a consolidated (all-categories) office report. */
 data class CpvConsRow(
+    /** Blank for a single-office report; the office name in a division-wide one. */
+    val office: String = "",
     val scheme: String,
     val acct: String,
     val name: String,
@@ -108,13 +110,16 @@ data class CpvConsRow(
     val remarks: String = ""
 )
 
-/** Verified + pending rows for one office, across all its scheme categories. */
+/** Verified + unverified rows for one office, across all its scheme categories. */
 data class CpvOfficeConsolidated(
     val officeName: String,
     val sol: String,
     val branch: String,
     val verified: List<CpvConsRow>,
-    val pending: List<CpvConsRow>
+    val pending: List<CpvConsRow>,
+    /** True when these rows span several offices, so each one carries its office name. */
+    val wholeDivision: Boolean = false,
+    val offices: Int = 1
 )
 
 /** One per-account verification row in app_cpv_verification. */
@@ -346,21 +351,26 @@ class CpvRepository @Inject constructor(
 
     // ── Per-office consolidated download (all categories) ───────────────
 
-    /** Build verified & pending rows for one office (branch) across all its scheme categories. */
-    suspend fun loadOfficeConsolidated(branch: String): CpvOfficeConsolidated = withContext(Dispatchers.IO) {
+    /** One office's scheme lists, with their records. */
+    private suspend fun consBatches(branch: String): List<CpvFullDto> {
         val enc = java.net.URLEncoder.encode(branch, "UTF-8")
         val fullTxt = client.selectAll(
             "app_cpv",
-            "branch_id=eq.$enc&select=office_key,office_name,sol_id,branch_id,scheme,scheme_label,records&order=scheme.asc"
+            "branch_id=eq.$enc&select=office_key,office_name,sol_id,branch_id,scheme,scheme_label,records&order=office_name.asc,scheme.asc"
         ) ?: throw CpvException(client.lastError ?: "Could not reach the server.")
-        val batches = runCatching { json.decodeFromString<List<CpvFullDto>>(fullTxt) }.getOrElse { emptyList() }
-        if (batches.isEmpty()) return@withContext CpvOfficeConsolidated("", "", branch, emptyList(), emptyList())
+        return runCatching { json.decodeFromString<List<CpvFullDto>>(fullTxt) }.getOrElse { emptyList() }
+    }
 
-        // Verifications for all of this office's scheme lists (paged, keyed by office_key+acct).
+    /** A PostgREST in.(…) list of quoted office keys. */
+    private fun keysFilter(batches: List<CpvFullDto>): String =
+        java.net.URLEncoder.encode(batches.joinToString(",") { "\"" + it.office_key.replace("\"", "\"\"") + "\"" }, "UTF-8")
+
+    /** Verifications for these scheme lists, keyed office_key → acct. */
+    private suspend fun consVerifs(batches: List<CpvFullDto>): Map<String, Map<String, CpvVerifDto>> {
         val vmap = HashMap<String, MutableMap<String, CpvVerifDto>>()
+        if (batches.isEmpty()) return vmap
+        val keysEnc = keysFilter(batches)
         val page = 1000; var from = 0
-        val keysFilter = batches.joinToString(",") { "\"" + it.office_key.replace("\"", "\"\"") + "\"" }
-        val keysEnc = java.net.URLEncoder.encode(keysFilter, "UTF-8")
         while (true) {
             val vTxt = client.selectAll(
                 "app_cpv_verification",
@@ -372,13 +382,47 @@ class CpvRepository @Inject constructor(
             if (vr.size < page) break
             from += page
         }
+        return vmap
+    }
 
-        val verified = ArrayList<CpvConsRow>()
-        val pending = ArrayList<CpvConsRow>()
+    /**
+     * Policies pulled into these offices from the master pool, keyed by office_key. They count
+     * towards an office's totals on the dashboard, so a consolidated list that left them out
+     * would not add up to the figure on its own card.
+     */
+    private suspend fun consExtras(batches: List<CpvFullDto>): Map<String, List<CpvExtraDto>> {
+        val by = HashMap<String, MutableList<CpvExtraDto>>()
+        if (batches.isEmpty()) return by
+        val keysEnc = keysFilter(batches)
+        val page = 1000; var from = 0
+        while (true) {
+            val txt = client.selectAll(
+                "app_cpv_extra",
+                "office_key=in.($keysEnc)&select=office_key,policy,name,address,doe,sum_assured,verified,remarks,verified_by,verified_at_ms&limit=$page&offset=$from"
+            ) ?: break   // pool not set up on this deployment — the offices' own lists still export
+            val rows = runCatching { json.decodeFromString<List<CpvExtraDto>>(txt) }.getOrElse { emptyList() }
+            if (rows.isEmpty()) break
+            rows.forEach { by.getOrPut(it.office_key) { ArrayList() }.add(it) }
+            if (rows.size < page) break
+            from += page
+        }
+        return by
+    }
+
+    /** Split one office's lists into verified & unverified rows, appending to [verified]/[pending]. */
+    private fun consSplit(
+        batches: List<CpvFullDto>,
+        vmap: Map<String, Map<String, CpvVerifDto>>,
+        extras: Map<String, List<CpvExtraDto>>,
+        withOffice: Boolean,
+        verified: MutableList<CpvConsRow>,
+        pending: MutableList<CpvConsRow>
+    ): Pair<String, String> {
         var officeName = ""; var sol = ""
         for (b in batches) {
             officeName = b.office_name.ifBlank { officeName }
             sol = (b.sol_id ?: "").ifBlank { sol }
+            val off = if (withOffice) b.office_name else ""
             val vm = vmap[b.office_key] ?: emptyMap()
             for (r in b.records) {
                 val acct = r.acct.ifBlank { r.policy }
@@ -386,14 +430,50 @@ class CpvRepository @Inject constructor(
                 val bal = r.balance ?: r.sumAssured
                 val dt = r.date.ifBlank { r.dateRaw }.ifBlank { r.doeIso }.ifBlank { r.doeRaw }
                 if (v != null && v.verified) {
-                    verified.add(CpvConsRow(b.scheme, acct, r.name, r.address, r.type, bal, dt, r.status,
+                    verified.add(CpvConsRow(off, b.scheme, acct, r.name, r.address, r.type, bal, dt, r.status,
                         v.verified_by ?: "", v.verified_at_ms, v.remarks ?: ""))
                 } else {
-                    pending.add(CpvConsRow(b.scheme, acct, r.name, r.address, r.type, bal, dt, r.status))
+                    pending.add(CpvConsRow(off, b.scheme, acct, r.name, r.address, r.type, bal, dt, r.status))
                 }
             }
+            for (e in extras[b.office_key].orEmpty()) {
+                val row = CpvConsRow(off, b.scheme, e.policy, e.name, e.address, "", e.sum_assured, e.doe, "From master pool",
+                    e.verified_by ?: "", e.verified_at_ms, e.remarks ?: "")
+                if (e.verified) verified.add(row) else pending.add(row.copy(verifiedBy = "", verifiedAtMs = null, remarks = ""))
+            }
         }
+        return officeName to sol
+    }
+
+    /** Build verified & unverified rows for one office (branch) across all its scheme categories. */
+    suspend fun loadOfficeConsolidated(branch: String): CpvOfficeConsolidated = withContext(Dispatchers.IO) {
+        val batches = consBatches(branch)
+        if (batches.isEmpty()) return@withContext CpvOfficeConsolidated("", "", branch, emptyList(), emptyList())
+        val vmap = consVerifs(batches)
+        val extras = consExtras(batches)
+        val verified = ArrayList<CpvConsRow>(); val pending = ArrayList<CpvConsRow>()
+        val (officeName, sol) = consSplit(batches, vmap, extras, false, verified, pending)
         CpvOfficeConsolidated(officeName, sol, branch, verified, pending)
+    }
+
+    /**
+     * …and the same across every office the viewer may see, one office at a time so no single
+     * response has to carry the whole division's records. [onProgress] reports office i of n.
+     */
+    suspend fun loadDivisionConsolidated(
+        branches: List<String>,
+        scopeName: String,
+        onProgress: (Int, Int) -> Unit = { _, _ -> }
+    ): CpvOfficeConsolidated = withContext(Dispatchers.IO) {
+        val verified = ArrayList<CpvConsRow>(); val pending = ArrayList<CpvConsRow>()
+        branches.forEachIndexed { i, branch ->
+            onProgress(i + 1, branches.size)
+            val batches = consBatches(branch)
+            if (batches.isNotEmpty()) {
+                consSplit(batches, consVerifs(batches), consExtras(batches), true, verified, pending)
+            }
+        }
+        CpvOfficeConsolidated(scopeName, "", "", verified, pending, wholeDivision = true, offices = branches.size)
     }
 
     // ── Master policy pool (app_pli_master) + per-office extras (app_cpv_extra) ──
