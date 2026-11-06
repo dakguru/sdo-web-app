@@ -68,6 +68,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -708,6 +710,48 @@ class CpvDetailViewModel @Inject constructor(
 
 private enum class VerFilter { ALL, VERIFIED, UNVERIFIED }
 
+/** How a numeric filter compares a row's value against the number(s) typed. */
+private enum class RangeMode(val label: String) { ANY("Any"), BELOW("Below"), ABOVE("Above / equal"), BETWEEN("Between") }
+
+/**
+ * One numeric range, behind the Premium paid and Months paid filters. A range only bites once
+ * it is complete (a mode plus the number(s) it needs) — a half-typed range leaves the list
+ * alone rather than emptying it. A row with no value of its own drops out of an active range.
+ */
+private data class NumRange(val mode: RangeMode = RangeMode.ANY, val lo: String = "", val hi: String = "") {
+    private val loN: Double? get() = lo.trim().toDoubleOrNull()
+    private val hiN: Double? get() = hi.trim().toDoubleOrNull()
+    val active: Boolean
+        get() = when (mode) {
+            RangeMode.ANY -> false
+            RangeMode.BETWEEN -> loN != null && hiN != null
+            else -> loN != null
+        }
+    fun matches(v: Double?): Boolean {
+        if (!active) return true
+        if (v == null) return false
+        val a = loN ?: return true
+        return when (mode) {
+            RangeMode.BELOW -> v < a
+            RangeMode.ABOVE -> v >= a
+            RangeMode.BETWEEN -> { val b = hiN ?: return true; v >= minOf(a, b) && v <= maxOf(a, b) }
+            RangeMode.ANY -> true
+        }
+    }
+    fun matches(v: Int?): Boolean = matches(v?.toDouble())
+    /** The button's face: the plain name while idle, the range itself once it is set. */
+    fun chipLabel(name: String, money: Boolean): String {
+        val fmt = { t: String -> t.trim().toDoubleOrNull()?.let { if (money) inr(it) else it.toLong().toString() } ?: t.trim() }
+        if (!active) return name
+        return when (mode) {
+            RangeMode.BELOW -> "$name < ${fmt(lo)}"
+            RangeMode.ABOVE -> "$name \u2265 ${fmt(lo)}"
+            RangeMode.BETWEEN -> "$name ${fmt(lo)}\u2013${fmt(hi)}"
+            RangeMode.ANY -> name
+        }
+    }
+}
+
 @Composable
 fun CpvDetailScreen(
     officeKey: String,
@@ -723,6 +767,10 @@ fun CpvDetailScreen(
     var query by remember { mutableStateOf("") }
     var statusFilter by remember { mutableStateOf<String?>(null) }
     var verFilter by remember { mutableStateOf(VerFilter.ALL) }
+    // Premium paid / Months paid ranges — insurance lists only.
+    var premRange by remember { mutableStateOf(NumRange()) }
+    var monRange by remember { mutableStateOf(NumRange()) }
+    var rangeDialog by remember { mutableStateOf<String?>(null) }   // "prem" | "mon" | null
     val selection = remember { mutableStateListOf<String>() }
     var bulkRemark by remember { mutableStateOf("") }
     var remarkDialogFor by remember { mutableStateOf<CpvAccount?>(null) }
@@ -732,13 +780,16 @@ fun CpvDetailScreen(
     var extraRemarkFor by remember { mutableStateOf<CpvExtraDto?>(null) }
 
     // Reset transient UI when the list changes.
-    LaunchedEffect(officeKey) { query = ""; statusFilter = null; verFilter = VerFilter.ALL; selection.clear(); bulkRemark = "" }
+    LaunchedEffect(officeKey) {
+        query = ""; statusFilter = null; verFilter = VerFilter.ALL; selection.clear(); bulkRemark = ""
+        premRange = NumRange(); monRange = NumRange()
+    }
 
     val accounts = state.accounts
     val pli = isPliScheme(state.meta?.scheme)
     val statuses = remember(accounts) { accounts.mapNotNull { it.record.status.ifBlank { null } }.distinct().sorted() }
     val q = query.trim().lowercase()
-    val filtered = remember(accounts, q, statusFilter, verFilter) {
+    val filtered = remember(accounts, q, statusFilter, verFilter, premRange, monRange) {
         accounts.filter { a ->
             if (q.isNotEmpty()) {
                 val hay = (a.record.acct + " " + a.record.name + " " + a.record.cif + " " + a.record.address).lowercase()
@@ -750,6 +801,9 @@ fun CpvDetailScreen(
                 VerFilter.UNVERIFIED -> if (a.verified) return@filter false
                 VerFilter.ALL -> {}
             }
+            // Premium paid & Months paid live only on an insurance policy row.
+            if (!premRange.matches(a.record.premium)) return@filter false
+            if (!monRange.matches(a.record.monthsPaid)) return@filter false
             true
         }
     }
@@ -766,12 +820,14 @@ fun CpvDetailScreen(
     val totalCount = accounts.size + extras.size
     val totalVerified = verifiedCount + extraVerified
     // The office search & verification filter also apply to the additional policies.
-    val extrasShown = remember(extras, q, verFilter) {
+    val extrasShown = remember(extras, q, verFilter, premRange, monRange) {
         extras.filter { e ->
             if (q.isNotEmpty()) {
                 val hay = (e.policy + " " + e.name + " " + e.address).lowercase()
                 if (!hay.contains(q)) return@filter false
             }
+            if (!premRange.matches(e.premium)) return@filter false
+            if (!monRange.matches(e.months_paid)) return@filter false
             when (verFilter) { VerFilter.VERIFIED -> e.verified; VerFilter.UNVERIFIED -> !e.verified; VerFilter.ALL -> true }
         }
     }
@@ -780,6 +836,18 @@ fun CpvDetailScreen(
     val snackHost = remember { androidx.compose.material3.SnackbarHostState() }
     LaunchedEffect(state.message) {
         state.message?.let { snackHost.showSnackbar(it); vm.clearMessage() }
+    }
+
+    // Premium paid / Months paid range sheet.
+    rangeDialog?.let { which ->
+        val isPrem = which == "prem"
+        RangeFilterDialog(
+            title = if (isPrem) "Premium paid" else "Months paid",
+            unit = if (isPrem) "\u20b9" else "months",
+            initial = if (isPrem) premRange else monRange,
+            onDismiss = { rangeDialog = null },
+            onApply = { r -> if (isPrem) premRange = r else monRange = r; rangeDialog = null }
+        )
     }
 
     androidx.compose.material3.Scaffold(
@@ -916,6 +984,22 @@ fun CpvDetailScreen(
                         )
                         // Account status doesn't apply to insurance policies.
                         if (!pli) StatusDropdown(statuses, statusFilter) { statusFilter = it }
+                    }
+                }
+                // Premium paid / Months paid ranges — a tap opens the range sheet.
+                if (pli) {
+                    item {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RangeButton(premRange.chipLabel("Premium", money = true), premRange.active) { rangeDialog = "prem" }
+                            RangeButton(monRange.chipLabel("Months", money = false), monRange.active) { rangeDialog = "mon" }
+                            if (premRange.active || monRange.active) {
+                                TextButton(onClick = { premRange = NumRange(); monRange = NumRange() }) { Text("Clear") }
+                            }
+                        }
                     }
                 }
                 // Count + select-all
@@ -1105,6 +1189,89 @@ fun CpvDetailScreen(
             }
         )
     }
+}
+
+@Composable
+private fun RangeButton(label: String, active: Boolean, onClick: () -> Unit) {
+    if (active) {
+        Button(
+            onClick = onClick,
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+        ) { Text(label, maxLines = 1) }
+    } else {
+        OutlinedButton(onClick = onClick) { Text(label, maxLines = 1) }
+    }
+}
+
+/**
+ * The range sheet behind a Premium paid / Months paid button: pick how to compare, type the
+ * number(s), apply. Apply stays shut until the range is complete, so the list is never emptied
+ * by a half-typed filter; Clear drops the range and closes.
+ */
+@Composable
+private fun RangeFilterDialog(
+    title: String,
+    unit: String,
+    initial: NumRange,
+    onDismiss: () -> Unit,
+    onApply: (NumRange) -> Unit
+) {
+    var mode by remember(initial) { mutableStateOf(initial.mode) }
+    var lo by remember(initial) { mutableStateOf(initial.lo) }
+    var hi by remember(initial) { mutableStateOf(initial.hi) }
+    val draft = NumRange(mode, lo, hi)
+    val numbers = KeyboardOptions(keyboardType = KeyboardType.Number)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    RangeMode.values().forEach { m ->
+                        FilterChip(
+                            selected = mode == m,
+                            onClick = { mode = m },
+                            label = { Text(m.label, maxLines = 1) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        )
+                    }
+                }
+                if (mode != RangeMode.ANY) {
+                    OutlinedTextField(
+                        value = lo, onValueChange = { lo = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text(if (mode == RangeMode.BETWEEN) "From ($unit)" else "Amount ($unit)") },
+                        singleLine = true, keyboardOptions = numbers, modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (mode == RangeMode.BETWEEN) {
+                    OutlinedTextField(
+                        value = hi, onValueChange = { hi = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text("To ($unit)") },
+                        singleLine = true, keyboardOptions = numbers, modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onApply(draft) },
+                enabled = mode == RangeMode.ANY || draft.active,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+            ) { Text("Apply") }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = { onApply(NumRange()) }) { Text("Clear") }
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
+        }
+    )
 }
 
 @Composable
