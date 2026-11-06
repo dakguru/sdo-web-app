@@ -489,6 +489,28 @@ html.light .field input,html.light .field select{background:#f7f8fb}
       </div>
       <div class="fg" id="fBalWrap1"><label>Amount ₹</label><input type="number" class="amt" id="fBal1" placeholder="0" min="0"></div>
       <div class="fg hidden" id="fBalWrap2"><label>and ₹</label><input type="number" class="amt" id="fBal2" placeholder="0" min="0"></div>
+      <div class="fg hidden" id="fPremModeWrap">
+        <label>Premium paid</label>
+        <select id="fPremMode">
+          <option value="">Any</option>
+          <option value="below">Below</option>
+          <option value="above">Above / equal</option>
+          <option value="between">Between</option>
+        </select>
+      </div>
+      <div class="fg hidden" id="fPremWrap1"><label>Premium ₹</label><input type="number" class="amt" id="fPrem1" placeholder="0" min="0"></div>
+      <div class="fg hidden" id="fPremWrap2"><label>and ₹</label><input type="number" class="amt" id="fPrem2" placeholder="0" min="0"></div>
+      <div class="fg hidden" id="fMonModeWrap">
+        <label>Months paid</label>
+        <select id="fMonMode">
+          <option value="">Any</option>
+          <option value="below">Below</option>
+          <option value="above">Above / equal</option>
+          <option value="between">Between</option>
+        </select>
+      </div>
+      <div class="fg hidden" id="fMonWrap1"><label>Months</label><input type="number" class="amt" id="fMon1" placeholder="0" min="0" step="1"></div>
+      <div class="fg hidden" id="fMonWrap2"><label>and</label><input type="number" class="amt" id="fMon2" placeholder="0" min="0" step="1"></div>
       <div class="filter-spacer"></div>
       <div class="fg" style="align-items:flex-end">
         <button class="btn ghost sm" id="clearFilters">✕ Clear</button>
@@ -1540,6 +1562,10 @@ function buildDetailFilters(){
   $('#fDateToLbl').textContent  =pli?'Paid upto to'  :'Last txn to';
   $('#fBalModeLbl').textContent =pli?'Sum Assured'   :'Balance';
   $('#fSearch').placeholder=pli?'Policy no / name / address':'Account no / name / address';
+  // Premium paid & Months paid exist only on an insurance policy row.
+  $('#fPremModeWrap').classList.toggle('hidden',!pli);
+  $('#fMonModeWrap').classList.toggle('hidden',!pli);
+  syncPremInputs();syncMonInputs();
   if(pli)return;                                        // no type/status options for PLI
   const types=[...new Set(state.detail.map(r=>r.type).filter(Boolean))].sort();
   const sts=[...new Set(state.detail.map(r=>r.status).filter(Boolean))].sort();
@@ -1567,10 +1593,26 @@ function currentFilters(){
     to:$('#fDateTo').value,
     balMode:$('#fBalMode').value,
     bal1:$('#fBal1').value===''?null:parseFloat($('#fBal1').value),
-    bal2:$('#fBal2').value===''?null:parseFloat($('#fBal2').value)
+    bal2:$('#fBal2').value===''?null:parseFloat($('#fBal2').value),
+    premMode:$('#fPremMode').value,
+    prem1:$('#fPrem1').value===''?null:parseFloat($('#fPrem1').value),
+    prem2:$('#fPrem2').value===''?null:parseFloat($('#fPrem2').value),
+    monMode:$('#fMonMode').value,
+    mon1:$('#fMon1').value===''?null:parseFloat($('#fMon1').value),
+    mon2:$('#fMon2').value===''?null:parseFloat($('#fMon2').value)
   };
 }
 function filteredRecords(){ return filterRecordList(state.detail); }
+// One numeric range test shared by the Premium paid and Months paid filters. With no mode
+// chosen every row passes; with one chosen a row that carries no value is filtered out.
+function inRange(v,mode,lo,hi){
+  if(!mode)return true;
+  if(v==null||isNaN(v))return false;
+  if(mode==='below') return lo!=null&&v<lo;
+  if(mode==='above') return lo!=null&&v>=lo;
+  if(mode==='between'){if(lo==null||hi==null)return false;const a=Math.min(lo,hi),b=Math.max(lo,hi);return v>=a&&v<=b;}
+  return true;
+}
 // Apply the current filter bar to an arbitrary record list (used for both the office list and,
 // for exports, the attached extra policies — so exports honour the same filters).
 function filterRecordList(list){
@@ -1597,6 +1639,9 @@ function filterRecordList(list){
       if(f.balMode==='above'&&!(f.bal1!=null&&b>=f.bal1))return false;
       if(f.balMode==='between'){if(f.bal1==null||f.bal2==null)return false;const lo=Math.min(f.bal1,f.bal2),hi=Math.max(f.bal1,f.bal2);if(b<lo||b>hi)return false;}
     }
+    // Premium paid & Months paid — insurance policies only.
+    if(pli&&!inRange(r.premium,f.premMode,f.prem1,f.prem2))return false;
+    if(pli&&!inRange(r.monthsPaid,f.monMode,f.mon1,f.mon2))return false;
     return true;
   });
 }
@@ -1737,8 +1782,10 @@ async function applyVerif(accts,changes){
   }
 }
 function clearFilters(silent){
-  ['fSearch','fType','fStatus','fVerify','fDateFrom','fDateTo','fBal1','fBal2'].forEach(id=>$('#'+id).value='');
+  ['fSearch','fType','fStatus','fVerify','fDateFrom','fDateTo','fBal1','fBal2','fPrem1','fPrem2','fMon1','fMon2'].forEach(id=>$('#'+id).value='');
   $('#fBalMode').value='';syncBalInputs();
+  $('#fPremMode').value='';syncPremInputs();
+  $('#fMonMode').value='';syncMonInputs();
   if(!silent)renderDetail();
 }
 function syncBalInputs(){
@@ -1746,6 +1793,20 @@ function syncBalInputs(){
   $('#fBalWrap1').classList.toggle('hidden',!m);
   $('#fBalWrap2').classList.toggle('hidden',m!=='between');
   $('#fBalWrap1').querySelector('label').textContent=m==='between'?'Between ₹':'Amount ₹';
+}
+// Premium paid / Months paid value boxes: shown once a mode is picked, and only while the
+// open list is an insurance one (bank accounts carry neither column).
+function syncPremInputs(){
+  const m=isPli()?$('#fPremMode').value:'';
+  $('#fPremWrap1').classList.toggle('hidden',!m);
+  $('#fPremWrap2').classList.toggle('hidden',m!=='between');
+  $('#fPremWrap1').querySelector('label').textContent=m==='between'?'Between ₹':'Premium ₹';
+}
+function syncMonInputs(){
+  const m=isPli()?$('#fMonMode').value:'';
+  $('#fMonWrap1').classList.toggle('hidden',!m);
+  $('#fMonWrap2').classList.toggle('hidden',m!=='between');
+  $('#fMonWrap1').querySelector('label').textContent=m==='between'?'Between':'Months';
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1977,7 +2038,7 @@ document.addEventListener('click',e=>{
   const card=e.target.closest('.scheme-card');if(card){openDetail(card.dataset.key);return;}
 });
 
-['fSearch','fType','fStatus','fVerify','fDateFrom','fDateTo','fBal1','fBal2'].forEach(id=>{
+['fSearch','fType','fStatus','fVerify','fDateFrom','fDateTo','fBal1','fBal2','fPrem1','fPrem2','fMon1','fMon2'].forEach(id=>{
   const el=$('#'+id);const ev=id==='fSearch'?'input':'change';
   el.addEventListener(ev,()=>{if(id==='fSearch'){clearTimeout(el._t);el._t=setTimeout(renderDetail,140);}else renderDetail();});
 });
@@ -2044,6 +2105,8 @@ $('#bkUnverify').addEventListener('click',async()=>{
 });
 $('#bkClear').addEventListener('click',()=>{state.sel.clear();renderDetail();});
 $('#fBalMode').addEventListener('change',()=>{syncBalInputs();renderDetail();});
+$('#fPremMode').addEventListener('change',()=>{syncPremInputs();renderDetail();});
+$('#fMonMode').addEventListener('change',()=>{syncMonInputs();renderDetail();});
 $('#clearFilters').addEventListener('click',()=>clearFilters(false));
 $('#pdfBtn').addEventListener('click',e=>runExport(e.currentTarget,exportPdf));
 $('#xlsBtn').addEventListener('click',e=>runExport(e.currentTarget,exportExcel));
