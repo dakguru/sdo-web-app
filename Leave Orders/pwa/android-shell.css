@@ -1,0 +1,540 @@
+/*  android-shell.css — the installable app's chrome, in Liquid Glass.
+ *  ───────────────────────────────────────────────────────────────────
+ *  Filename is historical: this is the phone app shell. It takes its STRUCTURE
+ *  from the Android app (android-app/.../ui/nav/KsdApp.kt and ui/home/HomeScreen.kt)
+ *  — a top app bar and the five tabs Home · Message · Offices · MO · Profile,
+ *  over the same home sections — and its MATERIAL entirely from liquid-glass.css.
+ *
+ *  So: no colours, radii, shadows or motion curves are invented here. Everything
+ *  is a --lg-* token, which means the shell re-tints with the rest of the portal
+ *  in light and dark, and the new screens are the same material as the 22
+ *  existing pages rather than a second design sitting on top of them.
+ *
+ *  Load order matters: liquid-glass.css must come first (it is loaded by each
+ *  page), this file last.
+ *
+ *  Scope: phones only (<= 900px). Desktop is untouched.
+ */
+
+:root {
+  --ksd-appbar-h: 54px;
+  --ksd-nav-h: 62px;
+  --ksd-safe-top: env(safe-area-inset-top, 0px);
+  --ksd-safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* The floating tab bar is inset from the screen edge, so content has to
+     clear the bar plus that inset. */
+  --ksd-nav-gap: 10px;
+}
+
+/* ── Accent palettes ──────────────────────────────────────────────────────
+   The Android app offers five appearance palettes (Theme.kt AppPalette). Here
+   each one simply re-points the design system's own accent, so every control
+   that already reads --lg-accent follows along. */
+:root[data-ksd-palette='royal_navy'] { --lg-accent: var(--lg-indigo); --lg-accent-soft: rgba(107, 110, 249, .18); }
+:root[data-ksd-palette='emerald']    { --lg-accent: var(--lg-green);  --lg-accent-soft: rgba(48, 209, 88, .18); }
+:root[data-ksd-palette='amethyst']   { --lg-accent: var(--lg-purple); --lg-accent-soft: rgba(191, 90, 242, .18); }
+:root[data-ksd-palette='sunset']     { --lg-accent: var(--lg-orange); --lg-accent-soft: rgba(255, 159, 10, .18); }
+:root[data-ksd-palette='ocean']      { --lg-accent: var(--lg-teal);   --lg-accent-soft: rgba(64, 200, 224, .18); }
+
+html[data-theme='light'][data-ksd-palette='royal_navy'] { --lg-accent: #5856d6; --lg-accent-soft: rgba(88, 86, 214, .14); }
+html[data-theme='light'][data-ksd-palette='emerald']    { --lg-accent: #1fae4a; --lg-accent-soft: rgba(31, 174, 74, .14); }
+html[data-theme='light'][data-ksd-palette='amethyst']   { --lg-accent: #a340e6; --lg-accent-soft: rgba(163, 64, 230, .14); }
+html[data-theme='light'][data-ksd-palette='sunset']     { --lg-accent: #f08c00; --lg-accent-soft: rgba(240, 140, 0, .14); }
+html[data-theme='light'][data-ksd-palette='ocean']      { --lg-accent: #109fba; --lg-accent-soft: rgba(16, 159, 186, .14); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Phones only.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  html.ksd body {
+    /* Clear the fixed app bar and the floating tab bar. */
+    padding-top: calc(var(--ksd-appbar-h) + var(--ksd-safe-top)) !important;
+    padding-bottom: calc(var(--ksd-nav-h) + var(--ksd-nav-gap) * 2 + var(--ksd-safe-bottom)) !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    min-height: 100dvh;
+    /* Behave like an app: no rubber-band under the chrome, no tap flash. */
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html.ksd { overscroll-behavior-y: none; }
+
+  /* Pages with no chrome (sign-in, the offline card) reserve no room for it. */
+  html.ksd.ksd-bare body {
+    padding-top: var(--ksd-safe-top) !important;
+    padding-bottom: var(--ksd-safe-bottom) !important;
+  }
+
+  /* A page masthead under the app bar is two titles for one screen. */
+  html.ksd .gov-header,
+  html.ksd .user-bar,
+  html.ksd .theme-toggle { display: none !important; }
+
+  /* Give full-bleed page content the phone gutter. */
+  html.ksd .wrap,
+  html.ksd .container,
+  html.ksd main {
+    max-width: none !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 12px 16px !important;
+  }
+
+  /* Chrome is not text to select or long-press. */
+  .ksd-appbar,
+  .ksd-nav { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+
+  /* ── Top app bar ────────────────────────────────────────────────────────
+     .lg-chrome material (thick glass over scrolling content). The shell
+     states its own geometry outright because 23 host pages have opinions
+     about fixed bars. */
+  .ksd-appbar {
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    z-index: 900 !important;
+    margin: 0 !important;
+    padding: var(--ksd-safe-top) 0 0 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background-color: var(--lg-mat-thick) !important;
+    background-image: var(--lg-sheet) !important;
+    -webkit-backdrop-filter: var(--lg-filter-thick, blur(48px) saturate(190%)) !important;
+    backdrop-filter: var(--lg-filter-thick, blur(48px) saturate(190%)) !important;
+    box-shadow: var(--lg-edge), var(--lg-shadow-2) !important;
+    color: var(--lg-ink) !important;
+  }
+  .ksd-appbar-row {
+    height: var(--ksd-appbar-h);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 6px;
+  }
+  .ksd-appbar-title {
+    flex: 1;
+    min-width: 0;
+    padding-left: 8px;
+    font-size: 17px !important;
+    font-weight: 650 !important;
+    letter-spacing: -0.2px !important;
+    color: var(--lg-ink) !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ksd-iconbtn {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: none;
+    background: transparent;
+    color: var(--lg-accent);
+    border-radius: var(--lg-r-pill);
+    position: relative;
+    overflow: hidden;
+    transition: background-color var(--lg-t-fast) var(--lg-glide);
+  }
+  .ksd-iconbtn svg { width: 23px; height: 23px; fill: currentColor; }
+  .ksd-iconbtn:active { background: var(--lg-accent-soft); }
+
+  /* ── Bottom tab bar ─────────────────────────────────────────────────────
+     A floating glass slab inset from the edges, the way Liquid Glass treats
+     chrome — rather than an opaque bar welded to the bottom of the screen. */
+  .ksd-nav {
+    position: fixed !important;
+    left: var(--ksd-nav-gap) !important;
+    right: var(--ksd-nav-gap) !important;
+    bottom: calc(var(--ksd-safe-bottom) + var(--ksd-nav-gap)) !important;
+    top: auto !important;
+    z-index: 900 !important;
+    display: flex !important;
+    margin: 0 !important;
+    padding: 5px !important;
+    border: none !important;
+    border-radius: var(--lg-r-xl) !important;
+    background-color: var(--lg-mat-thick) !important;
+    background-image: var(--lg-sheet) !important;
+    -webkit-backdrop-filter: var(--lg-filter-thick, blur(48px) saturate(190%)) !important;
+    backdrop-filter: var(--lg-filter-thick, blur(48px) saturate(190%)) !important;
+    box-shadow: var(--lg-edge), var(--lg-shadow-3) !important;
+  }
+  .ksd-nav a {
+    flex: 1;
+    min-width: 0;
+    height: calc(var(--ksd-nav-h) - 10px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    position: relative;
+    overflow: hidden;
+    border-radius: calc(var(--lg-r-xl) - 7px);
+    text-decoration: none;
+    background: none !important;
+    color: var(--lg-ink-3);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .2px;
+    transition:
+      color var(--lg-t-base) var(--lg-glide),
+      background-color var(--lg-t-base) var(--lg-glide);
+  }
+  .ksd-nav a svg { width: 24px; height: 24px; fill: currentColor; }
+  .ksd-nav a:active { transform: scale(.94); transition-duration: var(--lg-t-fast); }
+
+  /* The selected tab is lit glass, not a solid block. */
+  .ksd-nav a[aria-current='page'] {
+    color: var(--lg-accent);
+    background-color: var(--lg-accent-soft) !important;
+    box-shadow: inset 0 0 0 1px var(--lg-rim);
+  }
+
+  .ksd-nav-dot {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    margin-left: 5px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: var(--lg-r-pill);
+    background: var(--lg-red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+  }
+
+  /* ── Ripple ─────────────────────────────────────────────────────────── */
+  .ksd-ripple { position: relative; overflow: hidden; }
+  .ksd-ripple-ink {
+    position: absolute;
+    border-radius: 50%;
+    transform: scale(0);
+    background: currentColor;
+    opacity: .14;
+    pointer-events: none;
+    animation: ksd-ripple var(--lg-t-slow) var(--lg-smooth) forwards;
+  }
+  @keyframes ksd-ripple { to { transform: scale(2.4); opacity: 0; } }
+
+  /* ══ Screens the shell owns ══════════════════════════════════════════ */
+  .ksd-home {
+    padding: 10px 14px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  /* Long labels must not push a grid or flex track past the screen. */
+  .ksd-home > *, .ksd-quick > *, .ksd-stats > * { min-width: 0; }
+
+  /* The host pages style their own h1–h4; inside the shell's own subtree the
+     design system's scale wins. */
+  html.ksd .ksd-home h1,
+  html.ksd .ksd-home h2,
+  html.ksd .ksd-home h3,
+  html.ksd .ksd-home h4 {
+    margin: 0 !important;
+    background: none !important;
+    -webkit-text-fill-color: currentColor !important;
+    text-transform: none !important;
+  }
+
+  /* Hero — accent-tinted glass rather than a painted navy slab. */
+  .ksd-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--lg-r-lg);
+    padding: 18px;
+    color: var(--lg-ink);
+    background-color: var(--lg-mat);
+    background-image:
+      radial-gradient(520px circle at 12% -30%, var(--lg-accent-soft), transparent 62%),
+      var(--lg-sheet);
+    -webkit-backdrop-filter: var(--lg-filter);
+    backdrop-filter: var(--lg-filter);
+    box-shadow: var(--lg-edge), var(--lg-shadow-2);
+  }
+  .ksd-hero h2 {
+    font-size: 25px !important;
+    font-weight: 750 !important;
+    letter-spacing: -0.5px !important;
+    color: var(--lg-ink) !important;
+  }
+  .ksd-hero p { margin: 3px 0 0; font-size: 13px; line-height: 19px; color: var(--lg-ink-2); }
+  .ksd-hero .ksd-hero-foot {
+    margin-top: 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    color: var(--lg-ink-3);
+  }
+
+  /* Section card */
+  .ksd-section {
+    border-radius: var(--lg-r-lg);
+    padding: 16px;
+    color: var(--lg-ink);
+    background-color: var(--lg-mat);
+    background-image: var(--lg-sheet);
+    -webkit-backdrop-filter: var(--lg-filter);
+    backdrop-filter: var(--lg-filter);
+    box-shadow: var(--lg-edge), var(--lg-shadow-2);
+  }
+  .ksd-section > h3 {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: .7px !important;
+    text-transform: uppercase !important;
+    color: var(--lg-ink-3) !important;
+    margin: 0 0 10px !important;
+  }
+
+  /* Events & announcements */
+  .ksd-events {
+    border-radius: var(--lg-r-lg);
+    padding: 16px;
+    color: var(--lg-ink);
+    background-color: var(--lg-mat);
+    background-image:
+      radial-gradient(480px circle at 88% -24%, var(--lg-accent-soft), transparent 60%),
+      var(--lg-sheet);
+    -webkit-backdrop-filter: var(--lg-filter);
+    backdrop-filter: var(--lg-filter);
+    box-shadow: var(--lg-edge), var(--lg-shadow-2);
+  }
+  .ksd-events-head { display: flex; align-items: center; gap: 9px; }
+  .ksd-events-head .t { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+  .ksd-events-head .s { font-size: 10.5px; font-weight: 600; letter-spacing: .5px; color: var(--lg-ink-3); }
+  .ksd-event {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: var(--lg-r-sm);
+    background: var(--lg-mat-lo);
+    box-shadow: inset 0 0 0 1px var(--lg-rim);
+  }
+  .ksd-event.important {
+    background: var(--lg-accent-soft);
+    box-shadow: inset 0 0 0 1px var(--lg-rim-hi);
+  }
+  .ksd-event .body { flex: 1; min-width: 0; }
+  .ksd-event .title { font-size: 14px; font-weight: 600; }
+  .ksd-event .date { font-size: 11px; color: var(--lg-ink-3); }
+  .ksd-event .days {
+    flex: none;
+    padding: 5px 10px;
+    border-radius: var(--lg-r-pill);
+    background: var(--lg-mat-hi);
+    box-shadow: inset 0 0 0 1px var(--lg-rim);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--lg-ink-2);
+  }
+  .ksd-event .days.today { background: var(--lg-orange); color: #fff; box-shadow: none; }
+
+  /* Stat cards */
+  .ksd-stats { display: flex; gap: 10px; }
+  .ksd-stat {
+    flex: 1;
+    display: block;
+    text-decoration: none;
+    border-radius: var(--lg-r-md);
+    padding: 13px 15px;
+    color: var(--lg-ink);
+    background-color: var(--lg-mat);
+    background-image: var(--lg-sheet);
+    -webkit-backdrop-filter: var(--lg-filter);
+    backdrop-filter: var(--lg-filter);
+    box-shadow: var(--lg-edge), var(--lg-shadow-2);
+  }
+  .ksd-stat .l {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--lg-ink-3);
+  }
+  .ksd-stat .l .chev { color: var(--lg-accent); margin-left: 3px; }
+  .ksd-stat .n {
+    margin-top: 2px;
+    font-size: 26px;
+    font-weight: 750;
+    letter-spacing: -0.8px;
+    font-variant-numeric: tabular-nums;
+    color: var(--lg-ink);
+  }
+
+  .ksd-rowtitle {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .7px;
+    text-transform: uppercase;
+    color: var(--lg-ink-3);
+    padding: 2px 4px 0;
+  }
+
+  /* Quick access */
+  .ksd-quick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .ksd-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+    padding: 15px 8px;
+    border-radius: var(--lg-r-md);
+    text-decoration: none;
+    color: var(--lg-ink);
+    background: var(--lg-mat-lo);
+    box-shadow: inset 0 0 0 1px var(--lg-rim);
+    transition: transform var(--lg-t-base) var(--lg-spring), background-color var(--lg-t-base) var(--lg-glide);
+  }
+  .ksd-tile:active { transform: scale(.97); background: var(--lg-mat-hi); }
+  .ksd-tile .ic {
+    width: 46px;
+    height: 46px;
+    border-radius: var(--lg-r-sm);
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    background: color-mix(in srgb, var(--tile-accent, var(--lg-accent)) 18%, transparent);
+    box-shadow: inset 0 0 0 1px var(--lg-rim);
+  }
+  .ksd-tile .lb { font-size: 12px; font-weight: 600; text-align: center; line-height: 1.3; }
+
+  /* Tappable row inside a section */
+  .ksd-row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 0;
+    text-decoration: none;
+    color: var(--lg-ink);
+  }
+  .ksd-row + .ksd-row { border-top: 1px solid var(--lg-rim); }
+  .ksd-row .body { flex: 1; min-width: 0; }
+  .ksd-row .body .t { font-size: 14.5px; }
+  .ksd-row .body .s { font-size: 11.5px; color: var(--lg-ink-3); }
+  .ksd-row .chev { color: var(--lg-ink-3); font-size: 18px; }
+
+  /* Segmented control (Appearance) */
+  .ksd-chips { display: flex; gap: 6px; padding: 4px; border-radius: var(--lg-r-pill); background: var(--lg-mat-lo); box-shadow: inset 0 0 0 1px var(--lg-rim); }
+  .ksd-chip {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--lg-ink-2);
+    border-radius: var(--lg-r-pill);
+    padding: 8px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: background-color var(--lg-t-base) var(--lg-glide), color var(--lg-t-base) var(--lg-glide);
+  }
+  .ksd-chip[aria-pressed='true'] {
+    background: var(--lg-mat-hi);
+    color: var(--lg-ink);
+    box-shadow: var(--lg-edge), var(--lg-shadow-1);
+  }
+
+  /* Palette swatches */
+  .ksd-swatches { display: flex; gap: 10px; margin-top: 10px; }
+  .ksd-swatch {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 2px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+  }
+  .ksd-swatch .dot {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 17px;
+    line-height: 1;
+    box-shadow: inset 0 0 0 1px var(--lg-rim-hi), var(--lg-shadow-1);
+    transition: transform var(--lg-t-base) var(--lg-spring);
+  }
+  .ksd-swatch[aria-pressed='true'] .dot {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 2px var(--lg-canvas), 0 0 0 4px var(--sw, var(--lg-accent)), var(--lg-shadow-2);
+  }
+  .ksd-swatch .nm { font-size: 10px; font-weight: 600; letter-spacing: .2px; color: var(--lg-ink-3); }
+  .ksd-swatch[aria-pressed='true'] .nm { color: var(--lg-ink); }
+
+  /* ── Banners and snackbar ───────────────────────────────────────────── */
+  .ksd-banner {
+    margin: 0 0 4px;
+    padding: 14px 16px;
+    border-radius: var(--lg-r-md);
+    background-color: var(--lg-mat);
+    background-image: var(--lg-sheet);
+    -webkit-backdrop-filter: var(--lg-filter);
+    backdrop-filter: var(--lg-filter);
+    box-shadow: var(--lg-edge), var(--lg-shadow-2);
+    color: var(--lg-ink-2);
+    font-size: 13px;
+    line-height: 19px;
+  }
+  .ksd-banner b { color: var(--lg-ink); }
+  .ksd-banner > b:first-child { display: block; font-size: 14.5px; margin-bottom: 3px; }
+  .ksd-banner .acts { display: flex; gap: 8px; margin-top: 11px; }
+  .ksd-banner button {
+    border: none;
+    border-radius: var(--lg-r-pill);
+    padding: 8px 16px;
+    font: 600 13px/1 inherit;
+    font-family: inherit;
+    background: var(--lg-accent);
+    color: #fff;
+  }
+  .ksd-banner button.ghost { background: var(--lg-mat-hi); color: var(--lg-ink); box-shadow: inset 0 0 0 1px var(--lg-rim); }
+
+  .ksd-snack {
+    position: fixed;
+    left: 14px;
+    right: 14px;
+    bottom: calc(var(--ksd-nav-h) + var(--ksd-nav-gap) * 2 + var(--ksd-safe-bottom) + 8px);
+    z-index: 1200;
+    padding: 13px 16px;
+    border-radius: var(--lg-r-md);
+    background-color: var(--lg-mat-thick);
+    background-image: var(--lg-sheet);
+    -webkit-backdrop-filter: var(--lg-filter-thick, blur(48px) saturate(190%));
+    backdrop-filter: var(--lg-filter-thick, blur(48px) saturate(190%));
+    box-shadow: var(--lg-edge), var(--lg-shadow-3);
+    color: var(--lg-ink);
+    font-size: 14px;
+    animation: ksd-snack-in var(--lg-t-base) var(--lg-spring);
+  }
+  @keyframes ksd-snack-in { from { opacity: 0; transform: translateY(10px); } }
+
+  /* On a phone the Home tab IS the app's home screen, so the desktop
+     homepage's masthead, panels and link grid step aside. Hidden only — the
+     same page still renders them in full on a larger screen. */
+  html.ksd body.ksd-home-active .page-wrap { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ksd-ripple-ink,
+  .ksd-snack,
+  .ksd-tile,
+  .ksd-nav a { animation: none; transition: none; }
+}

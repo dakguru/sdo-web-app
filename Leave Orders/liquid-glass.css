@@ -360,8 +360,13 @@ body ::-webkit-scrollbar-corner { background: transparent; }
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
-  background: var(--lg-canvas) var(--lg-field);
-  transition: background var(--lg-t-slow) var(--lg-glide);
+  /* Kept as two longhands on purpose. --lg-field is a stack of several
+     gradients, and in the `background` shorthand a colour may only appear in
+     the final layer — `background: <color> <layer>, <layer>, …` is invalid, so
+     the whole declaration was being dropped and the field never painted. */
+  background-color: var(--lg-canvas);
+  background-image: var(--lg-field);
+  transition: background-color var(--lg-t-slow) var(--lg-glide);
 }
 
 .lg-backdrop::after {
@@ -610,6 +615,89 @@ html body .postal-hero {
   border-radius: var(--lg-r-xl);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), var(--lg-shadow-4);
 }
+
+/* --------------------------------------------------------- 06b mastheads */
+/* The card-family pages (employees, offices, phone directory, MO beats, PLI,
+   birthdays, retirements, sanctioned posts, arrangements, update-mobile) were
+   built around a masthead painted with --grad-brand, and set white ink on it:
+   crest row, titles, breadcrumb, status pill. That paint is gone — the shared
+   backdrop shows through instead — so the ink has to follow the theme, or the
+   masthead is white text on daylight.
+   Nothing here changes layout; it only re-points colour at the tokens.        */
+
+/* .appbar is deliberately left alone: section 06 keeps it dark in both themes
+   ("vibrancy over content") and its labels are white to suit. Only the
+   masthead below it was relying on a paint that no longer exists. */
+html body header { color: var(--lg-ink); }
+
+/* The drop shadow belonged to a solid band that no longer exists. */
+html body header { box-shadow: none; }
+
+/* header::before is the painted wash the band was built on — saturated
+   indigo/violet blooms sized for white ink. Keep the gesture, a soft bloom
+   behind the crest row, at a weight the theme's own ink can sit on. The
+   tricolour rule in header::after is identity, and stays untouched. */
+html body header::before {
+  background-image:
+    radial-gradient(880px 420px at 6% -60%, var(--lg-accent-soft), transparent 70%),
+    radial-gradient(700px 380px at 94% -40%, var(--lg-accent-soft), transparent 68%);
+  opacity: 1;
+}
+
+html body header .sub,
+html body .gov-l3 { color: var(--lg-ink-2); }
+/* The division name is emphasised inside that line and was pure white. */
+html body .gov-l3 b { color: var(--lg-ink); }
+
+/* .gov-l1 and .gov-l2 paint their text with gradients chosen for a dark
+   ground (gold, and white→periwinkle). Both vanish on a light field, so they
+   fall back to flat ink — the accent for the eyebrow, full ink for the name. */
+html body .gov-l1,
+html body .gov-l2 {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+  text-shadow: none;
+}
+html body .gov-l1 { color: var(--lg-accent); }
+html body .gov-l2 { color: var(--lg-ink); }
+
+/* Several modules give their page title the same gradient-clipped treatment.
+   Flatten it to ink wherever it sits in the masthead. */
+html body header h1,
+html body .header-module h1,
+html body .header-module .sub {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+  text-shadow: none;
+}
+html body header h1,
+html body .header-module h1 { color: var(--lg-ink); }
+html body .header-module .sub { color: var(--lg-ink-2); opacity: 1; }
+
+/* Chips and tiles that were translucent white over the painted band. */
+html body .privacy {
+  background: var(--lg-mat-lo);
+  border: 1px solid var(--lg-rim);
+  box-shadow: inset 0 1px 0 var(--lg-rim-top);
+  color: var(--lg-ink-2);
+}
+html body .header-module .logo {
+  background: var(--lg-accent-soft);
+  border: 1px solid var(--lg-rim);
+  box-shadow: inset 0 1px 0 var(--lg-rim-top);
+}
+html body .header-module { border-top: 1px solid var(--lg-rim); }
+
+/* The crest stays on its own white tile — the emblem needs it — but loses the
+   heavy shadow that was tuned for a dark band. */
+html body .gov-crest { box-shadow: var(--lg-edge), var(--lg-shadow-1); }
+
+/* A grain of white dots, for a dark band that is no longer there. */
+html body .hdr-grain { display: none; }
 
 /* ------------------------------------------------------------- 07 controls */
 /* Buttons keep whatever accent fill the module gave them; Liquid Glass adds

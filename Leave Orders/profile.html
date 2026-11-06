@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<script src="/leave-orders/auth-guard.js"></script>
+<title>Profile — Karur SDO</title>
+<link rel="stylesheet" href="/leave-orders/liquid-glass.css?v=6">
+<script src="/leave-orders/liquid-glass.js?v=6"></script>
+<style>
+  /* Only what the shell and the design system do not already provide. Every
+     value is a Liquid Glass token, so this screen re-tints with the rest of
+     the portal in light and dark instead of carrying its own palette. */
+  body { margin: 0; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+  .me { display: flex; align-items: center; gap: 14px; }
+  .me .av {
+    width: 56px; height: 56px; flex: none;
+    border-radius: var(--lg-r-md);
+    display: grid; place-items: center;
+    font-size: 20px; font-weight: 700;
+    color: var(--lg-ink);
+    background: var(--lg-accent-soft);
+    box-shadow: inset 0 0 0 1px var(--lg-rim);
+  }
+  .me .nm { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; color: var(--lg-ink); }
+  .me .rl { font-size: 10.5px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--lg-ink-3); }
+
+  .ksd-switch { display: flex; align-items: center; gap: 12px; }
+  .ksd-switch .body { flex: 1; min-width: 0; }
+  .ksd-switch .t { font-size: 14.5px; font-weight: 600; color: var(--lg-ink); }
+  .ksd-switch .s { font-size: 12.5px; line-height: 18px; color: var(--lg-ink-3); margin-top: 2px; }
+
+  .state { font-size: 12.5px; line-height: 18px; margin-top: 10px; color: var(--lg-ink-2); }
+  .state.warn { color: var(--lg-orange); }
+  .state.bad { color: var(--lg-red); }
+  .state.good { color: var(--lg-green); }
+
+  .linkrow {
+    display: block; padding: 12px 0;
+    text-decoration: none; color: var(--lg-ink);
+    font-size: 14.5px;
+    border-top: 1px solid var(--lg-rim);
+  }
+  .linkrow:first-of-type { border-top: none; }
+  .danger { color: var(--lg-red) !important; font-weight: 600; }
+
+  .ver { text-align: center; font-size: 10.5px; letter-spacing: .4px; color: var(--lg-ink-3); padding: 6px 0 2px; }
+
+  /* These are actions, not a segmented control, so they size to their label. */
+  #notifyActions { display: flex; gap: 8px; margin-top: 12px; background: none; box-shadow: none; padding: 0; }
+  #notifyActions .ksd-chip {
+    flex: none;
+    background: var(--lg-accent);
+    color: #fff;
+    box-shadow: none;
+    padding: 9px 18px;
+  }
+  #notifyActions .ksd-chip.ghost {
+    background: var(--lg-mat-hi);
+    color: var(--lg-ink);
+    box-shadow: inset 0 0 0 1px var(--lg-rim);
+  }
+</style>
+
+<!-- ksd-pwa — installable Karur SDO app: manifest, iPhone home-screen, Liquid Glass shell -->
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#06080f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Karur SDO" />
+<link rel="apple-touch-icon" href="/assets/pwa/icon-180.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png" />
+<link rel="stylesheet" href="/leave-orders/pwa/android-shell.css?v=6" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1320x2868.png" media="(device-width:440px) and (device-height:956px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1206x2622.png" media="(device-width:402px) and (device-height:874px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1290x2796.png" media="(device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1179x2556.png" media="(device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1284x2778.png" media="(device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1170x2532.png" media="(device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1125x2436.png" media="(device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1242x2688.png" media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-828x1792.png" media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-750x1334.png" media="(device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1242x2208.png" media="(device-width:414px) and (device-height:736px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-640x1136.png" media="(device-width:320px) and (device-height:568px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" />
+<script defer src="/leave-orders/pwa/android-shell.js?v=6"></script>
+<!-- /ksd-pwa -->
+</head>
+<body>
+<div class="wrap ksd-home">
+
+  <!-- Who is signed in -->
+  <section class="ksd-hero">
+    <div class="me">
+      <div class="av" id="avatar">—</div>
+      <div>
+        <div class="nm" id="displayName">—</div>
+        <div class="rl" id="role">—</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Notifications -->
+  <section class="ksd-section">
+    <h3>Notifications</h3>
+    <div class="ksd-switch">
+      <div class="body">
+        <div class="t">New messages &amp; MO programmes</div>
+        <div class="s">The same alerts the Android app sends — a new message in the staff group chat, and a new Mail Overseer tour programme.</div>
+      </div>
+    </div>
+    <div class="ksd-chips" id="notifyActions">
+      <button class="ksd-chip ksd-ripple" id="btnNotify" type="button">Turn on</button>
+      <button class="ksd-chip ghost ksd-ripple" id="btnTest" type="button" hidden>Send a test</button>
+    </div>
+    <div class="state" id="notifyState">Checking…</div>
+  </section>
+
+  <!-- Account -->
+  <section class="ksd-section">
+    <h3>Account</h3>
+    <a class="linkrow ksd-ripple" href="/user-management" id="linkUsers" hidden>👥 Manage users</a>
+    <a class="linkrow ksd-ripple" href="/update-mobile">📱 Update my mobile number</a>
+    <a class="linkrow ksd-ripple danger" href="#" id="btnLogout">Log out</a>
+  </section>
+
+  <!-- App -->
+  <section class="ksd-section">
+    <h3>App</h3>
+    <div class="ksd-switch">
+      <div class="body">
+        <div class="t" id="installTitle">Installed</div>
+        <div class="s" id="installBody">Running as an installed app.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="ver">Karur SDO · Department of Posts · Karur Sub Division</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ── Who is signed in ────────────────────────────────────────────────
+  var user = (window.AuthSession && window.AuthSession.user()) || null;
+  if (user) {
+    $('displayName').textContent = user.displayName || user.username;
+    $('role').textContent = user.role || 'USER';
+    var parts = String(user.displayName || user.username).trim().split(/\s+/).slice(0, 2);
+    $('avatar').textContent = parts.map(function (w) { return w[0].toUpperCase(); }).join('') || '?';
+    if (window.AuthSession.isAdmin()) $('linkUsers').hidden = false;
+  }
+
+  $('btnLogout').addEventListener('click', function (e) {
+    e.preventDefault();
+    if (confirm('Log out of Karur SDO on this device?')) window.AuthSession.logout();
+  });
+
+  // ── Notifications ───────────────────────────────────────────────────
+  // iOS only gives a web app the Notification API once it has been added to the
+  // Home Screen, so each state needs its own explanation rather than a dead button.
+  var btn = $('btnNotify');
+  var test = $('btnTest');
+  var state = $('notifyState');
+
+  function render() {
+    var KSD = window.KSD;
+    if (!KSD) { state.textContent = ''; return; }
+    var s = KSD.push.state();
+
+    btn.hidden = false;
+    test.hidden = true;
+    state.className = 'state';
+
+    if (s === 'needs-install') {
+      btn.hidden = true;
+      state.className = 'state warn';
+      state.textContent =
+        'To get notifications on an iPhone, add Karur SDO to your Home Screen first: ' +
+        'tap Share in Safari, then "Add to Home Screen", and open the app from there. ' +
+        'iOS does not allow notifications from a web page in the browser.';
+      return;
+    }
+    if (s === 'unsupported') {
+      btn.hidden = true;
+      state.className = 'state warn';
+      state.textContent = 'This browser cannot show notifications.';
+      return;
+    }
+    if (s === 'denied') {
+      btn.hidden = true;
+      state.className = 'state bad';
+      state.textContent = KSD.isIOS()
+        ? 'Notifications are blocked for this app. Turn them back on in iPhone Settings → Notifications → Karur SDO.'
+        : 'Notifications are blocked for this site. Allow them in your browser’s site settings, then reload.';
+      return;
+    }
+    if (s === 'on') {
+      btn.textContent = 'Turn off';
+      btn.setAttribute('aria-pressed', 'true');
+      test.hidden = false;
+      state.className = 'state good';
+      state.textContent = 'On — this device will be alerted about new messages and programmes.';
+      return;
+    }
+    btn.textContent = 'Turn on';
+    btn.setAttribute('aria-pressed', 'false');
+    state.textContent = 'Off — you will not be alerted when something new arrives.';
+  }
+
+  btn.addEventListener('click', function () {
+    var KSD = window.KSD;
+    var on = KSD.push.state() === 'on';
+    btn.disabled = true;
+    var work = on ? KSD.push.disable() : KSD.push.enable();
+    work
+      .then(function () { KSD.snack(on ? 'Notifications turned off.' : 'Notifications are on.'); })
+      .catch(function (err) { KSD.snack(err.message || 'Could not change notifications.', 5000); })
+      .then(function () { btn.disabled = false; render(); });
+  });
+
+  test.addEventListener('click', function () {
+    test.disabled = true;
+    navigator.serviceWorker.ready
+      .then(function (reg) { return reg.pushManager.getSubscription(); })
+      .then(function (sub) {
+        if (!sub) throw new Error('This device is not subscribed.');
+        return fetch('/api/push?action=test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        });
+      })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'Test failed.'); }); })
+      .then(function () { window.KSD.snack('Test sent — it should arrive in a moment.'); })
+      .catch(function (err) { window.KSD.snack(err.message || 'Test failed.', 5000); })
+      .then(function () { test.disabled = false; });
+  });
+
+  // ── Install state ───────────────────────────────────────────────────
+  function renderInstall() {
+    var KSD = window.KSD;
+    if (!KSD) return;
+    if (KSD.standalone()) {
+      $('installTitle').textContent = 'Installed';
+      $('installBody').textContent = 'Karur SDO is running as an installed app on this device.';
+    } else if (KSD.isIOS()) {
+      $('installTitle').textContent = 'Not installed';
+      $('installBody').textContent =
+        'Tap Share in Safari, then "Add to Home Screen". The app then opens full screen and can send notifications.';
+    } else {
+      $('installTitle').textContent = 'Not installed';
+      $('installBody').textContent = 'Use your browser’s "Install app" or "Add to Home screen" option.';
+    }
+  }
+
+  function boot() { render(); renderInstall(); }
+  if (window.KSD) boot();
+  else window.addEventListener('load', boot);
+})();
+</script>
+</body>
+</html>

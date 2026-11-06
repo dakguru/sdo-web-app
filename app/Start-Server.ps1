@@ -36,6 +36,9 @@ function Send-File($ctx, [string]$path, [string]$type) {
   if (-not (Test-Path $path)) { Send-Text $ctx 'Not found' 'text/plain' 404; return }
   $bytes = [System.IO.File]::ReadAllBytes($path)
   $ctx.Response.StatusCode = 200; $ctx.Response.ContentType = $type
+  # Development server: always serve what is on disk. Without this the browser
+  # heuristically caches CSS/JS and an edit appears not to have taken effect.
+  $ctx.Response.Headers['Cache-Control'] = 'no-store, must-revalidate'
   $ctx.Response.ContentLength64 = $bytes.Length
   if ($ctx.Request.HttpMethod -ne 'HEAD') { $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length) }
   $ctx.Response.OutputStream.Close()
@@ -46,6 +49,7 @@ function MimeOf([string]$p) {
     '\.js$' { 'application/javascript; charset=utf-8' }
     '\.css$' { 'text/css; charset=utf-8' }
     '\.json$' { 'application/json; charset=utf-8' }
+    '\.webmanifest$' { 'application/manifest+json; charset=utf-8' }
     '\.pdf$' { 'application/pdf' }
     '\.docx$' { 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
     '\.png$' { 'image/png' }
@@ -355,6 +359,21 @@ try {
       if ($path -eq '/cent-percent-verification' -or $path -eq '/cent-percent-verification/') { Send-File $ctx (Join-Path $root 'Leave Orders\cpv.html') (MimeOf 'index.html'); continue }
       if ($path -eq '/address-labels' -or $path -eq '/address-labels/')     { Send-File $ctx (Join-Path $root 'Leave Orders\address-labels.html') (MimeOf 'index.html'); continue }
       if ($path -eq '/test-letters' -or $path -eq '/test-letters/')         { Send-File $ctx (Join-Path $root 'Leave Orders\test-letters.html') (MimeOf 'index.html'); continue }
+      if ($path -eq '/performance' -or $path -eq '/performance/')           { Send-File $ctx (Join-Path $root 'Leave Orders\performance.html') (MimeOf 'index.html'); continue }
+      if ($path -eq '/user-management' -or $path -eq '/user-management/')   { Send-File $ctx (Join-Path $root 'Leave Orders\user-management.html') (MimeOf 'index.html'); continue }
+      if ($path -eq '/pli' -or $path -eq '/pli/')                           { Send-File $ctx (Join-Path $root 'Leave Orders\pli.html') (MimeOf 'index.html'); continue }
+      if ($path -eq '/format-corrector' -or $path -eq '/format-corrector/') { Send-File $ctx (Join-Path $root 'Leave Orders\format-corrector.html') (MimeOf 'index.html'); continue }
+      if ($path -eq '/messages' -or $path -eq '/messages/')                 { Send-File $ctx (Join-Path $root 'Leave Orders\messages.html') (MimeOf 'index.html'); continue }
+      if ($path -eq '/profile' -or $path -eq '/profile/')                   { Send-File $ctx (Join-Path $root 'Leave Orders\profile.html') (MimeOf 'index.html'); continue }
+
+      # App icons and launch images for the installable app (vercel maps /assets/*).
+      if ($path -like '/assets/*') {
+        $rel = [uri]::UnescapeDataString($path.Substring('/assets/'.Length))
+        if ($rel -match '\.\.') { Send-Text $ctx 'Bad request' 'text/plain' 400; continue }
+        $file = Join-Path $root (Join-Path 'assets' ($rel -replace '/', [IO.Path]::DirectorySeparatorChar))
+        if ((Test-Path $file) -and -not (Get-Item $file).PSIsContainer) { Send-File $ctx $file (MimeOf $file); continue }
+        Send-Text $ctx 'Not found' 'text/plain' 404; continue
+      }
 
       # Pages reference auth-guard.js by a root-relative path (e.g. from /employees
       # the browser requests /auth-guard.js); serve it from the Leave Orders folder.

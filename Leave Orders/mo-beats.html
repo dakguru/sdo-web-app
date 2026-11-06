@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <script src="auth-guard.js"></script>
 <script src="/leave-orders/karur-scope.js"></script>
 <title>Department of Posts &mdash; Mail Overseers, Karur Sub Division</title>
@@ -206,8 +206,33 @@
   @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms !important;transition-duration:.01ms !important} }
 </style>
 <!-- Liquid Glass design system -->
-<script src="/leave-orders/liquid-glass.js"></script>
-<link rel="stylesheet" href="/leave-orders/liquid-glass.css">
+<script src="/leave-orders/liquid-glass.js?v=6"></script>
+<link rel="stylesheet" href="/leave-orders/liquid-glass.css?v=6">
+
+<!-- ksd-pwa — installable Karur SDO app: manifest, iPhone home-screen, Liquid Glass shell -->
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#06080f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Karur SDO" />
+<link rel="apple-touch-icon" href="/assets/pwa/icon-180.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png" />
+<link rel="stylesheet" href="/leave-orders/pwa/android-shell.css?v=6" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1320x2868.png" media="(device-width:440px) and (device-height:956px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1206x2622.png" media="(device-width:402px) and (device-height:874px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1290x2796.png" media="(device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1179x2556.png" media="(device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1284x2778.png" media="(device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1170x2532.png" media="(device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1125x2436.png" media="(device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1242x2688.png" media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-828x1792.png" media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-750x1334.png" media="(device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-1242x2208.png" media="(device-width:414px) and (device-height:736px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
+<link rel="apple-touch-startup-image" href="/assets/pwa/launch-640x1136.png" media="(device-width:320px) and (device-height:568px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" />
+<script defer src="/leave-orders/pwa/android-shell.js?v=6"></script>
+<!-- /ksd-pwa -->
 </head>
 <body>
 
@@ -325,6 +350,7 @@
 <div id="toast"></div>
 
 <script src="/leave-orders/supabase-sync.js"></script>
+<script src="/leave-orders/mo-seed.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
    Mail Overseers — web twin of the Android MO module (ui/mo/MoScreens.kt).
@@ -351,77 +377,7 @@ const VISIT_CYCLE_MONTHS = 3;
 /** Within this many days of the due date an office counts as "due soon". */
 const DUE_SOON_DAYS = 30;
 
-/* ── beat seed, generated from android-app .../data/repo/MoBeatSeed.kt ──────
-   [serial, office name, office-master id, baseline visit dates]. Seven register
-   spellings differ from the office master and were resolved when the seed was
-   first transcribed; the ids below are the authoritative ones. */
-/* MO_I — 31 offices */
-const SEED_MO_I = [
-  [1, 'Kathalapatti', '29106813', ['2026-02-19','2026-05-19']],
-  [2, 'Emur', '29106770', ['2026-01-17','2026-04-15']],
-  [3, 'Koyampalli', '29106829', ['2026-03-10','2026-06-03']],
-  [4, 'Melapalayam', '29106857', ['2026-02-09','2026-05-11']],
-  [5, 'Puliyur', '29106933', ['2026-01-14','2026-04-13']],
-  [6, 'Somur', '29106970', ['2026-02-26','2026-05-27']],
-  [7, 'Uppidamangalam', '29106990', ['2026-03-05','2026-06-05']],
-  [8, 'Vedichipalayam', '29107002', ['2026-03-20','2026-06-29']],
-  [9, 'Veerarakkiam', '29107004', ['2026-02-16','2026-05-14']],
-  [10, 'Karuppur', '29106811', ['2026-01-07','2026-04-06']],
-  [11, 'Kattalai', '29106814', ['2026-01-30','2026-04-29']],
-  [12, 'Manavasi', '29106848', ['2026-03-07','2026-06-11']],
-  [13, 'Renganathapuram', '29106950', ['2026-02-13','2026-05-12']],
-  [14, 'Valayalkaranpudur', '29106996', ['2026-02-27','2026-05-25']],
-  [15, 'Manavadi', '29106847', ['2026-03-16','2026-06-15']],
-  [16, 'Mokkanankurichi', '29106865', ['2026-01-19','2026-04-18']],
-  [17, 'Paganatham', '29106898', ['2026-02-17','2026-05-15']],
-  [18, 'Kodangipatti', '29106821', ['2026-01-13','2026-04-10']],
-  [19, 'Appipalayam', '29106748', ['2026-03-02','2026-05-29']],
-  [20, 'Kakkavadi', '29106788', ['2026-01-22','2026-04-20']],
-  [21, 'Puthambur', '29106941', ['2026-02-05','2026-05-02']],
-  [22, 'Sukkaliyur', '29106972', ['2026-03-14','2026-06-13']],
-  [23, 'Thalapatti', '29106975', ['2026-03-26','2026-06-30']],
-  [24, 'Thoranakalpatti', '29106984', ['2026-02-24','2026-05-21']],
-  [25, 'Othaiyur', '29109278', ['2026-03-13','2026-06-08']],
-  [26, 'Nerur', '29106893', ['2026-01-02','2026-04-01']],
-  [27, 'Palaiyur', '29106899', ['2026-02-07','2026-05-05']],
-  [28, 'Panchamadevi', '29106908', ['2026-03-18','2026-06-19']],
-  [29, 'Renganathanpettai', '29106949', ['2026-01-28','2026-04-24']],
-  [30, 'Senapiratti', '29106961', ['2026-01-27','2026-04-22']],
-  [31, 'S.Vellalapatti', '29106952', ['2026-03-23','2026-06-23']],
-];
-
-/* MO_II — 29 offices */
-const SEED_MO_II = [
-  [1, 'Athur', '29106752', ['2026-03-05','2026-05-13']],
-  [2, 'Poolampalayam', '29106925', ['2026-01-02','2026-04-13']],
-  [3, 'Kuppuchipalayam', '29106834', ['2026-01-20','2026-04-15']],
-  [4, 'Vangal East', '29106998', ['2026-03-13','2026-05-18']],
-  [5, 'Minnampalli', '29106861', ['2026-02-18','2026-04-24']],
-  [6, 'Moolimangalam', '29106866', ['2026-02-23','2026-04-18']],
-  [7, 'Punnam', '29106939', ['2026-02-18','2026-07-09']],
-  [8, 'Punnam Chatram', '29106940', ['2026-02-23','2026-05-26']],
-  [9, 'Vennamalai', '29107013', ['2026-02-24','2026-07-14']],
-  [10, 'Kadaparai', '29106786', ['2026-01-06','2026-04-09']],
-  [11, 'Manmangalam', '29106853', ['2026-03-27','2026-07-02']],
-  [12, 'Nadayanur', '29106879', ['2026-02-27','2026-05-06']],
-  [13, 'Noyyal', '29106894', ['2026-01-09','2026-04-16']],
-  [14, 'Semangi', '29106959', ['2026-01-07','2026-04-07']],
-  [15, 'Vettamangalam', '29107015', ['2026-03-03','2026-05-19']],
-  [16, 'Dalavapalayam', '29106765', ['2026-02-28','2026-05-20']],
-  [17, 'East Thavittupalayam', '29106766', ['2026-02-25','2026-05-14']],
-  [18, 'Kadambankurichi', '29106785', ['2026-03-25']],
-  [19, 'Nanjaypugalur', '29106887', ['2026-03-19','2026-07-18']],
-  [20, 'Nanniyur', '29106889', ['2026-03-12','2026-07-13']],
-  [21, 'Punjaipugalur', '29106937', ['2026-03-17','2026-07-15']],
-  [22, 'Punjaithottakuruchi', '29106938', ['2026-03-26','2026-07-20']],
-  [23, 'West Orathai', '29107017', ['2026-03-07','2026-07-11']],
-  [24, 'Mudiganam', '29106867', ['2026-03-24','2026-05-21']],
-  [25, 'Pallamarudapatti', '29106904', ['2026-02-21','2026-05-05']],
-  [26, 'Pallapalayam', '29106905', ['2026-03-04','2026-05-08']],
-  [27, 'Pavithram', '29106914', ['2026-02-26','2026-04-21']],
-  [28, 'Thumbivadi', '29106986', ['2025-01-05','2026-04-06']],
-  [29, 'Viswanathapuri', '29107016', ['2025-01-12','2026-04-27']],
-];
+/* The beat seed now lives in mo-seed.js, loaded above and shared with the home screen. */
 
 const state = {
   offices: [],        // {beat, serial, name, officeId, visits[], updatedBy, updatedAt}

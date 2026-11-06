@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Offline — Karur SDO</title>
+<link rel="stylesheet" href="/leave-orders/liquid-glass.css" />
+<script src="/leave-orders/liquid-glass.js"></script>
+<link rel="stylesheet" href="/leave-orders/pwa/android-shell.css" />
+<style>
+  body { margin: 0; min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
+  .card {
+    max-width: 34ch;
+    padding: 30px 26px;
+    text-align: center;
+    border-radius: var(--lg-r-lg);
+  }
+  img { width: 88px; height: 88px; }
+  h1 { font-size: 21px; font-weight: 700; letter-spacing: -0.3px; margin: 16px 0 6px; color: var(--lg-ink); }
+  p { font-size: 14px; line-height: 21px; color: var(--lg-ink-2); margin: 0 0 20px; }
+  button {
+    border: none;
+    border-radius: var(--lg-r-pill);
+    padding: 11px 24px;
+    font: 600 14px/1 inherit;
+    font-family: inherit;
+    background: var(--lg-accent);
+    color: #fff;
+  }
+</style>
+</head>
+<body data-ksd-chrome="none">
+  <main class="card lg-glass">
+    <img src="/assets/pwa/badge-192.png" alt="" />
+    <h1>You're offline</h1>
+    <p>Karur SDO can't reach the network right now. Pages you've already opened are still available.</p>
+    <button onclick="location.reload()">Try again</button>
+  </main>
+</body>
+</html>
