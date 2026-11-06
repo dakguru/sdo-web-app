@@ -404,6 +404,21 @@ html.light .field input,html.light .field select{background:#f7f8fb}
       <input type="file" id="masterFile" accept=".csv,.xlsx,.xls,text/csv" style="display:none">
     </div>
 
+    <div class="dl-bar" id="dlBar">
+      <span class="dl-lbl">⬇ Consolidated list <span style="font-weight:600;color:var(--text-muted)">— every scheme category of <b id="dlScope">all offices</b>, in one file</span></span>
+      <span class="sp"></span>
+      <span class="dl-group ver">
+        <span class="dg-tag">✓ Verified</span>
+        <button class="btn blue sm" data-alldl="Verified|xlsx">Excel</button>
+        <button class="btn gold sm" data-alldl="Verified|pdf">PDF</button>
+      </span>
+      <span class="dl-group pen">
+        <span class="dg-tag">⏳ Unverified</span>
+        <button class="btn blue sm" data-alldl="Unverified|xlsx">Excel</button>
+        <button class="btn gold sm" data-alldl="Unverified|pdf">PDF</button>
+      </span>
+    </div>
+
     <div class="toolbar">
       <div class="search"><span>🔍</span><input id="dq" type="text" placeholder="Search office, SOL ID, branch…" autocomplete="off"></div>
       <button class="btn ghost sm" id="manageAllotBtn" style="display:none">👥 Manage allotments</button>
@@ -1405,6 +1420,19 @@ function renderDashboard(){
           <div class="og-bar"><i style="width:${pct}%"></i></div>
           <span class="pct">${pct}%</span>
         </div>
+        <div class="og-dl">
+          <span class="og-dl-lbl">⬇ All ${items.length} categories together:</span>
+          <span class="dl-group ver">
+            <span class="dg-tag">✓ Verified</span>
+            <button class="btn blue sm" data-dl="Verified|xlsx" data-branch="${esc(branch)}">Excel</button>
+            <button class="btn gold sm" data-dl="Verified|pdf" data-branch="${esc(branch)}">PDF</button>
+          </span>
+          <span class="dl-group pen">
+            <span class="dg-tag">⏳ Unverified</span>
+            <button class="btn blue sm" data-dl="Unverified|xlsx" data-branch="${esc(branch)}">Excel</button>
+            <button class="btn gold sm" data-dl="Unverified|pdf" data-branch="${esc(branch)}">PDF</button>
+          </span>
+        </div>
       </div>
       <div class="scheme-grid">`;
     for(const o of items){
@@ -2191,41 +2219,93 @@ $('#allotOverlay').addEventListener('click',e=>{if(e.target===$('#allotOverlay')
 // ─────────────────────────────────────────────────────────────
 const CONS_HEAD=['Sl.No','Scheme','Account / Policy No','Name','Address','Type','Balance / Sum Assured ₹','Last Txn / Entry','Status'];
 const CONS_HEAD_VER=CONS_HEAD.concat(['Verified By','Verified On','Remarks']);
-// Build verified & pending rows for ONE office (branch) across all its scheme categories.
-async function gatherOffice(branch){
-  const full=await SB.select('app_cpv',`branch_id=eq.${encodeURIComponent(branch)}&select=office_key,office_name,sol_id,branch_id,scheme,scheme_label,records&order=scheme.asc`);
-  const keys=(full||[]).map(o=>o.office_key);
-  let vmap={};
-  if(keys.length){
-    const inList=keys.map(k=>`"${k.replace(/"/g,'""')}"`).join(',');
-    const ver=await selectAllRows('app_cpv_verification',`office_key=in.(${encodeURIComponent(inList)})&select=office_key,acct,verified,remarks,verified_by,verified_at_ms`);
-    (ver||[]).forEach(r=>{(vmap[r.office_key]=vmap[r.office_key]||{})[String(r.acct)]=r;});
-  }
+// The division-wide sheets carry the office each row came from.
+const CONS_HEAD_ALL=['Sl.No','Office','Scheme','Account / Policy No','Name','Address','Type','Balance / Sum Assured ₹','Last Txn / Entry','Status'];
+const CONS_HEAD_ALL_VER=CONS_HEAD_ALL.concat(['Verified By','Verified On','Remarks']);
+// Verification rows for a set of office_keys, as office_key -> acct -> row.
+async function verifFor(keys){
+  const vmap={};
+  if(!keys.length)return vmap;
+  const inList=keys.map(k=>`"${k.replace(/"/g,'""')}"`).join(',');
+  const ver=await selectAllRows('app_cpv_verification',`office_key=in.(${encodeURIComponent(inList)})&select=office_key,acct,verified,remarks,verified_by,verified_at_ms`);
+  (ver||[]).forEach(r=>{(vmap[r.office_key]=vmap[r.office_key]||{})[String(r.acct)]=r;});
+  return vmap;
+}
+// Policies pulled from the master pool into these offices. They count towards an office's
+// totals on the dashboard, so a consolidated list that left them out would not add up.
+async function extrasFor(keys){
+  const by={};
+  if(!keys.length)return by;
+  const inList=keys.map(k=>`"${k.replace(/"/g,'""')}"`).join(',');
+  try{
+    const ex=await selectAllRows('app_cpv_extra',`office_key=in.(${encodeURIComponent(inList)})&select=office_key,policy,name,address,doe,sum_assured,verified,remarks,verified_by,verified_at_ms`);
+    (ex||[]).forEach(r=>{(by[r.office_key]=by[r.office_key]||[]).push(r);});
+  }catch(e){ /* pool not set up on this deployment — the office's own list still exports */ }
+  return by;
+}
+// Split one office's scheme lists into verified & unverified rows. withOffice prefixes each
+// row with the office name, for the division-wide sheets.
+function consRows(full,vmap,exBy,withOffice){
   const verified=[],pending=[]; let officeName='',sol='';
   (full||[]).forEach(o=>{
     officeName=o.office_name||officeName; sol=o.sol_id||sol;
-    const recs=Array.isArray(o.records)?o.records:[];
+    const pre=withOffice?[o.office_name||'']:[];
     const vm=vmap[o.office_key]||{};
-    recs.forEach(r=>{
-      const acct=String(r.acct||r.policy||'');
-      const vrec=vm[acct];
-      const bal=(r.balance!=null)?r.balance:(r.sumAssured!=null?r.sumAssured:null);
-      const dt=fmtTxnDate(r.date)||r.dateRaw||fmtTxnDate(r.doeIso)||r.doeRaw||'';
-      const base=[o.scheme||'',acct,r.name||'',r.address||'',r.type||'',bal==null?'':fmtAmt(bal),dt,r.status||''];
+    const put=(base,vrec)=>{
       if(vrec&&vrec.verified) verified.push(base.concat([vrec.verified_by||'',fmtVerAt(vrec.verified_at_ms)||'',vrec.remarks||'']));
       else pending.push(base);
+    };
+    (Array.isArray(o.records)?o.records:[]).forEach(r=>{
+      const acct=String(r.acct||r.policy||'');
+      const bal=(r.balance!=null)?r.balance:(r.sumAssured!=null?r.sumAssured:null);
+      const dt=fmtTxnDate(r.date)||r.dateRaw||fmtTxnDate(r.doeIso)||r.doeRaw||'';
+      put(pre.concat([o.scheme||'',acct,r.name||'',r.address||'',r.type||'',bal==null?'':fmtAmt(bal),dt,r.status||'']),vm[acct]);
+    });
+    (exBy[o.office_key]||[]).forEach(e=>{
+      const dt=fmtTxnDate(parseTxnDate(e.doe))||e.doe||'';
+      put(pre.concat([o.scheme||'',String(e.policy||''),e.name||'',e.address||'',
+        '',e.sum_assured==null?'':fmtAmt(e.sum_assured),dt,'From master pool']),e);
     });
   });
-  return {verified,pending,officeName,sol,branch};
+  return {verified,pending,officeName,sol};
+}
+// Build verified & unverified rows for ONE office (branch) across all its scheme categories.
+async function gatherOffice(branch){
+  const full=await SB.select('app_cpv',`branch_id=eq.${encodeURIComponent(branch)}&select=office_key,office_name,sol_id,branch_id,scheme,scheme_label,records&order=scheme.asc`);
+  const keys=(full||[]).map(o=>o.office_key);
+  const [vmap,exBy]=await Promise.all([verifFor(keys),extrasFor(keys)]);
+  const out=consRows(full,vmap,exBy,false);
+  return {verified:out.verified,pending:out.pending,officeName:out.officeName,sol:out.sol,branch};
+}
+// …and the same across every office this user may see, office by office so no single
+// response has to carry the whole division's records.
+async function gatherAll(onProgress){
+  const branches=[];
+  const seen=new Set();
+  visibleList().forEach(o=>{const b=String(o.branch_id||'');if(!seen.has(b)){seen.add(b);branches.push(b);}});
+  const verified=[],pending=[];
+  for(let i=0;i<branches.length;i++){
+    if(onProgress)onProgress(i+1,branches.length);
+    const full=await SB.select('app_cpv',`branch_id=eq.${encodeURIComponent(branches[i])}&select=office_key,office_name,sol_id,branch_id,scheme,scheme_label,records&order=office_name.asc,scheme.asc`);
+    const keys=(full||[]).map(o=>o.office_key);
+    const [vmap,exBy]=await Promise.all([verifFor(keys),extrasFor(keys)]);
+    const out=consRows(full,vmap,exBy,true);
+    verified.push(...out.verified); pending.push(...out.pending);
+  }
+  const scope=isMO()?'My Allotted Offices':'Karur Sub Division';
+  return {verified,pending,officeName:scope,sol:'',branch:'',offices:branches.length,all:true};
 }
 function consBaseName(kind,officeName){ return `CPV ${kind} Accounts — ${officeName||'Office'}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim(); }
+// Which header a consolidated sheet uses: with/without the Office column, with/without the
+// three verification columns that only a verified row can fill in.
+function consHead(data,isVer){ return data.all?(isVer?CONS_HEAD_ALL_VER:CONS_HEAD_ALL):(isVer?CONS_HEAD_VER:CONS_HEAD); }
 async function officeExcel(kind,data){
   if(!window.XLSXLite){toast('Excel engine unavailable.','err');return;}
   const isVer=kind==='Verified';
   const src=isVer?data.verified:data.pending;
   if(!src.length){toast(`No ${kind.toLowerCase()} accounts in ${data.officeName||'this office'}.`,'err');return;}
   const rows=src.map((row,i)=>[String(i+1)].concat(row));
-  const head=isVer?CONS_HEAD_VER:CONS_HEAD;
+  const head=consHead(data,isVer);
   const bytes=XLSXLite.build(head,rows);
   dl(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),consBaseName(kind,data.officeName)+'.xlsx');
   toast(`${kind}: ${data.officeName} — Excel ✓`,'ok');
@@ -2237,7 +2317,7 @@ async function officePdf(kind,data){
   await loadPdf();const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
   const W=doc.internal.pageSize.getWidth();
-  const head=isVer?CONS_HEAD_VER:CONS_HEAD;
+  const head=consHead(data,isVer);
   const body=src.map((row,i)=>[i+1].concat(row.map(c=>c===''?'—':c)));
   const header=()=>{
     doc.setFillColor(...CLR.green);doc.rect(0,0,W,58,'F');
@@ -2245,7 +2325,7 @@ async function officePdf(kind,data){
     doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(14);
     doc.text('Cent Percent Verification — '+kind+' Accounts',32,25);
     doc.setFont('helvetica','normal');doc.setFontSize(9);
-    doc.text(`${data.officeName||''}  ·  All categories${data.sol?'  ·  SOL '+data.sol:''}${data.branch?'  ·  Branch '+data.branch:''}`,32,42);
+    doc.text(`${data.officeName||''}  ·  All categories${data.all?'  ·  '+data.offices+' office(s)':''}${data.sol?'  ·  SOL '+data.sol:''}${data.branch?'  ·  Branch '+data.branch:''}`,32,42);
     doc.setFontSize(8.5);doc.text(kind+' accounts: '+src.length,W-32,25,{align:'right'});
     doc.text('Generated: '+new Date().toLocaleString('en-IN'),W-32,42,{align:'right'});
   };
@@ -2256,7 +2336,8 @@ async function officePdf(kind,data){
     styles:{font:'helvetica',fontSize:7.2,cellPadding:2.8,overflow:'linebreak',lineColor:[214,230,228],lineWidth:.4},
     headStyles:{fillColor:CLR.green,textColor:255,fontStyle:'bold',halign:'center',fontSize:7.4},
     alternateRowStyles:{fillColor:[240,250,248]},
-    columnStyles:{0:{halign:'center',cellWidth:24},6:{halign:'right'}},
+    columnStyles:data.all?{0:{halign:'center',cellWidth:24},1:{cellWidth:92},7:{halign:'right'}}
+                        :{0:{halign:'center',cellWidth:24},6:{halign:'right'}},
     didDrawPage:()=>{header();footer();}});
   doc.save(consBaseName(kind,data.officeName)+'.pdf');
   toast(`${kind}: ${data.officeName} — PDF ✓`,'ok');
@@ -2274,6 +2355,27 @@ async function runOfficeDl(btn){
 // Delegate the per-office download button clicks.
 $('#dashboard').addEventListener('click',e=>{
   const b=e.target.closest('[data-dl]'); if(b){ e.stopPropagation(); runOfficeDl(b); }
+});
+// …and the division-wide ones at the top of the dashboard. Gathering every office takes a
+// request per office, so the button reports how far along it is.
+async function runAllDl(btn){
+  const [kind,fmt]=String(btn.dataset.alldl).split('|');
+  if(!visibleList().length){toast('No offices stored yet.','err');return;}
+  const old=btn.textContent;btn.disabled=true;
+  try{
+    const data=await gatherAll((i,n)=>{btn.textContent=`${i}/${n}`;});
+    const src=kind==='Verified'?data.verified:data.pending;
+    if(fmt==='pdf'&&src.length>8000&&
+       !confirm(`This PDF would run to ${src.length.toLocaleString('en-IN')} rows and may take a while to build.\n\nThe Excel file handles this size far better. Build the PDF anyway?`)){
+      return;
+    }
+    btn.textContent='⏳';
+    if(fmt==='xlsx') await officeExcel(kind,data); else await officePdf(kind,data);
+  }catch(e){ toast('Could not build report: '+(e.message||''),'err'); }
+  finally{ btn.disabled=false;btn.textContent=old; }
+}
+$('#dlBar').addEventListener('click',e=>{
+  const b=e.target.closest('[data-alldl]'); if(b) runAllDl(b);
 });
 
 // ─────────────────────────────────────────────────────────────
