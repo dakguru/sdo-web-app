@@ -1,0 +1,1245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<script src="/leave-orders/auth-guard.js"></script>
+<script src="/leave-orders/karur-scope.js"></script>
+<script src="supabase-sync.js"></script>
+<script src="/leave-orders/label-engine.js?v=1"></script>
+<title>SB-46 Notice Management — Karur Sub Division</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep:#0a0e1a; --glass-bg:rgba(255,255,255,0.06); --glass-bg-hover:rgba(255,255,255,0.12);
+  --glass-border:rgba(255,255,255,0.12); --glass-border-hover:rgba(255,255,255,0.25);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.25); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.35),0 0 0 1px rgba(255,255,255,0.15);
+  --glass-blur:20px; --text-primary:#f1f5f9; --text-secondary:rgba(241,245,249,0.7); --text-muted:rgba(241,245,249,0.45);
+  --teal:#2dd4bf; --teal2:#14b8a6; --cyan:#22d3ee; --blue:#60a5fa; --indigo:#818cf8; --violet:#a78bfa;
+  --em:#34d399; --gold:#fbbf24; --gold2:#f59e0b; --rose:#fb7185; --orange:#fb923c;
+  --radius-xl:24px; --radius-lg:18px; --radius-md:14px;
+}
+html.light{
+  --bg-deep:#f0f2f7; --glass-bg:rgba(255,255,255,0.72); --glass-bg-hover:rgba(255,255,255,0.95);
+  --glass-border:rgba(0,0,0,0.08); --glass-border-hover:rgba(0,0,0,0.15);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.08); --glass-shadow-hover:0 16px 48px rgba(0,0,0,0.12),0 0 0 1px rgba(0,0,0,0.06);
+  --text-primary:#0f172a; --text-secondary:rgba(15,23,42,0.7); --text-muted:rgba(15,23,42,0.45);
+  --teal:#0d9488; --teal2:#0f766e; --cyan:#0891b2; --blue:#2563eb; --indigo:#4f46e5; --violet:#7c3aed;
+  --em:#059669; --gold:#d97706; --gold2:#b45309; --rose:#e11d48; --orange:#ea580c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-deep);color:var(--text-primary);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s,color .4s}
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(167,139,250,0.15),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(34,211,238,0.12),transparent 65%),
+  radial-gradient(ellipse 600px 420px at 55% 92%,rgba(129,140,248,0.10),transparent 60%),
+  linear-gradient(180deg,#0a0e1a,#111827 55%,#0f1729)}
+html.light .bg-mesh{background:
+  radial-gradient(ellipse 900px 600px at 12% 12%,rgba(124,58,237,0.08),transparent 70%),
+  radial-gradient(ellipse 720px 520px at 88% 18%,rgba(8,145,178,0.06),transparent 65%),
+  linear-gradient(180deg,#f0f2f7,#e8ecf5 60%,#eef1f8)}
+
+.page-wrap{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:26px 22px 70px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.back-link{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--text-secondary);font-weight:600;font-size:13.5px;
+  padding:9px 15px;border-radius:999px;background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(var(--glass-blur));transition:all .3s;cursor:pointer}
+.back-link:hover{background:var(--glass-bg-hover);color:var(--text-primary);transform:translateX(-2px)}
+.theme-toggle{width:44px;height:44px;border-radius:50%;border:1px solid var(--glass-border);cursor:pointer;background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));display:grid;place-items:center;font-size:20px;color:var(--text-primary);transition:all .3s}
+.theme-toggle:hover{background:var(--glass-bg-hover);transform:scale(1.08) rotate(12deg)}
+
+.hero{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden;backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow)}
+.hero::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#7c3aed,var(--violet),var(--cyan))}
+.hero-eyebrow{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-muted)}
+.hero-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:800;margin:6px 0 4px;
+  background:linear-gradient(135deg,var(--violet),var(--cyan) 55%,var(--indigo) 95%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:13.5px;color:var(--text-secondary);line-height:1.6;max-width:880px}
+
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:20px 0}
+@media(max-width:820px){.summary{grid-template-columns:repeat(2,1fr)}}
+.st{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:16px 16px 14px;backdrop-filter:blur(var(--glass-blur));position:relative;overflow:hidden;transition:transform .3s}
+.st:hover{transform:translateY(-3px)}
+.st::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px}
+.st.s-iss::before{background:linear-gradient(180deg,var(--violet),var(--indigo))}
+.st.s-ack::before{background:linear-gradient(180deg,var(--cyan),var(--blue))}
+.st.s-rep::before{background:linear-gradient(180deg,var(--em),var(--teal))}
+.st.s-ret::before{background:linear-gradient(180deg,var(--rose),#f43f5e)}
+.st.s-wait::before{background:linear-gradient(180deg,var(--gold),var(--orange))}
+.st .n{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:28px;font-weight:900;line-height:1}
+.st.s-iss .n{color:var(--violet)} .st.s-ack .n{color:var(--cyan)} .st.s-rep .n{color:var(--em)}
+.st.s-ret .n{color:var(--rose)} .st.s-wait .n{color:var(--gold)}
+.st .l{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-top:8px;color:var(--text-secondary)}
+
+.section-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin:26px 0 14px;display:flex;align-items:center;gap:10px}
+.section-title::before{content:'';width:4px;height:16px;border-radius:4px;background:linear-gradient(180deg,var(--violet),var(--cyan))}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px}
+.search{flex:1;min-width:200px;display:flex;align-items:center;gap:10px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:999px;padding:10px 18px;backdrop-filter:blur(var(--glass-blur))}
+.search input{flex:1;background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:14px}
+.search input::placeholder{color:var(--text-muted)}
+.btn{border:none;border-radius:12px;padding:11px 18px;font-weight:700;font-size:13px;cursor:pointer;color:#fff;font-family:inherit;
+  background:linear-gradient(135deg,#7c3aed,var(--violet));transition:all .25s;box-shadow:0 4px 16px rgba(124,58,237,.28);display:inline-flex;align-items:center;gap:8px}
+.btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:var(--glass-bg);color:var(--text-secondary);border:1px solid var(--glass-border);box-shadow:none;backdrop-filter:blur(var(--glass-blur))}
+.btn.ghost:hover{background:var(--glass-bg-hover);color:var(--text-primary)}
+.btn.teal{background:linear-gradient(135deg,var(--teal2),var(--teal));box-shadow:0 4px 16px rgba(45,212,191,.28)}
+.btn.gold{background:linear-gradient(135deg,var(--gold2),var(--gold));box-shadow:0 4px 16px rgba(251,191,36,.28)}
+.btn.blue{background:linear-gradient(135deg,#3b82f6,var(--blue));box-shadow:0 4px 16px rgba(96,165,250,.28)}
+.btn.danger{background:linear-gradient(135deg,#f43f5e,var(--rose));box-shadow:0 4px 16px rgba(251,113,133,.28)}
+.btn.sm{padding:8px 13px;font-size:12px;border-radius:10px}
+
+/* office cards */
+.office-group{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);margin-bottom:14px;backdrop-filter:blur(var(--glass-blur));overflow:hidden;box-shadow:var(--glass-shadow);animation:pop .35s both;cursor:pointer;transition:all .25s}
+.office-group:hover{background:var(--glass-bg-hover);border-color:var(--glass-border-hover);transform:translateY(-2px);box-shadow:var(--glass-shadow-hover)}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.og-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:15px 18px}
+.og-badge{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:18px;color:#fff;flex-shrink:0;background:linear-gradient(135deg,#7c3aed,var(--violet));box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.og-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:16px;line-height:1.25}
+.og-sub{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+.og-sub b{color:var(--text-secondary)}
+.og-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ov-chip{font-size:11px;font-weight:800;padding:5px 11px;border-radius:999px;white-space:nowrap}
+.ov-chip.iss{background:rgba(167,139,250,.16);color:var(--violet)}
+.ov-chip.ack{background:rgba(34,211,238,.16);color:var(--cyan)}
+.ov-chip.rep{background:rgba(52,211,153,.16);color:var(--em)}
+.ov-chip.ret{background:rgba(251,113,133,.16);color:var(--rose)}
+.ov-chip.wait{background:rgba(251,191,36,.16);color:var(--gold)}
+.ov-chip.none{background:rgba(148,163,184,.16);color:var(--text-muted)}
+.og-prog{display:flex;align-items:center;gap:9px;min-width:150px;flex:1}
+.og-bar{flex:1;height:9px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+html.light .og-bar{background:rgba(0,0,0,.07)}
+.og-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--em),var(--teal));transition:width .4s}
+.og-prog .pct{font-size:11.5px;font-weight:800;color:var(--text-secondary);min-width:34px;text-align:right}
+
+/* register view */
+.detail-head{display:flex;flex-wrap:wrap;gap:14px;align-items:center;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:16px;backdrop-filter:blur(var(--glass-blur))}
+.dh-badge{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:22px;color:#fff;background:linear-gradient(135deg,#7c3aed,var(--violet));flex-shrink:0}
+.dh-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:18px;line-height:1.2}
+.dh-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.meta-chip{font-size:11px;font-weight:700;color:var(--text-secondary);background:rgba(255,255,255,.05);border:1px solid var(--glass-border);padding:4px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:4px}
+.meta-chip b{color:var(--text-primary)}
+.dh-spacer{flex:1}
+
+.panel{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:16px;backdrop-filter:blur(var(--glass-blur))}
+.panel.raise{background:linear-gradient(135deg,rgba(124,58,237,.10),rgba(34,211,238,.05));border-color:rgba(124,58,237,.32)}
+.panel-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:13.5px;letter-spacing:.3px;color:var(--violet);margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.panel-title .pt-sub{font-weight:600;font-size:11.5px;color:var(--text-muted);letter-spacing:0}
+.fields{display:flex;flex-wrap:wrap;gap:11px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted)}
+.fg input,.fg select,.fg textarea{background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:10px;padding:8px 11px;font-family:inherit;font-size:13px;font-weight:600;outline:none;transition:border-color .2s}
+html.light .fg input,html.light .fg select,html.light .fg textarea{background:#fff}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--violet)}
+.fg input.art{width:160px;font-variant-numeric:tabular-nums;letter-spacing:.5px;text-transform:uppercase}
+.fg.grow{flex:1;min-width:160px}
+.fg.grow input,.fg.grow select,.fg.grow textarea{width:100%}
+.schemebox{display:flex;flex-wrap:wrap;gap:7px}
+.schemebox label{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-secondary);background:var(--glass-bg);border:1px solid var(--glass-border);padding:7px 11px;border-radius:999px;cursor:pointer;text-transform:none;letter-spacing:0}
+.schemebox label:hover{background:var(--glass-bg-hover)}
+.schemebox input{accent-color:var(--violet);width:15px;height:15px;cursor:pointer}
+.schemebox label.on{border-color:rgba(124,58,237,.5);background:rgba(124,58,237,.14);color:var(--text-primary)}
+.note{font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-top:12px}
+.note b{color:var(--text-primary)}
+.note.err{color:var(--rose)} .note.ok{color:var(--em)}
+.actbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:16px}
+.actbar .sp{flex:1}
+
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:14px 16px;backdrop-filter:blur(var(--glass-blur))}
+.fcount{font-size:12px;color:var(--text-muted);font-weight:600;white-space:nowrap}
+.fcount b{color:var(--violet)}
+
+.tbl-wrap{overflow-x:auto;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);backdrop-filter:blur(var(--glass-blur))}
+table.reg{width:100%;border-collapse:collapse;font-size:13px;min-width:1040px}
+table.reg th{text-align:left;font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);padding:11px 12px;border-bottom:1px solid var(--glass-border);white-space:nowrap;position:sticky;top:0;background:var(--bg-deep);z-index:1}
+html.light table.reg th{background:#eef1f6}
+table.reg td{padding:10px 12px;border-bottom:1px solid var(--glass-border);color:var(--text-secondary);vertical-align:top}
+table.reg tr:last-child td{border-bottom:none}
+table.reg tbody tr:hover td{background:rgba(255,255,255,.03)}
+.mono{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text-primary);white-space:nowrap}
+.nm{color:var(--text-primary);font-weight:600}
+.addr{max-width:250px;font-size:11.5px;line-height:1.45}
+.sch-chip{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:10.5px;padding:3px 8px;border-radius:7px;background:rgba(45,212,191,.16);color:var(--teal);border:1px solid rgba(45,212,191,.26)}
+.acct-list{font-size:11px;color:var(--text-muted);line-height:1.5;max-width:210px;word-break:break-all}
+.tbtn{border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-secondary);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:inherit;transition:all .18s;white-space:nowrap}
+.tbtn:hover{background:var(--glass-bg-hover);color:var(--text-primary)}
+.tbtn.ack.on{background:rgba(34,211,238,.18);border-color:rgba(34,211,238,.42);color:var(--cyan)}
+.tbtn.rep.on{background:rgba(52,211,153,.18);border-color:rgba(52,211,153,.42);color:var(--em)}
+.tbtn.ret.on{background:rgba(251,113,133,.18);border-color:rgba(251,113,133,.45);color:var(--rose)}
+.rsel{background:var(--bg-deep);border:1px solid rgba(251,113,133,.42);color:var(--text-primary);border-radius:8px;padding:5px 7px;font-family:inherit;font-size:11.5px;font-weight:700;outline:none;margin-top:5px;max-width:160px}
+html.light .rsel{background:#fff}
+.rmk-in{width:100%;min-width:120px;background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:12px;outline:none;transition:border-color .2s}
+html.light .rmk-in{background:#fff}
+.rmk-in:focus{border-color:var(--violet)}
+.art-in{width:148px;background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.4px;text-transform:uppercase;outline:none}
+html.light .art-in{background:#fff}
+.art-in:focus{border-color:var(--violet)}
+.art-in.bad{border-color:var(--rose)}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:14px;background:var(--glass-bg);border:1px dashed var(--glass-border);border-radius:var(--radius-lg)}
+.empty .ei{font-size:44px;display:block;margin-bottom:12px;opacity:.5}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,7,15,.62);backdrop-filter:blur(6px)}
+.modal-overlay.show{display:flex;animation:fade .2s both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{width:min(640px,100%);max-height:92vh;overflow-y:auto;background:var(--bg-deep);border:1px solid var(--glass-border-hover);border-radius:var(--radius-xl);padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.5);animation:rise .25s both}
+.modal.wide{width:min(1000px,100%)}
+html.light .modal{background:#fff}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.modal-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:19px;display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.modal-title.danger{color:var(--rose)}
+.modal-desc{font-size:12.5px;color:var(--text-muted);margin-bottom:18px;line-height:1.5}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.field{margin-bottom:13px;display:flex;flex-direction:column;gap:6px}
+.field label{font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--text-muted)}
+.field input,.field select,.field textarea{width:100%;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:11px;padding:11px 13px;font-family:inherit;font-size:13.5px;font-weight:600;outline:none;transition:border-color .2s;resize:vertical}
+html.light .field input,html.light .field select,html.light .field textarea{background:#f7f8fb}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--violet)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+.del-msg{font-size:13.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:12px}
+.del-msg b{color:var(--text-primary)}
+
+/* report builder */
+.rsec{margin:18px 0 6px;font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:11.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--violet)}
+.rsec .rs-hint{display:block;font-weight:600;font-size:11px;letter-spacing:0;text-transform:none;color:var(--text-muted);margin-top:4px}
+table.rpt{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+table.rpt th,table.rpt td{border:1px solid var(--glass-border);padding:7px 9px;text-align:center}
+table.rpt th{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);background:rgba(255,255,255,.03)}
+html.light table.rpt th{background:rgba(0,0,0,.03)}
+table.rpt td.lbl{text-align:left;color:var(--text-secondary);font-weight:600;font-size:12px}
+table.rpt td.val{font-variant-numeric:tabular-nums;font-weight:800;color:var(--text-primary);white-space:nowrap}
+table.rpt tr.tot td{background:rgba(124,58,237,.10);font-weight:900;color:var(--text-primary)}
+table.rpt input{width:70px;background:var(--bg-deep);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:7px;padding:5px 6px;font-family:inherit;font-size:12px;font-weight:700;text-align:center;outline:none;font-variant-numeric:tabular-nums}
+html.light table.rpt input{background:#fff}
+table.rpt input:focus{border-color:var(--violet)}
+table.rpt input.wide{width:100%;min-width:96px;text-align:left;font-variant-numeric:normal}
+.derived{font-size:10px;font-weight:800;letter-spacing:.3px;color:var(--em);text-transform:uppercase}
+.warnbox{background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.35);border-radius:12px;padding:11px 14px;font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-top:12px}
+.warnbox b{color:var(--gold)}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#111827;color:#fff;padding:13px 22px;border-radius:12px;font-size:13px;font-weight:600;z-index:400;box-shadow:0 12px 40px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);transition:all .35s;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(52,211,153,.4)} .toast.err{border-color:rgba(251,113,133,.5)}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.scope-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 16px;padding:12px 16px;border-radius:var(--radius-lg);
+  background:linear-gradient(135deg,rgba(129,140,248,.12),rgba(124,58,237,.08));border:1px solid var(--glass-border);backdrop-filter:blur(var(--glass-blur));font-size:12.5px;color:var(--text-secondary)}
+.scope-bar .role-pill{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:11px;letter-spacing:.4px;padding:4px 11px;border-radius:999px;background:rgba(129,140,248,.18);color:var(--indigo);border:1px solid rgba(129,140,248,.32)}
+
+.footer{text-align:center;padding:34px 20px 8px;color:var(--text-muted);font-size:12px}
+.footer .credit{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:700;margin-top:5px;background:linear-gradient(135deg,var(--violet),var(--cyan));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hidden{display:none!important}
+</style>
+<!-- Liquid Glass design system -->
+<script src="/leave-orders/liquid-glass.js?v=6"></script>
+<link rel="stylesheet" href="/leave-orders/liquid-glass.css?v=6">
+
+<!-- ksd-pwa — installable Karur SDO app: manifest, iPhone home-screen, Liquid Glass shell -->
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#06080f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Karur SDO" />
+<link rel="apple-touch-icon" href="/assets/pwa/icon-180.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png" />
+<link rel="stylesheet" href="/leave-orders/pwa/android-shell.css?v=6" />
+<script defer src="/leave-orders/pwa/android-shell.js?v=6"></script>
+<!-- /ksd-pwa -->
+</head>
+<body>
+<div class="bg-mesh"></div>
+
+<div class="page-wrap">
+  <div class="topbar">
+    <a href="/cent-percent-verification" class="back-link">← Back to Cent Percent Verification</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+  </div>
+
+  <div class="hero">
+    <div class="hero-eyebrow">Karur Sub Division · Department of Posts</div>
+    <div class="hero-title">📮 SB-46 Notice Management</div>
+    <div class="hero-sub">Every office verified under <b>Cent Percent Verification</b> keeps its own SB-46 register here. Raise a batch against the accounts the Mail Overseer could not verify, allot the Speed Post article numbers from the physical sheet, print the address labels <b>in duplicate</b> — one for the notice, one for the acknowledgement card — then record what comes back: acknowledgements, replies, and covers returned undelivered with their reason. When the register is complete the <b>Final Report of Cent Percent Verification</b> writes itself.</div>
+  </div>
+
+  <!-- ============ OFFICE LIST ============ -->
+  <div id="listView">
+    <div class="summary">
+      <div class="st s-iss"><div class="n" id="sIss">—</div><div class="l">Notices Issued</div></div>
+      <div class="st s-ack"><div class="n" id="sAck">—</div><div class="l">Ack. Received</div></div>
+      <div class="st s-rep"><div class="n" id="sRep">—</div><div class="l">Replies Received</div></div>
+      <div class="st s-ret"><div class="n" id="sRet">—</div><div class="l">Returned</div></div>
+      <div class="st s-wait"><div class="n" id="sWait">—</div><div class="l">Awaiting</div></div>
+    </div>
+
+    <div id="scopeBar" class="scope-bar hidden"></div>
+
+    <div class="toolbar">
+      <div class="search"><span>🔍</span><input id="dq" type="text" placeholder="Search office, SOL ID, branch…" autocomplete="off"></div>
+      <button class="btn ghost sm" id="refreshBtn">↻ Refresh</button>
+    </div>
+
+    <div class="section-title">Offices under Cent Percent Verification</div>
+    <div id="officeList"><div class="empty"><span class="ei">⏳</span>Loading offices…</div></div>
+  </div>
+
+  <!-- ============ REGISTER ============ -->
+  <div id="regView" class="hidden">
+    <button class="back-link" id="backToList" style="margin-bottom:16px">← Back to offices</button>
+
+    <div class="detail-head">
+      <div class="dh-badge">📮</div>
+      <div>
+        <div class="dh-title" id="dhTitle">—</div>
+        <div class="dh-meta" id="dhMeta"></div>
+      </div>
+      <div class="dh-spacer"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn blue sm" id="labelsBtn">🏷️ Address labels</button>
+        <button class="btn gold sm" id="reportBtn">📄 Final Report</button>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="st s-iss"><div class="n" id="rIss">—</div><div class="l">Notices Issued</div></div>
+      <div class="st s-ack"><div class="n" id="rAck">—</div><div class="l">Ack. Received</div></div>
+      <div class="st s-rep"><div class="n" id="rRep">—</div><div class="l">Replies Received</div></div>
+      <div class="st s-ret"><div class="n" id="rRet">—</div><div class="l">Returned</div></div>
+      <div class="st s-wait"><div class="n" id="rWait">—</div><div class="l">Awaiting</div></div>
+    </div>
+
+    <!-- raise a batch -->
+    <div class="panel raise" id="raisePanel">
+      <div class="panel-title">📬 Raise a batch of SB-46 notices
+        <span class="pt-sub">one notice per depositor · article numbers allotted in order across the whole office</span>
+      </div>
+      <div class="fields">
+        <div class="fg"><label>Accounts to notice</label>
+          <select id="rbScope">
+            <option value="unverified">Unverified only</option>
+            <option value="all">Every account in the list</option>
+          </select>
+        </div>
+        <div class="fg"><label>Date of issue</label><input type="date" id="rbDate"></div>
+        <div class="fg"><label>First article no.</label><input type="text" id="rbFrom" class="art" placeholder="ET123456785IN" autocomplete="off"></div>
+        <div class="fg"><label>Last article no.</label><input type="text" id="rbTo" class="art" placeholder="ET123456873IN" autocomplete="off"></div>
+        <div class="fg" style="align-self:flex-end"><button class="btn" id="rbGo">📬 Raise batch</button></div>
+      </div>
+      <div class="fg" style="margin-top:13px">
+        <label>Scheme lists to include</label>
+        <div class="schemebox" id="rbSchemes"></div>
+      </div>
+      <div class="note" id="rbNote">Pick the scheme lists to include.</div>
+    </div>
+
+    <div class="actbar" id="regActs">
+      <span class="fcount" id="regCount"></span>
+      <span class="sp"></span>
+      <button class="btn ghost sm" id="reRaiseBtn">🔄 Re-raise batch</button>
+      <button class="btn danger sm" id="clearBtn">🗑 Clear register</button>
+    </div>
+
+    <div class="filters" id="regFilters">
+      <div class="fg grow"><label>Search</label><input type="text" id="fq" placeholder="Depositor, account no, article no"></div>
+      <div class="fg"><label>Scheme</label><select id="fScheme"><option value="">All</option></select></div>
+      <div class="fg"><label>Status</label>
+        <select id="fStatus">
+          <option value="">All</option>
+          <option value="awaiting">Awaiting</option>
+          <option value="ack">Ack. received</option>
+          <option value="reply">Reply received</option>
+          <option value="returned">Returned undelivered</option>
+          <option value="noreply">Delivered, no reply</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="reg">
+        <thead><tr>
+          <th>#</th><th>Scheme</th><th>Sl. No.</th><th>Depositor</th><th>Address</th>
+          <th>Accounts</th><th>Article no.</th><th>Ack.</th><th>Reply</th><th>Returned</th><th>Remarks</th>
+        </tr></thead>
+        <tbody id="regBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">Karur Sub Division · Department of Posts<div class="credit">SB-46 Notice Management</div></div>
+</div>
+
+<!-- ============ LABELS MODAL ============ -->
+<div class="modal-overlay" id="lblOverlay">
+  <div class="modal">
+    <div class="modal-title">🏷️ Address labels, in duplicate</div>
+    <div class="modal-desc">Two labels per notice on the precut 3 × 6 sheet — the first for the SB-46 cover, the second for the acknowledgement card. Both carry the notice's article number as a scannable barcode and the serial numbers the notice covers in the account list.</div>
+    <div class="grid2">
+      <div class="field"><label>Labels already used on the first sheet</label><input type="number" id="lbSkip" min="0" max="17" value="0"></div>
+      <div class="field"><label>Which notices</label>
+        <select id="lbScope">
+          <option value="all">Every notice in the register</option>
+          <option value="filtered">Only the notices now listed</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label><input type="checkbox" id="lbGuides" style="width:auto;vertical-align:-2px"> Print faint cutting guides</label></div>
+    <div class="note" id="lbNote"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="lbCancel">Cancel</button>
+      <button class="btn blue" id="lbGo">🏷️ Build label PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FINAL REPORT MODAL ============ -->
+<div class="modal-overlay" id="rptOverlay">
+  <div class="modal wide">
+    <div class="modal-title">📄 Final Report of Cent Percent Verification</div>
+    <div class="modal-desc">Everything marked <span class="derived">derived</span> is read straight from the verification lists and this SB-46 register and cannot be typed over. The rest is yours to fill in — the letter particulars, the SBGEN / SBBAS split, the discrepancies you arrived at by reading the replies, and the closing certificate.</div>
+    <div id="rptBody"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="rptCancel">Close</button>
+      <button class="btn ghost" id="rptSave">💾 Save entries</button>
+      <button class="btn gold" id="rptGo">📄 Generate Word</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONFIRM MODAL ============ -->
+<div class="modal-overlay" id="cfOverlay">
+  <div class="modal" style="width:min(520px,100%)">
+    <div class="modal-title danger" id="cfTitle">Confirm</div>
+    <div class="del-msg" id="cfMsg"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cfNo">Cancel</button>
+      <button class="btn danger" id="cfYes">Yes, go ahead</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── theme ──
+(function(){const h=document.documentElement;if(localStorage.getItem('theme')==='light')h.classList.add('light');
+  const b=document.getElementById('themeToggle');const paint=()=>b.textContent=h.classList.contains('light')?'☀️':'🌙';paint();
+  b.onclick=()=>{h.classList.toggle('light');localStorage.setItem('theme',h.classList.contains('light')?'light':'dark');paint();};})();
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cclean=v=>String(v==null?'':v).trim();
+const who=()=>{try{const u=window.AuthSession&&AuthSession.user();return u?(u.displayName||u.username):'web';}catch{return 'web';}};
+function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast show'+(kind?' '+kind:'');clearTimeout(toast._t);toast._t=setTimeout(()=>t.className='toast',4200);}
+function todayISO(){const d=new Date(),z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());}
+function dmyDot(iso){const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}.${m[2]}.${m[1]}`:(iso||'');}
+function pincodeOf(addr){const m=String(addr||'').match(/(\d{6})(?!.*\d{6})/);return m?m[1]:'';}
+function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+const n0=n=>Number(n||0).toLocaleString('en-IN');
+
+// ── roles & visibility (mirrors the Cent Percent Verification module) ──
+const meUser=()=>{try{return (window.AuthSession&&AuthSession.user())||null;}catch{return null;}};
+const roleNorm=r=>String(r||'').toUpperCase().replace(/[^A-Z]/g,'');
+const _ME=meUser();
+const MY_ROLE=roleNorm(_ME&&_ME.role);
+const SEEALL_ROLES=['ADMIN','ASP','IP','PA'];
+const isManager=()=>SEEALL_ROLES.includes(MY_ROLE);
+const isMO=()=>MY_ROLE==='MO';
+// A Mail Overseer sees and works only the offices allotted to them; everyone else
+// keeps the full view. Raising a batch and writing the Final Report are the Sub
+// Divisional office's act, so a Mail Overseer records tracking but does not raise.
+function allottedToMe(branch){ return !isMO() || state.myAllot.has(String(branch||'')); }
+const canRaise=()=>!isMO();
+function canTrack(){ return state.office ? allottedToMe(state.office.branch_id) : false; }
+
+// ── the Final Report's five scheme columns ──
+// The printed report has one column each for SB, RD, SSA, TD and RPLI. The stored
+// account lists are finer-grained than that — the four Time Deposit terms all land
+// in TD — and a few schemes (MIS, SCSS, PPF, PLI) have no column at all, so they
+// are reported separately rather than quietly folded into one that does not fit.
+const RCOLS=['SB','RD','SSA','TD','RPLI'];
+const RCOL_OF={SB:'SB',RD:'RD',SSA:'SSA',TD1:'TD',TD2:'TD',TD3:'TD',TD5:'TD',RPLI:'RPLI'};
+const RETURN_REASONS=['Deceased','Unclaimed','Insufficient address','No such addressee','Not known','Left'];
+// The template's undelivered-split rows, in the order they are printed.
+const SPLIT_ROWS=['Unclaimed','Insufficient address','Left','Deceased','No such addressee','Not known'];
+
+const TEMPLATE_URL='/leave-orders/cpv/cpv-final-template.docx';
+const CERT_PRE_DEF='Certified that the cent percent verification of SB / RD / TD / SSA accounts and RPLI policies was completed with satisfactory results. Further, in respect of the returned SB-46 notices of ';
+const CERT_POST_DEF=' cases, the second attempt was made through the Mail Overseer and the remarks made in the RL have been verified and found correct.';
+
+const state={
+  batches:[],        // app_cpv metadata rows (every scheme list of every office)
+  offices:[],        // [{office_id, office_name, sol_id, branch_id, batches:[…]}]
+  counts:{},         // office_id -> {issued,ack,reply,returned}
+  myAllot:new Set(), // branch_ids allotted to the current Mail Overseer
+  dq:'',
+  office:null,       // the office whose register is open
+  notices:[],        // app_sb46 rows for that office
+  report:null,       // app_sb46_report row for that office
+  derived:null,      // the report's derived numbers, recomputed on open
+  f:{q:'',scheme:'',status:''},
+  busy:false,
+  confirm:null
+};
+
+async function selectAllRows(table,selectAndFilter){
+  const page=1000; let from=0,out=[];
+  while(true){
+    const rows=await SB.select(table,`${selectAndFilter}&limit=${page}&offset=${from}`);
+    if(!rows||!rows.length)break;
+    out=out.concat(rows);
+    if(rows.length<page)break;
+    from+=page;
+  }
+  return out;
+}
+const officeIdOf=b=>String(b.branch_id||b.office_name||'');
+
+// ─────────────────────────────────────────────────────────────
+//  Load — offices that have CPV lists, and how far each register has got
+// ─────────────────────────────────────────────────────────────
+async function loadAll(){
+  const box=$('#officeList');
+  box.innerHTML='<div class="empty"><span class="ei">⏳</span>Loading offices…</div>';
+  try{ await SB.init(); }catch(e){}
+  try{
+    state.batches=await selectAllRows('app_cpv','select=office_key,office_name,sol_id,branch_id,scheme,scheme_label,total_accounts');
+  }catch(e){
+    box.innerHTML='<div class="empty"><span class="ei">⚠️</span>Could not load the verification lists — has <b>migration_v12_cpv.sql</b> been run in Supabase?</div>';
+    return;
+  }
+  if(isMO()){
+    try{
+      const me=String((_ME&&_ME.username)||'').toLowerCase();
+      const rows=await SB.select('app_cpv_allotments',`mo_username=eq.${encodeURIComponent(me)}&select=branch_id`);
+      state.myAllot=new Set((rows||[]).map(r=>String(r.branch_id||'')));
+    }catch(e){ state.myAllot=new Set(); }
+  }
+  // group the scheme lists into offices
+  const map=new Map();
+  for(const b of state.batches){
+    const id=officeIdOf(b); if(!id)continue;
+    if(isMO()&&!state.myAllot.has(String(b.branch_id||'')))continue;
+    if(!map.has(id))map.set(id,{office_id:id,office_name:b.office_name,sol_id:b.sol_id||'',branch_id:b.branch_id||'',batches:[]});
+    map.get(id).batches.push(b);
+  }
+  state.offices=[...map.values()].sort((a,b)=>String(a.office_name).localeCompare(String(b.office_name)));
+  // register progress, one light row per notice
+  state.counts={};
+  try{
+    const rows=await selectAllRows('app_sb46','select=office_id,ack_received,reply_received,returned');
+    (rows||[]).forEach(r=>{
+      const c=state.counts[r.office_id]||(state.counts[r.office_id]={issued:0,ack:0,reply:0,returned:0});
+      c.issued++; if(r.ack_received)c.ack++; if(r.reply_received)c.reply++; if(r.returned)c.returned++;
+    });
+  }catch(e){
+    box.innerHTML='<div class="empty"><span class="ei">⚠️</span>Could not read the SB-46 register — has <b>migration_v25_sb46.sql</b> been run in the Supabase SQL editor?</div>';
+    return;
+  }
+  renderScopeBar();
+  renderOffices();
+}
+
+function renderScopeBar(){
+  const bar=$('#scopeBar');
+  if(!MY_ROLE){bar.classList.add('hidden');return;}
+  bar.classList.remove('hidden');
+  const n=state.offices.length;
+  bar.innerHTML=`<span class="role-pill">${esc(MY_ROLE)}</span>`+(isMO()
+    ? `You are seeing the <b>${n}</b> office${n===1?'':'s'} allotted to you. You may record what comes back against each notice; raising a batch and writing the Final Report are done at the Sub Divisional office.`
+    : `You are seeing all <b>${n}</b> office${n===1?'':'s'} with verification lists stored.`);
+}
+
+function renderOffices(){
+  const q=state.dq.toLowerCase();
+  const list=state.offices.filter(o=>!q||(o.office_name+' '+o.sol_id+' '+o.branch_id).toLowerCase().includes(q));
+  // summary across everything visible
+  let iss=0,ack=0,rep=0,ret=0;
+  state.offices.forEach(o=>{const c=state.counts[o.office_id];if(c){iss+=c.issued;ack+=c.ack;rep+=c.reply;ret+=c.returned;}});
+  $('#sIss').textContent=n0(iss); $('#sAck').textContent=n0(ack);
+  $('#sRep').textContent=n0(rep); $('#sRet').textContent=n0(ret);
+  $('#sWait').textContent=n0(Math.max(0,iss-rep-ret));
+
+  const box=$('#officeList');
+  if(!list.length){
+    box.innerHTML=`<div class="empty"><span class="ei">🏤</span>${state.offices.length?'No offices match your search.':(isMO()?'No offices have been allotted to you yet.':'No verification lists are stored yet — upload a Last Balance Report in Cent Percent Verification first.')}</div>`;
+    return;
+  }
+  box.innerHTML=list.map(o=>{
+    const c=state.counts[o.office_id]||{issued:0,ack:0,reply:0,returned:0};
+    const settled=c.reply+c.returned, pct=c.issued?Math.round(settled/c.issued*100):0;
+    const accts=o.batches.reduce((a,b)=>a+(+b.total_accounts||0),0);
+    const chips=c.issued
+      ? `<span class="ov-chip iss">📮 ${n0(c.issued)} issued</span>
+         <span class="ov-chip ack">✉ ${n0(c.ack)} ack</span>
+         <span class="ov-chip rep">✓ ${n0(c.reply)} replied</span>
+         <span class="ov-chip ret">↩ ${n0(c.returned)} returned</span>
+         ${c.issued>settled?`<span class="ov-chip wait">⏳ ${n0(c.issued-settled)} awaiting</span>`:''}`
+      : `<span class="ov-chip none">No notices raised yet</span>`;
+    return `<div class="office-group" data-office="${esc(o.office_id)}">
+      <div class="og-head">
+        <div class="og-badge">🏤</div>
+        <div style="flex:1;min-width:190px">
+          <div class="og-title">${esc(o.office_name)}</div>
+          <div class="og-sub">${o.sol_id?`SOL <b>${esc(o.sol_id)}</b> · `:''}${o.branch_id?`Branch <b>${esc(o.branch_id)}</b> · `:''}<b>${o.batches.length}</b> scheme list${o.batches.length===1?'':'s'} · <b>${n0(accts)}</b> accounts</div>
+        </div>
+        <div class="og-chips">${chips}</div>
+        ${c.issued?`<div class="og-prog"><div class="og-bar"><i style="width:${pct}%"></i></div><span class="pct">${pct}%</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+//  The register of one office
+// ─────────────────────────────────────────────────────────────
+async function openOffice(officeId){
+  const o=state.offices.find(x=>x.office_id===officeId);
+  if(!o){toast('That office is no longer in the list.','err');return;}
+  state.office=o;
+  toast('Loading the register…');
+  try{
+    state.notices=await selectAllRows('app_sb46',`office_id=eq.${encodeURIComponent(officeId)}&select=*&order=seq.asc`);
+  }catch(e){ toast('Could not load the register: '+(e.message||''),'err'); return; }
+  try{
+    const rows=await SB.select('app_sb46_report',`office_id=eq.${encodeURIComponent(officeId)}&select=*&limit=1`);
+    state.report=(rows&&rows[0])||null;
+  }catch(e){ state.report=null; }
+  $('#listView').classList.add('hidden');
+  $('#regView').classList.remove('hidden');
+  window.scrollTo({top:0,behavior:'smooth'});
+  renderRegisterHead();
+  renderRaisePanel();
+  renderNotices();
+}
+function exitToList(){
+  state.office=null;state.notices=[];state.report=null;
+  $('#regView').classList.add('hidden');
+  $('#listView').classList.remove('hidden');
+  loadAll();
+}
+
+function renderRegisterHead(){
+  const o=state.office;
+  $('#dhTitle').textContent=o.office_name;
+  const accts=o.batches.reduce((a,b)=>a+(+b.total_accounts||0),0);
+  $('#dhMeta').innerHTML=[
+    o.sol_id?`<span class="meta-chip">SOL <b>${esc(o.sol_id)}</b></span>`:'',
+    o.branch_id?`<span class="meta-chip">Branch <b>${esc(o.branch_id)}</b></span>`:'',
+    `<span class="meta-chip"><b>${o.batches.length}</b> scheme list${o.batches.length===1?'':'s'}</span>`,
+    `<span class="meta-chip"><b>${n0(accts)}</b> accounts</span>`
+  ].filter(Boolean).join('');
+  const N=state.notices;
+  const ack=N.filter(x=>x.ack_received).length, rep=N.filter(x=>x.reply_received).length, ret=N.filter(x=>x.returned).length;
+  $('#rIss').textContent=n0(N.length); $('#rAck').textContent=n0(ack);
+  $('#rRep').textContent=n0(rep); $('#rRet').textContent=n0(ret);
+  $('#rWait').textContent=n0(Math.max(0,N.length-rep-ret));
+  // scheme filter options
+  const schemes=[...new Set(N.map(x=>x.scheme))].sort();
+  $('#fScheme').innerHTML='<option value="">All</option>'+schemes.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  const raised=N.length>0;
+  $('#raisePanel').classList.toggle('hidden',raised||!canRaise());
+  $('#regActs').classList.toggle('hidden',!raised);
+  $('#regFilters').classList.toggle('hidden',!raised);
+  $('#reRaiseBtn').classList.toggle('hidden',!canRaise());
+  $('#clearBtn').classList.toggle('hidden',!canRaise());
+  $('#labelsBtn').disabled=!raised;
+  $('#reportBtn').disabled=!canRaise();
+}
+
+// ── raise panel ──
+function renderRaisePanel(){
+  const o=state.office;
+  $('#rbDate').value=todayISO();
+  $('#rbSchemes').innerHTML=o.batches.slice()
+    .sort((a,b)=>String(a.scheme).localeCompare(String(b.scheme)))
+    .map(b=>`<label data-key="${esc(b.office_key)}"><input type="checkbox" value="${esc(b.office_key)}" checked> ${esc(b.scheme)} <span style="color:var(--text-muted);font-weight:600">(${n0(b.total_accounts)})</span></label>`).join('');
+  syncSchemeChips();
+  refreshRaiseNote();
+}
+function syncSchemeChips(){
+  document.querySelectorAll('#rbSchemes label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked));
+}
+function chosenBatchKeys(){
+  return [...document.querySelectorAll('#rbSchemes input:checked')].map(i=>i.value);
+}
+// What a batch would come to, without fetching the account rows: the unverified
+// count is only known after loading, so this note talks in accounts, not notices.
+function refreshRaiseNote(){
+  const keys=chosenBatchKeys();
+  const note=$('#rbNote');
+  if(!keys.length){note.className='note err';note.textContent='Pick at least one scheme list.';return;}
+  const from=cclean($('#rbFrom').value), to=cclean($('#rbTo').value);
+  const tot=state.office.batches.filter(b=>keys.includes(b.office_key)).reduce((a,b)=>a+(+b.total_accounts||0),0);
+  let msg=`<b>${keys.length}</b> scheme list${keys.length===1?'':'s'} · up to <b>${n0(tot)}</b> accounts. The accounts are grouped into one notice per depositor per scheme, and the exact notice count is confirmed before anything is written.`;
+  let cls='note';
+  if(from||to){
+    const a=LabelEngine.parseBarcode(from), b=LabelEngine.parseBarcode(to);
+    if(from&&!a) {cls='note err'; msg=`<b>${esc(from)}</b> is not an article number — it should read like <b>ET123456785IN</b>.`;}
+    else if(to&&!b){cls='note err'; msg=`<b>${esc(to)}</b> is not an article number — it should read like <b>ET123456873IN</b>.`;}
+    else if(a&&a.badCheck){cls='note err'; msg=`The check digit of <b>${esc(from)}</b> does not match the S10 rule — please read the number off the sheet again.`;}
+    else if(b&&b.badCheck){cls='note err'; msg=`The check digit of <b>${esc(to)}</b> does not match the S10 rule — please read the number off the sheet again.`;}
+    else if(a&&b){
+      const n=LabelEngine.rangeSize(from,to);
+      if(!n){cls='note err'; msg=`<b>${esc(from)}</b> to <b>${esc(to)}</b> is not a range — the two numbers must be of the same series and run forwards.`;}
+      else{cls='note ok'; msg=`The sheet holds <b>${n0(n)}</b> article number${n===1?'':'s'}, <b>${esc(from)}</b> → <b>${esc(to)}</b>. They will be allotted to the notices in order.`;}
+    }
+  }
+  note.className=cls; note.innerHTML=msg;
+}
+
+// Group the accounts of one scheme list into notices: one per depositor, by CIF
+// where the list carries one, else by name + address. List order is preserved
+// inside a group, and the serial numbers run through the scheme's notice batch —
+// the same numbering the printed SB-46 notice itself shows.
+function groupDepositors(recs){
+  const map=new Map();
+  recs.forEach(r=>{
+    const key=(r.cif&&String(r.cif).trim())?('cif:'+String(r.cif).trim())
+      :('nm:'+String(r.name||'').trim().toUpperCase()+'|'+String(r.address||'').trim().toUpperCase());
+    if(!map.has(key))map.set(key,{name:r.name||'',address:r.address||'',cif:r.cif||'',accts:[]});
+    map.get(key).accts.push(r);
+  });
+  return [...map.values()].sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+}
+
+async function raiseBatch(){
+  if(state.busy)return;
+  if(!canRaise()){toast('Raising a batch is done at the Sub Divisional office.','err');return;}
+  const keys=chosenBatchKeys();
+  if(!keys.length){toast('Pick at least one scheme list.','err');return;}
+  const from=cclean($('#rbFrom').value).toUpperCase(), to=cclean($('#rbTo').value).toUpperCase();
+  const base=LabelEngine.parseBarcode(from);
+  if(!base||base.badCheck){toast('Enter a valid first article number, e.g. ET123456785IN.','err');$('#rbFrom').focus();return;}
+  const last=LabelEngine.parseBarcode(to);
+  if(!last||last.badCheck){toast('Enter a valid last article number, e.g. ET123456873IN.','err');$('#rbTo').focus();return;}
+  const range=LabelEngine.rangeSize(from,to);
+  if(!range){toast('The last article number must be of the same series as the first, and run forwards.','err');$('#rbTo').focus();return;}
+  const issuedOn=$('#rbDate').value||todayISO();
+  const scope=$('#rbScope').value;
+
+  const btn=$('#rbGo'), old=btn.innerHTML;
+  state.busy=true; btn.disabled=true; btn.innerHTML='<span class="spin"></span> Reading the lists…';
+  try{
+    // the account rows of the chosen lists, plus what has already been verified
+    const inList=keys.map(k=>`"${k.replace(/"/g,'""')}"`).join(',');
+    const full=await SB.select('app_cpv',`office_key=in.(${encodeURIComponent(inList)})&select=office_key,office_name,sol_id,branch_id,scheme,records&order=scheme.asc`);
+    const ver={};
+    if(scope==='unverified'){
+      const vr=await selectAllRows('app_cpv_verification',`office_key=in.(${encodeURIComponent(inList)})&select=office_key,acct,verified`);
+      (vr||[]).forEach(r=>{ if(r.verified)(ver[r.office_key]=ver[r.office_key]||new Set()).add(String(r.acct)); });
+    }
+    // build the notices, scheme by scheme, serials running through each scheme's batch
+    const o=state.office, rows=[]; let seq=0;
+    for(const b of full){
+      const recs=Array.isArray(b.records)?b.records:[];
+      const done=ver[b.office_key]||new Set();
+      const pick=scope==='unverified'?recs.filter(r=>!done.has(String(r.acct))):recs;
+      if(!pick.length)continue;
+      let sno=0;
+      for(const g of groupDepositors(pick)){
+        const slFrom=sno+1; sno+=g.accts.length; const slTo=sno;
+        seq++;
+        rows.push({
+          notice_id:`${o.office_id}::${b.scheme}::${seq}`,
+          office_id:o.office_id, office_name:b.office_name||o.office_name,
+          sol_id:b.sol_id||o.sol_id||null, branch_id:b.branch_id||o.branch_id||null,
+          office_key:b.office_key, scheme:b.scheme, seq,
+          sl_from:slFrom, sl_to:slTo,
+          depositor:g.name||'', address:g.address||'', pincode:pincodeOf(g.address)||null, cif:g.cif||null,
+          accounts:g.accts.map(r=>({acct:String(r.acct||''),balance:r.balance==null?null:r.balance,date:r.date||r.dateRaw||''})),
+          article_no:null, issued_on:issuedOn,
+          ack_received:false, ack_at_ms:null, reply_received:false, reply_at_ms:null,
+          returned:false, return_reason:null, returned_at_ms:null, remarks:null,
+          created_by:who(), created_at_ms:Date.now(), updated_by:who(), updated_at_ms:Date.now()
+        });
+      }
+    }
+    if(!rows.length){
+      toast(scope==='unverified'?'Every account in those lists is already verified — no notice is due.':'Those lists hold no accounts.','err');
+      return;
+    }
+    if(rows.length!==range){
+      toast(`The sheet holds ${n0(range)} article number${range===1?'':'s'} but ${n0(rows.length)} notice${rows.length===1?'':'s'} ${rows.length===1?'is':'are'} due. Correct the range and raise the batch again.`,'err');
+      $('#rbNote').className='note err';
+      $('#rbNote').innerHTML=`<b>${n0(rows.length)}</b> notice${rows.length===1?'':'s'} would be raised, but <b>${esc(from)}</b> → <b>${esc(to)}</b> is <b>${n0(range)}</b> article number${range===1?'':'s'}. The last number of a run of ${n0(rows.length)} starting at ${esc(from)} is <b>${esc(LabelEngine.barcodeNoAt(base,rows.length-1))}</b>.`;
+      return;
+    }
+    rows.forEach((r,i)=>{ r.article_no=LabelEngine.barcodeNoAt(base,i); });
+
+    btn.innerHTML='<span class="spin"></span> Writing the register…';
+    // a re-raise replaces this office's register outright
+    await SB.del('app_sb46',`office_id=eq.${encodeURIComponent(o.office_id)}`);
+    for(let i=0;i<rows.length;i+=400) await SB.upsert('app_sb46',rows.slice(i,i+400));
+    state.notices=rows;
+    toast(`${n0(rows.length)} SB-46 notice${rows.length===1?'':'s'} raised ✓ — articles ${from} → ${to}.`,'ok');
+    renderRegisterHead(); renderNotices();
+  }catch(e){
+    const m=String(e.message||'');
+    toast('Could not raise the batch: '+m,'err');
+    if(/app_sb46|PGRST205/.test(m))toast('Run migration_v25_sb46.sql in the Supabase SQL editor first.','err');
+  }finally{ state.busy=false; btn.disabled=false; btn.innerHTML=old; }
+}
+
+// ── the notices table ──
+function filteredNotices(){
+  const q=state.f.q.toLowerCase();
+  return state.notices.filter(n=>{
+    if(state.f.scheme&&n.scheme!==state.f.scheme)return false;
+    const st=state.f.status;
+    if(st==='awaiting'&&(n.ack_received||n.reply_received||n.returned))return false;
+    if(st==='ack'&&!n.ack_received)return false;
+    if(st==='reply'&&!n.reply_received)return false;
+    if(st==='returned'&&!n.returned)return false;
+    if(st==='noreply'&&!(n.ack_received&&!n.reply_received&&!n.returned))return false;
+    if(q){
+      const hay=[n.depositor,n.address,n.article_no,(n.accounts||[]).map(a=>a.acct).join(' ')].join(' ').toLowerCase();
+      if(!hay.includes(q))return false;
+    }
+    return true;
+  });
+}
+function renderNotices(){
+  const rows=filteredNotices();
+  $('#regCount').innerHTML=`<b>${n0(rows.length)}</b> of ${n0(state.notices.length)} notice${state.notices.length===1?'':'s'}`;
+  const body=$('#regBody'), ro=!canTrack();
+  if(!rows.length){
+    body.innerHTML=`<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted)">${state.notices.length?'No notices match these filters.':'No notices raised for this office yet.'}</td></tr>`;
+    return;
+  }
+  body.innerHTML=rows.map(n=>{
+    const accts=(n.accounts||[]).map(a=>a.acct).join(', ');
+    const sl=n.sl_from===n.sl_to?String(n.sl_from||''):`${n.sl_from}–${n.sl_to}`;
+    const reason=n.return_reason||'';
+    return `<tr data-id="${esc(n.notice_id)}">
+      <td class="mono">${n.seq}</td>
+      <td><span class="sch-chip">${esc(n.scheme)}</span></td>
+      <td class="mono">${esc(sl)}</td>
+      <td class="nm">${esc(n.depositor||'—')}</td>
+      <td class="addr">${esc(n.address||'—')}</td>
+      <td class="acct-list" title="${esc(accts)}">${esc(accts)}<div style="color:var(--text-secondary);font-weight:700;margin-top:3px">${(n.accounts||[]).length} a/c</div></td>
+      <td><input class="art-in" data-art value="${esc(n.article_no||'')}" ${ro?'disabled':''} placeholder="ET________IN"></td>
+      <td><button class="tbtn ack ${n.ack_received?'on':''}" data-t="ack" ${ro?'disabled':''}>${n.ack_received?'✓ Received':'Mark'}</button></td>
+      <td><button class="tbtn rep ${n.reply_received?'on':''}" data-t="reply" ${ro?'disabled':''}>${n.reply_received?'✓ Received':'Mark'}</button></td>
+      <td>
+        <button class="tbtn ret ${n.returned?'on':''}" data-t="ret" ${ro?'disabled':''}>${n.returned?'↩ Returned':'Mark'}</button>
+        ${n.returned?`<br><select class="rsel" data-reason ${ro?'disabled':''}>
+          <option value="">— reason —</option>
+          ${RETURN_REASONS.map(r=>`<option value="${esc(r)}" ${reason===r?'selected':''}>${esc(r)}</option>`).join('')}
+        </select>`:''}
+      </td>
+      <td><input class="rmk-in" data-rmk value="${esc(n.remarks||'')}" ${ro?'disabled':''} placeholder="—"></td>
+    </tr>`;
+  }).join('');
+}
+
+function noticeById(id){ return state.notices.find(n=>n.notice_id===id); }
+async function saveNotice(n,patch){
+  Object.assign(n,patch,{updated_by:who(),updated_at_ms:Date.now()});
+  try{
+    await SB.patch('app_sb46',`notice_id=eq.${encodeURIComponent(n.notice_id)}`,
+      Object.assign({},patch,{updated_by:n.updated_by,updated_at_ms:n.updated_at_ms}));
+  }catch(e){ toast('Could not save: '+(e.message||''),'err'); }
+}
+
+$('#regBody').addEventListener('click',async e=>{
+  const btn=e.target.closest('.tbtn'); if(!btn)return;
+  const tr=btn.closest('tr'), n=noticeById(tr.dataset.id); if(!n)return;
+  const now=Date.now();
+  if(btn.dataset.t==='ack')   await saveNotice(n,{ack_received:!n.ack_received, ack_at_ms:!n.ack_received?now:null});
+  if(btn.dataset.t==='reply'){
+    const on=!n.reply_received;
+    // A reply can only have come back from a cover that was delivered.
+    await saveNotice(n,on?{reply_received:true,reply_at_ms:now,returned:false,return_reason:null,returned_at_ms:null}
+                        :{reply_received:false,reply_at_ms:null});
+  }
+  if(btn.dataset.t==='ret'){
+    const on=!n.returned;
+    await saveNotice(n,on?{returned:true,returned_at_ms:now,reply_received:false,reply_at_ms:null,ack_received:false,ack_at_ms:null}
+                        :{returned:false,return_reason:null,returned_at_ms:null});
+  }
+  renderRegisterHead(); renderNotices();
+});
+$('#regBody').addEventListener('change',async e=>{
+  const sel=e.target.closest('[data-reason]');
+  if(sel){ const n=noticeById(sel.closest('tr').dataset.id); if(n)await saveNotice(n,{return_reason:sel.value||null}); return; }
+});
+$('#regBody').addEventListener('blur',async e=>{
+  const art=e.target.closest('[data-art]');
+  if(art){
+    const n=noticeById(art.closest('tr').dataset.id); if(!n)return;
+    const v=cclean(art.value).toUpperCase();
+    if(v&&!LabelEngine.parseBarcode(v)){art.classList.add('bad');toast('That is not an article number — it should read like ET123456785IN.','err');return;}
+    art.classList.remove('bad'); art.value=v;
+    if(v!==(n.article_no||''))await saveNotice(n,{article_no:v||null});
+    return;
+  }
+  const rmk=e.target.closest('[data-rmk]');
+  if(rmk){
+    const n=noticeById(rmk.closest('tr').dataset.id); if(!n)return;
+    const v=cclean(rmk.value);
+    if(v!==(n.remarks||''))await saveNotice(n,{remarks:v||null});
+  }
+},true);
+
+// ─────────────────────────────────────────────────────────────
+//  Address labels — two per notice, through the shared label engine
+// ─────────────────────────────────────────────────────────────
+function labelNotices(){ return $('#lbScope').value==='filtered'?filteredNotices():state.notices.slice(); }
+function refreshLabelNote(){
+  const n=labelNotices().length, labels=n*2;
+  const skip=Math.max(0,Math.min(17,parseInt($('#lbSkip').value)||0));
+  const sheets=LabelEngine.sheetsNeeded(new Array(labels).fill(0),new Set([...Array(skip).keys()]));
+  const missing=labelNotices().filter(x=>!x.article_no).length;
+  $('#lbNote').className=missing?'note err':'note';
+  $('#lbNote').innerHTML=missing
+    ? `<b>${n0(missing)}</b> of these notices has no article number yet — fill them in on the register first, or the label will print without its barcode.`
+    : `<b>${n0(n)}</b> notice${n===1?'':'s'} → <b>${n0(labels)}</b> labels on <b>${n0(sheets)}</b> sheet${sheets===1?'':'s'}.`;
+}
+async function buildLabels(){
+  const notices=labelNotices();
+  if(!notices.length){toast('No notices to label.','err');return;}
+  const btn=$('#lbGo'), old=btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spin"></span> Building…';
+  try{
+    const labels=[];
+    notices.forEach(n=>{
+      const sl=n.sl_from===n.sl_to?`Sl. No. ${n.sl_from}`:`Sl. No. ${n.sl_from}-${n.sl_to}`;
+      const ref=`${n.scheme} · ${sl}`;
+      const base={src:'sb46',desig:'',name:n.depositor||'',address:n.address||'',pincode:n.pincode||pincodeOf(n.address),mobile:'',
+        barcodeNo:n.article_no||null, reference:ref};
+      labels.push({...base,tag:'SB-46 NOTICE'});
+      labels.push({...base,tag:'ACK. CARD'});
+    });
+    const skip=Math.max(0,Math.min(17,parseInt($('#lbSkip').value)||0));
+    const {doc}=await LabelEngine.buildPdf({
+      labels, g:LabelEngine.geom(), skip:new Set([...Array(skip).keys()]),
+      opt:{showTo:true,guides:$('#lbGuides').checked}
+    });
+    const name=`SB-46 Labels ${state.office.office_name} (${labels.length}) ${todayISO()}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.pdf';
+    doc.save(name);
+    $('#lblOverlay').classList.remove('show');
+    toast(`${n0(labels.length)} labels ready ✓ — ${n0(notices.length)} notices, each with its cover and acknowledgement label.`,'ok');
+  }catch(e){ toast('Could not build the labels: '+(e.message||''),'err'); }
+  finally{ btn.disabled=false; btn.innerHTML=old; }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Final Report — everything that can be counted, counted
+// ─────────────────────────────────────────────────────────────
+const blankCols=()=>({SB:0,RD:0,SSA:0,TD:0,RPLI:0});
+const sumCols=c=>RCOLS.reduce((a,k)=>a+(+c[k]||0),0);
+
+// Reads the office's verification lists and this register, and works out every
+// number the report can know by itself.
+async function deriveReport(){
+  const o=state.office;
+  const keys=o.batches.map(b=>b.office_key);
+  const standing=blankCols(), verified=blankCols(), withRemarks=blankCols();
+  const outside=[];                                   // scheme lists the report has no column for
+  const sbLists=[];                                   // the SB lists, for the SBGEN / SBBAS split
+  for(const b of o.batches){
+    const col=RCOL_OF[b.scheme];
+    if(!col){ outside.push({scheme:b.scheme,total:+b.total_accounts||0}); continue; }
+    standing[col]+=(+b.total_accounts||0);
+    if(b.scheme==='SB')sbLists.push({key:b.office_key,total:+b.total_accounts||0});
+  }
+  if(keys.length){
+    const inList=keys.map(k=>`"${k.replace(/"/g,'""')}"`).join(',');
+    const vr=await selectAllRows('app_cpv_verification',`office_key=in.(${encodeURIComponent(inList)})&select=office_key,verified,remarks`);
+    const colOfKey={}; o.batches.forEach(b=>colOfKey[b.office_key]=RCOL_OF[b.scheme]||null);
+    (vr||[]).forEach(r=>{
+      const col=colOfKey[r.office_key]; if(!col)return;
+      if(r.verified)verified[col]++;
+      if(cclean(r.remarks))withRemarks[col]++;
+    });
+  }
+  // the register, scheme by scheme
+  const issued=blankCols(), replies=blankCols(), ackOnly=blankCols(), returned=blankCols();
+  const split={}; SPLIT_ROWS.forEach(r=>split[r]=blankCols());
+  let unmapped=0, awaiting=0;
+  state.notices.forEach(n=>{
+    const col=RCOL_OF[n.scheme]; if(!col){unmapped++;return;}
+    issued[col]++;
+    if(n.reply_received)replies[col]++;
+    else if(n.returned){
+      returned[col]++;
+      const key=SPLIT_ROWS.find(r=>r.toLowerCase()===String(n.return_reason||'').toLowerCase());
+      if(key)split[key][col]++;
+    }
+    else if(n.ack_received)ackOnly[col]++;
+    else awaiting++;
+  });
+  const splitTotal=blankCols();
+  SPLIT_ROWS.forEach(r=>RCOLS.forEach(c=>splitTotal[c]+=split[r][c]));
+  return {standing,verified,withRemarks,issued,replies,ackOnly,returned,split,splitTotal,outside,sbLists,unmapped,awaiting};
+}
+
+// The report form: derived cells are shown, hand-entered ones are inputs.
+function renderReportForm(){
+  const d=state.derived, o=state.office, r=state.report||{};
+  const disc=r.discrepancies||{}, ndisc=r.notice_discrep||{};
+  const sbSplit=Array.isArray(r.sb_split)&&r.sb_split.length?r.sb_split:defaultSbSplit(d);
+  const officeTok=String(o.office_name||'').replace(/\b(S\.?O|B\.?O|H\.?O)\b\.?\s*$/i,'').trim();
+  const yr=new Date().getFullYear();
+  const row=(label,vals,cls)=>`<tr class="${cls||''}"><td class="lbl">${label}</td>${RCOLS.map(c=>`<td class="val">${n0(vals[c])}</td>`).join('')}<td class="val">${n0(sumCols(vals))}</td></tr>`;
+
+  $('#rptBody').innerHTML=`
+    <div class="rsec">1 · The letter<span class="rs-hint">How the report heads and dates itself.</span></div>
+    <div class="grid2">
+      <div class="field"><label>Letter number</label><input type="text" id="rpLetterNo" value="${esc(r.letter_no||`ASP/CPV/${officeTok}/Dlgs/${yr}-${String(yr+1).slice(2)}`)}"></div>
+      <div class="field"><label>Dated</label><input type="date" id="rpLetterDate" value="${esc(r.letter_date||todayISO())}"></div>
+    </div>
+    <div class="field"><label>Reference line</label><input type="text" id="rpRef" value="${esc(r.ref_line||'SPOs Lr. No. 100% Vfn/Dlgs/2024 dated at Karur 639001 the 09.05.2025')}"></div>
+    <div class="grid2">
+      <div class="field"><label>Office, as it reads in the subject line</label><input type="text" id="rpBoName" value="${esc(r.bo_name||officeTok)}" placeholder="Kodangipatti"></div>
+      <div class="field"><label>Office, with its account office</label><input type="text" id="rpBoSo" value="${esc(r.bo_so||(officeTok+' BO'))}" placeholder="Kodangipatti BO a/w Thanthonimalai SO"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Verification began</label><input type="date" id="rpFrom" value="${esc(r.period_from||'')}"></div>
+      <div class="field"><label>and was completed</label><input type="date" id="rpTo" value="${esc(r.period_to||'')}"></div>
+    </div>
+
+    <div class="rsec">2 · Details of the accounts verified<span class="rs-hint">Standing and verified counts are <span class="derived">derived</span> from the stored lists; the discrepancies are yours.</span></div>
+    <table class="rpt">
+      <thead><tr><th style="text-align:left">Details</th>${RCOLS.map(c=>`<th>${c}</th>`).join('')}<th>Total</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="lbl">Total number of accounts standing in the BO <span class="derived">derived</span></td>
+          <td>${[0,1,2].map(i=>`<input class="wide" data-sbsplit="${i}" value="${esc(sbSplit[i]||'')}" placeholder="${i===0?'SBGEN:…':i===1?'SBBAS:…':'Total:…'}" style="margin-bottom:3px">`).join('')}</td>
+          ${['RD','SSA','TD','RPLI'].map(c=>`<td class="val">${n0(d.standing[c])}</td>`).join('')}
+          <td class="val">${n0(sumCols(d.standing))}</td>
+        </tr>
+        ${row('Number of accounts for which passbooks have been verified satisfactorily <span class="derived">derived</span>',d.verified)}
+        <tr><td class="lbl">Number of accounts on which discrepancies found</td>
+          ${RCOLS.map(c=>`<td><input type="number" min="0" data-disc="${c}" value="${disc[c]!=null?+disc[c]:d.withRemarks[c]}"></td>`).join('')}
+          <td class="val" id="discTot">0</td></tr>
+        ${row('Total number of SB-46 notices issued <span class="derived">derived</span>',d.issued)}
+      </tbody>
+    </table>
+
+    <div class="rsec">3 · SB-46 notices issued<span class="rs-hint">Counted from this register. A notice is a satisfactory reply, a delivered-but-silent notice, or a returned cover — never two at once.</span></div>
+    <table class="rpt">
+      <thead><tr><th style="text-align:left">Details</th>${RCOLS.map(c=>`<th>${c}</th>`).join('')}<th>Total</th></tr></thead>
+      <tbody>
+        ${row('Total number of SB-46 notices issued <span class="derived">derived</span>',d.issued)}
+        ${row('Number of satisfactory replies received for SB-46 notices issued <span class="derived">derived</span>',d.replies)}
+        <tr><td class="lbl">No. of accounts in which discrepancies noticed</td>
+          ${RCOLS.map(c=>`<td><input type="number" min="0" data-ndisc="${c}" value="${ndisc[c]!=null?+ndisc[c]:0}"></td>`).join('')}
+          <td class="val" id="ndiscTot">0</td></tr>
+        ${row('No. of SB-46 for which no reply from depositors even after the notices delivered [only Ack. received] <span class="derived">derived</span>',d.ackOnly)}
+        ${row('No. of SB-46 returned undelivered <span class="derived">derived</span>',d.returned)}
+      </tbody>
+    </table>
+
+    <div class="rsec">4 · Split of undelivered remarks<span class="rs-hint">Every one of these is <span class="derived">derived</span> from the reason recorded against each returned notice.</span></div>
+    <table class="rpt">
+      <thead><tr><th style="text-align:left">Details</th>${RCOLS.map(c=>`<th>${c}</th>`).join('')}<th>Total</th></tr></thead>
+      <tbody>
+        ${SPLIT_ROWS.map(rr=>row(esc(rr),d.split[rr])).join('')}
+        ${row('Total',d.splitTotal,'tot')}
+      </tbody>
+    </table>
+
+    <div class="rsec">5 · The certificate<span class="rs-hint">The number of returned notices is filled in between these two halves.</span></div>
+    <div class="field"><label>Before the count</label><textarea id="rpCertPre" rows="3">${esc(r.cert_pre||CERT_PRE_DEF)}</textarea></div>
+    <div class="field"><label>Returned notices <span class="derived">derived</span></label><input type="text" value="${n0(sumCols(d.returned))}" disabled></div>
+    <div class="field"><label>After the count</label><textarea id="rpCertPost" rows="3">${esc(r.cert_post||CERT_POST_DEF)}</textarea></div>
+    ${reportWarnings(d)}
+  `;
+  syncReportTotals();
+}
+$('#rptBody').addEventListener('input',syncReportTotals);
+function defaultSbSplit(d){
+  const sb=d.sbLists;
+  if(sb.length>=2)return [`SBGEN:${sb[0].total}`,`SBBAS:${sb[1].total}`,`Total:${d.standing.SB}`];
+  if(sb.length===1)return [`Total:${d.standing.SB}`,'',''];
+  return ['','',''];
+}
+function reportWarnings(d){
+  const out=[];
+  if(d.awaiting)out.push(`<b>${n0(d.awaiting)}</b> notice${d.awaiting===1?'':'s'} ${d.awaiting===1?'has':'have'} nothing recorded against ${d.awaiting===1?'it':'them'} yet, so ${d.awaiting===1?'it is':'they are'} counted in none of the reply, acknowledgement or returned rows. The report will not add up to the notices issued until ${d.awaiting===1?'it is':'they are'} settled.`);
+  if(d.unmapped)out.push(`<b>${n0(d.unmapped)}</b> notice${d.unmapped===1?'':'s'} belong${d.unmapped===1?'s':''} to a scheme the printed report has no column for, and ${d.unmapped===1?'is':'are'} left out of every count.`);
+  if(d.outside.length)out.push(`${d.outside.map(x=>`<b>${esc(x.scheme)}</b> (${n0(x.total)})`).join(', ')} ${d.outside.length===1?'is a scheme list':'are scheme lists'} the printed report has no column for, so ${d.outside.length===1?'it is':'they are'} not counted in the accounts standing.`);
+  return out.length?`<div class="warnbox">${out.join('<br><br>')}</div>`:'';
+}
+function readColInputs(attr){
+  const out={}; RCOLS.forEach(c=>{
+    const el=document.querySelector(`[data-${attr}="${c}"]`);
+    out[c]=el?(parseInt(el.value)||0):0;
+  });
+  return out;
+}
+function syncReportTotals(){
+  const dt=$('#discTot'); if(dt)dt.textContent=n0(sumCols(readColInputs('disc')));
+  const nt=$('#ndiscTot'); if(nt)nt.textContent=n0(sumCols(readColInputs('ndisc')));
+}
+function collectReport(){
+  const o=state.office;
+  return {
+    office_id:o.office_id, office_name:o.office_name, sol_id:o.sol_id||null, branch_id:o.branch_id||null,
+    letter_no:cclean($('#rpLetterNo').value)||null,
+    letter_date:$('#rpLetterDate').value||null,
+    ref_line:cclean($('#rpRef').value)||null,
+    bo_name:cclean($('#rpBoName').value)||null,
+    bo_so:cclean($('#rpBoSo').value)||null,
+    period_from:$('#rpFrom').value||null,
+    period_to:$('#rpTo').value||null,
+    sb_split:[0,1,2].map(i=>cclean(document.querySelector(`[data-sbsplit="${i}"]`).value)),
+    discrepancies:readColInputs('disc'),
+    notice_discrep:readColInputs('ndisc'),
+    cert_pre:$('#rpCertPre').value,
+    cert_post:$('#rpCertPost').value,
+    updated_by:who(), updated_at_ms:Date.now()
+  };
+}
+async function saveReport(silent){
+  const row=collectReport();
+  try{ await SB.upsert('app_sb46_report',row); state.report=row; if(!silent)toast('Entries saved ✓','ok'); return true; }
+  catch(e){ toast('Could not save the entries: '+(e.message||''),'err'); return false; }
+}
+
+// ── Word generation — the real template, filled token by token ──
+let _jszipP;
+function loadJSZip(){
+  if(window.JSZip)return Promise.resolve(window.JSZip);
+  if(_jszipP)return _jszipP;
+  _jszipP=new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    s.onload=()=>window.JSZip?res(window.JSZip):rej(new Error('document engine failed to load'));
+    s.onerror=()=>rej(new Error('Could not load the document engine (check your connection).'));
+    document.head.appendChild(s);});
+  return _jszipP;
+}
+function xmlEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function reportTokens(){
+  const d=state.derived, r=collectReport();
+  const M={};
+  M.LETTER_NO=r.letter_no||''; M.LETTER_DATE=dmyDot(r.letter_date);
+  M.BO_NAME=r.bo_name||''; M.REF_LINE=r.ref_line||'';
+  M.BO_SO=r.bo_so||''; M.PERIOD_FROM=dmyDot(r.period_from); M.PERIOD_TO=dmyDot(r.period_to)+'.';
+  // table A — details of the accounts verified
+  const sb=r.sb_split||[];
+  M.A1_SB_1=sb[0]||''; M.A1_SB_2=sb[1]||''; M.A1_SB_3=sb[2]||'';
+  const putRow=(p,vals,skipSB)=>{
+    RCOLS.forEach(c=>{ if(skipSB&&c==='SB')return; M[`${p}_${c}`]=String(vals[c]||0); });
+    M[`${p}_TOT`]=String(sumCols(vals));
+  };
+  putRow('A1',d.standing,true);
+  putRow('A2',d.verified);
+  putRow('A3',r.discrepancies);
+  putRow('A4',d.issued);
+  // table B — the notices
+  putRow('B1',d.issued);
+  putRow('B2',d.replies);
+  putRow('B3',r.notice_discrep);
+  putRow('B4',d.ackOnly);
+  putRow('B5',d.returned);
+  // table C — the split, in the template's printed order
+  SPLIT_ROWS.forEach((rr,i)=>putRow('C'+(i+1),d.split[rr]));
+  putRow('C7',d.splitTotal);
+  M.CERT_PRE=r.cert_pre||CERT_PRE_DEF;
+  M.CERT_N=String(sumCols(d.returned));
+  M.CERT_POST=r.cert_post||CERT_POST_DEF;
+  return M;
+}
+async function generateReportDocx(){
+  const btn=$('#rptGo'), old=btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spin"></span> Building…';
+  try{
+    await saveReport(true);
+    let JSZip; try{ JSZip=await loadJSZip(); }catch(e){ toast(e.message,'err'); return; }
+    let zip,xml;
+    try{
+      const resp=await fetch(TEMPLATE_URL,{cache:'no-store'});
+      if(!resp.ok)throw new Error('template '+resp.status);
+      zip=await JSZip.loadAsync(await resp.arrayBuffer());
+      xml=await zip.file('word/document.xml').async('string');
+    }catch(e){ toast('Could not load the report template: '+(e.message||''),'err'); return; }
+    const M=reportTokens();
+    const missing=[];
+    const out=xml.replace(/\{\{([A-Z0-9_]+)\}\}/g,(m,k)=>{ if(!(k in M)){missing.push(k);return m;} return xmlEsc(M[k]); });
+    if(missing.length){ toast('The template asks for fields this report does not know: '+[...new Set(missing)].join(', '),'err'); return; }
+    zip.file('word/document.xml',out);
+    const blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    const name=`CPV Final Report ${state.office.office_name}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.docx';
+    dl(blob,name);
+    toast('Final Report generated ✓','ok');
+  }catch(e){ toast('Could not build the report: '+(e.message||''),'err'); }
+  finally{ btn.disabled=false; btn.innerHTML=old; }
+}
+
+async function openReport(){
+  const btn=$('#reportBtn'), old=btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+  try{
+    state.derived=await deriveReport();
+    renderReportForm();
+    $('#rptOverlay').classList.add('show');
+  }catch(e){ toast('Could not work out the report: '+(e.message||''),'err'); }
+  finally{ btn.disabled=false; btn.innerHTML=old; }
+}
+
+// ── confirm dialog ──
+function confirmThen(title,msg,fn){
+  state.confirm=fn; $('#cfTitle').textContent=title; $('#cfMsg').innerHTML=msg;
+  $('#cfOverlay').classList.add('show');
+}
+$('#cfNo').addEventListener('click',()=>{state.confirm=null;$('#cfOverlay').classList.remove('show');});
+$('#cfYes').addEventListener('click',()=>{const f=state.confirm;state.confirm=null;$('#cfOverlay').classList.remove('show');if(f)f();});
+
+// ── wiring ──
+$('#officeList').addEventListener('click',e=>{
+  const card=e.target.closest('[data-office]'); if(card)openOffice(card.dataset.office);
+});
+$('#dq').addEventListener('input',e=>{state.dq=e.target.value.trim();renderOffices();});
+$('#refreshBtn').addEventListener('click',loadAll);
+$('#backToList').addEventListener('click',exitToList);
+$('#rbSchemes').addEventListener('change',()=>{syncSchemeChips();refreshRaiseNote();});
+['#rbFrom','#rbTo'].forEach(s=>$(s).addEventListener('input',refreshRaiseNote));
+$('#rbGo').addEventListener('click',raiseBatch);
+$('#reRaiseBtn').addEventListener('click',()=>{
+  confirmThen('Raise the batch again?',
+    `This office already has <b>${n0(state.notices.length)}</b> notice${state.notices.length===1?'':'s'} on the register, with everything recorded against them. Raising a fresh batch <b>replaces the whole register</b> — the acknowledgements, replies and undelivered reasons already recorded will be lost, because a re-raised batch is a different set of envelopes.`,
+    ()=>{ $('#raisePanel').classList.remove('hidden'); $('#raisePanel').scrollIntoView({behavior:'smooth',block:'center'}); });
+});
+$('#clearBtn').addEventListener('click',()=>{
+  confirmThen('Clear this register?',
+    `All <b>${n0(state.notices.length)}</b> notice${state.notices.length===1?'':'s'} of <b>${esc(state.office.office_name)}</b> will be deleted, along with everything recorded against them. This cannot be undone.`,
+    async()=>{
+      try{
+        await SB.del('app_sb46',`office_id=eq.${encodeURIComponent(state.office.office_id)}`);
+        state.notices=[]; renderRegisterHead(); renderRaisePanel(); renderNotices();
+        toast('Register cleared.','ok');
+      }catch(e){ toast('Could not clear the register: '+(e.message||''),'err'); }
+    });
+});
+$('#fq').addEventListener('input',e=>{state.f.q=e.target.value.trim();renderNotices();});
+$('#fScheme').addEventListener('change',e=>{state.f.scheme=e.target.value;renderNotices();});
+$('#fStatus').addEventListener('change',e=>{state.f.status=e.target.value;renderNotices();});
+$('#labelsBtn').addEventListener('click',()=>{refreshLabelNote();$('#lblOverlay').classList.add('show');});
+['#lbSkip','#lbScope'].forEach(s=>$(s).addEventListener('input',refreshLabelNote));
+$('#lbCancel').addEventListener('click',()=>$('#lblOverlay').classList.remove('show'));
+$('#lbGo').addEventListener('click',buildLabels);
+$('#reportBtn').addEventListener('click',openReport);
+$('#rptCancel').addEventListener('click',()=>$('#rptOverlay').classList.remove('show'));
+$('#rptSave').addEventListener('click',()=>saveReport());
+$('#rptGo').addEventListener('click',generateReportDocx);
+['lblOverlay','rptOverlay','cfOverlay'].forEach(id=>{
+  const o=document.getElementById(id);
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['lblOverlay','rptOverlay','cfOverlay'].forEach(id=>document.getElementById(id).classList.remove('show'));});
+
+// ── init ──
+(async()=>{
+  await loadAll();
+  // /sb-46?office=A1872 — opened straight from an office in Cent Percent Verification
+  const want=new URLSearchParams(location.search).get('office');
+  if(want&&state.offices.some(o=>o.office_id===want))openOffice(want);
+  else if(want)toast('That office has no verification lists stored.','err');
+})();
+</script>
+</body>
+</html>

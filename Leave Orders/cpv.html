@@ -275,6 +275,8 @@ html.light .field input,html.light .field select{background:#f7f8fb}
 .mo-badge.none{background:rgba(148,163,184,.14);color:var(--text-muted);border-color:var(--glass-border)}
 .og-allot{border:1px solid rgba(129,140,248,.32);background:rgba(129,140,248,.14);color:var(--indigo);border-radius:10px;padding:7px 12px;font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
 .og-allot:hover{background:rgba(129,140,248,.26)}
+.og-sb46{border:1px solid rgba(124,58,237,.34);background:rgba(124,58,237,.14);color:var(--violet);border-radius:10px;padding:7px 12px;font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
+.og-sb46:hover{background:rgba(124,58,237,.28)}
 
 /* per-office consolidated download row */
 .og-dl{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;padding-top:12px;border-top:1px dashed var(--glass-border)}
@@ -1414,6 +1416,7 @@ function renderDashboard(){
         <div class="og-chips">
           <span class="ov-chip ver">✓ ${totVerG.toLocaleString('en-IN')} verified</span>
           <span class="ov-chip pen">${penG.toLocaleString('en-IN')} pending</span>
+          <button class="og-sb46" data-sb46="${esc(branch||g.office_name)}" title="SB-46 notices of this office — issue, track and report">📮 SB-46</button>
           ${allotHtml}
         </div>
         <div class="og-prog">
@@ -2060,6 +2063,7 @@ $('#refreshBtn').addEventListener('click',()=>loadDashboard());
 $('#backToDash').addEventListener('click',exitToDash);
 
 document.addEventListener('click',e=>{
+  const sb=e.target.closest('[data-sb46]');if(sb){e.stopPropagation();location.href='/sb-46?office='+encodeURIComponent(sb.dataset.sb46);return;}
   const al=e.target.closest('[data-allot]');if(al){e.stopPropagation();openAllot(al.dataset.allot,al.dataset.off,al.dataset.sol);return;}
   const ed=e.target.closest('[data-edit]');if(ed){e.stopPropagation();openEditStored(ed.dataset.edit);return;}
   const del=e.target.closest('[data-del]');if(del){e.stopPropagation();openDelete(del.dataset.del);return;}

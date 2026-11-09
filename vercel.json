@@ -42,6 +42,10 @@
       "destination": "/Leave Orders/cpv.html"
     },
     {
+      "source": "/sb-46",
+      "destination": "/Leave Orders/sb46.html"
+    },
+    {
       "source": "/address-labels",
       "destination": "/Leave Orders/address-labels.html"
     },
