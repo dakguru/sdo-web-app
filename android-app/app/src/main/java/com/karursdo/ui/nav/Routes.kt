@@ -22,6 +22,8 @@ import kotlinx.serialization.Serializable
 @Serializable data class MoOfficeDetailRoute(val moOfficeId: Long)
 @Serializable object CpvRoute
 @Serializable data class CpvDetailRoute(val officeKey: String, val title: String)
+@Serializable object Sb46Route
+@Serializable data class Sb46DetailRoute(val officeId: String, val officeName: String)
 @Serializable object BirthdaysRoute
 @Serializable object RetirementsRoute
 @Serializable object PerformanceRoute

@@ -118,6 +118,7 @@ fun HomeScreen(
     onOpenArrangements: () -> Unit,
     onOpenMoBeat: (String) -> Unit,
     onOpenCpv: () -> Unit = {},
+    onOpenSb46: () -> Unit = {},
     onOpenBirthdays: () -> Unit = {},
     onOpenRetirements: () -> Unit = {},
     onOpenPerformance: () -> Unit = {},
@@ -224,6 +225,7 @@ fun HomeScreen(
                     QuickAction("📞", "Phone Directory", Brand.Teal, onOpenPhoneDirectory),
                     QuickAction("🔁", "Arrangements", Brand.Teal, onOpenArrangements),
                     QuickAction("✅", "Cent % Verification", Brand.Pink, onOpenCpv),
+                    QuickAction("📮", "SB-46 Notices", Brand.Orange, onOpenSb46),
                     QuickAction("🎂", "Birthdays", Brand.Violet, onOpenBirthdays),
                     QuickAction("🗓️", "Retirements", Brand.Rose, onOpenRetirements),
                     QuickAction("⬆️", "Update data", Brand.PrimaryDarker, onOpenImport)
