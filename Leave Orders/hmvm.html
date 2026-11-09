@@ -124,6 +124,7 @@ table.reg tr:hover td{background:rgba(255,255,255,.03)}
 .status.pending{background:rgba(251,191,36,.16);color:var(--gold)}
 .status.completed{background:rgba(96,165,250,.16);color:var(--blue)}
 .status.despatched{background:rgba(52,211,153,.16);color:var(--em)}
+.carried{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;background:rgba(96,165,250,.16);color:var(--blue);vertical-align:1px;cursor:help}
 .row-actions{display:flex;gap:6px;justify-content:flex-end}
 .icon-btn{width:30px;height:30px;border-radius:9px;border:1px solid var(--glass-border);background:var(--glass-bg-hover);cursor:pointer;display:grid;place-items:center;font-size:13px;color:var(--text-secondary);transition:all .2s}
 .icon-btn:hover{transform:translateY(-1px);color:var(--text-primary)}
@@ -218,7 +219,7 @@ html.light .modal{background:#fff}
 
   <!-- Balance summary -->
   <div class="balance" id="balance">
-    <div class="bt b-open"><div class="n" id="bOpen">—</div><div class="l" style="color:var(--blue)">Opening Balance</div><div class="h">Memos pending</div></div>
+    <div class="bt b-open"><div class="n" id="bOpen">—</div><div class="l" style="color:var(--blue)">Opening Balance</div><div class="h">Carried over, memos pending</div></div>
     <div class="bt b-recv"><div class="n" id="bRecv">—</div><div class="l" style="color:var(--em)">Received</div><div class="h">Received this month</div></div>
     <div class="bt b-total"><div class="n" id="bTotal">—</div><div class="l" style="color:var(--violet)">Total Memos</div><div class="h">Opening + Received</div></div>
     <div class="bt b-disp"><div class="n" id="bDisp">—</div><div class="l" style="color:var(--gold)">Despatched</div><div class="h">Despatched this month</div></div>
@@ -307,7 +308,7 @@ html.light .modal{background:#fff}
 <div class="modal-overlay" id="seedOverlay">
   <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-title">⚙ Opening balance seed</div>
-    <div class="modal-desc">A one-time starting balance for the very first month you track. From then on, each month's opening balance carries forward automatically (previous closing balance). Received &amp; despatched are counted by their actual dates.</div>
+    <div class="modal-desc">A one-time starting balance for the very first month you track. From then on, each month's opening balance carries forward automatically (previous closing balance). Received &amp; despatched are counted by their actual dates, so a memo received in one month and despatched in the next is carried over in between.</div>
     <div class="grid2">
       <div class="field"><label>Pending memos before the system</label><input type="number" id="sVal" min="0" placeholder="0"></div>
       <div class="field"><label>As of the start of</label><input type="month" id="sAsof"></div>
@@ -330,6 +331,11 @@ html.light .modal{background:#fff}
 const $=s=>document.querySelector(s);
 const LETTER_NO='No. ASP/HMVM/dlgs';
 const HVWM_OFFICES_URL='/leave-orders/hmvm/hvwm-offices.json';
+// Offices that do not figure in High Value Withdrawal Memo work at all — they are
+// kept out of the office picker and out of the pendency report, so the report never
+// flags them as "not received". Matched on the normalised name (normOfc), so any
+// spelling of the suffix is caught.
+const HVWM_EXCLUDED=['Gandhigramam S.O','Karur West S.O'];
 const state={entries:[],offices:[],hvwmOffices:[],seed:{seed_balance:0,seed_asof:null},month:'',q:'',editId:null,delId:null,busy:false};
 const who=()=>{try{const u=window.AuthSession&&AuthSession.user();return u?(u.displayName||u.username):'web';}catch{return 'web';}};
 
@@ -341,6 +347,8 @@ function n(v){const x=parseInt(v,10);return isNaN(x)?0:x;}
 // "Karur HO"), or saved with different office_ids, still merge into ONE office
 // group. This lets a single cover letter cite every entry of the same office.
 function normOfc(s){return String(s==null?'':s).toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(h\.?o|s\.?o|b\.?o|sso)$/,'');}
+const EXCLUDED_KEYS=new Set(HVWM_EXCLUDED.map(normOfc));
+function isExcludedOffice(name){return EXCLUDED_KEYS.has(normOfc(name));}
 function groupKeyOf(e){return normOfc(e.office_name)+'|'+String(e.office_kind||'');}
 // date helpers (stored ISO yyyy-mm-dd)
 function fmtDmy(iso){const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?`${m[3]}.${m[2]}.${m[1]}`:'';}
@@ -368,8 +376,10 @@ async function load(){
   // drives correct addressing (salutation) and the pendency report.
   try{
     const r=await fetch(HVWM_OFFICES_URL,{cache:'no-store'});
-    if(r.ok){const arr=await r.json();if(Array.isArray(arr))state.hvwmOffices=arr;}
+    if(r.ok){const arr=await r.json();if(Array.isArray(arr))state.hvwmOffices=arr.filter(o=>o&&!isExcludedOffice(o.name));}
   }catch(e){/* master optional */}
+  // drop the non-HVWM offices that came in from the Supabase OFFICES dataset too
+  state.offices=state.offices.filter(o=>!isExcludedOffice(o.name));
   const townOf=nm=>String(nm).replace(/\s*(H\.?\s*O|S\.?\s*O|B\.?\s*O|HO|SO|BO)\.?\s*$/i,'').trim();
   for(const o of state.hvwmOffices){
     const kind=String(o.type||'').toUpperCase().startsWith('H')?'HO':'SO';
@@ -384,7 +394,7 @@ async function load(){
   await reloadEntries();
   // land on the latest month that has data if the current month is empty
   if(state.entries.length && !monthEntries().length){
-    const months=[...new Set(state.entries.map(e=>monthOf(e.date_of_receipt)).filter(Boolean))].sort();
+    const months=[...new Set(state.entries.flatMap(e=>[monthOf(e.date_of_receipt),monthOf(e.dispatch_date)]).filter(Boolean))].sort();
     if(months.length){state.month=months[months.length-1];$('#monthPick').value=state.month;render();}
   }
 }
@@ -407,6 +417,12 @@ function buildOfficeList(){
 }
 
 // ---------- balance math ----------
+// Everything is counted on its own actual date: a memo is "received" in the month it
+// came in and "despatched" in the month it went out, even when those are different
+// months. Memos still in hand at the month end roll into the next month's Opening
+// Balance, so despatching a September memo in November belongs to NOVEMBER's
+// despatched figure — September's balance already handed it over.
+function isDespatched(e){return e.status==='DESPATCHED'||!!e.dispatch_date;}
 function sumReceivedInMonth(ym){return state.entries.filter(e=>monthOf(e.date_of_receipt)===ym).reduce((a,e)=>a+n(e.total_memos),0);}
 function sumDespatchedInMonth(ym){return state.entries.filter(e=>e.dispatch_date&&monthOf(e.dispatch_date)===ym).reduce((a,e)=>a+n(e.total_memos),0);}
 function monthStart(ym){return ym+'-01';}
@@ -431,10 +447,19 @@ function renderBalance(){
 }
 
 // ---------- register (grouped by office, for the month) ----------
+// A month's page carries everything that moved in that month: the memos received in
+// it AND the memos carried over from earlier months that were despatched in it. Without
+// the second half the Despatched tile counts returns the page does not show — the
+// October page listed only October's receipts while its 608 despatched were August's
+// and September's memos, and November, where 751 memos went out and nothing came in,
+// looked completely empty.
+function isCarriedOver(e){return monthOf(e.date_of_receipt)!==state.month;}
 function monthEntries(){
   const q=state.q.toLowerCase();
   return state.entries.filter(e=>{
-    if(monthOf(e.date_of_receipt)!==state.month)return false;
+    const inByReceipt=monthOf(e.date_of_receipt)===state.month;
+    const inByDespatch=!!e.dispatch_date&&monthOf(e.dispatch_date)===state.month;
+    if(!inByReceipt&&!inByDespatch)return false;
     if(q){const hay=(e.office_name+' '+e.reference+' '+(e.town||'')).toLowerCase();if(!hay.includes(q))return false;}
     return true;
   });
@@ -483,7 +508,7 @@ function render(){
     for(const e of rows){
       const st=(e.status||'PENDING').toLowerCase();
       html+=`<tr>
-        <td class="mono">${esc(fmtDmy(e.date_of_receipt))}</td>
+        <td class="mono">${esc(fmtDmy(e.date_of_receipt))}${isCarriedOver(e)?`<span class="carried" title="Received in ${esc(monthName(monthOf(e.date_of_receipt)))} — part of this month's opening balance, despatched this month">b/f</span>`:''}</td>
         <td class="ref-cell">${esc(e.reference)}</td>
         <td>${e.period_from||e.period_to?esc(fmtDmy(e.period_from)+' to '+fmtDmy(e.period_to)):'—'}</td>
         <td class="mono">${n(e.memo_from)} – ${n(e.memo_to)}</td>
@@ -810,7 +835,7 @@ async function receiptReportPdf(){
   const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
   const rows=state.entries.slice().sort((a,b)=>String(a.date_of_receipt).localeCompare(b.date_of_receipt)||String(a.office_name).localeCompare(b.office_name));
   const totRecv=rows.reduce((s,e)=>s+n(e.total_memos),0);
-  const totDesp=rows.filter(e=>e.status==='DESPATCHED').reduce((s,e)=>s+n(e.total_memos),0);
+  const totDesp=rows.filter(isDespatched).reduce((s,e)=>s+n(e.total_memos),0);
   const pend=totRecv-totDesp;
   const body=rows.map((e,i)=>[i+1,fmtDmy(e.date_of_receipt),e.office_name,e.reference,
     (e.period_from||e.period_to)?fmtDmy(e.period_from)+' – '+fmtDmy(e.period_to):'—',
