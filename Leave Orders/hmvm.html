@@ -124,7 +124,6 @@ table.reg tr:hover td{background:rgba(255,255,255,.03)}
 .status.pending{background:rgba(251,191,36,.16);color:var(--gold)}
 .status.completed{background:rgba(96,165,250,.16);color:var(--blue)}
 .status.despatched{background:rgba(52,211,153,.16);color:var(--em)}
-.carried{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;background:rgba(96,165,250,.16);color:var(--blue);vertical-align:1px;cursor:help}
 .row-actions{display:flex;gap:6px;justify-content:flex-end}
 .icon-btn{width:30px;height:30px;border-radius:9px;border:1px solid var(--glass-border);background:var(--glass-bg-hover);cursor:pointer;display:grid;place-items:center;font-size:13px;color:var(--text-secondary);transition:all .2s}
 .icon-btn:hover{transform:translateY(-1px);color:var(--text-primary)}
@@ -133,6 +132,7 @@ table.reg tr:hover td{background:rgba(255,255,255,.03)}
 
 .empty{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:14px;background:var(--glass-bg);border:1px dashed var(--glass-border);border-radius:var(--radius-lg)}
 .empty .ei{font-size:44px;display:block;margin-bottom:12px;opacity:.5}
+.empty-note{display:inline-block;max-width:520px;margin-top:10px;padding:10px 14px;border-radius:12px;background:rgba(96,165,250,.12);color:var(--blue);font-size:12.5px;line-height:1.6;text-align:left}
 
 /* modal */
 .modal-overlay{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,7,15,.62);backdrop-filter:blur(6px)}
@@ -392,9 +392,15 @@ async function load(){
   try{const c=await SB.select('app_hmvm_config','select=seed_balance,seed_asof&limit=1');
     if(c&&c[0])state.seed={seed_balance:n(c[0].seed_balance),seed_asof:c[0].seed_asof||null};}catch(e){/* table may not exist yet */}
   await reloadEntries();
-  // land on the latest month that has data if the current month is empty
-  if(state.entries.length && !monthEntries().length){
-    const months=[...new Set(state.entries.flatMap(e=>[monthOf(e.date_of_receipt),monthOf(e.dispatch_date)]).filter(Boolean))].sort();
+  // Land on the latest month that saw activity, if this month has no entries of its
+  // own. Despatch dates count as activity: a month can have no new receipts and still
+  // be the live one, with memos carried over going out in it. Never jump past the
+  // present — a single mistyped year (25.09.2029 for 2026) would otherwise park the
+  // whole register three years into the future.
+  if(state.entries.length && !monthEntries().length && !sumDespatchedInMonth(state.month)){
+    const nowM=monthOf(todayIso());
+    const months=[...new Set(state.entries.flatMap(e=>[monthOf(e.date_of_receipt),monthOf(e.dispatch_date)]).filter(Boolean))]
+      .filter(m=>m<=nowM).sort();
     if(months.length){state.month=months[months.length-1];$('#monthPick').value=state.month;render();}
   }
 }
@@ -447,19 +453,14 @@ function renderBalance(){
 }
 
 // ---------- register (grouped by office, for the month) ----------
-// A month's page carries everything that moved in that month: the memos received in
-// it AND the memos carried over from earlier months that were despatched in it. Without
-// the second half the Despatched tile counts returns the page does not show — the
-// October page listed only October's receipts while its 608 despatched were August's
-// and September's memos, and November, where 751 memos went out and nothing came in,
-// looked completely empty.
-function isCarriedOver(e){return monthOf(e.date_of_receipt)!==state.month;}
+// The register lists a month's OWN entries — the memos received in it, exactly as
+// they were booked. Memos received earlier and despatched this month are not repeated
+// here; they reached this month through the Opening Balance and are accounted for in
+// the Despatched tile above.
 function monthEntries(){
   const q=state.q.toLowerCase();
   return state.entries.filter(e=>{
-    const inByReceipt=monthOf(e.date_of_receipt)===state.month;
-    const inByDespatch=!!e.dispatch_date&&monthOf(e.dispatch_date)===state.month;
-    if(!inByReceipt&&!inByDespatch)return false;
+    if(monthOf(e.date_of_receipt)!==state.month)return false;
     if(q){const hay=(e.office_name+' '+e.reference+' '+(e.town||'')).toLowerCase();if(!hay.includes(q))return false;}
     return true;
   });
@@ -469,7 +470,12 @@ function render(){
   const list=monthEntries();
   const reg=$('#register');
   if(!list.length){
-    reg.innerHTML=`<div class="empty"><span class="ei">🗂️</span>No memo entries for <b>${esc(monthName(state.month))}</b>.<br><br>
+    // A month can be busy without a single new receipt: memos carried over from
+    // earlier months may have gone out in it. Say so, or the page reads as "nothing
+    // happened" while the Despatched tile above shows hundreds.
+    const dsp=sumDespatchedInMonth(state.month);
+    const note=dsp?`<br><span class="empty-note">${dsp} memos were <b>despatched</b> in ${esc(monthName(state.month))} — received in earlier months and carried over in the opening balance. They stay listed under the month they were received in.</span>`:'';
+    reg.innerHTML=`<div class="empty"><span class="ei">🗂️</span>No memos <b>received</b> in <b>${esc(monthName(state.month))}</b>.${note}<br><br>
       <button class="btn" onclick="document.getElementById('addBtn').click()">＋ Add the first entry</button></div>`;
     return;
   }
@@ -508,7 +514,7 @@ function render(){
     for(const e of rows){
       const st=(e.status||'PENDING').toLowerCase();
       html+=`<tr>
-        <td class="mono">${esc(fmtDmy(e.date_of_receipt))}${isCarriedOver(e)?`<span class="carried" title="Received in ${esc(monthName(monthOf(e.date_of_receipt)))} — part of this month's opening balance, despatched this month">b/f</span>`:''}</td>
+        <td class="mono">${esc(fmtDmy(e.date_of_receipt))}</td>
         <td class="ref-cell">${esc(e.reference)}</td>
         <td>${e.period_from||e.period_to?esc(fmtDmy(e.period_from)+' to '+fmtDmy(e.period_to)):'—'}</td>
         <td class="mono">${n(e.memo_from)} – ${n(e.memo_to)}</td>
