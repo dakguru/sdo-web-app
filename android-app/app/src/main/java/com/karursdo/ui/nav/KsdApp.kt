@@ -40,6 +40,8 @@ import com.karursdo.ui.people.BirthdaysScreen
 import com.karursdo.ui.people.RetirementsScreen
 import com.karursdo.ui.performance.PerformanceHomeScreen
 import com.karursdo.ui.phone.PhoneDirectoryScreen
+import com.karursdo.ui.sb46.Sb46DetailScreen
+import com.karursdo.ui.sb46.Sb46ListScreen
 import com.karursdo.ui.performance.PerformanceOfficeScreen
 import com.karursdo.ui.ingest.ImportScreen
 import com.karursdo.ui.mo.MoBeatListScreen
@@ -128,6 +130,7 @@ fun KsdApp(onLogout: () -> Unit = {}) {
                     onOpenArrangements = { navController.navigate(ArrangementsRoute) },
                     onOpenMoBeat = { beat -> navController.navigate(MoBeatListRoute(beat)) },
                     onOpenCpv = { navController.navigate(CpvRoute) },
+                    onOpenSb46 = { navController.navigate(Sb46Route) },
                     onOpenBirthdays = { navController.navigate(BirthdaysRoute) },
                     onOpenRetirements = { navController.navigate(RetirementsRoute) },
                     onOpenPerformance = { navController.navigate(PerformanceRoute) },
@@ -170,6 +173,23 @@ fun KsdApp(onLogout: () -> Unit = {}) {
                 CpvDetailScreen(
                     officeKey = r.officeKey,
                     title = r.title,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            // SB-46 notices — tracking only. Raising a batch, allotting the Speed Post article
+            // numbers, printing the labels and writing the Final Report all need the physical
+            // label sheet or a desk, so they stay in the web module at /sb-46.
+            composable<Sb46Route> {
+                Sb46ListScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenOffice = { id, name -> navController.navigate(Sb46DetailRoute(id, name)) }
+                )
+            }
+            composable<Sb46DetailRoute> { entry ->
+                val r = entry.toRoute<Sb46DetailRoute>()
+                Sb46DetailScreen(
+                    officeId = r.officeId,
+                    officeName = r.officeName,
                     onBack = { navController.popBackStack() }
                 )
             }

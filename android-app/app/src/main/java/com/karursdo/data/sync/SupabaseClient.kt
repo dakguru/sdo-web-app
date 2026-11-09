@@ -44,6 +44,27 @@ class SupabaseClient @Inject constructor() {
         ) != null
     }
 
+    /**
+     * PATCH the rows of [table] matched by a raw PostgREST [query] filter with [jsonObjectBody] —
+     * a JSON **object** of just the columns that change (explicit nulls clear a column).
+     *
+     * Unlike [upsert] this never carries the whole row, so two people editing different fields of
+     * the same record — or different records of the same register — cannot overwrite each other's
+     * work. Returns true on 2xx.
+     */
+    suspend fun patch(table: String, query: String, jsonObjectBody: String): Boolean = withContext(Dispatchers.IO) {
+        if (!enabled) return@withContext false
+        request(
+            method = "PATCH",
+            path = "/rest/v1/$table?$query",
+            body = jsonObjectBody,
+            extraHeaders = mapOf(
+                "Content-Type" to "application/json",
+                "Prefer" to "return=minimal"
+            )
+        ) != null
+    }
+
     /** DELETE rows of [table] matched by a raw PostgREST [query] filter (e.g. "branch_id=eq.A1872"). Returns true on 2xx. */
     suspend fun delete(table: String, query: String): Boolean = withContext(Dispatchers.IO) {
         if (!enabled) return@withContext false
