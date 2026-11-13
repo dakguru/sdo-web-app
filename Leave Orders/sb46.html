@@ -300,6 +300,7 @@ table.rpt input.wide{width:100%;min-width:96px;text-align:left;font-variant-nume
       </div>
       <div class="dh-spacer"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" id="noticesBtn" style="background:linear-gradient(135deg,#7c3aed,#a78bfa);box-shadow:0 4px 16px rgba(167,139,250,.28)">📜 Notices (Word)</button>
         <button class="btn blue sm" id="labelsBtn">🏷️ Address labels</button>
         <button class="btn gold sm" id="reportBtn">📄 Final Report</button>
       </div>
@@ -371,6 +372,37 @@ table.rpt input.wide{width:100%;min-width:96px;text-align:left;font-variant-nume
   </div>
 
   <div class="footer">Karur Sub Division · Department of Posts<div class="credit">SB-46 Notice Management</div></div>
+</div>
+
+<!-- ============ NOTICES MODAL ============ -->
+<div class="modal-overlay" id="ntOverlay">
+  <div class="modal">
+    <div class="modal-title">📜 SB-46 notices <span style="font-size:12px;font-weight:700;color:var(--text-muted)">(Tamil, Word)</span></div>
+    <div class="modal-desc">One notice per register entry, in register order, each carrying its <b>Speed Post article number</b> beside the serial numbers — the same depositors, accounts and serials the register and the address labels show. The letter details below apply to every notice.</div>
+    <div class="field">
+      <label>Branch office name in Tamil <span style="text-transform:none;color:var(--text-muted);font-weight:600">— appears in the notice body &amp; reply form</span></label>
+      <input type="text" id="ntBoTa" placeholder="எ.கா. கோடங்கிபட்டி" autocomplete="off" lang="ta">
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Letter number</label><input type="text" id="ntLetterNo" placeholder="ASP/… CPV/2026" autocomplete="off"></div>
+      <div class="field"><label>Place</label><input type="text" id="ntPlace" placeholder="KARUR" autocomplete="off"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Notice date</label><input type="date" id="ntDate"></div>
+      <div class="field"><label>Balance as on</label><input type="date" id="ntAsOn"></div>
+    </div>
+    <div class="field"><label>Which notices</label>
+      <select id="ntScope">
+        <option value="all">Every notice in the register</option>
+        <option value="filtered">Only the notices now listed</option>
+      </select>
+    </div>
+    <div class="note" id="ntNote"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="ntCancel">Cancel</button>
+      <button class="btn" id="ntGo" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">📜 Generate Word file</button>
+    </div>
+  </div>
 </div>
 
 <!-- ============ LABELS MODAL ============ -->
@@ -648,6 +680,7 @@ function renderRegisterHead(){
   $('#reRaiseBtn').classList.toggle('hidden',!canRaise());
   $('#clearBtn').classList.toggle('hidden',!canRaise());
   $('#labelsBtn').disabled=!raised;
+  $('#noticesBtn').disabled=!raised;
   $('#reportBtn').disabled=!canRaise();
 }
 
@@ -1176,6 +1209,112 @@ function loadJSZip(){
 }
 function xmlEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
+// ── the SB-46 notices themselves, from the register ──
+// Built on the same Tamil template Cent Percent Verification uses, so the letter
+// reads identically; the register adds what the list cannot know — the article
+// number each envelope was allotted — beside the serial numbers.
+const NOTICE_TEMPLATE_URL='/leave-orders/cpv/sb46-template.docx';
+function fillTpl(tpl,map){return tpl.replace(/\{\{([A-Z_]+)\}\}/g,(m,k)=>k in map?xmlEsc(map[k]):m);}
+function noticeAmt(b){
+  if(b==null||b===''||isNaN(b))return '';
+  const n=Number(b);
+  return Number.isInteger(n)?String(n):n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function noticeTxnDate(d){
+  const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m?`${m[3]}-${m[2]}-${m[1]}`:String(d||'');
+}
+const boTaKey=o=>'sdo_cpv_bota_'+(o.branch_id||o.office_name);   // shared with CPV
+function noticeList(){ return $('#ntScope').value==='filtered'?filteredNotices():state.notices.slice(); }
+function refreshNoticeNote(){
+  const N=noticeList(), acc=N.reduce((a,n)=>a+((n.accounts||[]).length),0);
+  const note=$('#ntNote');
+  if(!N.length){note.className='note err';note.textContent='No notices to print in this selection.';return;}
+  const noArt=N.filter(n=>!n.article_no).length;
+  note.className=noArt?'note err':'note ok';
+  note.innerHTML=`<b>${n0(N.length)}</b> notice${N.length===1?'':'s'} covering <b>${n0(acc)}</b> account${acc===1?'':'s'}, one page each, articles <b>${esc(N[0].article_no||'—')}</b> → <b>${esc(N[N.length-1].article_no||'—')}</b>.`
+    +(noArt?` <b>${n0(noArt)}</b> of them ${noArt===1?'has':'have'} no article number yet and will print without one.`:'');
+}
+function openNoticesModal(){
+  const o=state.office; if(!o||!state.notices.length)return;
+  const yr=new Date().getFullYear();
+  const officeTok=String(o.office_name||'').replace(/\b(S\.?O|B\.?O|H\.?O|SO|BO|HO)\b\.?$/i,'').trim();
+  let saved=''; try{saved=localStorage.getItem(boTaKey(o))||'';}catch(e){}
+  $('#ntBoTa').value=saved;
+  if(!$('#ntLetterNo').dataset.office||$('#ntLetterNo').dataset.office!==o.office_id){
+    $('#ntLetterNo').value=`ASP/${officeTok||o.office_name} CPV/${yr}`;
+    $('#ntLetterNo').dataset.office=o.office_id;
+    $('#ntPlace').value='KARUR';
+    const issued=(state.notices.find(n=>n.issued_on)||{}).issued_on;
+    $('#ntDate').value=/^\d{4}-\d{2}-\d{2}$/.test(String(issued||''))?issued:todayISO();
+    $('#ntAsOn').value=$('#ntDate').value;
+  }
+  $('#ntScope').value='all';
+  refreshNoticeNote();
+  $('#ntOverlay').classList.add('show');
+}
+async function generateNoticesDocx(){
+  if(state.busy)return;
+  const o=state.office, N=noticeList();
+  if(!N.length){toast('No notices to print in this selection.','err');return;}
+  const boTa=$('#ntBoTa').value.trim();
+  if(!boTa){toast('Enter the branch office name in Tamil first.','err');$('#ntBoTa').focus();return;}
+  try{localStorage.setItem(boTaKey(o),boTa);}catch(e){}
+  const yr=new Date().getFullYear();
+  const letterNo=$('#ntLetterNo').value.trim()||`ASP/${o.office_name} CPV/${yr}`;
+  const place=$('#ntPlace').value.trim()||'KARUR';
+  const noticeDate=dmyDot($('#ntDate').value||todayISO());
+  const asOn=dmyDot($('#ntAsOn').value||todayISO());
+
+  const btn=$('#ntGo'), old=btn.innerHTML;
+  state.busy=true; btn.disabled=true; btn.innerHTML='<span class="spin"></span> Building…';
+  try{
+    const JSZip=await loadJSZip();
+    const resp=await fetch(NOTICE_TEMPLATE_URL,{cache:'no-store'});
+    if(!resp.ok)throw new Error('could not load the notice template ('+resp.status+')');
+    const zip=await JSZip.loadAsync(await resp.arrayBuffer());
+    const xml=await zip.file('word/document.xml').async('string');
+    const uS=xml.indexOf('<!--UNIT_START-->'), uE=xml.indexOf('<!--UNIT_END-->');
+    if(uS<0||uE<0||xml.indexOf('<!--ROW_START-->')<0||xml.indexOf('<!--ROW_END-->')<0)
+      throw new Error('the notice template is missing its markers');
+    const head=xml.slice(0,uS), tail=xml.slice(uE+'<!--UNIT_END-->'.length);
+    const unitTpl=xml.slice(uS+'<!--UNIT_START-->'.length,uE);
+    const rS=unitTpl.indexOf('<!--ROW_START-->'), rE=unitTpl.indexOf('<!--ROW_END-->');
+    let unitHead=unitTpl.slice(0,rS);
+    const rowTpl=unitTpl.slice(rS+'<!--ROW_START-->'.length,rE);
+    const unitTail=unitTpl.slice(rE+'<!--ROW_END-->'.length);
+    // the article number gets its own line inside the addressee box, right under
+    // "Sl. No." (the box is narrow, so on the same line it would wrap)
+    const artPara='<w:p><w:pPr><w:spacing w:after="0"/><w:ind w:left="270"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Nirmala UI" w:hAnsi="Nirmala UI" w:cs="Nirmala UI"/><w:b/><w:sz w:val="18"/></w:rPr><w:t xml:space="preserve">Article No. {{ARTICLE}}</w:t></w:r></w:p>';
+    const slAt=unitHead.indexOf('{{SLNO}}');
+    const slParaEnd=slAt<0?-1:unitHead.indexOf('</w:p>',slAt);
+    if(slParaEnd>=0) unitHead=unitHead.slice(0,slParaEnd+6)+artPara+unitHead.slice(slParaEnd+6);
+    else unitHead=artPara+unitHead;
+    const pageBreak='<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>';
+
+    const units=N.map((n,i)=>{
+      const accts=n.accounts||[];
+      const from=+n.sl_from||1;
+      const rows=accts.map((a,k)=>fillTpl(rowTpl,{
+        R_SNO:String(from+k), R_ACCT:a.acct||'', R_NAME:n.depositor||'',
+        R_AMOUNT:noticeAmt(a.balance), R_DATE:noticeTxnDate(a.date), R_CAT:n.scheme||''
+      })).join('');
+      const slno=n.sl_from===n.sl_to?String(n.sl_from):`${n.sl_from}-${n.sl_to}`;
+      return (i?pageBreak:'')+fillTpl(unitHead,{
+        NAME:n.depositor||'', ADDRESS:n.address||'', SLNO:slno, ARTICLE:n.article_no||'—',
+        LETTERNO:letterNo, PLACE:place, DATE:noticeDate, BO_TA:boTa, SCHEME:n.scheme||'', ASON:asOn
+      })+rows+unitTail;
+    });
+    zip.file('word/document.xml',head+units.join('')+tail);
+    const blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    const fname=`SB-46 Notices ${o.office_name}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.docx';
+    dl(blob,fname);
+    $('#ntOverlay').classList.remove('show');
+    toast(`${n0(N.length)} SB-46 notice${N.length===1?'':'s'} built ✓ — with their article numbers.`,'ok');
+  }catch(e){ toast('Could not build the notices: '+(e.message||''),'err'); }
+  finally{ state.busy=false; btn.disabled=false; btn.innerHTML=old; }
+}
+
 function reportTokens(){
   const d=state.derived, r=collectReport();
   const M={};
@@ -1280,6 +1419,10 @@ $('#clearBtn').addEventListener('click',()=>{
 $('#fq').addEventListener('input',e=>{state.f.q=e.target.value.trim();renderNotices();});
 $('#fScheme').addEventListener('change',e=>{state.f.scheme=e.target.value;renderNotices();});
 $('#fStatus').addEventListener('change',e=>{state.f.status=e.target.value;renderNotices();});
+$('#noticesBtn').addEventListener('click',openNoticesModal);
+$('#ntScope').addEventListener('change',refreshNoticeNote);
+$('#ntCancel').addEventListener('click',()=>$('#ntOverlay').classList.remove('show'));
+$('#ntGo').addEventListener('click',generateNoticesDocx);
 $('#labelsBtn').addEventListener('click',()=>{refreshLabelNote();$('#lblOverlay').classList.add('show');});
 ['#lbSkip','#lbScope'].forEach(s=>$(s).addEventListener('input',refreshLabelNote));
 $('#lbCancel').addEventListener('click',()=>$('#lblOverlay').classList.remove('show'));
@@ -1288,11 +1431,11 @@ $('#reportBtn').addEventListener('click',openReport);
 $('#rptCancel').addEventListener('click',()=>$('#rptOverlay').classList.remove('show'));
 $('#rptSave').addEventListener('click',()=>saveReport());
 $('#rptGo').addEventListener('click',generateReportDocx);
-['lblOverlay','rptOverlay','cfOverlay'].forEach(id=>{
+['ntOverlay','lblOverlay','rptOverlay','cfOverlay'].forEach(id=>{
   const o=document.getElementById(id);
   o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');});
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape')['lblOverlay','rptOverlay','cfOverlay'].forEach(id=>document.getElementById(id).classList.remove('show'));});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['ntOverlay','lblOverlay','rptOverlay','cfOverlay'].forEach(id=>document.getElementById(id).classList.remove('show'));});
 
 // ── init ──
 (async()=>{
