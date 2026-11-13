@@ -133,6 +133,7 @@ html.light .og-bar{background:rgba(0,0,0,.07)}
 html.light .fg input,html.light .fg select,html.light .fg textarea{background:#fff}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--violet)}
 .fg input.art{width:160px;font-variant-numeric:tabular-nums;letter-spacing:.5px;text-transform:uppercase}
+.fg input.art[readonly]{cursor:default;opacity:.9;border-style:dashed}
 .fg.grow{flex:1;min-width:160px}
 .fg.grow input,.fg.grow select,.fg.grow textarea{width:100%}
 .schemebox{display:flex;flex-wrap:wrap;gap:7px}
@@ -326,7 +327,7 @@ table.rpt input.wide{width:100%;min-width:96px;text-align:left;font-variant-nume
         </div>
         <div class="fg"><label>Date of issue</label><input type="date" id="rbDate"></div>
         <div class="fg"><label>First article no.</label><input type="text" id="rbFrom" class="art" placeholder="ET123456785IN" autocomplete="off"></div>
-        <div class="fg"><label>Last article no.</label><input type="text" id="rbTo" class="art" placeholder="ET123456873IN" autocomplete="off"></div>
+        <div class="fg"><label>Last article no.</label><input type="text" id="rbTo" class="art" placeholder="Filled in automatically" autocomplete="off" readonly tabindex="-1" title="Worked out from the first article number and the number of notices"></div>
         <div class="fg" style="align-self:flex-end"><button class="btn" id="rbGo">📬 Raise batch</button></div>
       </div>
       <div class="fg" style="margin-top:13px">
@@ -715,30 +716,36 @@ function chosenBatchKeys(){
 // count is only known after loading, so this note talks in accounts, not notices.
 function refreshRaiseNote(){
   const keys=chosenBatchKeys();
-  const note=$('#rbNote');
-  if(!keys.length){note.className='note err';note.textContent='Pick at least one scheme list.';return;}
-  const from=cclean($('#rbFrom').value), to=cclean($('#rbTo').value);
+  const note=$('#rbNote'), toBox=$('#rbTo');
+  if(!keys.length){toBox.value='';note.className='note err';note.textContent='Pick at least one scheme list.';return;}
+  const from=cclean($('#rbFrom').value).toUpperCase();
   const unvScope=$('#rbScope').value!=='all';
   const cs=keys.map(raiseCountOf);
-  let msg;
-  if(cs.every(Boolean)){
-    const acc=cs.reduce((a,c)=>a+c.accts,0), not=cs.reduce((a,c)=>a+c.notices,0);
-    msg=`<b>${keys.length}</b> scheme list${keys.length===1?'':'s'} · <b>${n0(acc)}</b> ${unvScope?'unverified ':''}account${acc===1?'':'s'} → <b>${n0(not)}</b> notice${not===1?'':'s'} (one per depositor per scheme), so the sheet needs <b>${n0(not)}</b> article number${not===1?'':'s'}.`;
+  const known=cs.every(Boolean);
+  const acc=known?cs.reduce((a,c)=>a+c.accts,0):0, not=known?cs.reduce((a,c)=>a+c.notices,0):0;
+  // The last article number is not typed: it is the first number plus one per
+  // notice, check digit and all, so the range always matches the notices due.
+  toBox.value='';
+  let cls='note', msg;
+  if(known){
+    msg=`<b>${keys.length}</b> scheme list${keys.length===1?'':'s'} · <b>${n0(acc)}</b> ${unvScope?'unverified ':''}account${acc===1?'':'s'} → <b>${n0(not)}</b> notice${not===1?'':'s'} (one per depositor per scheme), so the sheet needs <b>${n0(not)}</b> article number${not===1?'':'s'}. Enter the first one; the last is filled in.`;
+    if(!not){cls='note err'; msg=unvScope?'Every account in the chosen lists is already verified — no notice is due.':'The chosen lists hold no accounts.';}
+  }else if(state.office.raiseCounts===null){
+    cls='note err'; msg='The verified counts could not be read, so the number of notices — and the last article number — cannot be worked out. Reload the page and try again.';
   }else{
-    const tot=state.office.batches.filter(b=>keys.includes(b.office_key)).reduce((a,b)=>a+(+b.total_accounts||0),0);
-    msg=`<b>${keys.length}</b> scheme list${keys.length===1?'':'s'} · up to <b>${n0(tot)}</b> accounts. ${state.office.raiseCounts===null?'The verified counts could not be read, so these are list totals; ':'Counting the unverified accounts… '}the exact notice count is confirmed before anything is written.`;
+    msg='Counting the accounts in the chosen lists… the last article number is filled in once the count is known.';
   }
-  let cls='note';
-  if(from||to){
-    const a=LabelEngine.parseBarcode(from), b=LabelEngine.parseBarcode(to);
-    if(from&&!a) {cls='note err'; msg=`<b>${esc(from)}</b> is not an article number — it should read like <b>ET123456785IN</b>.`;}
-    else if(to&&!b){cls='note err'; msg=`<b>${esc(to)}</b> is not an article number — it should read like <b>ET123456873IN</b>.`;}
-    else if(a&&a.badCheck){cls='note err'; msg=`The check digit of <b>${esc(from)}</b> does not match the S10 rule — please read the number off the sheet again.`;}
-    else if(b&&b.badCheck){cls='note err'; msg=`The check digit of <b>${esc(to)}</b> does not match the S10 rule — please read the number off the sheet again.`;}
-    else if(a&&b){
-      const n=LabelEngine.rangeSize(from,to);
-      if(!n){cls='note err'; msg=`<b>${esc(from)}</b> to <b>${esc(to)}</b> is not a range — the two numbers must be of the same series and run forwards.`;}
-      else{cls='note ok'; msg=`The sheet holds <b>${n0(n)}</b> article number${n===1?'':'s'}, <b>${esc(from)}</b> → <b>${esc(to)}</b>. They will be allotted to the notices in order.`;}
+  if(from){
+    const a=LabelEngine.parseBarcode(from);
+    if(!a){cls='note err'; msg=`<b>${esc(from)}</b> is not an article number — it should read like <b>ET123456785IN</b>.`;}
+    else if(a.badCheck){cls='note err'; msg=`The check digit of <b>${esc(from)}</b> does not match the S10 rule — please read the number off the sheet again.`;}
+    else if(known&&not){
+      if(a.serial+not-1>99999999){cls='note err'; msg=`<b>${n0(not)}</b> numbers from <b>${esc(from)}</b> would run past the end of the series.`;}
+      else{
+        const last=LabelEngine.barcodeNoAt(a,not-1);
+        toBox.value=last;
+        cls='note ok'; msg=`<b>${n0(not)}</b> notice${not===1?'':'s'} (${n0(acc)} ${unvScope?'unverified ':''}account${acc===1?'':'s'}) → articles <b>${esc(LabelEngine.barcodeNoAt(a,0))}</b> to <b>${esc(last)}</b>, allotted to the notices in order. Check that the sheet runs to this last number.`;
+      }
     }
   }
   note.className=cls; note.innerHTML=msg;
@@ -768,9 +775,9 @@ async function raiseBatch(){
   const base=LabelEngine.parseBarcode(from);
   if(!base||base.badCheck){toast('Enter a valid first article number, e.g. ET123456785IN.','err');$('#rbFrom').focus();return;}
   const last=LabelEngine.parseBarcode(to);
-  if(!last||last.badCheck){toast('Enter a valid last article number, e.g. ET123456873IN.','err');$('#rbTo').focus();return;}
+  if(!last||last.badCheck){toast('The last article number is filled in once the notices are counted — enter the first article number and wait for the count.','err');$('#rbFrom').focus();return;}
   const range=LabelEngine.rangeSize(from,to);
-  if(!range){toast('The last article number must be of the same series as the first, and run forwards.','err');$('#rbTo').focus();return;}
+  if(!range){toast('The last article number must be of the same series as the first, and run forwards.','err');$('#rbFrom').focus();return;}
   const issuedOn=$('#rbDate').value||todayISO();
   const scope=$('#rbScope').value;
 
@@ -816,9 +823,10 @@ async function raiseBatch(){
       return;
     }
     if(rows.length!==range){
-      toast(`The sheet holds ${n0(range)} article number${range===1?'':'s'} but ${n0(rows.length)} notice${rows.length===1?'':'s'} ${rows.length===1?'is':'are'} due. Correct the range and raise the batch again.`,'err');
-      $('#rbNote').className='note err';
-      $('#rbNote').innerHTML=`<b>${n0(rows.length)}</b> notice${rows.length===1?'':'s'} would be raised, but <b>${esc(from)}</b> → <b>${esc(to)}</b> is <b>${n0(range)}</b> article number${range===1?'':'s'}. The last number of a run of ${n0(rows.length)} starting at ${esc(from)} is <b>${esc(LabelEngine.barcodeNoAt(base,rows.length-1))}</b>.`;
+      // the lists or their verifications changed after the panel counted them —
+      // count again so the last article number is worked out afresh
+      toast(`The count has changed: ${n0(rows.length)} notice${rows.length===1?'':'s'} ${rows.length===1?'is':'are'} now due, not ${n0(range)}. The last article number has been worked out again — check it against the sheet and raise the batch.`,'err');
+      loadRaiseCounts();
       return;
     }
     rows.forEach((r,i)=>{ r.article_no=LabelEngine.barcodeNoAt(base,i); });
@@ -1251,7 +1259,7 @@ $('#refreshBtn').addEventListener('click',loadAll);
 $('#backToList').addEventListener('click',exitToList);
 $('#rbSchemes').addEventListener('change',()=>{syncSchemeChips();refreshRaiseNote();});
 $('#rbScope').addEventListener('change',()=>{syncSchemeChips();refreshRaiseNote();});
-['#rbFrom','#rbTo'].forEach(s=>$(s).addEventListener('input',refreshRaiseNote));
+$('#rbFrom').addEventListener('input',refreshRaiseNote);
 $('#rbGo').addEventListener('click',raiseBatch);
 $('#reRaiseBtn').addEventListener('click',()=>{
   confirmThen('Raise the batch again?',
