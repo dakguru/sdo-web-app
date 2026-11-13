@@ -1232,7 +1232,7 @@ function refreshNoticeNote(){
   if(!N.length){note.className='note err';note.textContent='No notices to print in this selection.';return;}
   const noArt=N.filter(n=>!n.article_no).length;
   note.className=noArt?'note err':'note ok';
-  note.innerHTML=`<b>${n0(N.length)}</b> notice${N.length===1?'':'s'} covering <b>${n0(acc)}</b> account${acc===1?'':'s'}, one page each, articles <b>${esc(N[0].article_no||'—')}</b> → <b>${esc(N[N.length-1].article_no||'—')}</b>.`
+  note.innerHTML=`<b>${n0(N.length)}</b> notice${N.length===1?'':'s'} covering <b>${n0(acc)}</b> account${acc===1?'':'s'} — the letter on one page, the reply form and accounts on the next — articles <b>${esc(N[0].article_no||'—')}</b> → <b>${esc(N[N.length-1].article_no||'—')}</b>.`
     +(noArt?` <b>${n0(noArt)}</b> of them ${noArt===1?'has':'have'} no article number yet and will print without one.`:'');
 }
 function openNoticesModal(){
