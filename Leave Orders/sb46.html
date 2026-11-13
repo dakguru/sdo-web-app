@@ -157,6 +157,14 @@ table.reg th{text-align:left;font-size:10px;font-weight:800;letter-spacing:.4px;
 html.light table.reg th{background:#eef1f6}
 table.reg td{padding:10px 12px;border-bottom:1px solid var(--glass-border);color:var(--text-secondary);vertical-align:top}
 table.reg tr:last-child td{border-bottom:none}
+.sch-sum{margin:0 0 18px}
+.sch-sum .ss-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);padding:12px 14px 4px}
+table.reg.sch{min-width:620px}
+table.reg.sch th.r,table.reg.sch td.r{text-align:right;font-variant-numeric:tabular-nums}
+table.reg.sch tbody tr{cursor:pointer}
+table.reg.sch tbody tr.on td{background:rgba(167,139,250,.12)}
+table.reg.sch td b{color:var(--text-primary)}
+table.reg.sch tfoot td{font-weight:800;color:var(--text-primary);border-top:1px solid var(--glass-border);padding:10px 12px}
 table.reg tbody tr:hover td{background:rgba(255,255,255,.03)}
 .mono{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text-primary);white-space:nowrap}
 .nm{color:var(--text-primary);font-weight:600}
@@ -312,6 +320,19 @@ table.rpt input.wide{width:100%;min-width:96px;text-align:left;font-variant-nume
       <div class="st s-rep"><div class="n" id="rRep">—</div><div class="l">Replies Received</div></div>
       <div class="st s-ret"><div class="n" id="rRet">—</div><div class="l">Returned</div></div>
       <div class="st s-wait"><div class="n" id="rWait">—</div><div class="l">Awaiting</div></div>
+    </div>
+
+    <!-- scheme-wise summary of the register -->
+    <div class="tbl-wrap sch-sum hidden" id="schSumWrap">
+      <div class="ss-title">Scheme-wise · notices and accounts <span style="text-transform:none;letter-spacing:0;font-weight:600">— click a scheme to list only its notices</span></div>
+      <table class="reg sch">
+        <thead><tr>
+          <th>Scheme</th><th class="r">Notices</th><th class="r">Accounts</th>
+          <th class="r">Ack.</th><th class="r">Replies</th><th class="r">Returned</th><th class="r">Awaiting</th>
+        </tr></thead>
+        <tbody id="schSumBody"></tbody>
+        <tfoot id="schSumFoot"></tfoot>
+      </table>
     </div>
 
     <!-- raise a batch -->
@@ -655,6 +676,34 @@ function exitToList(){
   loadAll();
 }
 
+// One row per scheme list: how many notices went out, how many accounts they
+// cover, and where the notices stand. "Awaiting" is counted as on the cards above
+// — notices with neither a reply nor a return yet.
+function renderSchemeSummary(){
+  const N=state.notices, wrap=$('#schSumWrap');
+  wrap.classList.toggle('hidden',!N.length);
+  if(!N.length){$('#schSumBody').innerHTML='';$('#schSumFoot').innerHTML='';return;}
+  const by=new Map();
+  const blank=()=>({notices:0,accts:0,ack:0,reply:0,ret:0,wait:0});
+  const tot=blank();
+  N.forEach(n=>{
+    const k=n.scheme||'—';
+    if(!by.has(k))by.set(k,blank());
+    const a=(n.accounts||[]).length;
+    [by.get(k),tot].forEach(c=>{
+      c.notices++; c.accts+=a;
+      if(n.ack_received)c.ack++;
+      if(n.reply_received)c.reply++;
+      if(n.returned)c.ret++;
+      if(!n.reply_received&&!n.returned)c.wait++;
+    });
+  });
+  const cells=c=>`<td class="r"><b>${n0(c.notices)}</b></td><td class="r"><b>${n0(c.accts)}</b></td><td class="r">${n0(c.ack)}</td><td class="r">${n0(c.reply)}</td><td class="r">${n0(c.ret)}</td><td class="r">${n0(c.wait)}</td>`;
+  $('#schSumBody').innerHTML=[...by.entries()].sort((a,b)=>String(a[0]).localeCompare(String(b[0])))
+    .map(([k,c])=>`<tr data-scheme="${esc(k)}" class="${state.f.scheme===k?'on':''}"><td><span class="sch-chip">${esc(k)}</span></td>${cells(c)}</tr>`).join('');
+  $('#schSumFoot').innerHTML=`<tr><td>Total</td>${cells(tot)}</tr>`;
+}
+
 function renderRegisterHead(){
   const o=state.office;
   $('#dhTitle').textContent=o.office_name;
@@ -670,6 +719,7 @@ function renderRegisterHead(){
   $('#rIss').textContent=n0(N.length); $('#rAck').textContent=n0(ack);
   $('#rRep').textContent=n0(rep); $('#rRet').textContent=n0(ret);
   $('#rWait').textContent=n0(Math.max(0,N.length-rep-ret));
+  renderSchemeSummary();
   // scheme filter options
   const schemes=[...new Set(N.map(x=>x.scheme))].sort();
   $('#fScheme').innerHTML='<option value="">All</option>'+schemes.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
@@ -920,7 +970,9 @@ function filteredNotices(){
 }
 function renderNotices(){
   const rows=filteredNotices();
-  $('#regCount').innerHTML=`<b>${n0(rows.length)}</b> of ${n0(state.notices.length)} notice${state.notices.length===1?'':'s'}`;
+  const shownAccts=rows.reduce((a,n)=>a+((n.accounts||[]).length),0);
+  $('#regCount').innerHTML=`<b>${n0(rows.length)}</b> of ${n0(state.notices.length)} notice${state.notices.length===1?'':'s'} · <b>${n0(shownAccts)}</b> account${shownAccts===1?'':'s'}`;
+  document.querySelectorAll('#schSumBody tr').forEach(tr=>tr.classList.toggle('on',!!state.f.scheme&&tr.dataset.scheme===state.f.scheme));
   const body=$('#regBody'), ro=!canTrack();
   if(!rows.length){
     body.innerHTML=`<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted)">${state.notices.length?'No notices match these filters.':'No notices raised for this office yet.'}</td></tr>`;
@@ -1440,6 +1492,14 @@ $('#clearBtn').addEventListener('click',()=>{
 });
 $('#fq').addEventListener('input',e=>{state.f.q=e.target.value.trim();renderNotices();});
 $('#fScheme').addEventListener('change',e=>{state.f.scheme=e.target.value;renderNotices();});
+$('#schSumBody').addEventListener('click',e=>{
+  const tr=e.target.closest('tr[data-scheme]'); if(!tr)return;
+  const k=tr.dataset.scheme;
+  state.f.scheme=state.f.scheme===k?'':k;            // click again to show every scheme
+  $('#fScheme').value=state.f.scheme;
+  renderNotices();
+  $('#regFilters').scrollIntoView({behavior:'smooth',block:'start'});
+});
 $('#fStatus').addEventListener('change',e=>{state.f.status=e.target.value;renderNotices();});
 $('#noticesBtn').addEventListener('click',openNoticesModal);
 $('#ntScope').addEventListener('change',refreshNoticeNote);
