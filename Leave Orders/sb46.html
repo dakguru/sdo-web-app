@@ -57,7 +57,7 @@ html.light .bg-mesh{background:
 .hero-sub{font-size:13.5px;color:var(--text-secondary);line-height:1.6;max-width:880px}
 
 .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:20px 0}
-@media(max-width:820px){.summary{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:820px){.summary{grid-template-columns:repeat(2,1fr)}.summary .st:last-child{grid-column:span 2}}
 .st{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:16px 16px 14px;backdrop-filter:blur(var(--glass-blur));position:relative;overflow:hidden;transition:transform .3s}
 .st:hover{transform:translateY(-3px)}
 .st::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px}
@@ -69,8 +69,43 @@ html.light .bg-mesh{background:
 .st .n{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:28px;font-weight:900;line-height:1}
 .st.s-iss .n{color:var(--violet)} .st.s-ack .n{color:var(--cyan)} .st.s-rep .n{color:var(--em)}
 .st.s-ret .n{color:var(--rose)} .st.s-wait .n{color:var(--gold)}
-.st .l{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-top:8px;color:var(--text-secondary)}
-.st .sub{font-size:11px;font-weight:600;color:var(--text-muted);margin-top:3px}
+.st{padding:15px 16px 16px;box-shadow:var(--glass-shadow)}
+.st .st-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.st .ic{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-size:15px;flex:none}
+.st.s-iss .ic{background:rgba(167,139,250,.16)} .st.s-ack .ic{background:rgba(34,211,238,.16)}
+.st.s-rep .ic{background:rgba(52,211,153,.16)}  .st.s-ret .ic{background:rgba(251,113,133,.16)}
+.st.s-wait .ic{background:rgba(251,191,36,.16)}
+.st .n{font-size:32px;letter-spacing:-.5px}
+.st .l{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--text-secondary)}
+.st .sub{font-size:11.5px;font-weight:600;color:var(--text-muted);margin-top:6px;min-height:15px}
+.st .sub b{color:var(--text-secondary)}
+.st .bar{height:5px;border-radius:999px;background:rgba(148,163,184,.18);margin-top:10px;overflow:hidden}
+.st .bar i{display:block;height:100%;width:0;border-radius:999px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.st.s-iss .bar i{background:linear-gradient(90deg,var(--violet),var(--indigo))}
+.st.s-ack .bar i{background:linear-gradient(90deg,var(--cyan),var(--blue))}
+.st.s-rep .bar i{background:linear-gradient(90deg,var(--em),var(--teal))}
+.st.s-ret .bar i{background:linear-gradient(90deg,var(--rose),#f43f5e)}
+.st.s-wait .bar i{background:linear-gradient(90deg,var(--gold),var(--orange))}
+
+/* progress strip — where the notices stand, as one bar */
+.prog{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin:0 0 18px;padding:16px 20px;border-radius:var(--radius-lg);
+  background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow)}
+.prog .ring{--p:0;width:74px;height:74px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:conic-gradient(var(--em) calc(var(--p)*1%),rgba(148,163,184,.2) 0)}
+.prog .ring span{width:58px;height:58px;border-radius:50%;background:var(--bg-deep);display:grid;place-items:center;
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:900;font-size:16px;color:var(--text-primary)}
+.prog .pg-body{flex:1;min-width:240px}
+.prog .pg-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.prog .pg-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:14px;color:var(--text-primary)}
+.prog .pg-hint{font-size:12px;color:var(--text-muted)}
+.stack{display:flex;height:12px;border-radius:999px;overflow:hidden;background:rgba(148,163,184,.18)}
+.stack i{display:block;height:100%;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.stack .k-rep{background:var(--em)} .stack .k-ret{background:var(--rose)}
+.stack .k-ack{background:var(--cyan)} .stack .k-new{background:rgba(251,191,36,.55)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:12px;color:var(--text-secondary)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend span::before{content:'';width:10px;height:10px;border-radius:3px;background:var(--c)}
+.legend b{color:var(--text-primary);font-variant-numeric:tabular-nums}
 
 .section-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin:26px 0 14px;display:flex;align-items:center;gap:10px}
 .section-title::before{content:'';width:4px;height:16px;border-radius:4px;background:linear-gradient(180deg,var(--violet),var(--cyan))}
@@ -160,7 +195,14 @@ table.reg td{padding:10px 12px;border-bottom:1px solid var(--glass-border);color
 table.reg tr:last-child td{border-bottom:none}
 .sch-sum{margin:0 0 18px}
 .sch-sum .ss-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);padding:12px 14px 4px}
-table.reg.sch{min-width:620px}
+table.reg.sch{min-width:760px}
+table.reg.sch th,table.reg.sch td{padding:10px 14px;vertical-align:middle}
+table.reg.sch td.zero{color:var(--text-muted);opacity:.55}
+table.reg.sch .cov{font-size:11px;color:var(--text-muted);font-weight:600}
+table.reg.sch .pcell{width:30%;min-width:180px}
+table.reg.sch .pcell .stack{height:8px}
+table.reg.sch .pcell .pp{font-size:11px;color:var(--text-muted);font-weight:700;margin-top:4px}
+table.reg.sch td.big{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:15px;font-weight:900;color:var(--text-primary)}
 table.reg.sch th.r,table.reg.sch td.r{text-align:right;font-variant-numeric:tabular-nums}
 table.reg.sch tbody tr{cursor:pointer}
 table.reg.sch tbody tr.on td{background:rgba(167,139,250,.12)}
@@ -279,12 +321,14 @@ table.rpt input.wide{width:100%;min-width:96px;text-align:left;font-variant-nume
   <!-- ============ OFFICE LIST ============ -->
   <div id="listView">
     <div class="summary">
-      <div class="st s-iss"><div class="n" id="sIss">—</div><div class="l">Notices Issued</div><div class="sub" id="sCov"></div></div>
-      <div class="st s-ack"><div class="n" id="sAck">—</div><div class="l">Ack. Received</div></div>
-      <div class="st s-rep"><div class="n" id="sRep">—</div><div class="l">Replies Received</div></div>
-      <div class="st s-ret"><div class="n" id="sRet">—</div><div class="l">Returned</div></div>
-      <div class="st s-wait"><div class="n" id="sWait">—</div><div class="l">Awaiting</div></div>
+      <div class="st s-iss"><div class="st-top"><span class="ic">📮</span><span class="l">Notices issued</span></div><div class="n" id="sIss">—</div><div class="sub" id="sCov">one per account</div><div class="bar"><i style="width:100%"></i></div></div>
+      <div class="st s-ack"><div class="st-top"><span class="ic">✉️</span><span class="l">Ack. received</span></div><div class="n" id="sAck">—</div><div class="sub" id="sAckP"></div><div class="bar"><i id="sAckB"></i></div></div>
+      <div class="st s-rep"><div class="st-top"><span class="ic">✅</span><span class="l">Replies received</span></div><div class="n" id="sRep">—</div><div class="sub" id="sRepP"></div><div class="bar"><i id="sRepB"></i></div></div>
+      <div class="st s-ret"><div class="st-top"><span class="ic">↩️</span><span class="l">Returned</span></div><div class="n" id="sRet">—</div><div class="sub" id="sRetP"></div><div class="bar"><i id="sRetB"></i></div></div>
+      <div class="st s-wait"><div class="st-top"><span class="ic">⏳</span><span class="l">Awaiting</span></div><div class="n" id="sWait">—</div><div class="sub" id="sWaitP"></div><div class="bar"><i id="sWaitB"></i></div></div>
     </div>
+
+    <div class="prog hidden" id="sProg"></div>
 
     <div id="scopeBar" class="scope-bar hidden"></div>
 
@@ -316,19 +360,21 @@ table.rpt input.wide{width:100%;min-width:96px;text-align:left;font-variant-nume
     </div>
 
     <div class="summary">
-      <div class="st s-iss"><div class="n" id="rIss">—</div><div class="l">Notices Issued</div><div class="sub" id="rCov"></div></div>
-      <div class="st s-ack"><div class="n" id="rAck">—</div><div class="l">Ack. Received</div></div>
-      <div class="st s-rep"><div class="n" id="rRep">—</div><div class="l">Replies Received</div></div>
-      <div class="st s-ret"><div class="n" id="rRet">—</div><div class="l">Returned</div></div>
-      <div class="st s-wait"><div class="n" id="rWait">—</div><div class="l">Awaiting</div></div>
+      <div class="st s-iss"><div class="st-top"><span class="ic">📮</span><span class="l">Notices issued</span></div><div class="n" id="rIss">—</div><div class="sub" id="rCov">one per account</div><div class="bar"><i style="width:100%"></i></div></div>
+      <div class="st s-ack"><div class="st-top"><span class="ic">✉️</span><span class="l">Ack. received</span></div><div class="n" id="rAck">—</div><div class="sub" id="rAckP"></div><div class="bar"><i id="rAckB"></i></div></div>
+      <div class="st s-rep"><div class="st-top"><span class="ic">✅</span><span class="l">Replies received</span></div><div class="n" id="rRep">—</div><div class="sub" id="rRepP"></div><div class="bar"><i id="rRepB"></i></div></div>
+      <div class="st s-ret"><div class="st-top"><span class="ic">↩️</span><span class="l">Returned</span></div><div class="n" id="rRet">—</div><div class="sub" id="rRetP"></div><div class="bar"><i id="rRetB"></i></div></div>
+      <div class="st s-wait"><div class="st-top"><span class="ic">⏳</span><span class="l">Awaiting</span></div><div class="n" id="rWait">—</div><div class="sub" id="rWaitP"></div><div class="bar"><i id="rWaitB"></i></div></div>
     </div>
+
+    <div class="prog hidden" id="rProg"></div>
 
     <!-- scheme-wise summary of the register -->
     <div class="tbl-wrap sch-sum hidden" id="schSumWrap">
-      <div class="ss-title">Scheme-wise · notices issued (one per account) <span style="text-transform:none;letter-spacing:0;font-weight:600">— a cover may carry several accounts; click a scheme to list only its covers</span></div>
+      <div class="ss-title">Scheme-wise <span style="text-transform:none;letter-spacing:0;font-weight:600">— notices are counted one per account; click a scheme to list only its covers</span></div>
       <table class="reg sch">
         <thead><tr>
-          <th>Scheme</th><th class="r">Notices (accounts)</th><th class="r">Covers</th>
+          <th>Scheme</th><th class="r">Notices</th><th>Progress</th>
           <th class="r">Ack.</th><th class="r">Replies</th><th class="r">Returned</th><th class="r">Awaiting</th>
         </tr></thead>
         <tbody id="schSumBody"></tbody>
@@ -598,9 +644,10 @@ async function loadAll(){
   try{
     const rows=await selectAllRows('app_sb46','select=office_id,sl_from,sl_to,ack_received,reply_received,returned');
     (rows||[]).forEach(r=>{
-      const c=state.counts[r.office_id]||(state.counts[r.office_id]={covers:0,issued:0,ack:0,reply:0,returned:0});
+      const c=state.counts[r.office_id]||(state.counts[r.office_id]={covers:0,issued:0,ack:0,reply:0,returned:0,list:[]});
       const k=nAcc(r);                                 // notices = accounts on the cover
       c.covers++; c.issued+=k; if(r.ack_received)c.ack+=k; if(r.reply_received)c.reply+=k; if(r.returned)c.returned+=k;
+      c.list.push(r);
     });
   }catch(e){
     box.innerHTML='<div class="empty"><span class="ei">⚠️</span>Could not read the SB-46 register — has <b>migration_v25_sb46.sql</b> been run in the Supabase SQL editor?</div>';
@@ -624,12 +671,7 @@ function renderOffices(){
   const q=state.dq.toLowerCase();
   const list=state.offices.filter(o=>!q||(o.office_name+' '+o.sol_id+' '+o.branch_id).toLowerCase().includes(q));
   // summary across everything visible
-  let iss=0,ack=0,rep=0,ret=0,cov=0;
-  state.offices.forEach(o=>{const c=state.counts[o.office_id];if(c){cov+=c.covers;iss+=c.issued;ack+=c.ack;rep+=c.reply;ret+=c.returned;}});
-  $('#sIss').textContent=n0(iss);
-  $('#sCov').textContent=cov?`in ${n0(cov)} cover${cov===1?'':'s'}`:''; $('#sAck').textContent=n0(ack);
-  $('#sRep').textContent=n0(rep); $('#sRet').textContent=n0(ret);
-  $('#sWait').textContent=n0(Math.max(0,iss-rep-ret));
+  paintCards('s',standing(state.offices.flatMap(o=>(state.counts[o.office_id]||{}).list||[])));
 
   const box=$('#officeList');
   if(!list.length){
@@ -694,29 +736,72 @@ function exitToList(){
 // out in, and where they stand — every status counted in notices, i.e. a cover of
 // five accounts marked "reply received" adds five replies. "Awaiting" is counted as
 // on the cards above: notices with neither a reply nor a return yet.
+// Where a set of notices stands, split so the parts add up: replied, returned,
+// delivered (ack.) but no reply yet, and not heard of at all.
+function standing(list){
+  const c={iss:0,cov:0,ack:0,rep:0,ret:0,ackOnly:0,none:0};
+  list.forEach(n=>{
+    const k=nAcc(n);
+    c.cov++; c.iss+=k;
+    if(n.ack_received)c.ack+=k;
+    if(n.reply_received)c.rep+=k;
+    else if(n.returned)c.ret+=k;
+    else if(n.ack_received)c.ackOnly+=k;
+    else c.none+=k;
+  });
+  return c;
+}
+const pctOf=(x,t)=>t?Math.round(x/t*100):0;
+function stackBar(c){
+  const w=x=>c.iss?(x/c.iss*100).toFixed(2)+'%':'0%';
+  return `<div class="stack" title="${n0(c.rep)} replied · ${n0(c.ret)} returned · ${n0(c.ackOnly)} delivered, no reply yet · ${n0(c.none)} not yet heard of">
+    <i class="k-rep" style="width:${w(c.rep)}"></i><i class="k-ret" style="width:${w(c.ret)}"></i><i class="k-ack" style="width:${w(c.ackOnly)}"></i><i class="k-new" style="width:${w(c.none)}"></i></div>`;
+}
+// The five cards (x = 's' office list, 'r' one register) and the progress strip.
+function paintCards(x,c){
+  const wait=Math.max(0,c.iss-c.rep-c.ret);
+  $('#'+x+'Iss').textContent=n0(c.iss);
+  $('#'+x+'Cov').innerHTML=c.cov?`one per account · in <b>${n0(c.cov)}</b> cover${c.cov===1?'':'s'}`:'one per account';
+  [['Ack',c.ack],['Rep',c.rep],['Ret',c.ret],['Wait',wait]].forEach(([k,v])=>{
+    $('#'+x+k).textContent=n0(v);
+    const p=pctOf(v,c.iss);
+    $('#'+x+k+'P').innerHTML=c.iss?`<b>${p}%</b> of notices issued`:'';
+    $('#'+x+k+'B').style.width=p+'%';
+  });
+  const box=$('#'+x+'Prog');
+  box.classList.toggle('hidden',!c.iss);
+  if(!c.iss){box.innerHTML='';return;}
+  const settled=c.rep+c.ret, p=pctOf(settled,c.iss);
+  box.innerHTML=`<div class="ring" style="--p:${p}"><span>${p}%</span></div>
+    <div class="pg-body">
+      <div class="pg-head"><span class="pg-title">${n0(settled)} of ${n0(c.iss)} notices settled</span>
+        <span class="pg-hint">settled = reply received or cover returned</span></div>
+      ${stackBar(c)}
+      <div class="legend">
+        <span style="--c:var(--em)">Replied <b>${n0(c.rep)}</b></span>
+        <span style="--c:var(--rose)">Returned <b>${n0(c.ret)}</b></span>
+        <span style="--c:var(--cyan)">Delivered, no reply yet <b>${n0(c.ackOnly)}</b></span>
+        <span style="--c:rgba(251,191,36,.75)">Not yet heard of <b>${n0(c.none)}</b></span>
+      </div>
+    </div>`;
+}
+
 function renderSchemeSummary(){
   const N=state.notices, wrap=$('#schSumWrap');
   wrap.classList.toggle('hidden',!N.length);
   if(!N.length){$('#schSumBody').innerHTML='';$('#schSumFoot').innerHTML='';return;}
   const by=new Map();
-  const blank=()=>({covers:0,notices:0,ack:0,reply:0,ret:0,wait:0});
-  const tot=blank();
-  N.forEach(n=>{
-    const k=n.scheme||'—';
-    if(!by.has(k))by.set(k,blank());
-    const a=nAcc(n);
-    [by.get(k),tot].forEach(c=>{
-      c.covers++; c.notices+=a;
-      if(n.ack_received)c.ack+=a;
-      if(n.reply_received)c.reply+=a;
-      if(n.returned)c.ret+=a;
-      if(!n.reply_received&&!n.returned)c.wait+=a;
-    });
-  });
-  const cells=c=>`<td class="r"><b>${n0(c.notices)}</b></td><td class="r">${n0(c.covers)}</td><td class="r">${n0(c.ack)}</td><td class="r">${n0(c.reply)}</td><td class="r">${n0(c.ret)}</td><td class="r">${n0(c.wait)}</td>`;
+  N.forEach(n=>{const k=n.scheme||'—'; if(!by.has(k))by.set(k,[]); by.get(k).push(n);});
+  const num=v=>`<td class="r${v?'':' zero'}">${n0(v)}</td>`;
+  const cells=c=>{
+    const settled=c.rep+c.ret;
+    return `<td class="r big">${n0(c.iss)}<div class="cov">${n0(c.cov)} cover${c.cov===1?'':'s'}</div></td>
+      <td class="pcell">${stackBar(c)}<div class="pp">${pctOf(settled,c.iss)}% settled</div></td>
+      ${num(c.ack)}${num(c.rep)}${num(c.ret)}${num(Math.max(0,c.iss-settled))}`;
+  };
   $('#schSumBody').innerHTML=[...by.entries()].sort((a,b)=>String(a[0]).localeCompare(String(b[0])))
-    .map(([k,c])=>`<tr data-scheme="${esc(k)}" class="${state.f.scheme===k?'on':''}"><td><span class="sch-chip">${esc(k)}</span></td>${cells(c)}</tr>`).join('');
-  $('#schSumFoot').innerHTML=`<tr><td>Total</td>${cells(tot)}</tr>`;
+    .map(([k,list])=>`<tr data-scheme="${esc(k)}" class="${state.f.scheme===k?'on':''}"><td><span class="sch-chip">${esc(k)}</span></td>${cells(standing(list))}</tr>`).join('');
+  $('#schSumFoot').innerHTML=`<tr><td>Total</td>${cells(standing(N))}</tr>`;
 }
 
 function renderRegisterHead(){
@@ -731,12 +816,7 @@ function renderRegisterHead(){
   ].filter(Boolean).join('');
   const N=state.notices;
   // counted in notices = accounts; a mark on a cover counts once per account on it
-  const sumA=f=>N.reduce((a,x)=>a+(f(x)?nAcc(x):0),0);
-  const iss=sumA(()=>true), ack=sumA(x=>x.ack_received), rep=sumA(x=>x.reply_received), ret=sumA(x=>x.returned);
-  $('#rIss').textContent=n0(iss); $('#rAck').textContent=n0(ack);
-  $('#rCov').textContent=N.length?`in ${n0(N.length)} cover${N.length===1?'':'s'}`:'';
-  $('#rRep').textContent=n0(rep); $('#rRet').textContent=n0(ret);
-  $('#rWait').textContent=n0(Math.max(0,iss-rep-ret));
+  paintCards('r',standing(N));
   renderSchemeSummary();
   // scheme filter options
   const schemes=[...new Set(N.map(x=>x.scheme))].sort();
