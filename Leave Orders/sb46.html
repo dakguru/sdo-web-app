@@ -656,12 +656,57 @@ function renderRaisePanel(){
   $('#rbDate').value=todayISO();
   $('#rbSchemes').innerHTML=o.batches.slice()
     .sort((a,b)=>String(a.scheme).localeCompare(String(b.scheme)))
-    .map(b=>`<label data-key="${esc(b.office_key)}"><input type="checkbox" value="${esc(b.office_key)}" checked> ${esc(b.scheme)} <span style="color:var(--text-muted);font-weight:600">(${n0(b.total_accounts)})</span></label>`).join('');
+    .map(b=>`<label data-key="${esc(b.office_key)}"><input type="checkbox" value="${esc(b.office_key)}" checked> ${esc(b.scheme)} <span class="sc-n" style="color:var(--text-muted);font-weight:600">(…)</span></label>`).join('');
   syncSchemeChips();
   refreshRaiseNote();
+  loadRaiseCounts();
+}
+// The real per-list counts for the raise panel, worked out exactly as raiseBatch
+// will: the accounts in each stored list, less those already verified in CPV, and
+// the depositor notices they group into. (app_cpv.total_accounts is the size of the
+// whole list, so it cannot stand in for "unverified only".)
+async function loadRaiseCounts(){
+  const o=state.office; if(!o)return;
+  o.raiseCounts=undefined;                  // undefined = still counting, null = could not count
+  const keys=o.batches.map(b=>b.office_key);
+  if(!keys.length)return;
+  try{
+    const inList=keys.map(k=>`"${String(k).replace(/"/g,'""')}"`).join(',');
+    const [full,vr]=await Promise.all([
+      SB.select('app_cpv',`office_key=in.(${encodeURIComponent(inList)})&select=office_key,records`),
+      selectAllRows('app_cpv_verification',`office_key=in.(${encodeURIComponent(inList)})&verified=eq.true&select=office_key,acct`)
+    ]);
+    if(state.office!==o)return;                       // the user moved on meanwhile
+    const ver={};
+    (vr||[]).forEach(r=>(ver[r.office_key]=ver[r.office_key]||new Set()).add(String(r.acct)));
+    const counts={};
+    (full||[]).forEach(b=>{
+      const recs=Array.isArray(b.records)?b.records:[];
+      const done=ver[b.office_key]||new Set();
+      const unv=recs.filter(r=>!done.has(String(r.acct)));
+      counts[b.office_key]={
+        all:{accts:recs.length,notices:groupDepositors(recs).length},
+        unverified:{accts:unv.length,notices:groupDepositors(unv).length}
+      };
+    });
+    o.raiseCounts=counts;
+  }catch(e){ o.raiseCounts=null; }
+  syncSchemeChips(); refreshRaiseNote();
+}
+function raiseCountOf(key){
+  const c=state.office&&state.office.raiseCounts; if(!c||!c[key])return null;
+  return c[key][$('#rbScope').value==='all'?'all':'unverified'];
 }
 function syncSchemeChips(){
-  document.querySelectorAll('#rbSchemes label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked));
+  const o=state.office;
+  document.querySelectorAll('#rbSchemes label').forEach(l=>{
+    l.classList.toggle('on',l.querySelector('input').checked);
+    const n=l.querySelector('.sc-n'); if(!n)return;
+    const key=l.dataset.key, c=raiseCountOf(key);
+    if(c){ n.textContent=`(${n0(c.accts)})`; n.title=`${n0(c.accts)} account${c.accts===1?'':'s'} · ${n0(c.notices)} notice${c.notices===1?'':'s'}`; }
+    else if(o&&o.raiseCounts===undefined){ n.textContent='(…)'; n.title=''; }
+    else{ const b=o&&o.batches.find(x=>x.office_key===key); n.textContent=`(${n0(b?b.total_accounts:0)})`; n.title='Total accounts in the list'; }
+  });
 }
 function chosenBatchKeys(){
   return [...document.querySelectorAll('#rbSchemes input:checked')].map(i=>i.value);
@@ -673,8 +718,16 @@ function refreshRaiseNote(){
   const note=$('#rbNote');
   if(!keys.length){note.className='note err';note.textContent='Pick at least one scheme list.';return;}
   const from=cclean($('#rbFrom').value), to=cclean($('#rbTo').value);
-  const tot=state.office.batches.filter(b=>keys.includes(b.office_key)).reduce((a,b)=>a+(+b.total_accounts||0),0);
-  let msg=`<b>${keys.length}</b> scheme list${keys.length===1?'':'s'} · up to <b>${n0(tot)}</b> accounts. The accounts are grouped into one notice per depositor per scheme, and the exact notice count is confirmed before anything is written.`;
+  const unvScope=$('#rbScope').value!=='all';
+  const cs=keys.map(raiseCountOf);
+  let msg;
+  if(cs.every(Boolean)){
+    const acc=cs.reduce((a,c)=>a+c.accts,0), not=cs.reduce((a,c)=>a+c.notices,0);
+    msg=`<b>${keys.length}</b> scheme list${keys.length===1?'':'s'} · <b>${n0(acc)}</b> ${unvScope?'unverified ':''}account${acc===1?'':'s'} → <b>${n0(not)}</b> notice${not===1?'':'s'} (one per depositor per scheme), so the sheet needs <b>${n0(not)}</b> article number${not===1?'':'s'}.`;
+  }else{
+    const tot=state.office.batches.filter(b=>keys.includes(b.office_key)).reduce((a,b)=>a+(+b.total_accounts||0),0);
+    msg=`<b>${keys.length}</b> scheme list${keys.length===1?'':'s'} · up to <b>${n0(tot)}</b> accounts. ${state.office.raiseCounts===null?'The verified counts could not be read, so these are list totals; ':'Counting the unverified accounts… '}the exact notice count is confirmed before anything is written.`;
+  }
   let cls='note';
   if(from||to){
     const a=LabelEngine.parseBarcode(from), b=LabelEngine.parseBarcode(to);
@@ -1197,6 +1250,7 @@ $('#dq').addEventListener('input',e=>{state.dq=e.target.value.trim();renderOffic
 $('#refreshBtn').addEventListener('click',loadAll);
 $('#backToList').addEventListener('click',exitToList);
 $('#rbSchemes').addEventListener('change',()=>{syncSchemeChips();refreshRaiseNote();});
+$('#rbScope').addEventListener('change',()=>{syncSchemeChips();refreshRaiseNote();});
 ['#rbFrom','#rbTo'].forEach(s=>$(s).addEventListener('input',refreshRaiseNote));
 $('#rbGo').addEventListener('click',raiseBatch);
 $('#reRaiseBtn').addEventListener('click',()=>{
