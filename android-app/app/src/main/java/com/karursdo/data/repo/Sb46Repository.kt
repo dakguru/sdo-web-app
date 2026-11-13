@@ -72,10 +72,30 @@ data class Sb46ProgressDto(
     val sol_id: String? = null,
     val branch_id: String? = null,
     val scheme: String = "",
+    val sl_from: Int? = null,
+    val sl_to: Int? = null,
     val ack_received: Boolean = false,
     val reply_received: Boolean = false,
     val returned: Boolean = false
-)
+) {
+    /** Accounts on this cover, from its serial range — each is one SB-46 notice. */
+    val accountCount: Int get() {
+        val f = sl_from ?: 0; val t = sl_to ?: 0
+        return if (f > 0 && t >= f) t - f + 1 else 1
+    }
+}
+
+/**
+ * Every unverified account is, in law, served its own SB-46 notice; clubbing a depositor's
+ * accounts into one cover is only a convenience of posting. So notices are counted per account,
+ * and what is recorded on a cover (ack., reply, return) counts once for each account it carries
+ * — the same rule as the web register and the Final Report.
+ */
+val Sb46NoticeDto.accountCount: Int get() {
+    if (accounts.isNotEmpty()) return accounts.size
+    val f = sl_from ?: 0; val t = sl_to ?: 0
+    return if (f > 0 && t >= f) t - f + 1 else 1
+}
 
 /** One office's register, summarised for the list screen. */
 data class Sb46Office(
@@ -83,6 +103,9 @@ data class Sb46Office(
     val officeName: String,
     val sol: String,
     val branch: String,
+    /** Envelopes posted — one per depositor per scheme. */
+    val covers: Int,
+    /** SB-46 notices issued — one per account; ack/replied/returned below are counted the same way. */
     val issued: Int,
     val ack: Int,
     val replied: Int,
@@ -137,7 +160,7 @@ class Sb46Repository @Inject constructor(
         while (true) {
             val txt = client.selectAll(
                 "app_sb46",
-                "select=office_id,office_name,sol_id,branch_id,scheme,ack_received,reply_received,returned" +
+                "select=office_id,office_name,sol_id,branch_id,scheme,sl_from,sl_to,ack_received,reply_received,returned" +
                     "&limit=$PAGE&offset=$from"
             ) ?: throw Sb46Exception(
                 client.lastError?.let { "Could not read the SB-46 register ($it)." }
@@ -158,10 +181,11 @@ class Sb46Repository @Inject constructor(
                     officeName = rs.firstNotNullOfOrNull { it.office_name?.takeIf { n -> n.isNotBlank() } } ?: id,
                     sol = rs.firstNotNullOfOrNull { it.sol_id?.takeIf { s -> s.isNotBlank() } } ?: "",
                     branch = rs.firstNotNullOfOrNull { it.branch_id?.takeIf { b -> b.isNotBlank() } } ?: "",
-                    issued = rs.size,
-                    ack = rs.count { it.ack_received },
-                    replied = rs.count { it.reply_received },
-                    returned = rs.count { it.returned },
+                    covers = rs.size,
+                    issued = rs.sumOf { it.accountCount },
+                    ack = rs.filter { it.ack_received }.sumOf { it.accountCount },
+                    replied = rs.filter { it.reply_received }.sumOf { it.accountCount },
+                    returned = rs.filter { it.returned }.sumOf { it.accountCount },
                     schemes = rs.map { it.scheme }.filter { it.isNotBlank() }.distinct().sorted()
                 )
             }

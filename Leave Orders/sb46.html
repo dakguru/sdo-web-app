@@ -70,6 +70,7 @@ html.light .bg-mesh{background:
 .st.s-iss .n{color:var(--violet)} .st.s-ack .n{color:var(--cyan)} .st.s-rep .n{color:var(--em)}
 .st.s-ret .n{color:var(--rose)} .st.s-wait .n{color:var(--gold)}
 .st .l{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-top:8px;color:var(--text-secondary)}
+.st .sub{font-size:11px;font-weight:600;color:var(--text-muted);margin-top:3px}
 
 .section-title{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin:26px 0 14px;display:flex;align-items:center;gap:10px}
 .section-title::before{content:'';width:4px;height:16px;border-radius:4px;background:linear-gradient(180deg,var(--violet),var(--cyan))}
@@ -278,7 +279,7 @@ table.rpt input.wide{width:100%;min-width:96px;text-align:left;font-variant-nume
   <!-- ============ OFFICE LIST ============ -->
   <div id="listView">
     <div class="summary">
-      <div class="st s-iss"><div class="n" id="sIss">—</div><div class="l">Notices Issued</div></div>
+      <div class="st s-iss"><div class="n" id="sIss">—</div><div class="l">Notices Issued</div><div class="sub" id="sCov"></div></div>
       <div class="st s-ack"><div class="n" id="sAck">—</div><div class="l">Ack. Received</div></div>
       <div class="st s-rep"><div class="n" id="sRep">—</div><div class="l">Replies Received</div></div>
       <div class="st s-ret"><div class="n" id="sRet">—</div><div class="l">Returned</div></div>
@@ -315,7 +316,7 @@ table.rpt input.wide{width:100%;min-width:96px;text-align:left;font-variant-nume
     </div>
 
     <div class="summary">
-      <div class="st s-iss"><div class="n" id="rIss">—</div><div class="l">Notices Issued</div></div>
+      <div class="st s-iss"><div class="n" id="rIss">—</div><div class="l">Notices Issued</div><div class="sub" id="rCov"></div></div>
       <div class="st s-ack"><div class="n" id="rAck">—</div><div class="l">Ack. Received</div></div>
       <div class="st s-rep"><div class="n" id="rRep">—</div><div class="l">Replies Received</div></div>
       <div class="st s-ret"><div class="n" id="rRet">—</div><div class="l">Returned</div></div>
@@ -324,10 +325,10 @@ table.rpt input.wide{width:100%;min-width:96px;text-align:left;font-variant-nume
 
     <!-- scheme-wise summary of the register -->
     <div class="tbl-wrap sch-sum hidden" id="schSumWrap">
-      <div class="ss-title">Scheme-wise · notices and accounts <span style="text-transform:none;letter-spacing:0;font-weight:600">— click a scheme to list only its notices</span></div>
+      <div class="ss-title">Scheme-wise · notices issued (one per account) <span style="text-transform:none;letter-spacing:0;font-weight:600">— a cover may carry several accounts; click a scheme to list only its covers</span></div>
       <table class="reg sch">
         <thead><tr>
-          <th>Scheme</th><th class="r">Notices</th><th class="r">Accounts</th>
+          <th>Scheme</th><th class="r">Notices (accounts)</th><th class="r">Covers</th>
           <th class="r">Ack.</th><th class="r">Replies</th><th class="r">Returned</th><th class="r">Awaiting</th>
         </tr></thead>
         <tbody id="schSumBody"></tbody>
@@ -493,6 +494,17 @@ function dmyDot(iso){const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
 function pincodeOf(addr){const m=String(addr||'').match(/(\d{6})(?!.*\d{6})/);return m?m[1]:'';}
 function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
 const n0=n=>Number(n||0).toLocaleString('en-IN');
+// Every unverified account is, in law, served its own SB-46 notice; clubbing a
+// depositor's accounts into one cover is only a convenience of posting. So every
+// count of notices — dashboard, register, Final Report — counts the accounts a
+// cover carries, and whatever is recorded against a cover (ack., reply, return,
+// remarks) holds for each of its accounts.
+function nAcc(n){
+  const a=Array.isArray(n.accounts)?n.accounts.length:0;
+  if(a)return a;
+  const f=+n.sl_from, t=+n.sl_to;
+  return (f&&t&&t>=f)?(t-f+1):1;
+}
 
 // ── roles & visibility (mirrors the Cent Percent Verification module) ──
 const meUser=()=>{try{return (window.AuthSession&&AuthSession.user())||null;}catch{return null;}};
@@ -584,10 +596,11 @@ async function loadAll(){
   // register progress, one light row per notice
   state.counts={};
   try{
-    const rows=await selectAllRows('app_sb46','select=office_id,ack_received,reply_received,returned');
+    const rows=await selectAllRows('app_sb46','select=office_id,sl_from,sl_to,ack_received,reply_received,returned');
     (rows||[]).forEach(r=>{
-      const c=state.counts[r.office_id]||(state.counts[r.office_id]={issued:0,ack:0,reply:0,returned:0});
-      c.issued++; if(r.ack_received)c.ack++; if(r.reply_received)c.reply++; if(r.returned)c.returned++;
+      const c=state.counts[r.office_id]||(state.counts[r.office_id]={covers:0,issued:0,ack:0,reply:0,returned:0});
+      const k=nAcc(r);                                 // notices = accounts on the cover
+      c.covers++; c.issued+=k; if(r.ack_received)c.ack+=k; if(r.reply_received)c.reply+=k; if(r.returned)c.returned+=k;
     });
   }catch(e){
     box.innerHTML='<div class="empty"><span class="ei">⚠️</span>Could not read the SB-46 register — has <b>migration_v25_sb46.sql</b> been run in the Supabase SQL editor?</div>';
@@ -611,9 +624,10 @@ function renderOffices(){
   const q=state.dq.toLowerCase();
   const list=state.offices.filter(o=>!q||(o.office_name+' '+o.sol_id+' '+o.branch_id).toLowerCase().includes(q));
   // summary across everything visible
-  let iss=0,ack=0,rep=0,ret=0;
-  state.offices.forEach(o=>{const c=state.counts[o.office_id];if(c){iss+=c.issued;ack+=c.ack;rep+=c.reply;ret+=c.returned;}});
-  $('#sIss').textContent=n0(iss); $('#sAck').textContent=n0(ack);
+  let iss=0,ack=0,rep=0,ret=0,cov=0;
+  state.offices.forEach(o=>{const c=state.counts[o.office_id];if(c){cov+=c.covers;iss+=c.issued;ack+=c.ack;rep+=c.reply;ret+=c.returned;}});
+  $('#sIss').textContent=n0(iss);
+  $('#sCov').textContent=cov?`in ${n0(cov)} cover${cov===1?'':'s'}`:''; $('#sAck').textContent=n0(ack);
   $('#sRep').textContent=n0(rep); $('#sRet').textContent=n0(ret);
   $('#sWait').textContent=n0(Math.max(0,iss-rep-ret));
 
@@ -623,11 +637,11 @@ function renderOffices(){
     return;
   }
   box.innerHTML=list.map(o=>{
-    const c=state.counts[o.office_id]||{issued:0,ack:0,reply:0,returned:0};
+    const c=state.counts[o.office_id]||{covers:0,issued:0,ack:0,reply:0,returned:0};
     const settled=c.reply+c.returned, pct=c.issued?Math.round(settled/c.issued*100):0;
     const accts=o.batches.reduce((a,b)=>a+(+b.total_accounts||0),0);
     const chips=c.issued
-      ? `<span class="ov-chip iss">📮 ${n0(c.issued)} issued</span>
+      ? `<span class="ov-chip iss" title="${n0(c.issued)} SB-46 notices (one per account) sent in ${n0(c.covers)} cover${c.covers===1?'':'s'}">📮 ${n0(c.issued)} issued · ${n0(c.covers)} cover${c.covers===1?'':'s'}</span>
          <span class="ov-chip ack">✉ ${n0(c.ack)} ack</span>
          <span class="ov-chip rep">✓ ${n0(c.reply)} replied</span>
          <span class="ov-chip ret">↩ ${n0(c.returned)} returned</span>
@@ -676,29 +690,30 @@ function exitToList(){
   loadAll();
 }
 
-// One row per scheme list: how many notices went out, how many accounts they
-// cover, and where the notices stand. "Awaiting" is counted as on the cards above
-// — notices with neither a reply nor a return yet.
+// One row per scheme list: notices issued (one per account), the covers they went
+// out in, and where they stand — every status counted in notices, i.e. a cover of
+// five accounts marked "reply received" adds five replies. "Awaiting" is counted as
+// on the cards above: notices with neither a reply nor a return yet.
 function renderSchemeSummary(){
   const N=state.notices, wrap=$('#schSumWrap');
   wrap.classList.toggle('hidden',!N.length);
   if(!N.length){$('#schSumBody').innerHTML='';$('#schSumFoot').innerHTML='';return;}
   const by=new Map();
-  const blank=()=>({notices:0,accts:0,ack:0,reply:0,ret:0,wait:0});
+  const blank=()=>({covers:0,notices:0,ack:0,reply:0,ret:0,wait:0});
   const tot=blank();
   N.forEach(n=>{
     const k=n.scheme||'—';
     if(!by.has(k))by.set(k,blank());
-    const a=(n.accounts||[]).length;
+    const a=nAcc(n);
     [by.get(k),tot].forEach(c=>{
-      c.notices++; c.accts+=a;
-      if(n.ack_received)c.ack++;
-      if(n.reply_received)c.reply++;
-      if(n.returned)c.ret++;
-      if(!n.reply_received&&!n.returned)c.wait++;
+      c.covers++; c.notices+=a;
+      if(n.ack_received)c.ack+=a;
+      if(n.reply_received)c.reply+=a;
+      if(n.returned)c.ret+=a;
+      if(!n.reply_received&&!n.returned)c.wait+=a;
     });
   });
-  const cells=c=>`<td class="r"><b>${n0(c.notices)}</b></td><td class="r"><b>${n0(c.accts)}</b></td><td class="r">${n0(c.ack)}</td><td class="r">${n0(c.reply)}</td><td class="r">${n0(c.ret)}</td><td class="r">${n0(c.wait)}</td>`;
+  const cells=c=>`<td class="r"><b>${n0(c.notices)}</b></td><td class="r">${n0(c.covers)}</td><td class="r">${n0(c.ack)}</td><td class="r">${n0(c.reply)}</td><td class="r">${n0(c.ret)}</td><td class="r">${n0(c.wait)}</td>`;
   $('#schSumBody').innerHTML=[...by.entries()].sort((a,b)=>String(a[0]).localeCompare(String(b[0])))
     .map(([k,c])=>`<tr data-scheme="${esc(k)}" class="${state.f.scheme===k?'on':''}"><td><span class="sch-chip">${esc(k)}</span></td>${cells(c)}</tr>`).join('');
   $('#schSumFoot').innerHTML=`<tr><td>Total</td>${cells(tot)}</tr>`;
@@ -715,10 +730,13 @@ function renderRegisterHead(){
     `<span class="meta-chip"><b>${n0(accts)}</b> accounts</span>`
   ].filter(Boolean).join('');
   const N=state.notices;
-  const ack=N.filter(x=>x.ack_received).length, rep=N.filter(x=>x.reply_received).length, ret=N.filter(x=>x.returned).length;
-  $('#rIss').textContent=n0(N.length); $('#rAck').textContent=n0(ack);
+  // counted in notices = accounts; a mark on a cover counts once per account on it
+  const sumA=f=>N.reduce((a,x)=>a+(f(x)?nAcc(x):0),0);
+  const iss=sumA(()=>true), ack=sumA(x=>x.ack_received), rep=sumA(x=>x.reply_received), ret=sumA(x=>x.returned);
+  $('#rIss').textContent=n0(iss); $('#rAck').textContent=n0(ack);
+  $('#rCov').textContent=N.length?`in ${n0(N.length)} cover${N.length===1?'':'s'}`:'';
   $('#rRep').textContent=n0(rep); $('#rRet').textContent=n0(ret);
-  $('#rWait').textContent=n0(Math.max(0,N.length-rep-ret));
+  $('#rWait').textContent=n0(Math.max(0,iss-rep-ret));
   renderSchemeSummary();
   // scheme filter options
   const schemes=[...new Set(N.map(x=>x.scheme))].sort();
@@ -787,7 +805,7 @@ function syncSchemeChips(){
     l.classList.toggle('on',l.querySelector('input').checked);
     const n=l.querySelector('.sc-n'); if(!n)return;
     const key=l.dataset.key, c=raiseCountOf(key);
-    if(c){ n.textContent=`(${n0(c.accts)})`; n.title=`${n0(c.accts)} account${c.accts===1?'':'s'} · ${n0(c.notices)} notice${c.notices===1?'':'s'}`; }
+    if(c){ n.textContent=`(${n0(c.accts)})`; n.title=`${n0(c.accts)} notice${c.accts===1?'':'s'} (one per account) · ${n0(c.notices)} cover${c.notices===1?'':'s'}`; }
     else if(o&&o.raiseCounts===undefined){ n.textContent='(…)'; n.title=''; }
     else{ const b=o&&o.batches.find(x=>x.office_key===key); n.textContent=`(${n0(b?b.total_accounts:0)})`; n.title='Total accounts in the list'; }
   });
@@ -811,7 +829,7 @@ function refreshRaiseNote(){
   toBox.value='';
   let cls='note', msg;
   if(known){
-    msg=`<b>${keys.length}</b> scheme list${keys.length===1?'':'s'} · <b>${n0(acc)}</b> ${unvScope?'unverified ':''}account${acc===1?'':'s'} → <b>${n0(not)}</b> notice${not===1?'':'s'} (one per depositor per scheme), so the sheet needs <b>${n0(not)}</b> article number${not===1?'':'s'}. Enter the first one; the last is filled in.`;
+    msg=`<b>${keys.length}</b> scheme list${keys.length===1?'':'s'} · <b>${n0(acc)}</b> ${unvScope?'unverified ':''}account${acc===1?'':'s'}, so <b>${n0(acc)}</b> SB-46 notice${acc===1?'':'s'}, sent in <b>${n0(not)}</b> cover${not===1?'':'s'} (a depositor's accounts in a scheme share one cover), so the sheet needs <b>${n0(not)}</b> article number${not===1?'':'s'}. Enter the first one; the last is filled in.`;
     if(!not){cls='note err'; msg=unvScope?'Every account in the chosen lists is already verified — no notice is due.':'The chosen lists hold no accounts.';}
   }else if(state.office.raiseCounts===null){
     cls='note err'; msg='The verified counts could not be read, so the number of notices — and the last article number — cannot be worked out. Reload the page and try again.';
@@ -827,7 +845,7 @@ function refreshRaiseNote(){
       else{
         const last=LabelEngine.barcodeNoAt(a,not-1);
         toBox.value=last;
-        cls='note ok'; msg=`<b>${n0(not)}</b> notice${not===1?'':'s'} (${n0(acc)} ${unvScope?'unverified ':''}account${acc===1?'':'s'}) → articles <b>${esc(LabelEngine.barcodeNoAt(a,0))}</b> to <b>${esc(last)}</b>, allotted to the notices in order. Check that the sheet runs to this last number.`;
+        cls='note ok'; msg=`<b>${n0(acc)}</b> notice${acc===1?'':'s'} (${unvScope?'unverified ':''}accounts) in <b>${n0(not)}</b> cover${not===1?'':'s'} → articles <b>${esc(LabelEngine.barcodeNoAt(a,0))}</b> to <b>${esc(last)}</b>, allotted to the covers in order. Check that the sheet runs to this last number.`;
       }
     }
   }
@@ -930,7 +948,7 @@ async function raiseBatch(){
     if(rows.length!==range){
       // the lists or their verifications changed after the panel counted them —
       // count again so the last article number is worked out afresh
-      toast(`The count has changed: ${n0(rows.length)} notice${rows.length===1?'':'s'} ${rows.length===1?'is':'are'} now due, not ${n0(range)}. The last article number has been worked out again — check it against the sheet and raise the batch.`,'err');
+      toast(`The count has changed: ${n0(rows.length)} cover${rows.length===1?'':'s'} ${rows.length===1?'is':'are'} now due, not ${n0(range)}. The last article number has been worked out again — check it against the sheet and raise the batch.`,'err');
       loadRaiseCounts();
       return;
     }
@@ -941,7 +959,7 @@ async function raiseBatch(){
     await SB.del('app_sb46',`office_id=eq.${encodeURIComponent(o.office_id)}`);
     for(let i=0;i<rows.length;i+=400) await SB.upsert('app_sb46',rows.slice(i,i+400));
     state.notices=rows;
-    toast(`${n0(rows.length)} SB-46 notice${rows.length===1?'':'s'} raised ✓ — articles ${from} → ${to}.`,'ok');
+    toast(`${n0(rows.reduce((a,r)=>a+nAcc(r),0))} SB-46 notices raised in ${n0(rows.length)} cover${rows.length===1?'':'s'} ✓ — articles ${from} → ${to}.`,'ok');
     renderRegisterHead(); renderNotices();
   }catch(e){
     const m=String(e.message||'');
@@ -970,8 +988,8 @@ function filteredNotices(){
 }
 function renderNotices(){
   const rows=filteredNotices();
-  const shownAccts=rows.reduce((a,n)=>a+((n.accounts||[]).length),0);
-  $('#regCount').innerHTML=`<b>${n0(rows.length)}</b> of ${n0(state.notices.length)} notice${state.notices.length===1?'':'s'} · <b>${n0(shownAccts)}</b> account${shownAccts===1?'':'s'}`;
+  const shownAccts=rows.reduce((a,n)=>a+nAcc(n),0);
+  $('#regCount').innerHTML=`<b>${n0(rows.length)}</b> of ${n0(state.notices.length)} cover${state.notices.length===1?'':'s'} · <b>${n0(shownAccts)}</b> notice${shownAccts===1?'':'s'} (accounts)`;
   document.querySelectorAll('#schSumBody tr').forEach(tr=>tr.classList.toggle('on',!!state.f.scheme&&tr.dataset.scheme===state.f.scheme));
   const body=$('#regBody'), ro=!canTrack();
   if(!rows.length){
@@ -1065,7 +1083,7 @@ function refreshLabelNote(){
   $('#lbNote').className=missing?'note err':'note';
   $('#lbNote').innerHTML=missing
     ? `<b>${n0(missing)}</b> of these notices has no article number yet — fill them in on the register first, or the label will print without its barcode.`
-    : `<b>${n0(n)}</b> notice${n===1?'':'s'} → <b>${n0(labels)}</b> labels on <b>${n0(sheets)}</b> sheet${sheets===1?'':'s'}.`;
+    : `<b>${n0(n)}</b> cover${n===1?'':'s'} → <b>${n0(labels)}</b> labels on <b>${n0(sheets)}</b> sheet${sheets===1?'':'s'}.`;
 }
 async function buildLabels(){
   const notices=labelNotices();
@@ -1089,7 +1107,7 @@ async function buildLabels(){
     const name=`SB-46 Labels ${state.office.office_name} (${labels.length}) ${todayISO()}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.pdf';
     doc.save(name);
     $('#lblOverlay').classList.remove('show');
-    toast(`${n0(labels.length)} labels ready ✓ — ${n0(notices.length)} notices, each with its cover and acknowledgement label.`,'ok');
+    toast(`${n0(labels.length)} labels ready ✓ — ${n0(notices.length)} covers, each with its cover and acknowledgement label.`,'ok');
   }catch(e){ toast('Could not build the labels: '+(e.message||''),'err'); }
   finally{ btn.disabled=false; btn.innerHTML=old; }
 }
@@ -1128,17 +1146,20 @@ async function deriveReport(){
   const issued=blankCols(), replies=blankCols(), ackOnly=blankCols(), returned=blankCols();
   const split={}; SPLIT_ROWS.forEach(r=>split[r]=blankCols());
   let unmapped=0, awaiting=0;
+  // counted per account: each unverified account is its own SB-46 notice, and what
+  // is recorded on a cover holds for every account it carries
   state.notices.forEach(n=>{
-    const col=RCOL_OF[n.scheme]; if(!col){unmapped++;return;}
-    issued[col]++;
-    if(n.reply_received)replies[col]++;
+    const k=nAcc(n);
+    const col=RCOL_OF[n.scheme]; if(!col){unmapped+=k;return;}
+    issued[col]+=k;
+    if(n.reply_received)replies[col]+=k;
     else if(n.returned){
-      returned[col]++;
+      returned[col]+=k;
       const key=SPLIT_ROWS.find(r=>r.toLowerCase()===String(n.return_reason||'').toLowerCase());
-      if(key)split[key][col]++;
+      if(key)split[key][col]+=k;
     }
-    else if(n.ack_received)ackOnly[col]++;
-    else awaiting++;
+    else if(n.ack_received)ackOnly[col]+=k;
+    else awaiting+=k;
   });
   const splitTotal=blankCols();
   SPLIT_ROWS.forEach(r=>RCOLS.forEach(c=>splitTotal[c]+=split[r][c]));
@@ -1228,7 +1249,7 @@ function defaultSbSplit(d){
 }
 function reportWarnings(d){
   const out=[];
-  if(d.awaiting)out.push(`<b>${n0(d.awaiting)}</b> notice${d.awaiting===1?'':'s'} ${d.awaiting===1?'has':'have'} nothing recorded against ${d.awaiting===1?'it':'them'} yet, so ${d.awaiting===1?'it is':'they are'} counted in none of the reply, acknowledgement or returned rows. The report will not add up to the notices issued until ${d.awaiting===1?'it is':'they are'} settled.`);
+  if(d.awaiting)out.push(`<b>${n0(d.awaiting)}</b> notice${d.awaiting===1?'':'s'} (accounts) ${d.awaiting===1?'has':'have'} nothing recorded against ${d.awaiting===1?'it':'them'} yet, so ${d.awaiting===1?'it is':'they are'} counted in none of the reply, acknowledgement or returned rows. The report will not add up to the notices issued until ${d.awaiting===1?'it is':'they are'} settled.`);
   if(d.unmapped)out.push(`<b>${n0(d.unmapped)}</b> notice${d.unmapped===1?'':'s'} belong${d.unmapped===1?'s':''} to a scheme the printed report has no column for, and ${d.unmapped===1?'is':'are'} left out of every count.`);
   if(d.outside.length)out.push(`${d.outside.map(x=>`<b>${esc(x.scheme)}</b> (${n0(x.total)})`).join(', ')} ${d.outside.length===1?'is a scheme list':'are scheme lists'} the printed report has no column for, so ${d.outside.length===1?'it is':'they are'} not counted in the accounts standing.`);
   return out.length?`<div class="warnbox">${out.join('<br><br>')}</div>`:'';
@@ -1306,7 +1327,7 @@ function refreshNoticeNote(){
   if(!N.length){note.className='note err';note.textContent='No notices to print in this selection.';return;}
   const noArt=N.filter(n=>!n.article_no).length;
   note.className=noArt?'note err':'note ok';
-  note.innerHTML=`<b>${n0(N.length)}</b> notice${N.length===1?'':'s'} covering <b>${n0(acc)}</b> account${acc===1?'':'s'} — the letter on one page, the reply form and accounts on the next — articles <b>${esc(N[0].article_no||'—')}</b> → <b>${esc(N[N.length-1].article_no||'—')}</b>.`
+  note.innerHTML=`<b>${n0(N.length)}</b> cover${N.length===1?'':'s'} carrying <b>${n0(acc)}</b> notice${acc===1?'':'s'} (one per account) — the letter on one page, the reply form and accounts on the next — articles <b>${esc(N[0].article_no||'—')}</b> → <b>${esc(N[N.length-1].article_no||'—')}</b>.`
     +(noArt?` <b>${n0(noArt)}</b> of them ${noArt===1?'has':'have'} no article number yet and will print without one.`:'');
 }
 function openNoticesModal(){
@@ -1384,7 +1405,7 @@ async function generateNoticesDocx(){
     const fname=`SB-46 Notices ${o.office_name}`.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.docx';
     dl(blob,fname);
     $('#ntOverlay').classList.remove('show');
-    toast(`${n0(N.length)} SB-46 notice${N.length===1?'':'s'} built ✓ — with their article numbers.`,'ok');
+    toast(`${n0(N.length)} cover${N.length===1?'':'s'} built ✓ — with their article numbers.`,'ok');
   }catch(e){ toast('Could not build the notices: '+(e.message||''),'err'); }
   finally{ state.busy=false; btn.disabled=false; btn.innerHTML=old; }
 }
@@ -1476,12 +1497,12 @@ $('#rbFrom').addEventListener('input',refreshRaiseNote);
 $('#rbGo').addEventListener('click',raiseBatch);
 $('#reRaiseBtn').addEventListener('click',()=>{
   confirmThen('Raise the batch again?',
-    `This office already has <b>${n0(state.notices.length)}</b> notice${state.notices.length===1?'':'s'} on the register, with everything recorded against them. Raising a fresh batch <b>replaces the whole register</b> — the acknowledgements, replies and undelivered reasons already recorded will be lost, because a re-raised batch is a different set of envelopes.`,
+    `This office already has <b>${n0(state.notices.length)}</b> cover${state.notices.length===1?'':'s'} on the register, with everything recorded against them. Raising a fresh batch <b>replaces the whole register</b> — the acknowledgements, replies and undelivered reasons already recorded will be lost, because a re-raised batch is a different set of envelopes.`,
     ()=>{ $('#raisePanel').classList.remove('hidden'); $('#raisePanel').scrollIntoView({behavior:'smooth',block:'center'}); });
 });
 $('#clearBtn').addEventListener('click',()=>{
   confirmThen('Clear this register?',
-    `All <b>${n0(state.notices.length)}</b> notice${state.notices.length===1?'':'s'} of <b>${esc(state.office.office_name)}</b> will be deleted, along with everything recorded against them. This cannot be undone.`,
+    `All <b>${n0(state.notices.length)}</b> cover${state.notices.length===1?'':'s'} of <b>${esc(state.office.office_name)}</b> will be deleted, along with everything recorded against them. This cannot be undone.`,
     async()=>{
       try{
         await SB.del('app_sb46',`office_id=eq.${encodeURIComponent(state.office.office_id)}`);

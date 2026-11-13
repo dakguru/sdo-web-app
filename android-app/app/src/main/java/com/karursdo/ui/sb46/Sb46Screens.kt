@@ -60,6 +60,7 @@ import com.karursdo.data.repo.CpvRepository
 import com.karursdo.data.repo.Sb46NoticeDto
 import com.karursdo.data.repo.Sb46Office
 import com.karursdo.data.repo.Sb46Repository
+import com.karursdo.data.repo.accountCount
 import com.karursdo.data.repo.SessionManager
 import com.karursdo.ui.components.EmptyState
 import com.karursdo.ui.components.KsdSearchField
@@ -274,6 +275,7 @@ private fun Sb46Error(message: String, onRetry: () -> Unit) {
 @Composable
 private fun Sb46OverviewCard(offices: List<Sb46Office>) {
     val issued = offices.sumOf { it.issued }
+    val covers = offices.sumOf { it.covers }
     val ack = offices.sumOf { it.ack }
     val replied = offices.sumOf { it.replied }
     val returned = offices.sumOf { it.returned }
@@ -284,7 +286,7 @@ private fun Sb46OverviewCard(offices: List<Sb46Office>) {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Pill("Offices ${offices.size}", Brand.BadgeDsBg, Brand.BadgeDsFg)
-            Pill("📮 Issued $issued", Brand.BadgeDsBg, Brand.BadgeDsFg)
+            Pill("📮 Issued $issued · $covers cover${if (covers == 1) "" else "s"}", Brand.BadgeDsBg, Brand.BadgeDsFg)
             Pill("✉ Ack $ack", Brand.TpSpoBg, Brand.TpSpoFg)
             Pill("✓ Replied $replied", Brand.ChipPaidBg, Brand.ChipPaidFg)
             Pill("↩ Returned $returned", Brand.TpHpoBg, Brand.TpHpoFg)
@@ -308,7 +310,7 @@ private fun Sb46OfficeCard(o: Sb46Office, onClick: () -> Unit) {
                         buildString {
                             if (o.sol.isNotBlank()) append("SOL ${o.sol} · ")
                             if (o.branch.isNotBlank()) append("Branch ${o.branch} · ")
-                            append("${o.issued} notice${if (o.issued == 1) "" else "s"}")
+                            append("${o.issued} notice${if (o.issued == 1) "" else "s"} in ${o.covers} cover${if (o.covers == 1) "" else "s"}")
                             if (o.schemes.isNotEmpty()) append(" · ${o.schemes.joinToString(", ")}")
                         },
                         style = MaterialTheme.typography.bodySmall,
@@ -589,7 +591,7 @@ fun Sb46DetailScreen(
                 }
                 item {
                     Text(
-                        "Showing ${shown.size} of ${notices.size} notice${if (notices.size == 1) "" else "s"}",
+                        "Showing ${shown.size} of ${notices.size} cover${if (notices.size == 1) "" else "s"} · ${shown.sumOf { it.accountCount }} notices",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -631,17 +633,19 @@ fun Sb46DetailScreen(
 
 @Composable
 private fun Sb46RegisterSummary(notices: List<Sb46NoticeDto>) {
-    val ack = notices.count { it.ack_received }
-    val replied = notices.count { it.reply_received }
-    val returned = notices.count { it.returned }
-    val awaiting = (notices.size - replied - returned).coerceAtLeast(0)
-    val pct = if (notices.isNotEmpty()) (replied + returned) * 100 / notices.size else 0
+    // counted in notices = accounts: a mark on a cover counts once per account it carries
+    val issued = notices.sumOf { it.accountCount }
+    val ack = notices.filter { it.ack_received }.sumOf { it.accountCount }
+    val replied = notices.filter { it.reply_received }.sumOf { it.accountCount }
+    val returned = notices.filter { it.returned }.sumOf { it.accountCount }
+    val awaiting = (issued - replied - returned).coerceAtLeast(0)
+    val pct = if (issued > 0) (replied + returned) * 100 / issued else 0
     SectionCard("The register") {
         Row(
             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Pill("📮 Issued ${notices.size}", Brand.BadgeDsBg, Brand.BadgeDsFg)
+            Pill("📮 Issued $issued · ${notices.size} cover${if (notices.size == 1) "" else "s"}", Brand.BadgeDsBg, Brand.BadgeDsFg)
             Pill("✉ Ack $ack", Brand.TpSpoBg, Brand.TpSpoFg)
             Pill("✓ Replied $replied", Brand.ChipPaidBg, Brand.ChipPaidFg)
             Pill("↩ Returned $returned", Brand.TpHpoBg, Brand.TpHpoFg)
