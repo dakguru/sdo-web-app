@@ -2414,13 +2414,36 @@ function noticeAccounts(scope){
 }
 // Group accounts into depositors: CIF first, else name+address. Preserves list order within a group.
 function groupDepositors(recs){
-  const map=new Map();
-  recs.forEach(r=>{
-    const key=(r.cif&&r.cif.trim())?('cif:'+r.cif.trim()):('nm:'+(r.name||'').trim().toUpperCase()+'|'+(r.address||'').trim().toUpperCase());
-    if(!map.has(key))map.set(key,{name:r.name||'',address:r.address||'',cif:r.cif||'',accts:[]});
-    map.get(key).accts.push(r);
+  // One notice per depositor. Two accounts belong to the same depositor when they
+  // share a CIF, or when their name and address read exactly alike (case, spacing
+  // and the spaces around punctuation aside) even though the CIFs differ — the
+  // same person often holds accounts opened under separate CIFs. The two links
+  // chain, so a CIF match and a name+address match land in the same notice.
+  const norm=s=>String(s==null?'':s).toUpperCase().replace(/\s+/g,' ').replace(/\s*([,.;:\/\-()])\s*/g,'$1').trim();
+  const parent=recs.map((_,i)=>i);
+  const find=i=>{while(parent[i]!==i){parent[i]=parent[parent[i]];i=parent[i];}return i;};
+  const join=(a,b)=>{a=find(a);b=find(b);if(a!==b)parent[Math.max(a,b)]=Math.min(a,b);};
+  const byCif=new Map(), byNameAddr=new Map();
+  recs.forEach((r,i)=>{
+    const cif=String(r.cif==null?'':r.cif).trim();
+    if(cif){ if(byCif.has(cif))join(i,byCif.get(cif)); else byCif.set(cif,i); }
+    const name=norm(r.name);
+    if(name){
+      const k=name+'|'+norm(r.address);
+      if(byNameAddr.has(k))join(i,byNameAddr.get(k)); else byNameAddr.set(k,i);
+    }
   });
-  return [...map.values()].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const map=new Map();
+  recs.forEach((r,i)=>{
+    const root=find(i);
+    if(!map.has(root))map.set(root,{name:'',address:'',cif:'',accts:[]});
+    const g=map.get(root);
+    if(!g.name&&r.name)g.name=r.name;
+    if(!g.address&&r.address)g.address=r.address;
+    if(!g.cif&&r.cif)g.cif=String(r.cif).trim();
+    g.accts.push(r);
+  });
+  return [...map.values()].sort((a,b)=>String(a.name).localeCompare(String(b.name)));
 }
 function noticeState(){
   const scope=$('#ntScope').value;
