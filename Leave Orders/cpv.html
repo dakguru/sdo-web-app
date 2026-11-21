@@ -286,6 +286,8 @@ html.light .field input,html.light .field select{background:#f7f8fb}
 .og-allot:hover{background:rgba(129,140,248,.26)}
 .og-sb46{border:1px solid rgba(124,58,237,.34);background:rgba(124,58,237,.14);color:var(--violet);border-radius:10px;padding:7px 12px;font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
 .og-sb46:hover{background:rgba(124,58,237,.28)}
+.og-delete{border:1px solid rgba(225,29,72,.32);background:rgba(225,29,72,.10);color:#e11d48;border-radius:10px;padding:7px 12px;font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
+.og-delete:hover{background:rgba(225,29,72,.22)}
 
 /* per-office consolidated download row */
 .og-dl{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;padding-top:12px;border-top:1px dashed var(--glass-border)}
@@ -1435,6 +1437,7 @@ function renderDashboard(){
           <span class="ov-chip pen">${penG.toLocaleString('en-IN')} pending</span>
           <button class="og-sb46" data-sb46="${esc(branch||g.office_name)}" title="SB-46 notices of this office — issue, track and report">📮 SB-46</button>
           ${allotHtml}
+          ${(isManager()||!isMO())?`<button class="og-delete" data-deloffice="${esc(k)}" title="Delete this office — all its scheme lists, verifications and allotments">🗑 Delete office</button>`:''}
         </div>
         <div class="og-prog">
           <div class="og-bar"><i style="width:${pct}%"></i></div>
@@ -1933,19 +1936,58 @@ function syncMonInputs(){
 // ─────────────────────────────────────────────────────────────
 //  Delete
 // ─────────────────────────────────────────────────────────────
+function setDelTitle(t){const el=document.querySelector('#delOverlay .modal-title');if(el)el.textContent=t;}
+// Group key = "branch_id|office_name", the same key renderDashboard groups by.
+function officeItems(groupKey){return state.list.filter(o=>((o.branch_id||'')+'|'+o.office_name)===groupKey);}
+function openDeleteOffice(groupKey){
+  const items=officeItems(groupKey);if(!items.length)return;
+  const g=items[0], tot=items.reduce((a,o)=>a+totalForKey(o),0), ver=items.reduce((a,o)=>a+verifiedForKey(o),0);
+  const branch=String(g.branch_id||''), moN=branch&&state.allot[branch]?state.allot[branch].size:0;
+  state.delKey=null; state.delOffice=groupKey;
+  setDelTitle('🗑 Delete office');
+  $('#delMsg').innerHTML=`Delete <b>${esc(g.office_name)}</b>${branch?` (Branch ${esc(branch)})`:''} from Cent Percent Verification?<br><br>`+
+    `This removes all <b>${items.length}</b> scheme list${items.length===1?'':'s'} (${tot.toLocaleString('en-IN')} accounts), `+
+    `the <b>${ver.toLocaleString('en-IN')}</b> verification${ver===1?'':'s'} recorded against them`+
+    (moN?`, and its Mail Overseer allotment${moN===1?'':'s'}`:'')+`.<br><br>This cannot be undone.`;
+  $('#delOverlay').classList.add('show');
+}
+async function confirmDeleteOffice(){
+  const items=officeItems(state.delOffice);
+  const keys=items.map(o=>o.office_key);
+  if(keys.length){
+    const inList=keys.map(k=>`"${String(k).replace(/"/g,'\\"')}"`).join(',');
+    const f=`office_key=in.(${encodeURIComponent(inList)})`;
+    // Children first, in case the cascade foreign keys were never installed.
+    await SB.del('app_cpv_verification',f);
+    try{await SB.del('app_cpv_extra',f);}catch(e){ if(!/PGRST205|app_cpv_extra/.test(String(e.message||'')))throw e; }
+    await SB.del('app_cpv',f);
+  }
+  const branch=String((items[0]&&items[0].branch_id)||'');
+  // Allotments are per branch; only drop them if no other stored list still uses this branch.
+  if(branch&&!state.list.some(o=>String(o.branch_id||'')===branch&&!keys.includes(o.office_key))){
+    try{await SB.del('app_cpv_allotments',`branch_id=eq.${encodeURIComponent(branch)}`);}catch(e){}
+  }
+  return items[0]?items[0].office_name:'Office';
+}
 function openDelete(key){
-  const o=state.list.find(x=>x.office_key===key);if(!o)return;state.delKey=key;
+  const o=state.list.find(x=>x.office_key===key);if(!o)return;state.delKey=key;state.delOffice=null;
+  setDelTitle('🗑 Delete stored list');
   $('#delMsg').innerHTML=`Delete the stored list <b>${esc(o.office_name)}</b> — ${esc(o.scheme_label||o.scheme)} (${(+o.total_accounts||0)} accounts)?<br>This cannot be undone.`;
   $('#delOverlay').classList.add('show');
 }
 async function confirmDelete(){
-  if(!state.delKey||state.busy)return;
+  if((!state.delKey&&!state.delOffice)||state.busy)return;
   state.busy=true;const btn=$('#delConfirm');btn.disabled=true;btn.textContent='Deleting…';
   try{
-    await SB.del('app_cpv',`office_key=eq.${encodeURIComponent(state.delKey)}`);
+    if(state.delOffice){
+      const name=await confirmDeleteOffice();
+      toast(`${name} deleted ✓`,'ok');
+    }else{
+      await SB.del('app_cpv',`office_key=eq.${encodeURIComponent(state.delKey)}`);
+      toast('List deleted ✓','ok');
+    }
     $('#delOverlay').classList.remove('show');
-    toast('List deleted ✓','ok');
-    state.delKey=null;
+    state.delKey=null;state.delOffice=null;
     await loadDashboard();
   }catch(e){toast('Delete failed: '+(e.message||''),'err');}
   finally{state.busy=false;btn.disabled=false;btn.textContent='Delete permanently';}
@@ -2156,6 +2198,7 @@ document.addEventListener('click',e=>{
   const sb=e.target.closest('[data-sb46]');if(sb){e.stopPropagation();location.href='/sb-46?office='+encodeURIComponent(sb.dataset.sb46);return;}
   const al=e.target.closest('[data-allot]');if(al){e.stopPropagation();openAllot(al.dataset.allot,al.dataset.off,al.dataset.sol);return;}
   const ed=e.target.closest('[data-edit]');if(ed){e.stopPropagation();openEditStored(ed.dataset.edit);return;}
+  const delOff=e.target.closest('[data-deloffice]');if(delOff){e.stopPropagation();openDeleteOffice(delOff.dataset.deloffice);return;}
   const del=e.target.closest('[data-del]');if(del){e.stopPropagation();openDelete(del.dataset.del);return;}
   const card=e.target.closest('.scheme-card');if(card){openDetail(card.dataset.key);return;}
 });
