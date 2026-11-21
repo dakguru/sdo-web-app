@@ -110,10 +110,14 @@ data class Sb46Office(
     val ack: Int,
     val replied: Int,
     val returned: Int,
+    /** Delivered (ack. card back) but neither replied nor returned — "delivered, no reply yet". */
+    val ackOnly: Int,
     val schemes: List<String>
 ) {
     /** A notice is settled once the depositor has replied or the cover has come back. */
     val settled: Int get() = replied + returned
+    /** Not heard of at all — no ack., no reply, not returned. */
+    val unheard: Int get() = (issued - replied - returned - ackOnly).coerceAtLeast(0)
     val awaiting: Int get() = (issued - settled).coerceAtLeast(0)
     val pct: Int get() = if (issued > 0) settled * 100 / issued else 0
 }
@@ -185,7 +189,8 @@ class Sb46Repository @Inject constructor(
                     issued = rs.sumOf { it.accountCount },
                     ack = rs.filter { it.ack_received }.sumOf { it.accountCount },
                     replied = rs.filter { it.reply_received }.sumOf { it.accountCount },
-                    returned = rs.filter { it.returned }.sumOf { it.accountCount },
+                    returned = rs.filter { it.returned && !it.reply_received }.sumOf { it.accountCount },
+                    ackOnly = rs.filter { it.ack_received && !it.reply_received && !it.returned }.sumOf { it.accountCount },
                     schemes = rs.map { it.scheme }.filter { it.isNotBlank() }.distinct().sorted()
                 )
             }
