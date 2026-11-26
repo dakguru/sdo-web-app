@@ -154,7 +154,7 @@
 <link rel="stylesheet" href="/leave-orders/mobile.css">
 <!-- Liquid Glass design system -->
 <script src="/leave-orders/liquid-glass.js?v=6"></script>
-<link rel="stylesheet" href="/leave-orders/liquid-glass.css?v=6">
+<link rel="stylesheet" href="/leave-orders/liquid-glass.css?v=7">
 
 <!-- ksd-pwa — installable Karur SDO app: manifest, iPhone home-screen, Liquid Glass shell -->
 <link rel="manifest" href="/manifest.webmanifest" />
@@ -187,7 +187,7 @@
   <span style="opacity:.35">|</span>
   <span style="opacity:.75">Department of Posts &middot; Karur Sub Division</span>
   <div class="switch">
-    <a class="pill" href="/leave-orders">Sub Divisional Manager</a>
+    <a class="pill" href="/leave-orders">Leave Orders</a>
     <a class="pill" href="/employees">Employee Directory</a>
     <a class="pill" href="/office-management">Office Management</a>
     <span class="pill active">Temporary Arrangements</span>
@@ -449,7 +449,7 @@ function renderAll(){ renderStats(); renderMeta(); renderRangeHint(); renderView
 
 /* ---------- Excel export ---------- */
 async function buildWorkbook(rows){
-  const wb=new ExcelJS.Workbook(); wb.creator='Sub Divisional Manager — Karur Sub Division';
+  const wb=new ExcelJS.Workbook(); wb.creator='Leave Orders — Karur Sub Division';
   const ws=wb.addWorksheet('Arrangements',{pageSetup:{orientation:'landscape',paperSize:9,fitToPage:true,fitToWidth:1,fitToHeight:0,margins:{left:0.4,right:0.4,top:0.5,bottom:0.5,header:0.2,footer:0.2}},properties:{defaultRowHeight:18}});
   const F='Palatino Linotype'; const NC=8;
   ws.mergeCells(1,1,1,NC); const r1=ws.getCell(1,1); r1.value=DEPT_LINE; r1.font={bold:true,size:16,name:F,color:{argb:'FFFFFFFF'}}; r1.alignment={horizontal:'center',vertical:'middle'}; r1.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1F3864'}}; ws.getRow(1).height=26;

@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <script src="auth-guard.js"></script>
-<title>Department of Posts — Sub Divisional Manager, Karur Sub Division</title>
+<title>Leave Orders — Karur Sub Division</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -14,368 +14,323 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
+  /* ==========================================================================
+     LEAVE ORDERS — built on the portal's Liquid Glass tokens (--lg-*), so the
+     page follows the shared light / dark theme. The fallbacks after each token
+     keep it legible if liquid-glass.css ever fails to load.
+     ========================================================================== */
   :root{
-    --navy:#1F3864; --navy-2:#2A4A82; --indigo:#4f46e5; --violet:#7c3aed;
-    --pink:#ec4899; --orange:#f97316; --amber:#f59e0b; --teal:#0d9488;
-    --emerald:#059669; --cyan:#0891b2; --rose:#e11d48;
-    --bg:#eef2fb; --card:#ffffff;
-    --ink:#0f172a; --ink-2:#1e293b; --muted:#64748b; --line:#e2e8f0;
-    --good:#059669; --warn:#d97706; --bad:#dc2626;
-    --row-alt:#f8fafc;
-    --karur:#4f46e5; --kulittalai:#0d9488; --unknown:#dc2626;
-    --shadow-sm:0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04);
-    --shadow-md:0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
-    --shadow-lg:0 12px 32px rgba(15,23,42,.12), 0 4px 12px rgba(15,23,42,.06);
-    --shadow-glow:0 0 0 1px rgba(79,70,229,.18), 0 8px 24px rgba(79,70,229,.18);
-    --grad-brand:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%);
-    --grad-warm:linear-gradient(135deg,#f97316 0%,#e11d48 100%);
-    --grad-cool:linear-gradient(135deg,#0891b2 0%,#4f46e5 100%);
-    --grad-mint:linear-gradient(135deg,#059669 0%,#0d9488 100%);
-    --grad-sun:linear-gradient(135deg,#f59e0b 0%,#f97316 60%,#e11d48 100%);
-    --grad-karur:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);
-    --grad-kulittalai:linear-gradient(135deg,#0d9488 0%,#0891b2 100%);
-    --grad-bg:radial-gradient(1200px 600px at -10% -20%, #dbe4ff 0%, transparent 60%),
-              radial-gradient(900px 500px at 110% 0%, #fce7f3 0%, transparent 55%),
-              radial-gradient(800px 600px at 50% 120%, #d1fae5 0%, transparent 60%),
-              linear-gradient(180deg,#eef2fb 0%,#f5f7fd 100%);
+    --ink:var(--lg-ink,#0f172a); --ink-2:var(--lg-ink-2,#334155); --muted:var(--lg-ink-3,#64748b);
+    --line:var(--lg-rim,rgba(15,23,42,.1)); --line-hi:var(--lg-rim-hi,rgba(15,23,42,.2));
+    --mat:var(--lg-mat,rgba(255,255,255,.7)); --mat-hi:var(--lg-mat-hi,rgba(255,255,255,.85)); --mat-lo:var(--lg-mat-lo,rgba(255,255,255,.45));
+    --solid:var(--lg-mat-solid,#fff); --row-alt:var(--lg-row-alt,rgba(15,23,42,.025));
+    --accent:var(--lg-accent,#5856d6); --accent-soft:var(--lg-accent-soft,rgba(88,86,214,.14));
+    --karur:#6366f1; --kulittalai:#14b8a6; --unknown:#ef4444;
+    --good:#10b981; --warn:#f59e0b; --bad:#ef4444;
+    --c-brand:#4f46e5;
+    --c-cool:#0284c7;
+    --c-mint:#059669;
+    --c-sun:#d97706;
+    --c-warm:#e11d48;
+    --c-karur:#4f46e5;
+    --c-kulittalai:#0d9488;
+    --soft-indigo:rgba(79,70,229,.10); --soft-sky:rgba(2,132,199,.10); --soft-emerald:rgba(5,150,105,.11);
+    --soft-amber:rgba(217,119,6,.12); --soft-rose:rgba(225,29,72,.10); --soft-teal:rgba(13,148,136,.11);
+    --r-sm:12px; --r-md:16px; --r-lg:22px;
+    --font-display:"Plus Jakarta Sans","Inter",sans-serif;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0;color:var(--ink);font:14.5px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--grad-bg);background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-  ::selection{background:rgba(124,58,237,.22)}
-
-  /* ---------- Header ---------- */
-  header{
-    position:relative;color:#fff;padding:22px 28px;
-    background:linear-gradient(120deg,#1F3864 0%,#4f46e5 45%,#7c3aed 75%,#ec4899 110%);
-    overflow:hidden;border-bottom:1px solid rgba(255,255,255,.15);
-    box-shadow:0 8px 24px rgba(31,56,100,.18);
-  }
-  header::before{content:"";position:absolute;inset:0;background:
-    radial-gradient(600px 200px at 10% 0%, rgba(255,255,255,.18), transparent 60%),
-    radial-gradient(500px 220px at 90% 100%, rgba(255,255,255,.12), transparent 60%);pointer-events:none}
-  header::after{content:"";position:absolute;inset:0;background-image:
-    radial-gradient(circle at 1px 1px, rgba(255,255,255,.14) 1px, transparent 0);
-    background-size:22px 22px;opacity:.35;pointer-events:none}
-  .header-inner{position:relative;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;max-width:1240px;margin:0 auto}
-  .brand{display:flex;align-items:center;gap:14px}
-  .logo{
-    width:42px;height:42px;border-radius:12px;display:grid;place-items:center;
-    background:linear-gradient(135deg,#fff 0%,#e0e7ff 100%);color:#4f46e5;
-    box-shadow:0 6px 16px rgba(0,0,0,.18), inset 0 -2px 6px rgba(79,70,229,.18);
-    font-weight:800;font-size:18px;font-family:"Plus Jakarta Sans","Inter",sans-serif;
-  }
-  header h1{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:20px;margin:0;font-weight:800;letter-spacing:.2px;line-height:1.1}
-  header .sub{font-size:12.5px;opacity:.92;margin-top:2px;font-weight:500}
-  header .privacy{
-    display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.2px;
-    background:rgba(255,255,255,.16);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-    padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.28);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
-  }
-  .privacy .dot{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 10px #34d399;animation:pulse 2s ease-in-out infinite}
-  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.25);opacity:.7}}
-
-  main{max-width:1240px;margin:0 auto;padding:24px 20px 8px}
-
-  /* ---------- Card ---------- */
-  .card{
-    position:relative;background:rgba(255,255,255,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-    border:1px solid rgba(255,255,255,.6);border-radius:18px;padding:22px;margin-bottom:18px;
-    box-shadow:var(--shadow-md);
-    transition:box-shadow .25s ease, transform .25s ease;
-  }
-  .card:hover{box-shadow:var(--shadow-lg)}
-  .card h2{
-    margin:0 0 14px;font-family:"Plus Jakarta Sans","Inter",sans-serif;
-    font-size:13.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1.6px;
-    display:flex;align-items:center;gap:10px;
-  }
-  .card h2 .num{
-    width:26px;height:26px;border-radius:8px;display:inline-grid;place-items:center;color:#fff;
-    font-size:12px;font-weight:800;background:var(--grad-brand);box-shadow:0 4px 10px rgba(124,58,237,.35);
-  }
-  .card h2 .num.n2{background:var(--grad-cool);box-shadow:0 4px 10px rgba(8,145,178,.35)}
-  .card h2 .num.n3{background:var(--grad-mint);box-shadow:0 4px 10px rgba(5,150,105,.35)}
-  .card h2 .num.n4{background:var(--grad-sun);box-shadow:0 4px 10px rgba(249,115,22,.35)}
-
-  /* ---------- Drop zone ---------- */
-  .drop-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 8px 4px;text-align:center}
-  .drop{
-    position:relative;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:14px;padding:30px 56px;min-width:min(520px,92%);
-    border:0;border-radius:22px;cursor:pointer;text-align:center;
-    background:var(--grad-brand);color:#fff;
-    box-shadow:
-      0 18px 40px rgba(124,58,237,.38),
-      0 4px 12px rgba(79,70,229,.22),
-      inset 0 1px 0 rgba(255,255,255,.28),
-      inset 0 -3px 8px rgba(0,0,0,.12);
-    transition:transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease, filter .2s ease;
-    overflow:hidden;isolation:isolate;
-  }
-  .drop::before{
-    content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;
-    background:linear-gradient(135deg,#ec4899 0%,#f97316 50%,#4f46e5 100%);
-    opacity:0;transition:opacity .35s ease;
-  }
-  .drop::after{
-    content:"";position:absolute;top:-60%;left:-30%;width:60%;height:220%;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);
-    transform:rotate(18deg) translateX(-100%);transition:transform .9s ease;pointer-events:none;
-  }
-  .drop:hover{transform:translateY(-3px) scale(1.01);box-shadow:0 24px 56px rgba(124,58,237,.48), 0 6px 16px rgba(236,72,153,.28), inset 0 1px 0 rgba(255,255,255,.32), inset 0 -3px 8px rgba(0,0,0,.14)}
-  .drop:hover::before{opacity:1}
-  .drop:hover::after{transform:rotate(18deg) translateX(260%)}
-  .drop:active{transform:translateY(-1px) scale(.998)}
-  .drop:focus-within{outline:3px solid rgba(124,58,237,.35);outline-offset:4px}
-  .drop.drag{transform:translateY(-3px) scale(1.02);box-shadow:0 28px 60px rgba(236,72,153,.45), inset 0 1px 0 rgba(255,255,255,.35)}
-  .drop.drag::before{opacity:1}
-
-  .drop .cloud{
-    width:72px;height:72px;border-radius:50%;display:inline-grid;place-items:center;
-    background:rgba(255,255,255,.18);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-    color:#fff;font-size:32px;border:1.5px solid rgba(255,255,255,.32);
-    box-shadow:inset 0 -3px 8px rgba(0,0,0,.12), 0 6px 16px rgba(0,0,0,.18);
-    animation:floaty 3.4s ease-in-out infinite;
-  }
-  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-  .drop .title{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:18px;font-weight:800;letter-spacing:.3px;color:#fff;line-height:1.3;text-shadow:0 1px 2px rgba(0,0,0,.18)}
-  .drop .title em{font-style:normal;font-weight:800}
-  .drop .hint{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.4px;color:#fff;opacity:.95;background:rgba(255,255,255,.18);padding:6px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.28)}
-  .drop input{display:none}
-  .drop-foot{margin-top:14px;font-size:11.5px;color:var(--muted);letter-spacing:.3px}
-  .drop-foot kbd{font-family:"Inter",monospace;font-size:10.5px;background:#fff;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--ink-2);font-weight:600;margin:0 2px}
-
-  /* ---------- Options ---------- */
-  .options{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-  .field{display:flex;flex-direction:column;gap:6px}
-  .field label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px}
-  .field input,.field select,.field textarea{
-    padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font:500 14px/1.2 inherit;background:#fff;color:var(--ink);
-    transition:.15s;
-  }
-  .field textarea{resize:vertical;min-height:40px;font-family:inherit}
-  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 4px rgba(124,58,237,.14)}
-  .toggle{
-    display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600;color:var(--ink);
-    padding:10px 12px;background:#fff;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;
-    transition:.15s; user-select:none;
-  }
-  .toggle:hover{border-color:#7c3aed;background:#faf8ff}
-  .toggle input{appearance:none;-webkit-appearance:none;width:36px;height:20px;background:#cbd5e1;border-radius:999px;position:relative;cursor:pointer;transition:.2s;flex-shrink:0}
-  .toggle input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 2px 4px rgba(0,0,0,.15)}
-  .toggle input:checked{background:var(--grad-brand)}
-  .toggle input:checked::after{transform:translateX(16px)}
-
-  /* ---------- Stats ---------- */
-  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
-  .stat{
-    position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;
-    box-shadow:var(--shadow-sm);overflow:hidden;transition:transform .2s ease, box-shadow .2s ease;
-  }
-  .stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
-  .stat::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--grad-brand)}
-  .stat:nth-child(2)::before{background:var(--grad-cool)}
-  .stat:nth-child(3)::before{background:var(--grad-sun)}
-  .stat:nth-child(4)::before{background:var(--grad-mint)}
-  .stat:nth-child(5)::before{background:var(--grad-warm)}
-  .stat:nth-child(6)::before{background:var(--grad-karur)}
-  .stat:nth-child(7)::before{background:var(--grad-kulittalai)}
-  .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:700}
-  .stat .v{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-size:28px;font-weight:800;color:var(--ink);margin-top:6px;line-height:1}
-
-  /* ---------- Group cards ---------- */
-  .groupcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-  .gcard{
-    position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;
-    display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow-sm);overflow:hidden;
-    transition:transform .2s ease, box-shadow .2s ease;
-  }
-  .gcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
-  .gcard::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad-brand)}
-  .gcard:nth-child(6n+2)::before{background:var(--grad-cool)}
-  .gcard:nth-child(6n+3)::before{background:var(--grad-sun)}
-  .gcard:nth-child(6n+4)::before{background:var(--grad-mint)}
-  .gcard:nth-child(6n+5)::before{background:var(--grad-warm)}
-  .gcard:nth-child(6n)::before{background:linear-gradient(135deg,#0891b2 0%,#059669 100%)}
-  .gcard .name{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-weight:700;font-size:15px;color:var(--ink);line-height:1.25}
-  .gcard .meta{display:flex;gap:6px;flex-wrap:wrap;font-size:12px}
-  .gcard .meta .chip{
-    display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;color:var(--ink-2);
-    padding:4px 10px;border-radius:999px;font-weight:600;font-size:11.5px;
-  }
-  .gcard .meta .chip.k{background:#ede9fe;color:#5b21b6}
-  .gcard .meta .chip.t{background:#ccfbf1;color:#115e59}
-  .gcard .meta .chip.d{background:#fee2e2;color:#991b1b}
-
-  /* ---------- Buttons ---------- */
-  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-  button.btn{
-    background:var(--grad-brand);color:#fff;border:0;padding:10px 16px;border-radius:10px;cursor:pointer;
-    font:700 12.5px/1 "Inter",inherit;letter-spacing:.3px;display:inline-flex;align-items:center;gap:6px;
-    box-shadow:0 4px 12px rgba(124,58,237,.28), inset 0 1px 0 rgba(255,255,255,.2);
-    transition:.18s ease; position:relative; overflow:hidden;
-  }
-  button.btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(124,58,237,.38), inset 0 1px 0 rgba(255,255,255,.25)}
-  button.btn:active{transform:translateY(0)}
-  button.btn.alt{
-    background:#fff;color:#4f46e5;border:1.5px solid #c7d2fe;
-    box-shadow:var(--shadow-sm);
-  }
-  button.btn.alt:hover{background:#f5f3ff;border-color:#7c3aed;color:#6d28d9;box-shadow:var(--shadow-md)}
-  button.btn.big{padding:12px 22px;font-size:13.5px;border-radius:12px}
-  button.btn.warm{background:var(--grad-warm);box-shadow:0 4px 12px rgba(225,29,72,.28), inset 0 1px 0 rgba(255,255,255,.2)}
-  button.btn.warm:hover{box-shadow:0 8px 20px rgba(225,29,72,.38), inset 0 1px 0 rgba(255,255,255,.25)}
-  button.btn.mint{background:var(--grad-mint);box-shadow:0 4px 12px rgba(5,150,105,.28), inset 0 1px 0 rgba(255,255,255,.2)}
-  button.btn.mint:hover{box-shadow:0 8px 20px rgba(5,150,105,.38), inset 0 1px 0 rgba(255,255,255,.25)}
-  button.btn.tiny{padding:6px 10px;font-size:11px;border-radius:8px}
-  button.btn.danger{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);box-shadow:0 4px 12px rgba(220,38,38,.28)}
-  button.btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
-
-  /* ---------- Accordion ---------- */
-  details.group{
-    border:1px solid var(--line);border-radius:14px;background:#fff;margin-bottom:12px;overflow:hidden;
-    box-shadow:var(--shadow-sm);transition:box-shadow .2s ease;
-  }
-  details.group[open]{box-shadow:var(--shadow-md)}
-  details.group>summary{
-    cursor:pointer;list-style:none;padding:14px 18px;
-    background:linear-gradient(135deg,#f8fafc 0%,#eef2ff 100%);
-    display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
-    border-bottom:1px solid transparent;transition:.15s;
-  }
-  details.group[open]>summary{border-bottom-color:var(--line);background:linear-gradient(135deg,#eef2ff 0%,#fae8ff 100%)}
-  details.group>summary::-webkit-details-marker{display:none}
-  details.group>summary .ttl{font-family:"Plus Jakarta Sans","Inter",sans-serif;font-weight:700;font-size:15px;color:var(--ink);display:flex;align-items:center;gap:10px}
-  details.group>summary .ttl::before{content:"▸";display:inline-block;color:#7c3aed;transition:.2s;font-size:13px}
-  details.group[open]>summary .ttl::before{transform:rotate(90deg)}
-  details.group>summary .badges{display:flex;gap:6px;flex-wrap:wrap}
-  .badge{
-    background:#fff;color:#4f46e5;padding:4px 10px;border-radius:999px;font-weight:700;font-size:11.5px;
-    border:1px solid #c7d2fe;box-shadow:var(--shadow-sm);
-  }
-  .badge.g{background:#d1fae5;color:#065f46;border-color:#a7f3d0}
-  .badge.k{background:#ede9fe;color:#5b21b6;border-color:#c7d2fe}
-  .badge.t{background:#ccfbf1;color:#115e59;border-color:#99f6e4}
-  .badge.d{background:#fee2e2;color:#991b1b;border-color:#fecaca}
-  .badge.m{background:#fef3c7;color:#92400e;border-color:#fde68a}
-
-  /* HO section blocks inside accordion */
-  .ho-block{padding:14px 18px 6px;border-top:1px solid var(--line)}
-  .ho-block:first-of-type{border-top:0}
-  .ho-head{
-    display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;
-  }
-  .ho-head .ho-ttl{
-    font-family:"Plus Jakarta Sans","Inter",sans-serif;font-weight:800;font-size:13.5px;
-    display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;color:#fff;
-    text-transform:uppercase;letter-spacing:.4px;
-  }
-  .ho-head .ho-ttl.karur{background:var(--grad-karur);box-shadow:0 4px 10px rgba(124,58,237,.3)}
-  .ho-head .ho-ttl.kulittalai{background:var(--grad-kulittalai);box-shadow:0 4px 10px rgba(13,148,136,.3)}
-  .ho-head .ho-ttl.unknown{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);box-shadow:0 4px 10px rgba(220,38,38,.3)}
-  .ho-head .ho-stats{display:flex;gap:6px;flex-wrap:wrap}
-
-  .tablewrap{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:10px}
-  table.preview{width:100%;border-collapse:collapse;font-size:12.5px}
-  table.preview th{
-    background:linear-gradient(180deg,#1F3864 0%,#4f46e5 100%);color:#fff;text-align:left;padding:10px 10px;
-    position:sticky;top:0;font-weight:700;border-right:1px solid rgba(255,255,255,.12);font-size:11.5px;
-    text-transform:uppercase;letter-spacing:.5px;z-index:1;
-  }
-  table.preview th:first-child{padding-left:14px}
-  table.preview td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
-  table.preview td:first-child{padding-left:14px;font-weight:600;color:#7c3aed}
-  table.preview tr:nth-child(even) td{background:var(--row-alt)}
-  table.preview tr:hover td{background:#eef2ff}
-  table.preview tr.total td{background:linear-gradient(90deg,#ede9fe 0%,#fae8ff 100%)!important;font-weight:800;color:#5b21b6;border-top:2px solid #7c3aed;font-size:13px}
-  table.preview tr.manual td{background:#fef3c7 !important}
-  table.preview tr.manual:hover td{background:#fde68a !important}
-  table.preview .actcell{white-space:nowrap}
-  table.preview .manchip{display:inline-block;background:#f59e0b;color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;letter-spacing:.4px;margin-right:4px}
-
-  /* ---------- Manual entry form ---------- */
-  .manual-form{
-    margin:10px 18px 12px;padding:14px;border:1.5px dashed #c7d2fe;border-radius:12px;background:#faf8ff;
-  }
-  .manual-form .grid{
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;
-  }
-  .manual-form .field label{font-size:10.5px}
-  .manual-form .field input,.manual-form .field textarea,.manual-form .field select{
-    padding:8px 10px;font-size:13px;
-  }
-  .manual-form .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap}
-
-  .grp-actions{
-    padding:12px 18px;border-top:1px solid var(--line);
-    background:linear-gradient(180deg,#fafbfd 0%,#f3f5fb 100%);
-    display:flex;gap:8px;flex-wrap:wrap;align-items:center;
-  }
-  .grp-actions .spacer{flex:1}
-
-  /* ---------- Alerts ---------- */
-  .alert{padding:12px 14px;border-radius:10px;margin:10px 0;font-size:13px;font-weight:500;border:1px solid;display:flex;align-items:center;gap:10px}
-  .alert::before{content:"";width:8px;height:8px;border-radius:50%;flex-shrink:0}
-  .alert.err{background:#fef2f2;color:#991b1b;border-color:#fecaca}
-  .alert.err::before{background:#dc2626;box-shadow:0 0 8px #dc2626}
-  .alert.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
-  .alert.warn::before{background:#d97706;box-shadow:0 0 8px #d97706}
-  .alert.info{background:#eef2ff;color:#3730a3;border-color:#c7d2fe}
-  .alert.info::before{background:#4f46e5;box-shadow:0 0 8px #4f46e5}
-
-  .spinner{display:inline-block;width:16px;height:16px;border:2.5px solid #c7d2fe;border-top-color:#4f46e5;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;flex-shrink:0}
-  @keyframes sp{to{transform:rotate(360deg)}}
-
+  html,body{margin:0;padding:0}
+  body{color:var(--ink);font:14.5px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   .hidden{display:none!important}
-  .flagrow{font-size:12.5px;color:var(--muted);margin-top:10px;padding:10px 12px;background:#f8fafc;border-radius:10px;border:1px solid var(--line)}
-  .flagrow .f{display:inline-block;margin-right:14px}
-  .flagrow .f b{color:var(--ink)}
-
-  .section-subtitle{
-    font-family:"Plus Jakarta Sans","Inter",sans-serif;
-    margin:22px 0 12px;font-size:13.5px;color:var(--muted);font-weight:700;
-    text-transform:uppercase;letter-spacing:1.6px;display:flex;align-items:center;gap:8px;
-  }
-  .section-subtitle::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line) 0%,transparent 100%)}
-
-  .footer-note{font-size:11.5px;color:var(--muted);text-align:center;padding:20px 8px 6px;letter-spacing:.3px}
-  .footer-note .tech{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
-  .footer-note .tech span{padding:3px 9px;background:rgba(255,255,255,.7);border:1px solid var(--line);border-radius:999px;font-weight:600;color:var(--ink-2);font-size:11px}
-
-  .builtby{
-    text-align:center;padding:14px 8px 32px;font-weight:800;font-size:14px;letter-spacing:.3px;
-    font-family:"Plus Jakarta Sans","Inter",sans-serif;
-    background:linear-gradient(90deg,#4f46e5 0%,#7c3aed 20%,#ec4899 45%,#f97316 70%,#4f46e5 100%);
-    background-size:200% 100%;
-    -webkit-background-clip:text;background-clip:text;color:transparent;
-    -webkit-text-fill-color:transparent;
-    animation:shimmer 6s ease-in-out infinite;
-  }
-  .builtby .heart{-webkit-text-fill-color:#e11d48;color:#e11d48;font-size:13px;margin:0 4px;display:inline-block;animation:beat 1.3s ease-in-out infinite;filter:drop-shadow(0 1px 4px rgba(225,29,72,.4))}
-  @keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-  @keyframes beat{0%,100%{transform:scale(1)}30%{transform:scale(1.3)}60%{transform:scale(.95)}}
-
-  @media (max-width:640px){
-    header{padding:18px 18px}
-    header h1{font-size:17px}
-    main{padding:16px 14px}
-    .card{padding:18px;border-radius:14px}
-    .drop{padding:28px 16px}
-    .stat .v{font-size:22px}
-    .builtby{font-size:17px}
-  }
+  svg.i{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
   /* App switcher bar (shared classes; responsive rules live in mobile.css) */
   .appbar{background:#1e3a5f;color:#fff;padding:9px 22px;display:flex;align-items:center;gap:14px;font:600 12.5px/1.2 'Inter',-apple-system,'Segoe UI',sans-serif;letter-spacing:.2px}
   .appbar .switch{margin-left:auto;display:flex;gap:6px;padding:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px}
   .appbar .pill{padding:5px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);border-radius:6px;text-decoration:none}
   .appbar .pill.active{color:#1e3a5f;background:#fff}
+
+  .lo-wrap{max-width:1240px;margin:0 auto;padding:24px 20px 28px}
+
+  /* ---------- Page canvas: one calm solid tone, no colour field ---------- */
+  html,html[data-theme="light"]{background:#f4f6fb}
+  html[data-theme="dark"]{background:#0b0f1a}
+  html body .lg-backdrop{display:none}
+
+  /* ---------- Solid surface shared by every panel ---------- */
+  .lo-panel{
+    position:relative;background:var(--solid);
+    border-radius:var(--r-lg);box-shadow:0 0 0 1px var(--line),0 1px 2px rgba(15,23,42,.04),0 10px 28px -12px rgba(15,23,42,.12);
+    padding:22px;margin-bottom:18px;
+  }
+  .lo-panel-head{display:flex;align-items:center;gap:12px;margin:0 0 16px}
+  .lo-panel-head h2{margin:0;font:800 15px/1.2 var(--font-display);color:var(--ink);letter-spacing:-.01em}
+  .lo-panel-head p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+  .lo-panel-head .grow{flex:1;min-width:0}
+  /* Icon tiles: soft tint, rich glyph */
+  .lo-ico{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+  .lo-ico svg.i{width:18px;height:18px}
+  .lo-ico.brand{color:var(--c-brand);background:var(--soft-indigo)}
+  .lo-ico.cool{color:var(--c-cool);background:var(--soft-sky)}
+  .lo-ico.mint{color:var(--c-mint);background:var(--soft-emerald)}
+  .lo-ico.sun{color:var(--c-sun);background:var(--soft-amber)}
+  html[data-theme="dark"] .lo-ico.brand,html[data-theme="dark"] .lo-hero .mark,html[data-theme="dark"] .lo-drop .up,
+  html[data-theme="dark"] .ho-head .ho-ttl.karur{color:#a5b4fc;background:rgba(129,140,248,.16)}
+  html[data-theme="dark"] .lo-ico.cool{color:#7dd3fc;background:rgba(56,189,248,.14)}
+  html[data-theme="dark"] .lo-ico.mint{color:#6ee7b7;background:rgba(52,211,153,.14)}
+  html[data-theme="dark"] .lo-ico.sun{color:#fcd34d;background:rgba(251,191,36,.14)}
+  html[data-theme="dark"] .ho-head .ho-ttl.kulittalai{color:#5eead4;background:rgba(45,212,191,.14)}
+  html[data-theme="dark"] .ho-head .ho-ttl.unknown{color:#fca5a5;background:rgba(248,113,113,.14)}
+
+  /* ---------- Hero ---------- */
+  .lo-hero{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:24px 26px;overflow:hidden}
+  .lo-hero::after{content:"";position:absolute;left:0;right:0;top:0;height:3px;border-radius:var(--r-lg) var(--r-lg) 0 0;background:var(--c-brand)}
+  .lo-hero .mark{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;color:var(--c-brand);background:var(--soft-indigo)}
+  .lo-hero .mark svg.i{width:28px;height:28px;stroke-width:1.8}
+  .lo-hero .txt{flex:1;min-width:240px}
+  .lo-eyebrow{font:700 11px/1.2 var(--font-display);letter-spacing:2.2px;text-transform:uppercase;color:var(--muted)}
+  .lo-hero h1{margin:5px 0 4px;font:800 28px/1.1 var(--font-display);letter-spacing:-.02em;color:var(--ink)}
+  .lo-hero .sub{font-size:13.5px;color:var(--ink-2);max-width:640px}
+  .lo-sync{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--ink-2);
+    background:var(--mat-lo);box-shadow:inset 0 0 0 1px var(--line);white-space:nowrap}
+  .lo-sync .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}
+  .lo-sync.ok .dot{background:var(--good);box-shadow:0 0 0 3px rgba(16,185,129,.2)}
+  .lo-sync.busy .dot{background:var(--accent);animation:lo-pulse 1s ease-in-out infinite}
+  .lo-sync.local .dot{background:var(--warn);box-shadow:0 0 0 3px rgba(245,158,11,.2)}
+  .lo-sync.err .dot{background:var(--bad);box-shadow:0 0 0 3px rgba(239,68,68,.2)}
+  @keyframes lo-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* ---------- Month bar ---------- */
+  .lo-month{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:16px 20px}
+  .lo-month .lbl{font:700 11px/1.2 var(--font-display);letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .lo-stepper{display:flex;align-items:center;gap:6px}
+  html body .lo-stepper button.nav{width:38px;height:38px;padding:0;border:0;border-radius:11px;display:grid;place-items:center;cursor:pointer;color:var(--ink-2);
+    background:var(--mat-lo);box-shadow:inset 0 0 0 1px var(--line)}
+  html body .lo-stepper button.nav:hover:not(:disabled){color:var(--ink);background:var(--mat-hi);box-shadow:inset 0 0 0 1px var(--line-hi)}
+  html body .lo-stepper button.nav:disabled{opacity:.35;cursor:not-allowed}
+  .lo-monthpick{position:relative;display:flex;align-items:center;gap:10px;height:38px;padding:0 14px 0 12px;border-radius:11px;cursor:pointer;
+    background:var(--mat-lo);box-shadow:inset 0 0 0 1px var(--line);min-width:196px}
+  .lo-monthpick:hover{box-shadow:inset 0 0 0 1px var(--line-hi)}
+  .lo-monthpick .name{font:800 16px/1 var(--font-display);color:var(--ink);letter-spacing:-.01em;white-space:nowrap}
+  .lo-monthpick svg.i{color:var(--accent)}
+  html body .lo-monthpick input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;padding:0;border:0}
+  .lo-now{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .lo-now.is{color:#047857;background:rgba(16,185,129,.14)}
+  html[data-theme="dark"] .lo-now.is{color:#6ee7b7}
+  html body button.lo-now.go{border:0;cursor:pointer;color:var(--accent);background:var(--accent-soft)}
+  .lo-recent{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  html body .lo-recent button{border:0;cursor:pointer;font:600 12px/1 "Inter",sans-serif;padding:7px 11px;border-radius:999px;color:var(--ink-2);
+    background:var(--mat-lo);box-shadow:inset 0 0 0 1px var(--line)}
+  html body .lo-recent button:hover{color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-hi)}
+  html body .lo-recent button.on{color:#fff;background:var(--c-brand);box-shadow:none}
+  .lo-recent .cnt{opacity:.7;font-weight:700;margin-left:4px}
+  .lo-month .spacer{flex:1}
+  .lo-facts{display:flex;gap:22px;flex-wrap:wrap}
+  .lo-fact .k{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+  .lo-fact .v{font:800 20px/1.15 var(--font-display);color:var(--ink);margin-top:3px;font-variant-numeric:tabular-nums}
+  .lo-fact .v small{font:600 12px/1 "Inter",sans-serif;color:var(--muted);margin-left:4px}
+
+  /* ---------- Two-column work area ---------- */
+  .lo-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;align-items:start}
+  .lo-grid > .lo-panel{margin-bottom:0}
+  .lo-grid + *{margin-top:18px}
+
+  /* ---------- Drop zone ---------- */
+  html body .lo-drop{
+    position:relative;display:flex;align-items:center;gap:18px;padding:22px 22px;border-radius:var(--r-md);cursor:pointer;
+    background:var(--mat-lo);border:1.5px dashed var(--line-hi);transition:border-color .2s,background-color .2s,transform .2s;
+  }
+  html body .lo-drop:hover,html body .lo-drop.drag{border-color:var(--accent);background:var(--accent-soft)}
+  html body .lo-drop.drag{transform:scale(1.01)}
+  html body .lo-drop:focus-visible{outline:none;box-shadow:0 0 0 4px var(--accent-soft);border-color:var(--accent)}
+  .lo-drop .up{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;color:var(--c-brand);background:var(--soft-indigo);flex-shrink:0;
+    transition:transform .25s}
+  .lo-drop:hover .up{transform:translateY(-2px)}
+  .lo-drop .up svg.i{width:24px;height:24px}
+  .lo-drop .t1{font:800 15.5px/1.3 var(--font-display);color:var(--ink)}
+  .lo-drop .t1 b{color:var(--accent)}
+  .lo-drop .t2{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .lo-drop input{display:none}
+  .lo-drop.busy{pointer-events:none;opacity:.7}
+
+  /* ---------- Upload history ---------- */
+  .lo-hist-head{display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px}
+  .lo-hist-head h3{margin:0;font:700 12px/1.2 var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)}
+  .lo-hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .lo-hist li{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:var(--r-sm);background:var(--mat-lo);box-shadow:inset 0 0 0 1px var(--line)}
+  .lo-hist .fi{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;color:#059669;background:rgba(16,185,129,.14)}
+  html[data-theme="dark"] .lo-hist .fi{color:#6ee7b7}
+  .lo-hist .fi svg.i{width:17px;height:17px}
+  .lo-hist .body{flex:1;min-width:0}
+  .lo-hist .fn{font-weight:700;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lo-hist .when{font-size:12px;color:var(--muted);margin-top:1px}
+  .lo-hist .delta{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .lo-tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .lo-tag.add{color:#047857;background:rgba(16,185,129,.14)} .lo-tag.upd{color:#4338ca;background:rgba(99,102,241,.14)} .lo-tag.same{color:var(--muted);background:var(--row-alt)}
+  html[data-theme="dark"] .lo-tag.add{color:#6ee7b7} html[data-theme="dark"] .lo-tag.upd{color:#a5b4fc}
+  .lo-hist .latest{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#fff;background:var(--c-brand);padding:2px 7px;border-radius:6px;margin-left:6px;vertical-align:1px}
+  .lo-empty-hist{padding:16px;border-radius:var(--r-sm);text-align:center;font-size:12.5px;color:var(--muted);background:var(--mat-lo);box-shadow:inset 0 0 0 1px var(--line)}
+
+  /* ---------- Settings ---------- */
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .options .full{grid-column:1/-1}
+  .field{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .field label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+  .field input,.field select,.field textarea{padding:10px 12px;border-radius:var(--r-sm);font:500 14px/1.25 "Inter",sans-serif;color:var(--ink);width:100%}
+  .field textarea{resize:vertical;min-height:40px}
+  .field .hint{font-size:11.5px;color:var(--muted)}
+  .field .hint button{border:0;background:none;padding:0;color:var(--accent);font:600 11.5px/1 "Inter",sans-serif;cursor:pointer}
+  .toggles{display:flex;flex-direction:column;gap:2px;margin-top:6px;border-radius:var(--r-sm);background:var(--mat-lo);box-shadow:inset 0 0 0 1px var(--line);overflow:hidden}
+  .toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;cursor:pointer;user-select:none;font-size:13.5px;font-weight:600;color:var(--ink)}
+  .toggle + .toggle{box-shadow:inset 0 1px 0 var(--line)}
+  .toggle small{display:block;font-weight:500;font-size:12px;color:var(--muted);margin-top:1px}
+  html body .toggle input{appearance:none;-webkit-appearance:none;width:40px;height:23px;background:var(--line-hi);border-radius:999px;position:relative;cursor:pointer;transition:.2s;flex-shrink:0;margin:0}
+  .toggle input::after{content:"";position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+  html body .toggle input:checked{background:var(--c-brand)}
+  .toggle input:checked::after{transform:translateX(17px)}
+
+  /* ---------- Empty month ---------- */
+  .lo-empty{text-align:center;padding:42px 20px}
+  .lo-empty .art{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;display:grid;place-items:center;color:var(--accent);background:var(--accent-soft)}
+  .lo-empty .art svg.i{width:30px;height:30px;stroke-width:1.7}
+  .lo-empty h3{margin:0 0 6px;font:800 18px/1.25 var(--font-display);color:var(--ink)}
+  .lo-empty p{margin:0 auto;max-width:460px;color:var(--muted);font-size:13.5px}
+
+  /* ---------- Summary stats ---------- */
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .stat{position:relative;background:var(--mat-lo);border-radius:var(--r-md);padding:15px 16px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
+  .stat::before{content:"";position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--c-brand)}
+  .stat:nth-child(2)::before{background:var(--c-cool)} .stat:nth-child(3)::before{background:var(--c-sun)}
+  .stat:nth-child(4)::before{background:var(--c-mint)} .stat:nth-child(5)::before{background:var(--c-warm)}
+  .stat:nth-child(6)::before{background:var(--c-karur)} .stat:nth-child(7)::before{background:var(--c-kulittalai)}
+  .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-weight:700}
+  .stat .v{font:800 25px/1 var(--font-display);color:var(--ink);margin-top:8px;font-variant-numeric:tabular-nums}
+
+  .flagrow{font-size:12.5px;color:var(--muted);margin-top:12px;padding:10px 14px;border-radius:var(--r-sm);background:var(--mat-lo);box-shadow:inset 0 0 0 1px var(--line)}
+  .flagrow .f{display:inline-block;margin-right:16px}
+  .flagrow .f b{color:var(--ink)}
+
+  .section-subtitle{font:700 12px/1.2 var(--font-display);margin:24px 0 12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.4px;display:flex;align-items:center;gap:10px}
+  .section-subtitle::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  /* ---------- Leave-type cards ---------- */
+  .groupcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  .gcard{position:relative;background:var(--mat-lo);border-radius:var(--r-md);padding:16px;display:flex;flex-direction:column;gap:10px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow .2s,transform .2s}
+  .gcard:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 1px var(--line-hi),var(--lg-shadow-2,0 8px 20px rgba(15,23,42,.1))}
+  .gcard .name{font:700 14.5px/1.3 var(--font-display);color:var(--ink)}
+  .gcard .meta{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-weight:700;font-size:11.5px;font-variant-numeric:tabular-nums}
+  .chip.k{background:rgba(99,102,241,.14);color:#4338ca} .chip.t{background:rgba(20,184,166,.15);color:#0f766e} .chip.d{background:rgba(239,68,68,.14);color:#b91c1c}
+  html[data-theme="dark"] .chip.k{color:#a5b4fc} html[data-theme="dark"] .chip.t{color:#5eead4} html[data-theme="dark"] .chip.d{color:#fca5a5}
+
+  /* ---------- Buttons ---------- */
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+  html body button.btn{background:var(--c-brand);color:#fff;border:0;padding:10px 16px;border-radius:11px;cursor:pointer;
+    font:700 12.5px/1 "Inter",sans-serif;letter-spacing:.1px;display:inline-flex;align-items:center;gap:7px}
+  button.btn svg.i{width:15px;height:15px}
+  html body button.btn.alt{background:var(--solid);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line-hi),var(--lg-shadow-1,0 1px 2px rgba(0,0,0,.06))}
+  html body button.btn.alt:hover:not(:disabled){color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent),var(--lg-shadow-2,0 6px 14px rgba(0,0,0,.08))}
+  html body button.btn.big{padding:13px 20px;font-size:13.5px;border-radius:13px}
+  html body button.btn.warm{background:var(--c-warm)}
+  html body button.btn.mint{background:var(--c-mint)}
+  html body button.btn.tiny{padding:7px 11px;font-size:11.5px;border-radius:9px}
+  html body button.btn.danger{background:#dc2626}
+  .lo-export{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;padding-top:18px;box-shadow:inset 0 1px 0 var(--line)}
+
+  /* ---------- Accordion ---------- */
+  details.group{border-radius:var(--r-md);background:var(--mat-lo);margin-bottom:12px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
+  details.group[open]{box-shadow:inset 0 0 0 1px var(--line-hi),var(--lg-shadow-2,0 8px 20px rgba(15,23,42,.08))}
+  details.group>summary{cursor:pointer;list-style:none;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  details.group[open]>summary{box-shadow:inset 0 -1px 0 var(--line)}
+  details.group>summary::-webkit-details-marker{display:none}
+  details.group>summary .ttl{font:700 15px/1.3 var(--font-display);color:var(--ink);display:flex;align-items:center;gap:10px}
+  details.group>summary .ttl::before{content:"";width:8px;height:8px;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(-45deg);transition:transform .2s}
+  details.group[open]>summary .ttl::before{transform:rotate(45deg)}
+  details.group>summary .badges{display:flex;gap:6px;flex-wrap:wrap}
+  .badge{padding:4px 10px;border-radius:999px;font-weight:700;font-size:11.5px;color:var(--ink-2);background:var(--solid);box-shadow:inset 0 0 0 1px var(--line);font-variant-numeric:tabular-nums}
+  .badge.g{background:rgba(16,185,129,.14);color:#047857;box-shadow:none} .badge.k{background:rgba(99,102,241,.14);color:#4338ca;box-shadow:none}
+  .badge.t{background:rgba(20,184,166,.15);color:#0f766e;box-shadow:none} .badge.d{background:rgba(239,68,68,.14);color:#b91c1c;box-shadow:none}
+  .badge.m{background:rgba(245,158,11,.16);color:#b45309;box-shadow:none}
+  html[data-theme="dark"] .badge.g{color:#6ee7b7} html[data-theme="dark"] .badge.k{color:#a5b4fc} html[data-theme="dark"] .badge.t{color:#5eead4}
+  html[data-theme="dark"] .badge.d{color:#fca5a5} html[data-theme="dark"] .badge.m{color:#fcd34d}
+
+  .ho-block{padding:16px 18px 8px}
+  .ho-block + .ho-block{box-shadow:inset 0 1px 0 var(--line)}
+  .ho-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .ho-head .ho-ttl{font:800 12px/1 var(--font-display);display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;color:var(--c-brand);text-transform:uppercase;letter-spacing:.5px}
+  .ho-head .ho-ttl.karur{color:var(--c-karur);background:var(--soft-indigo)} .ho-head .ho-ttl.kulittalai{color:var(--c-kulittalai);background:var(--soft-teal)}
+  .ho-head .ho-ttl.unknown{color:#dc2626;background:var(--soft-rose)}
+  .ho-head .ho-stats{display:flex;gap:6px;flex-wrap:wrap}
+
+  .tablewrap{overflow:auto;max-height:560px;border-radius:var(--r-sm);box-shadow:inset 0 0 0 1px var(--line);background:var(--solid)}
+  table.preview{width:100%;border-collapse:collapse;font-size:12.5px}
+  html body table.preview th{background:var(--solid);color:var(--muted);text-align:left;padding:10px;position:sticky;top:0;font-weight:700;font-size:11px;
+    text-transform:uppercase;letter-spacing:.5px;z-index:1;white-space:nowrap;box-shadow:inset 0 -1px 0 var(--line-hi)}
+  table.preview th:first-child,table.preview td:first-child{padding-left:14px}
+  html body table.preview td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+  table.preview td:first-child{font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+  html body table.preview tr:nth-child(even) td{background:var(--row-alt)}
+  html body table.preview tr:hover td{background:var(--accent-soft)}
+  html body table.preview tr.total td{background:var(--accent-soft)!important;font-weight:800;color:var(--ink);border-top:1px solid var(--accent);border-bottom:0}
+  html body table.preview tr.manual td{background:rgba(245,158,11,.12)!important}
+  table.preview .actcell{white-space:nowrap}
+  table.preview .manchip{display:inline-block;background:#f59e0b;color:#fff;font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:5px;letter-spacing:.4px;margin-right:5px;vertical-align:1px}
+
+  /* ---------- Manual entry ---------- */
+  .manual-form{margin:10px 18px 14px;padding:14px;border:1.5px dashed var(--line-hi);border-radius:var(--r-sm);background:var(--mat-lo)}
+  .manual-form .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+  .manual-form .field label{font-size:10.5px}
+  .manual-form .field input,.manual-form .field textarea,.manual-form .field select{padding:8px 10px;font-size:13px}
+  .manual-form .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .lo-newtype{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+  .lo-newtype .field{flex:1;min-width:220px}
+
+  .grp-actions{padding:12px 18px;box-shadow:inset 0 1px 0 var(--line);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .grp-actions .spacer{flex:1}
+
+  /* ---------- Alerts ---------- */
+  .alert{padding:11px 14px;border-radius:var(--r-sm);margin:14px 0 0;font-size:13px;font-weight:500;display:flex;align-items:center;gap:10px}
+  .alert.err{background:rgba(239,68,68,.12);color:#b91c1c}
+  .alert.warn{background:rgba(245,158,11,.14);color:#b45309}
+  .alert.info{background:var(--accent-soft);color:var(--ink)}
+  .alert.ok{background:rgba(16,185,129,.13);color:#047857}
+  html[data-theme="dark"] .alert.err{color:#fca5a5} html[data-theme="dark"] .alert.warn{color:#fcd34d} html[data-theme="dark"] .alert.ok{color:#6ee7b7}
+  .spinner{display:inline-block;width:16px;height:16px;border:2.5px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;flex-shrink:0}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* ---------- Month-choice dialog ---------- */
+  .lo-modal{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(6,8,15,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  .lo-modal .box{width:min(460px,100%);padding:24px;border-radius:var(--r-lg);background:var(--lg-mat-solid,#fff);color:var(--ink);box-shadow:var(--lg-edge,0 0 0 1px var(--line)),var(--lg-shadow-4,0 30px 60px rgba(0,0,0,.25))}
+  .lo-modal h3{margin:0 0 8px;font:800 18px/1.25 var(--font-display)}
+  .lo-modal p{margin:0 0 18px;color:var(--ink-2);font-size:13.5px}
+  .lo-modal .acts{display:flex;flex-direction:column;gap:8px}
+  .lo-modal .acts button{justify-content:center}
+
+  .lo-foot{text-align:center;padding:10px 8px 30px;font-size:12px;color:var(--muted)}
+  .lo-foot b{font-weight:700;color:var(--ink-2)}
+
+  @media (max-width:900px){ .lo-grid{grid-template-columns:1fr} }
+  @media (max-width:640px){
+    .lo-wrap{padding:16px 16px 20px}
+    .lo-panel{padding:18px;border-radius:18px}
+    .lo-hero{padding:20px}
+    .lo-hero h1{font-size:23px}
+    .lo-hero .mark{width:46px;height:46px;border-radius:14px}
+    .lo-drop{padding:18px}
+    .options{grid-template-columns:1fr}
+    .lo-month{gap:14px}
+    .lo-month > div:first-child{width:100%}
+    .lo-stepper{flex-wrap:wrap}
+    .lo-monthpick{flex:1;min-width:0}
+    .lo-facts{gap:16px;width:100%}
+    .stat .v{font-size:21px}
+  }
 </style>
 <link rel="stylesheet" href="/leave-orders/mobile.css">
 <!-- Liquid Glass design system -->
 <script src="/leave-orders/liquid-glass.js?v=6"></script>
-<link rel="stylesheet" href="/leave-orders/liquid-glass.css?v=6">
+<link rel="stylesheet" href="/leave-orders/liquid-glass.css?v=7">
 
 <!-- ksd-pwa — installable Karur SDO app: manifest, iPhone home-screen, Liquid Glass shell -->
 <link rel="manifest" href="/manifest.webmanifest" />
@@ -409,104 +364,187 @@
   <span style="opacity:.4">|</span>
   <span style="opacity:.72">Department of Posts &middot; Karur Sub Division</span>
   <div class="switch">
-    <span class="pill active">Sub Divisional Manager</span>
+    <span class="pill active">Leave Orders</span>
     <a class="pill" href="/employees">Employee Directory</a>
     <a class="pill" href="/office-management">Office Management</a>
     <a class="pill" href="/arrangements">Temporary Arrangements</a>
     <a class="pill" href="/ir-builder/">Inspection Reports &rarr;</a>
   </div>
 </div>
-<header>
-  <div class="header-inner">
-    <div class="brand">
-      <div class="logo">&#x2709;</div>
-      <div>
-        <h1>Department of Posts &mdash; Sub Divisional Manager, Karur Sub Division</h1>
-        <div class="sub">Split by leave type and HO (Karur / Kulittalai) — add manual entries — export to Excel &amp; PDF.</div>
-      </div>
-    </div>
-    <span class="privacy"><span class="dot"></span> 100% in-browser · your file never leaves this device</span>
-  </div>
-</header>
-<main>
 
-  <section class="card" id="upload-card">
-    <h2><span class="num">1</span> Upload Absentee Statement</h2>
-    <div class="drop-wrap">
-      <label class="drop" id="drop" tabindex="0">
-        <input type="file" id="file" accept=".xlsx,.xls" />
-        <div class="cloud">&#x2B06;</div>
-        <div class="title"><em>Click to upload</em> or drag &amp; drop</div>
-        <div class="hint">.xlsx &middot; first worksheet &middot; headers in row 1</div>
-      </label>
-      <div class="drop-foot">Tip: press <kbd>Enter</kbd> or <kbd>Space</kbd> when focused to open the file picker.</div>
+<!-- Icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/></symbol>
+</svg>
+
+<main class="lo-wrap">
+
+  <!-- Hero -->
+  <section class="lo-panel lo-hero">
+    <div class="mark"><svg class="i"><use href="#i-doc"/></svg></div>
+    <div class="txt">
+      <div class="lo-eyebrow">Department of Posts &middot; Karur Sub Division</div>
+      <h1>Leave Orders</h1>
+      <div class="sub">Upload the absentee statement each month &mdash; every upload is saved and merged into that month, split by leave type and Head Office, ready to export as Excel or PDF.</div>
     </div>
-    <div id="parse-status"></div>
+    <span class="lo-sync busy" id="lo-sync"><span class="dot"></span><span id="lo-sync-txt">Connecting&hellip;</span></span>
   </section>
 
-  <section class="card" id="options-card">
-    <h2><span class="num n2">2</span> Options</h2>
-    <div class="options">
-      <div class="field" style="grid-column:1/-1">
-        <label for="opt-leave-month">Leave period month (for Memo No.)</label>
-        <input id="opt-leave-month" placeholder="e.g. July 2026" value="July 2026" />
+  <!-- Month bar -->
+  <section class="lo-panel lo-month">
+    <div>
+      <div class="lbl">Statement month</div>
+      <div class="lo-stepper">
+        <button class="nav" id="lo-prev" type="button" title="Previous month" aria-label="Previous month"><svg class="i"><use href="#i-left"/></svg></button>
+        <label class="lo-monthpick" title="Pick a month">
+          <svg class="i"><use href="#i-cal"/></svg>
+          <span class="name" id="lo-month-name">&nbsp;</span>
+          <input type="month" id="lo-month" aria-label="Statement month" />
+        </label>
+        <button class="nav" id="lo-next" type="button" title="Next month" aria-label="Next month"><svg class="i"><use href="#i-right"/></svg></button>
+        <span id="lo-now"></span>
       </div>
-      <div class="field">
-        <label for="opt-office">Office line (issuer)</label>
-        <input id="opt-office" value="O/o the Asst Supdt of  Posts, Karur Sub Dn., Karur  639001" />
-      </div>
-      <div class="field">
-        <label for="opt-period">File-name period (optional)</label>
-        <input id="opt-period" placeholder="e.g. June-2026" value="June-2026" />
-      </div>
-      <div class="field">
-        <label for="opt-datefmt">Date format</label>
-        <select id="opt-datefmt">
-          <option value="DD-MM-YYYY" selected>DD-MM-YYYY</option>
-          <option value="DD-Mon-YYYY">DD-Mon-YYYY</option>
-        </select>
-      </div>
-      <label class="toggle"><input type="checkbox" id="opt-approved" checked /> Only include Approved rows</label>
-      <label class="toggle"><input type="checkbox" id="opt-titlecase" /> Normalise names to Title Case</label>
+    </div>
+    <div class="lo-recent" id="lo-recent"></div>
+    <div class="spacer"></div>
+    <div class="lo-facts">
+      <div class="lo-fact"><div class="k">Statements</div><div class="v" id="lo-f-uploads">0</div></div>
+      <div class="lo-fact"><div class="k">Leave records</div><div class="v" id="lo-f-records">0</div></div>
+      <div class="lo-fact"><div class="k">Last updated</div><div class="v" id="lo-f-updated" style="font-size:15px;padding-top:4px">&mdash;</div></div>
     </div>
   </section>
 
-  <section class="card hidden" id="summary-card">
-    <h2><span class="num n3">3</span> Summary</h2>
-    <div class="summary" id="summary"></div>
-    <div class="flagrow" id="flags"></div>
-    <div class="section-subtitle">Leave-type groups</div>
-    <div class="groupcards" id="groupcards"></div>
-
-    <div class="section-subtitle">Add a new leave type</div>
-    <div class="manual-form" style="margin:0">
-      <div class="grid">
-        <div class="field">
-          <label for="new-lt-name">New leave-type name</label>
-          <input id="new-lt-name" placeholder="e.g. Maternity Leave" />
+  <div class="lo-grid">
+    <!-- Upload -->
+    <section class="lo-panel" id="upload-card">
+      <div class="lo-panel-head">
+        <span class="lo-ico brand"><svg class="i"><use href="#i-upload"/></svg></span>
+        <div class="grow">
+          <h2>Upload absentee statement</h2>
+          <p>Upload again any time this month &mdash; new leaves are added and changed ones updated.</p>
         </div>
       </div>
-      <div class="actions">
-        <button class="btn alt" id="addLeaveTypeBtn">&#x2795; Add Leave Type</button>
+      <label class="lo-drop" id="drop" tabindex="0">
+        <input type="file" id="file" accept=".xlsx,.xls" />
+        <span class="up"><svg class="i"><use href="#i-upload"/></svg></span>
+        <span>
+          <span class="t1" id="lo-drop-t1"><b>Choose a file</b> or drag it here</span>
+          <span class="t2" style="display:block">Excel (.xlsx) &middot; first worksheet &middot; headers in row 1</span>
+        </span>
+      </label>
+      <div id="parse-status"></div>
+
+      <div class="lo-hist-head"><h3>Uploads this month</h3></div>
+      <ul class="lo-hist" id="lo-hist"></ul>
+    </section>
+
+    <!-- Settings -->
+    <section class="lo-panel" id="options-card">
+      <div class="lo-panel-head">
+        <span class="lo-ico cool"><svg class="i"><use href="#i-gear"/></svg></span>
+        <div class="grow">
+          <h2>Document settings</h2>
+          <p>Used on every Excel and PDF you export.</p>
+        </div>
+      </div>
+      <input type="hidden" id="opt-leave-month" />
+      <div class="options">
+        <div class="field full">
+          <label for="opt-office">Office line (issuer)</label>
+          <input id="opt-office" value="O/o the Asst Supdt of  Posts, Karur Sub Dn., Karur  639001" />
+        </div>
+        <div class="field">
+          <label for="opt-period">File-name period</label>
+          <input id="opt-period" placeholder="e.g. November-2026" />
+          <span class="hint" id="opt-period-hint"></span>
+        </div>
+        <div class="field">
+          <label for="opt-datefmt">Date format</label>
+          <select id="opt-datefmt">
+            <option value="DD-MM-YYYY" selected>DD-MM-YYYY</option>
+            <option value="DD-Mon-YYYY">DD-Mon-YYYY</option>
+          </select>
+        </div>
+        <div class="full toggles">
+          <label class="toggle"><span>Only Approved leaves<small>Skip rows still pending or rejected</small></span><input type="checkbox" id="opt-approved" checked /></label>
+          <label class="toggle"><span>Names in Title Case<small>&ldquo;R KUMAR&rdquo; becomes &ldquo;R Kumar&rdquo;</small></span><input type="checkbox" id="opt-titlecase" /></label>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Nothing stored for the month yet -->
+  <section class="lo-panel lo-empty hidden" id="lo-empty">
+    <div class="art"><svg class="i"><use href="#i-inbox"/></svg></div>
+    <h3 id="lo-empty-title">No statement for this month yet</h3>
+    <p>Upload the absentee statement above. It is saved for the month, so you can come back, add later statements and export the orders whenever you need them.</p>
+  </section>
+
+  <section class="lo-panel hidden" id="summary-card">
+    <div class="lo-panel-head">
+      <span class="lo-ico mint"><svg class="i"><use href="#i-chart"/></svg></span>
+      <div class="grow">
+        <h2>Summary</h2>
+        <p id="lo-summary-sub">All leave recorded for the month.</p>
       </div>
     </div>
+    <div class="summary" id="summary"></div>
+    <div class="flagrow" id="flags"></div>
+    <div class="section-subtitle">Leave types</div>
+    <div class="groupcards" id="groupcards"></div>
 
-    <div class="btnrow" style="margin-top:18px">
-      <button class="btn big" id="dlAllXlsx">&#x2B07; Download ALL (Excel · both HOs)</button>
-      <button class="btn big warm" id="dlAllPdf">&#x2B07; Download ALL (PDF · both HOs)</button>
+    <div class="section-subtitle">Add a leave type</div>
+    <div class="lo-newtype">
+      <div class="field">
+        <label for="new-lt-name">New leave-type name</label>
+        <input id="new-lt-name" placeholder="e.g. Maternity Leave" />
+      </div>
+      <button class="btn alt" id="addLeaveTypeBtn"><svg class="i"><use href="#i-plus"/></svg> Add leave type</button>
+    </div>
+
+    <div class="lo-export">
+      <button class="btn big" id="dlAllXlsx"><svg class="i"><use href="#i-sheet"/></svg> Download all &middot; Excel</button>
+      <button class="btn big warm" id="dlAllPdf"><svg class="i"><use href="#i-down"/></svg> Download all &middot; PDF</button>
     </div>
   </section>
 
-  <section class="card hidden" id="groups-card">
-    <h2><span class="num n4">4</span> Preview &amp; edit per leave type</h2>
+  <section class="lo-panel hidden" id="groups-card">
+    <div class="lo-panel-head">
+      <span class="lo-ico sun"><svg class="i"><use href="#i-list"/></svg></span>
+      <div class="grow">
+        <h2>Preview &amp; edit by leave type</h2>
+        <p>Split by Head Office. Manual entries are saved with the month.</p>
+      </div>
+    </div>
     <div id="groups"></div>
   </section>
 
-  <div class="footer-note">
-    <div class="tech"><span>SheetJS</span><span>ExcelJS</span><span>jsPDF</span><span>autoTable</span><span>100% client-side</span></div>
-  </div>
-  <div class="builtby">Built with <span class="heart">&#10084;</span> by Arun Selvaraj, Karur Division</div>
+  <div class="lo-foot">Built by <b>Arun Selvaraj</b>, Karur Division</div>
 </main>
+
+<!-- Month-choice dialog -->
+<div class="lo-modal hidden" id="lo-modal" role="dialog" aria-modal="true" aria-labelledby="lo-modal-title">
+  <div class="box">
+    <h3 id="lo-modal-title">Which month is this statement for?</h3>
+    <p id="lo-modal-text"></p>
+    <div class="acts">
+      <button class="btn" id="lo-modal-a"></button>
+      <button class="btn alt" id="lo-modal-b"></button>
+      <button class="btn alt" id="lo-modal-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <!-- Datalists used by manual-entry forms -->
 <datalist id="karurOffices"></datalist>
@@ -896,119 +934,377 @@ function combineRemarks(reason,approver){
 }
 
 /* ---------- State ---------- */
-let RAW = null;
-let SRC_FILE_NAME = "";
-let MANUAL_BY_GROUP = new Map(); // groupName(lower) -> array of manual records
-let GROUP_ORDER_OVERRIDE = [];   // user-added new leave types
+let RAW = null;                   // view model that render() draws
+let MANUAL_BY_GROUP = new Map();  // groupName(lower) -> manual records (dates parsed)
+let GROUP_ORDER_OVERRIDE = [];    // user-added leave types for the month
+let CUR_MONTH = "";               // "YYYY-MM" on screen
+let DOC = null;                   // the stored month (see emptyDoc)
 
-/* ---------- Parsing pipeline ---------- */
-async function handleFile(file){
-  SRC_FILE_NAME = file.name;
-  const ps = document.getElementById("parse-status");
-  ps.innerHTML = `<div class="alert info"><span class="spinner"></span>Reading "${file.name}"…</div>`;
-  try{
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf,{cellDates:true});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    if(!ws){ throw new Error("No worksheet found in the file."); }
-    const aoa = XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true,blankrows:false});
-    if(!aoa.length){ throw new Error("The worksheet is empty."); }
-    const header = aoa[0];
-    const {map,missing} = mapHeaders(header);
-    if(missing.length){
-      const list = missing.map(k=>SYN[k][0]).join(", ");
-      throw new Error(`Required column(s) not found: ${list}. Please check the header row.`);
-    }
-    const onlyApproved = document.getElementById("opt-approved").checked;
-    const titleNames   = document.getElementById("opt-titlecase").checked;
+/* ============================================================
+   MONTH STORE
+   Each month's absentee statements live in one document: every
+   row ever uploaded for that month (merged by leave application
+   id, so a later statement updates the earlier one instead of
+   duplicating it), the manual entries, the added leave types
+   and a log of the uploads. It is written to this browser
+   (IndexedDB) first and then to Supabase (app_leave_statements)
+   so every device sees the same month.
+   ============================================================ */
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+function monthNow(){ const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`; }
+function monthLabel(m){ const [y,mo] = m.split("-").map(Number); return `${MONTH_NAMES[mo-1]} ${y}`; }
+function monthShift(m, n){
+  let [y,mo] = m.split("-").map(Number); mo += n;
+  while(mo < 1){ mo += 12; y--; } while(mo > 12){ mo -= 12; y++; }
+  return `${y}-${pad2(mo)}`;
+}
+// A parsed date as "YYYY-MM-DD" (UTC parts, exactly as fmtDate reads them); unparseable cells keep their text.
+function isoOf(p){
+  if(!p || !p.ok) return p ? String(p.raw == null ? "" : p.raw) : "";
+  const d = p.date;
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth()+1)}-${pad2(d.getUTCDate())}`;
+}
+function emptyDoc(month){ return { month, records:[], manual:{}, extraTypes:[], uploads:[], updatedAt:0, updatedBy:"", pending:false }; }
+function currentUser(){
+  try{ const u = window.AuthSession && AuthSession.user(); return (u && (u.displayName || u.username)) || "web"; }
+  catch(e){ return "web"; }
+}
 
-    let totalRows=0, included=0, excludedByStatus=0, unparseableDates=0, dayMismatches=0, unknownOffices=0;
-    const groups = new Map();
-
-    for(let r=1;r<aoa.length;r++){
-      const row = aoa[r];
-      if(!row || row.every(c=>c===null||c===undefined||String(c).trim()==="")) continue;
-      totalRows++;
-
-      const status = norm(row[map.approveStatus]);
-      if(onlyApproved && status && !ciEq(status,"approved")){ excludedByStatus++; continue; }
-      if(onlyApproved && !status){ excludedByStatus++; continue; }
-
-      const leaveTypeRaw = row[map.leaveType];
-      const leaveType = norm(leaveTypeRaw);
-      if(!leaveType) continue;
-
-      const sd = parseDate(row[map.startDate]);
-      const ed = parseDate(row[map.endDate]);
-      if(!sd.ok) unparseableDates++;
-      if(!ed.ok) unparseableDates++;
-
-      const noDaysRaw = row[map.noOfDays];
-      let noDays = "";
-      if(noDaysRaw!==""&&noDaysRaw!=null){
-        const n = Number(noDaysRaw);
-        noDays = isFinite(n)?n:norm(noDaysRaw);
-      }
-      const span = inclusiveDays(sd,ed);
-      if(span!=null && typeof noDays==="number" && noDays!==span) dayMismatches++;
-
-      const empName = titleNames?titleCase(row[map.empName]):norm(row[map.empName]);
-      const subName = titleNames?titleCase(row[map.subName]):norm(row[map.subName]);
-      const empIdRaw = norm(row[map.empId]);
-      let officeName = norm(row[map.officeName]);
-      let officeId = map.officeId>=0 ? norm(row[map.officeId]) : "";
-      // Apply per-employee override (e.g. wrong office in source for known staff)
-      const ovr = EMPLOYEE_OVERRIDES[empIdRaw];
-      if(ovr){
-        if(ovr.officeName) officeName = ovr.officeName;
-        if(ovr.officeId)   officeId   = ovr.officeId;
-      }
-      const ho = (ovr && ovr.ho) ? ovr.ho : classifyHO(officeName, officeId);
-      if(ho === "unknown") unknownOffices++;
-
-      const rec = {
-        empId:   empIdRaw,
-        empName: empName,
-        leaveType,                // raw per-row leave type (for EL/CL substitute sheets)
-        officeName,
-        officeId,
-        startDate: sd,
-        endDate: ed,
-        noDays: noDays===""?"":noDays,
-        subName: subName,
-        subId: norm(row[map.subId]),
-        remarks: combineRemarks(row[map.reason], row[map.approverRem]),
-        ho,
-        manual:false,
-      };
-      const k = leaveType;
-      if(!groups.has(k)) groups.set(k,{name:leaveType, rows:[]});
-      groups.get(k).rows.push(rec);
-      included++;
-    }
-
-    // Add user-added empty leave types (kept across re-parses)
-    GROUP_ORDER_OVERRIDE.forEach(name=>{
-      if(!groups.has(name)) groups.set(name,{name,rows:[]});
+const LocalStore = (() => {
+  const DB = "karur-leave-orders", ST = "months";
+  let dbp = null;
+  function open(){
+    if(dbp) return dbp;
+    dbp = new Promise((res, rej) => {
+      if(!window.indexedDB) return rej(new Error("IndexedDB unavailable"));
+      const r = indexedDB.open(DB, 1);
+      r.onupgradeneeded = () => r.result.createObjectStore(ST, { keyPath:"month" });
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
     });
+    return dbp;
+  }
+  function run(mode, fn){
+    return open().then(db => new Promise((res, rej) => {
+      const t = db.transaction(ST, mode);
+      const req = fn(t.objectStore(ST));
+      t.oncomplete = () => res(req ? req.result : undefined);
+      t.onerror = t.onabort = () => rej(t.error);
+    }));
+  }
+  return {
+    get: m   => run("readonly",  s => s.get(m)).catch(() => null),
+    put: doc => run("readwrite", s => s.put(doc)),
+    all: ()  => run("readonly",  s => s.getAll()).catch(() => []),
+  };
+})();
 
-    finaliseGroups(groups);
+const CloudStore = (() => {
+  const T = `${GDS_SUPABASE_URL}/app_leave_statements`;
+  const H = extra => Object.assign({ apikey:GDS_SUPABASE_KEY, Authorization:`Bearer ${GDS_SUPABASE_KEY}`, "Content-Type":"application/json" }, extra || {});
+  let state = "unknown";            // ok | missing (table not created yet) | offline
+  async function call(url, opt){
+    let res;
+    try{ res = await fetch(url, opt); }catch(e){ state = "offline"; throw e; }
+    if(!res.ok){
+      state = res.status === 404 ? "missing" : "offline";
+      throw new Error(`Cloud HTTP ${res.status}`);
+    }
+    state = "ok";
+    return res;
+  }
+  return {
+    get state(){ return state; },
+    async get(m){
+      const rows = await (await call(`${T}?month=eq.${encodeURIComponent(m)}&select=payload`, { headers:H() })).json();
+      if(!rows.length) return null;
+      try{ return JSON.parse(rows[0].payload); }catch(e){ return null; }
+    },
+    async list(){
+      return (await call(`${T}?select=month,record_count&order=month.desc&limit=36`, { headers:H() })).json();
+    },
+    async put(doc){
+      const row = {
+        month: doc.month,
+        payload: JSON.stringify({ ...doc, pending:false }),
+        record_count: doc.records.length,
+        upload_count: doc.uploads.length,
+        updated_by: doc.updatedBy || "web",
+        updated_at_ms: doc.updatedAt,
+      };
+      await call(T, { method:"POST", headers:H({ Prefer:"resolution=merge-duplicates,return=minimal" }), body:JSON.stringify([row]) });
+    },
+  };
+})();
 
-    const ordered = [...groups.values()].sort((a,b)=>b.count-a.count);
+/* ---------- Save status pill ---------- */
+function setSync(kind, text){
+  document.getElementById("lo-sync").className = "lo-sync " + kind;
+  document.getElementById("lo-sync-txt").textContent = text;
+}
+function showSyncState(){
+  const s = CloudStore.state;
+  if(DOC && DOC.pending) return setSync("local", s === "missing" ? "Saved on this device · cloud storage not set up" : "Saved on this device · will sync when online");
+  if(s === "ok")       return setSync("ok", "Saved · synced to cloud");
+  if(s === "missing")  return setSync("local", "This device only · cloud storage not set up");
+  if(s === "offline")  return setSync("local", "Offline · using this device's copy");
+}
 
-    RAW = {
-      groups: ordered,
-      totals: {totalRows, included, excludedByStatus, unparseableDates, dayMismatches, unknownOffices},
-      fileName: file.name,
-    };
-    render();
-    ps.innerHTML = `<div class="alert info">Parsed <b>${totalRows}</b> data rows · included <b>${included}</b> · ${ordered.length} leave-type group(s).</div>`;
+/* Newest copy of a month: this device's, unless the cloud holds a newer one.
+   A device copy that never reached the cloud wins and is pushed up now. */
+async function loadDoc(month){
+  const local = await LocalStore.get(month);
+  let cloud = null;
+  try{ cloud = await CloudStore.get(month); }catch(e){}
+  if(local && local.pending){
+    if(CloudStore.state === "ok"){
+      try{ await CloudStore.put(local); local.pending = false; await LocalStore.put(local); }catch(e){}
+    }
+    return local;
+  }
+  if(cloud && (!local || (cloud.updatedAt || 0) > (local.updatedAt || 0))){
+    cloud.pending = false;
+    try{ await LocalStore.put(cloud); }catch(e){}
+    return cloud;
+  }
+  return local || null;
+}
+
+async function saveDoc(doc){
+  doc.updatedAt = Date.now();
+  doc.updatedBy = currentUser();
+  doc.pending = true;
+  let savedLocal = false, savedCloud = false;
+  try{ await LocalStore.put(doc); savedLocal = true; }catch(e){ console.warn("Couldn't save on this device:", e); }
+  setSync("busy", "Saving…");
+  try{ await CloudStore.put(doc); savedCloud = true; }catch(e){ console.warn("Couldn't save to the cloud:", e.message || e); }
+  if(savedCloud){
+    doc.pending = false;
+    try{ await LocalStore.put(doc); }catch(e){}
+  }
+  if(!savedLocal && !savedCloud) setSync("err", "Not saved · storage unavailable");
+  else showSyncState();
+  refreshRecent();
+}
+
+/* ---------- Reading a statement ---------- */
+async function readStatement(file){
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { cellDates:true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  if(!ws) throw new Error("No worksheet found in the file.");
+  const aoa = XLSX.utils.sheet_to_json(ws, { header:1, defval:"", raw:true, blankrows:false });
+  if(!aoa.length) throw new Error("The worksheet is empty.");
+  const { map, missing } = mapHeaders(aoa[0]);
+  if(missing.length){
+    throw new Error(`Required column(s) not found: ${missing.map(k => SYN[k][0]).join(", ")}. Please check the header row.`);
+  }
+  const cell = (row, k) => map[k] >= 0 ? row[map[k]] : "";
+  const out = [];
+  for(let r = 1; r < aoa.length; r++){
+    const row = aoa[r];
+    if(!row || row.every(c => c == null || String(c).trim() === "")) continue;
+    const leaveType = norm(cell(row, "leaveType"));
+    if(!leaveType) continue;
+    const ndRaw = cell(row, "noOfDays");
+    let noDays = "";
+    if(ndRaw !== "" && ndRaw != null){ const n = Number(ndRaw); noDays = isFinite(n) ? n : norm(ndRaw); }
+    out.push({
+      appId:       norm(cell(row, "appId")),
+      empId:       norm(cell(row, "empId")),
+      empType:     norm(cell(row, "empType")),
+      empName:     norm(cell(row, "empName")),
+      leaveType,
+      officeName:  norm(cell(row, "officeName")),
+      officeId:    norm(cell(row, "officeId")),
+      start:       isoOf(parseDate(cell(row, "startDate"))),
+      end:         isoOf(parseDate(cell(row, "endDate"))),
+      noDays,
+      subName:     norm(cell(row, "subName")),
+      subId:       norm(cell(row, "subId")),
+      reason:      norm(cell(row, "reason")),
+      approverRem: norm(cell(row, "approverRem")),
+      status:      norm(cell(row, "approveStatus")),
+    });
+  }
+  return out;
+}
+
+// The month most leaves in a statement start in ("YYYY-MM"), or "" if no dates parse.
+function dominantMonth(records){
+  const c = new Map();
+  records.forEach(r => {
+    const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(r.start);
+    if(m){ const k = `${m[1]}-${m[2]}`; c.set(k, (c.get(k) || 0) + 1); }
+  });
+  let best = "", n = 0;
+  c.forEach((v, k) => { if(v > n){ best = k; n = v; } });
+  return best;
+}
+
+/* ---------- Merging a statement into its month ---------- */
+const REC_FIELDS = ["appId","empId","empType","empName","leaveType","officeName","officeId","start","end","noDays","subName","subId","reason","approverRem","status"];
+function recordKeys(r){
+  return {
+    app: r.appId ? "a:" + r.appId.toLowerCase() : "",
+    ck:  ["c", r.empId, String(r.leaveType).toLowerCase(), r.start, r.end].join("|"),
+  };
+}
+// Same leave application (or, without an id, same employee + type + dates) → update in place; otherwise add.
+function mergeRecords(doc, incoming, now){
+  const byApp = new Map(), byCk = new Map();
+  const index = i => { const k = recordKeys(doc.records[i]); if(k.app) byApp.set(k.app, i); byCk.set(k.ck, i); };
+  doc.records.forEach((_, i) => index(i));
+  let added = 0, updated = 0, same = 0;
+  for(const r of incoming){
+    const k = recordKeys(r);
+    let i = k.app && byApp.has(k.app) ? byApp.get(k.app) : (byCk.has(k.ck) ? byCk.get(k.ck) : -1);
+    if(i < 0){
+      doc.records.push({ ...r, firstAt:now, lastAt:now });
+      i = doc.records.length - 1;
+      added++;
+    }else{
+      const cur = doc.records[i];
+      const changed = REC_FIELDS.some(f => String(cur[f] ?? "") !== String(r[f] ?? ""));
+      doc.records[i] = { ...cur, ...r, firstAt:cur.firstAt || now, lastAt:now };
+      if(changed) updated++; else same++;
+    }
+    index(i);
+  }
+  return { added, updated, same };
+}
+
+/* ---------- Asking which month a statement belongs to ---------- */
+function chooseMonth(detected, selected, fileName){
+  return new Promise(resolve => {
+    const modal = document.getElementById("lo-modal");
+    const a = document.getElementById("lo-modal-a");
+    const b = document.getElementById("lo-modal-b");
+    const c = document.getElementById("lo-modal-cancel");
+    document.getElementById("lo-modal-text").innerHTML =
+      `Most leaves in <b>${escapeHtml(fileName)}</b> start in <b>${monthLabel(detected)}</b>, but <b>${monthLabel(selected)}</b> is open.`;
+    a.textContent = `Save to ${monthLabel(detected)}`;
+    b.textContent = `Save to ${monthLabel(selected)}`;
+    const esc = e => { if(e.key === "Escape") done(null); };
+    function done(v){
+      modal.classList.add("hidden");
+      a.onclick = b.onclick = c.onclick = null;
+      document.removeEventListener("keydown", esc);
+      resolve(v);
+    }
+    a.onclick = () => done(detected);
+    b.onclick = () => done(selected);
+    c.onclick = () => done(null);
+    document.addEventListener("keydown", esc);
+    modal.classList.remove("hidden");
+    a.focus();
+  });
+}
+
+/* ---------- Upload pipeline ---------- */
+async function handleFile(file){
+  const ps = document.getElementById("parse-status");
+  const dropEl = document.getElementById("drop");
+  ps.innerHTML = `<div class="alert info"><span class="spinner"></span><span>Reading “${escapeHtml(file.name)}”…</span></div>`;
+  dropEl.classList.add("busy");
+  try{
+    const incoming = await readStatement(file);
+    if(!incoming.length) throw new Error("No leave rows found in the first worksheet.");
+
+    let target = CUR_MONTH;
+    const detected = dominantMonth(incoming);
+    if(detected && detected !== CUR_MONTH){
+      const pick = await chooseMonth(detected, CUR_MONTH, file.name);
+      if(!pick){ ps.innerHTML = ""; return; }
+      target = pick;
+    }
+
+    ps.innerHTML = `<div class="alert info"><span class="spinner"></span><span>Saving to ${monthLabel(target)}…</span></div>`;
+    const doc = (await loadDoc(target)) || emptyDoc(target);
+    const now = Date.now();
+    const d = mergeRecords(doc, incoming, now);
+    doc.uploads.push({ fileName:file.name, at:now, by:currentUser(), rows:incoming.length, ...d });
+    await saveDoc(doc);
+
+    if(target !== CUR_MONTH){ OPEN_SEQ++; setMonthInput(target); }
+    showDoc(target, doc);
+    ps.innerHTML = `<div class="alert ok"><span>Saved to <b>${monthLabel(target)}</b> — ${d.added} new, ${d.updated} updated, ${d.same} unchanged.</span></div>`;
   }catch(err){
     console.error(err);
-    ps.innerHTML = `<div class="alert err"><b>Couldn't parse the file.</b> ${err.message||err}</div>`;
-    document.getElementById("summary-card").classList.add("hidden");
-    document.getElementById("groups-card").classList.add("hidden");
+    ps.innerHTML = `<div class="alert err"><span><b>Couldn't read the file.</b> ${escapeHtml(err.message || String(err))}</span></div>`;
+  }finally{
+    dropEl.classList.remove("busy");
+    document.getElementById("file").value = "";
   }
+}
+
+/* ---------- Building the view from the stored month ---------- */
+const serManual   = r => ({ ...r, startDate:isoOf(r.startDate), endDate:isoOf(r.endDate) });
+const deserManual = r => ({ ...r, startDate:parseDate(r.startDate), endDate:parseDate(r.endDate) });
+
+function buildRaw(){
+  const hasManual = [...MANUAL_BY_GROUP.values()].some(a => a.length);
+  if(!DOC || (!DOC.records.length && !hasManual && !GROUP_ORDER_OVERRIDE.length)){ RAW = null; return; }
+  const onlyApproved = document.getElementById("opt-approved").checked;
+  const titleNames   = document.getElementById("opt-titlecase").checked;
+
+  let totalRows=0, included=0, excludedByStatus=0, unparseableDates=0, dayMismatches=0, unknownOffices=0;
+  const groups = new Map();
+
+  for(const s of DOC.records){
+    totalRows++;
+    if(onlyApproved && !ciEq(s.status, "approved")){ excludedByStatus++; continue; }
+
+    const sd = parseDate(s.start), ed = parseDate(s.end);
+    if(!sd.ok) unparseableDates++;
+    if(!ed.ok) unparseableDates++;
+    const span = inclusiveDays(sd, ed);
+    if(span != null && typeof s.noDays === "number" && s.noDays !== span) dayMismatches++;
+
+    let officeName = s.officeName, officeId = s.officeId;
+    // Per-employee override (e.g. wrong office in the source for known staff)
+    const ovr = EMPLOYEE_OVERRIDES[s.empId];
+    if(ovr){
+      if(ovr.officeName) officeName = ovr.officeName;
+      if(ovr.officeId)   officeId   = ovr.officeId;
+    }
+    const ho = (ovr && ovr.ho) ? ovr.ho : classifyHO(officeName, officeId);
+    if(ho === "unknown") unknownOffices++;
+
+    const rec = {
+      empId:   s.empId,
+      empName: titleNames ? titleCase(s.empName) : s.empName,
+      leaveType: s.leaveType,     // raw per-row leave type (for EL/CL substitute sheets)
+      officeName,
+      officeId,
+      startDate: sd,
+      endDate: ed,
+      noDays: s.noDays === "" ? "" : s.noDays,
+      subName: titleNames ? titleCase(s.subName) : s.subName,
+      subId: s.subId,
+      remarks: combineRemarks(s.reason, s.approverRem),
+      ho,
+      manual:false,
+    };
+    if(!groups.has(s.leaveType)) groups.set(s.leaveType, { name:s.leaveType, rows:[] });
+    groups.get(s.leaveType).rows.push(rec);
+    included++;
+  }
+
+  // Leave types added by hand, and ones that only have manual entries, stay visible.
+  const hasGroup = name => [...groups.keys()].some(n => n.toLowerCase() === name.toLowerCase());
+  GROUP_ORDER_OVERRIDE.forEach(name => { if(!hasGroup(name)) groups.set(name, { name, rows:[] }); });
+  MANUAL_BY_GROUP.forEach((arr, key) => {
+    const name = (arr[0] && arr[0].grp) || key;
+    if(arr.length && !hasGroup(name)) groups.set(name, { name, rows:[] });
+  });
+
+  finaliseGroups(groups);
+  RAW = {
+    groups: [...groups.values()].sort((a, b) => b.count - a.count),
+    totals: { totalRows, included, excludedByStatus, unparseableDates, dayMismatches, unknownOffices },
+    fileName: "",
+  };
 }
 
 /* Sort + compute per-group derived data including manual entries and HO split */
@@ -1044,19 +1340,156 @@ function finaliseGroups(groups){
   }
 }
 
-/* Recompute after manual changes — keep existing parse */
+/* Manual entries or added leave types changed — store them with the month and redraw. */
 function refresh(){
-  if(!RAW) return;
-  const groups = new Map();
-  RAW.groups.forEach(g=>{
-    groups.set(g.name, {name:g.name, rows:g.rows.filter(r=>!r.manual)});
-  });
-  GROUP_ORDER_OVERRIDE.forEach(name=>{
-    if(!groups.has(name)) groups.set(name,{name,rows:[]});
-  });
-  finaliseGroups(groups);
-  RAW.groups = [...groups.values()].sort((a,b)=>b.count-a.count);
-  render();
+  if(!DOC) DOC = emptyDoc(CUR_MONTH);
+  DOC.manual = Object.fromEntries([...MANUAL_BY_GROUP].map(([k, arr]) => [k, arr.map(serManual)]));
+  DOC.extraTypes = GROUP_ORDER_OVERRIDE.slice();
+  buildRaw();
+  renderView();
+  saveDoc(DOC);
+}
+
+/* A filter changed (Approved only / Title Case) — rebuild from the stored rows. */
+function rebuild(){ buildRaw(); renderView(); }
+
+function showDoc(month, doc){
+  CUR_MONTH = month;
+  DOC = doc || null;
+  MANUAL_BY_GROUP = new Map(Object.entries((DOC && DOC.manual) || {}).map(([k, arr]) => [k, (arr || []).map(deserManual)]));
+  GROUP_ORDER_OVERRIDE = ((DOC && DOC.extraTypes) || []).slice();
+  buildRaw();
+  renderView();
+}
+
+function renderView(){
+  renderMonthChrome();
+  const has = !!RAW;
+  document.getElementById("lo-empty").classList.toggle("hidden", has);
+  if(has) render();
+  else{
+    document.getElementById("summary-card").classList.add("hidden");
+    document.getElementById("groups-card").classList.add("hidden");
+  }
+}
+
+function fmtWhen(ms){
+  if(!ms) return "—";
+  const d = new Date(ms), now = new Date();
+  const t = d.toLocaleTimeString("en-IN", { hour:"numeric", minute:"2-digit" });
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  if(d.toDateString() === now.toDateString())  return `Today, ${t}`;
+  if(d.toDateString() === yest.toDateString()) return `Yesterday, ${t}`;
+  return `${d.toLocaleDateString("en-IN", { day:"numeric", month:"short", year: d.getFullYear() === now.getFullYear() ? undefined : "numeric" })}, ${t}`;
+}
+
+function autoPeriod(m){ const [y, mo] = m.split("-").map(Number); return `${MONTH_NAMES[mo-1]}-${y}`; }
+
+function renderMonthChrome(){
+  const label = monthLabel(CUR_MONTH);
+  const isNow = CUR_MONTH === monthNow();
+  document.getElementById("lo-month-name").textContent = label;
+  document.getElementById("lo-now").innerHTML = isNow
+    ? `<span class="lo-now is">Current month</span>`
+    : `<button class="lo-now go" type="button" id="lo-go-now">Back to ${monthLabel(monthNow())}</button>`;
+  const goNow = document.getElementById("lo-go-now");
+  if(goNow) goNow.onclick = () => openMonth(monthNow());
+
+  // Memo month and file-name period follow the statement month.
+  document.getElementById("opt-leave-month").value = label;
+  const per = document.getElementById("opt-period");
+  const auto = autoPeriod(CUR_MONTH);
+  if(per.dataset.custom !== "1") per.value = auto;
+  document.getElementById("opt-period-hint").innerHTML = per.dataset.custom === "1"
+    ? `Custom &middot; <button type="button" id="opt-period-reset">use ${auto}</button>`
+    : `Follows the statement month`;
+  const reset = document.getElementById("opt-period-reset");
+  if(reset) reset.onclick = () => { per.dataset.custom = ""; renderMonthChrome(); };
+
+  const uploads = (DOC && DOC.uploads) || [];
+  document.getElementById("lo-f-uploads").textContent = uploads.length;
+  document.getElementById("lo-f-records").textContent = DOC ? DOC.records.length : 0;
+  document.getElementById("lo-f-updated").textContent = DOC && DOC.updatedAt ? fmtWhen(DOC.updatedAt) : "—";
+  document.getElementById("lo-drop-t1").innerHTML = `<b>Choose a file</b> or drag it here &mdash; saves to ${label}`;
+  document.getElementById("lo-empty-title").textContent = `No statement for ${label} yet`;
+
+  const hist = document.getElementById("lo-hist");
+  if(!uploads.length){
+    hist.innerHTML = `<li class="lo-empty-hist" style="display:block">Nothing uploaded for ${label} yet.</li>`;
+  }else{
+    const list = uploads.slice().reverse();
+    hist.innerHTML = list.slice(0, 6).map((u, i) => `
+      <li>
+        <span class="fi"><svg class="i"><use href="#i-sheet"/></svg></span>
+        <span class="body">
+          <span class="fn" style="display:block" title="${escapeHtml(u.fileName)}">${escapeHtml(u.fileName)}${i === 0 ? '<span class="latest">Latest</span>' : ''}</span>
+          <span class="when" style="display:block">${fmtWhen(u.at)}${u.by ? " · " + escapeHtml(u.by) : ""} · ${u.rows} row${u.rows === 1 ? "" : "s"}</span>
+        </span>
+        <span class="delta">
+          ${u.added ? `<span class="lo-tag add">+${u.added} new</span>` : ""}
+          ${u.updated ? `<span class="lo-tag upd">${u.updated} updated</span>` : ""}
+          ${!u.added && !u.updated ? `<span class="lo-tag same">No changes</span>` : ""}
+        </span>
+      </li>`).join("")
+      + (list.length > 6 ? `<li class="lo-empty-hist" style="display:block">+ ${list.length - 6} earlier upload${list.length - 6 === 1 ? "" : "s"}</li>` : "");
+  }
+
+  const sub = document.getElementById("lo-summary-sub");
+  if(sub) sub.textContent = `All leave recorded for ${label}, from ${uploads.length} statement${uploads.length === 1 ? "" : "s"}.`;
+  document.querySelectorAll("#lo-recent button").forEach(b => b.classList.toggle("on", b.dataset.m === CUR_MONTH));
+}
+
+/* Chips for the most recent months that already hold statements. */
+async function refreshRecent(){
+  const counts = new Map();
+  (await LocalStore.all()).forEach(d => { if(d && d.records && d.records.length) counts.set(d.month, d.records.length); });
+  try{ (await CloudStore.list()).forEach(r => { if(r.record_count) counts.set(r.month, Math.max(counts.get(r.month) || 0, r.record_count)); }); }catch(e){}
+  const months = [...counts.keys()].sort().reverse().slice(0, 4);
+  document.getElementById("lo-recent").innerHTML = months.length > 1 || (months.length === 1 && months[0] !== CUR_MONTH)
+    ? months.map(m => `<button type="button" data-m="${m}" class="${m === CUR_MONTH ? "on" : ""}" title="${counts.get(m)} leave records">${MONTH_NAMES[+m.slice(5) - 1].slice(0, 3)} ${m.slice(0, 4)}<span class="cnt">${counts.get(m)}</span></button>`).join("")
+    : "";
+  document.querySelectorAll("#lo-recent button").forEach(b => b.onclick = () => openMonth(b.dataset.m));
+}
+
+/* ---------- Switching months ---------- */
+let OPEN_SEQ = 0;
+function setMonthInput(m){ document.getElementById("lo-month").value = m; }
+
+async function openMonth(m){
+  if(!/^\d{4}-\d{2}$/.test(m)) return;
+  const seq = ++OPEN_SEQ;
+  setMonthInput(m);
+  document.getElementById("parse-status").innerHTML = "";
+  const local = await LocalStore.get(m);
+  if(seq !== OPEN_SEQ) return;
+  showDoc(m, local || null);                 // this device's copy straight away…
+  setSync("busy", "Checking cloud…");
+  const doc = await loadDoc(m);              // …then the newest copy
+  if(seq !== OPEN_SEQ) return;
+  if(!local || !doc || doc.updatedAt !== local.updatedAt) showDoc(m, doc);
+  showSyncState();
+}
+
+/* ---------- Remembered document settings ---------- */
+const SETTINGS_KEY = "leave-orders-settings";
+function saveSettings(){
+  try{
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      office:   document.getElementById("opt-office").value,
+      datefmt:  document.getElementById("opt-datefmt").value,
+      approved: document.getElementById("opt-approved").checked,
+      title:    document.getElementById("opt-titlecase").checked,
+    }));
+  }catch(e){}
+}
+function loadSettings(){
+  let s = null;
+  try{ s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null"); }catch(e){}
+  if(!s) return;
+  if(s.office) document.getElementById("opt-office").value = s.office;
+  if(s.datefmt) document.getElementById("opt-datefmt").value = s.datefmt;
+  if(typeof s.approved === "boolean") document.getElementById("opt-approved").checked = s.approved;
+  if(typeof s.title === "boolean") document.getElementById("opt-titlecase").checked = s.title;
 }
 
 /* ---------- Render UI ---------- */
@@ -1105,8 +1538,8 @@ function render(){
         ${g.byHO.unknown.length?`<span class="chip d">Unknown: ${g.byHO.unknown.length}</span>`:''}
       </div>
       <div class="btnrow">
-        <button class="btn alt tiny" data-act="xlsx" data-i="${i}">&#x2B07; Excel</button>
-        <button class="btn alt tiny" data-act="pdf"  data-i="${i}">&#x2B07; PDF</button>
+        <button class="btn alt tiny" data-act="xlsx" data-i="${i}"><svg class="i"><use href="#i-sheet"/></svg> Excel</button>
+        <button class="btn alt tiny" data-act="pdf"  data-i="${i}"><svg class="i"><use href="#i-down"/></svg> PDF</button>
       </div>
     </div>
   `).join("");
@@ -1178,10 +1611,10 @@ function render(){
         ${hoBlocks || '<div class="ho-block"><em style="color:var(--muted)">No records yet — add a manual entry below.</em></div>'}
         ${manualFormHtml(g.name)}
         <div class="grp-actions">
-          <button class="btn" data-act="xlsx2" data-i="${i}">&#x2B07; Download Excel (2 sheets)</button>
-          <button class="btn warm" data-act="pdf2" data-i="${i}">&#x2B07; Download PDF (2 lists)</button>
+          <button class="btn" data-act="xlsx2" data-i="${i}"><svg class="i"><use href="#i-sheet"/></svg> Excel (2 sheets)</button>
+          <button class="btn warm" data-act="pdf2" data-i="${i}"><svg class="i"><use href="#i-down"/></svg> PDF (2 lists)</button>
           <div class="spacer"></div>
-          <button class="btn alt" data-act="toggle-form" data-i="${i}">&#x2795; Add manual entry</button>
+          <button class="btn alt" data-act="toggle-form" data-i="${i}"><svg class="i"><use href="#i-plus"/></svg> Add manual entry</button>
         </div>
       </details>`;
   }).join("");
@@ -1235,7 +1668,7 @@ function manualFormHtml(grpName){
         <div class="field" style="grid-column:1/-1"><label>Remarks</label><textarea data-f="remarks" rows="2"></textarea></div>
       </div>
       <div class="actions">
-        <button class="btn mint" data-act="add-manual">&#x2795; Add entry</button>
+        <button class="btn mint" data-act="add-manual"><svg class="i"><use href="#i-plus"/></svg> Add entry</button>
       </div>
     </div>`;
 }
@@ -1290,6 +1723,7 @@ function addManualEntryFromForm(form, grpName){
     remarks: get("remarks"),
     ho,
     manual: true,
+    grp: grpName,
   };
   const key = grpName.toLowerCase();
   const arr = MANUAL_BY_GROUP.get(key) || [];
@@ -1308,19 +1742,12 @@ document.addEventListener("DOMContentLoaded",()=>{
     const inp = document.getElementById("new-lt-name");
     const name = (inp.value||"").trim();
     if(!name){ alert("Type the new leave type name first."); return; }
-    if(!RAW){
-      // create a stub RAW so the UI can render
-      RAW = {
-        groups: [],
-        totals: {totalRows:0, included:0, excludedByStatus:0, unparseableDates:0, dayMismatches:0, unknownOffices:0},
-        fileName: SRC_FILE_NAME || "(manual)",
-      };
-    }
-    if(!RAW.groups.find(g=>g.name.toLowerCase()===name.toLowerCase())){
+    const known = (RAW ? RAW.groups.map(g=>g.name) : []).concat(GROUP_ORDER_OVERRIDE);
+    if(!known.some(n=>n.toLowerCase()===name.toLowerCase())){
       GROUP_ORDER_OVERRIDE.push(name);
     }
     inp.value = "";
-    refresh();
+    refresh();   // saved with the month
   });
 });
 
@@ -1469,14 +1896,14 @@ function renderELCLSheet(wb, {g, hoKey, rows, days, hoLabel, kind, leaveMonth, p
 async function buildWorkbook(groupsToInclude){
   const fmt = document.getElementById("opt-datefmt").value;
   const office = norm(document.getElementById("opt-office").value);
-  const leaveMonth = norm(document.getElementById("opt-leave-month").value) || "July 2026";
+  const leaveMonth = norm(document.getElementById("opt-leave-month").value) || monthLabel(CUR_MONTH || monthNow());
   const now = new Date();
   const presentDate = String(now.getDate()).padStart(2, '0') + '.' + String(now.getMonth()+1).padStart(2, '0') + '.' + now.getFullYear();
   const NCOLS  = COL_HEADERS.length;
   const HEADER_ROW = 8;
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Sub Divisional Manager — Karur Sub Division";
+  wb.creator = "Leave Orders — Karur Sub Division";
   wb.created = new Date();
 
   await GDS_READY;   // ensure the GDS (substitute) directory is loaded for EL/CL sheets
@@ -1751,7 +2178,7 @@ function buildPdf(groupsToInclude){
   const doc = new jsPDF({orientation:"landscape",unit:"pt",format:"a4"});
   const fmt = document.getElementById("opt-datefmt").value;
   const office = norm(document.getElementById("opt-office").value);
-  const leaveMonth = norm(document.getElementById("opt-leave-month").value) || "July 2026";
+  const leaveMonth = norm(document.getElementById("opt-leave-month").value) || monthLabel(CUR_MONTH || monthNow());
   const now = new Date();
   const presentDate = String(now.getDate()).padStart(2, '0') + '.' + String(now.getMonth()+1).padStart(2, '0') + '.' + now.getFullYear();
   const pageW = doc.internal.pageSize.getWidth();
@@ -1919,17 +2346,30 @@ drop.addEventListener("drop",e=>{
   if(f) handleFile(f);
 });
 
+// Filters re-read the month's stored rows — no need to upload again.
 ["opt-approved","opt-titlecase"].forEach(id=>{
-  document.getElementById(id).addEventListener("change",()=>{
-    if(fileInput.files[0]) handleFile(fileInput.files[0]);
-  });
+  document.getElementById(id).addEventListener("change",()=>{ saveSettings(); rebuild(); });
 });
-["opt-datefmt","opt-office","opt-period","opt-leave-month"].forEach(id=>{
-  document.getElementById(id).addEventListener("input",()=>{ if(RAW) render(); });
+["opt-datefmt","opt-office"].forEach(id=>{
+  document.getElementById(id).addEventListener("input",()=>{ saveSettings(); if(RAW) render(); });
 });
+document.getElementById("opt-period").addEventListener("input",e=>{
+  e.target.dataset.custom = e.target.value.trim() && e.target.value.trim() !== autoPeriod(CUR_MONTH) ? "1" : "";
+  renderMonthChrome();
+});
+
+// Month controls
+document.getElementById("lo-month").addEventListener("change",e=>openMonth(e.target.value || monthNow()));
+document.getElementById("lo-prev").addEventListener("click",()=>openMonth(monthShift(CUR_MONTH,-1)));
+document.getElementById("lo-next").addEventListener("click",()=>openMonth(monthShift(CUR_MONTH, 1)));
 
 document.getElementById("dlAllXlsx").addEventListener("click",downloadAllXlsx);
 document.getElementById("dlAllPdf").addEventListener("click",downloadAllPdf);
+
+// Open on the current month.
+loadSettings();
+CUR_MONTH = monthNow();
+openMonth(CUR_MONTH).then(refreshRecent);
 </script>
 </body>
 </html>

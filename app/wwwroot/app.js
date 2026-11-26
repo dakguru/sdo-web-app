@@ -175,7 +175,7 @@ function renderApp(){
       el('div',{class:'org'},S.settings.organisation),
       el('div',{class:'appsw'},
         el('a',{class:'appsw-pill',href:'/',style:'font-weight:700'},'🏠 Home'),
-        el('a',{class:'appsw-pill',href:'/leave-orders'},'Sub Divisional Manager'),
+        el('a',{class:'appsw-pill',href:'/leave-orders'},'Leave Orders'),
         el('a',{class:'appsw-pill',href:'/employees'},'Employee Directory'),
         el('a',{class:'appsw-pill',href:'/office-management'},'Office Management'),
         el('a',{class:'appsw-pill',href:'/arrangements'},'Temporary Arrangements'),
