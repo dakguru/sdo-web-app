@@ -52,6 +52,8 @@
   .appbar .pill.active{color:#1e3a5f;background:#fff}
 
   .lo-wrap{max-width:1240px;margin:0 auto;padding:24px 20px 28px}
+  /* The module menu sits under the hero, inside the content column, as a card. */
+  html body .lo-wrap > .appbar{top:8px;margin:0 0 18px;border:1px solid var(--bar-rim,rgba(15,23,42,.08));border-radius:var(--r-lg);padding:10px 16px}
 
   /* ---------- Page canvas: one calm solid tone, no colour field ---------- */
   html,html[data-theme="light"]{background:#f4f6fb}
@@ -358,20 +360,6 @@
 <!-- /ksd-pwa -->
 </head>
 <body>
-<!-- App switcher bar -->
-<div class="appbar">
-  <a href="/" style="opacity:.85;color:#fff;text-decoration:none;font-weight:700;display:flex;align-items:center;gap:6px">&#x1F3E0; Home</a>
-  <span style="opacity:.4">|</span>
-  <span style="opacity:.72">Department of Posts &middot; Karur Sub Division</span>
-  <div class="switch">
-    <span class="pill active">Leave Orders</span>
-    <a class="pill" href="/employees">Employee Directory</a>
-    <a class="pill" href="/office-management">Office Management</a>
-    <a class="pill" href="/arrangements">Temporary Arrangements</a>
-    <a class="pill" href="/ir-builder/">Inspection Reports &rarr;</a>
-  </div>
-</div>
-
 <!-- Icon sprite -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></symbol>
@@ -400,6 +388,19 @@
     </div>
     <span class="lo-sync busy" id="lo-sync"><span class="dot"></span><span id="lo-sync-txt">Connecting&hellip;</span></span>
   </section>
+  <!-- Module menu (below the hero) -->
+<div class="appbar">
+  <a href="/" style="opacity:.85;color:#fff;text-decoration:none;font-weight:700;display:flex;align-items:center;gap:6px">&#x1F3E0; Home</a>
+  <span style="opacity:.4">|</span>
+  <span style="opacity:.72">Department of Posts &middot; Karur Sub Division</span>
+  <div class="switch">
+    <span class="pill active">Leave Orders</span>
+    <a class="pill" href="/employees">Employee Directory</a>
+    <a class="pill" href="/office-management">Office Management</a>
+    <a class="pill" href="/arrangements">Temporary Arrangements</a>
+    <a class="pill" href="/ir-builder/">Inspection Reports &rarr;</a>
+  </div>
+</div>
 
   <!-- Month bar -->
   <section class="lo-panel lo-month">
@@ -1750,147 +1751,229 @@ document.addEventListener("DOMContentLoaded",()=>{
     refresh();   // saved with the month
   });
 });
+/* ---------- Excel generation (ExcelJS) ----------
+   Laid out to match the office's hand-finished leave-order workbooks
+   (see Sample/LeaveOrders_*.xlsx): Palatino Linotype, black on white, thin
+   black borders, rows 1-7 merged across the table, the column header row
+   repeated on every printed page, A4 landscape fitted to one page wide.
+   Every measurement below is taken from those files. */
 
-/* ---------- Excel generation (ExcelJS, styled) ---------- */
-const HO_FILL = {
-  karur:      {color:"FF4F46E5"},  // indigo
-  kulittalai: {color:"FF0D9488"},  // teal
-  unknown:    {color:"FFDC2626"},  // red
-};
-
-// Font used across the generated documents — matches the office's standard
-// leave-order sheets (Palatino Linotype throughout).
+// Font used across the generated documents — the office's standard
+// leave-order sheets use Palatino Linotype throughout.
 const DOC_FONT = "Palatino Linotype";
 
-// EL / CL substitute-arrangement sheet (13 cols, GDS details from staff DB).
-function renderELCLSheet(wb, {g, hoKey, rows, days, hoLabel, kind, leaveMonth, presentDate, office, fmt}){
-  const NCOLS = ELCL_COL_HEADERS.length;
-  const HEADER_ROW = 8;
-  const meta = ELCL_META[kind];
-  const notes = ELCL_NOTES[kind];
-  const klt = hoKey === "kulittalai" ? " (KLT)" : "";
-  const memo = `${meta.memoPrefix} - ${monShortUpper(leaveMonth)}${klt}/dlgs dated at Karur ${presentDate}`;
+// EL / CL Excel columns, as on the office's sheets. (The PDF keeps
+// ELCL_COL_HEADERS, which also carries the substitute's DOB and DCCS.)
+const XL_ELCL_HEADERS = [
+  "Sl No","Emp_ID","Emp_Name","Designation","Office_Name",
+  "Start_Date","End_Date","No._Of Days",
+  "Name of the GDS","Designation and Office of GDS","GDS_ID","Remarks",
+];
 
-  const sheetName = safeSheetName(`${hoLabel} - ${g.name}`);
-  const ws = wb.addWorksheet(sheetName,{
+const XL = {
+  HEADER_ROW: 8,
+  box:   { top:{style:"thin"}, left:{style:"thin"}, bottom:{style:"thin"}, right:{style:"thin"} },
+  white: { type:"pattern", pattern:"solid", fgColor:{ argb:"FFFFFFFF" } },
+  font:  (size, extra) => ({ name:DOC_FONT, size, ...(extra || {}) }),
+  // Row heights (points) from the sample sheets.
+  H: { title:26.1, line:20.1, note2:38.1, header:34.5, total:29.1 },
+};
+
+// Digit-only ids are written as numbers (format "0"), as on the office sheets,
+// so Excel doesn't flag them as "number stored as text".
+const xlId = v => (typeof v === "string" && /^\d{1,15}$/.test(v)) ? Number(v) : v;
+
+// Whole days show as "3"; half days as "0.5".
+function xlDays(cell, v){
+  cell.value = v;
+  if(typeof v === "number") cell.numFmt = Number.isInteger(v) ? "0" : "0.##";
+}
+
+// Width for a column from its longest value, kept within the samples' range.
+const xlFit = (maxLen, min, max, pad = 2) => Math.max(min, Math.min(max, maxLen + pad));
+
+// Height for a body row: the base height, or more when wrapped text needs
+// extra lines (≈ 0.95 characters per width unit at 11 pt Palatino).
+function xlRowHeight(base, cells){
+  let lines = 1;
+  for(const { text, width } of cells){
+    const perLine = Math.max(4, Math.floor(width * 0.95));
+    lines = Math.max(lines, Math.ceil(String(text || "").length / perLine));
+  }
+  return Math.max(base, lines * 14.5 + 4);
+}
+
+function xlSheet(wb, name){
+  return wb.addWorksheet(safeSheetName(name), {
     pageSetup:{
-      orientation:"landscape", paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:0,
-      margins:{left:0.4,right:0.4,top:0.45,bottom:0.45,header:0.2,footer:0.2},
-      printTitlesRow:`${HEADER_ROW}:${HEADER_ROW}`,
+      paperSize:9, orientation:"landscape", fitToPage:true, fitToWidth:1, fitToHeight:0,
+      margins:{ left:0.4, right:0.4, top:0.45, bottom:0.45, header:0.2, footer:0.2 },
+      printTitlesRow:`${XL.HEADER_ROW}:${XL.HEADER_ROW}`,
       horizontalCentered:true,
     },
-    properties:{defaultRowHeight:18},
+    properties:{ defaultRowHeight:18 },
+    views:[{ state:"frozen", ySplit:XL.HEADER_ROW, topLeftCell:`A${XL.HEADER_ROW + 1}` }],
   });
+}
 
-  // Letterhead
-  ws.mergeCells(1,1,1,NCOLS);
-  const r1 = ws.getCell(1,1); r1.value = DEPT_LINE;
-  r1.font={bold:true,size:16,color:{argb:"FFFFFFFF"},name:DOC_FONT};
-  r1.alignment={horizontal:"center",vertical:"middle"};
-  r1.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1F3864"}};
-  ws.getRow(1).height=26;
+// Rows 1-7: department, office, memo, the three notes, and the boxed summary band.
+function xlLetterhead(ws, ncols, { office, memo, notes, banner, bannerHeight }){
+  const line = (r, value, font, alignment, height) => {
+    ws.mergeCells(r, 1, r, ncols);
+    const c = ws.getCell(r, 1);
+    c.value = value; c.font = font; c.alignment = alignment;
+    ws.getRow(r).height = height;
+  };
+  const centre = { horizontal:"center", vertical:"middle" };
+  line(1, DEPT_LINE, XL.font(16, { bold:true }), centre, XL.H.title);
+  line(2, office, XL.font(11.5, { bold:true }), centre, XL.H.line);
+  line(3, `Memo No. ${memo}`, XL.font(11, { bold:true, underline:true }), centre, XL.H.line);
+  notes.forEach((t, i) => line(4 + i, t, XL.font(12), { horizontal:"left", vertical:"middle", wrapText:true }, i === 1 ? XL.H.note2 : XL.H.line));
+  line(7, banner, XL.font(11.5, { bold:true }), centre, bannerHeight);
+  for(let col = 1; col <= ncols; col++) ws.getCell(7, col).border = XL.box;
+}
 
-  ws.mergeCells(2,1,2,NCOLS);
-  const r2 = ws.getCell(2,1); r2.value = office;
-  r2.font={bold:true,size:11.5,color:{argb:"FF1F3864"},name:DOC_FONT};
-  r2.alignment={horizontal:"center",vertical:"middle"};
-  r2.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFEEF3FB"}};
-  ws.getRow(2).height=20;
-
-  ws.mergeCells(3,1,3,NCOLS);
-  const r3 = ws.getCell(3,1); r3.value = `Memo No. ${memo}`;
-  r3.font={bold:true,size:11,color:{argb:"FF1F3864"},name:DOC_FONT};
-  r3.alignment={horizontal:"center",vertical:"middle"};
-  r3.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFEEF3FB"}};
-  ws.getRow(3).height=20;
-
-  for(let i=0;i<notes.length;i++){
-    const rr = 4+i;
-    ws.mergeCells(rr,1,rr,NCOLS);
-    const c = ws.getCell(rr,1); c.value = notes[i];
-    c.font={size:12,color:{argb:"FF1A2233"},name:DOC_FONT};
-    c.alignment={horizontal:"left",vertical:"center",wrapText:true,indent:1};
-    ws.getRow(rr).height = i===1?38:20;
-  }
-
-  // Leave type + totals banner
-  ws.mergeCells(7,1,7,NCOLS);
-  const r7 = ws.getCell(7,1);
-  r7.value = `Karur Sub Division - ${leaveMonth}    |    Leave Type: ${meta.banner}    |    Total Records: ${rows.length}    |    Total Days: ${days}`;
-  r7.font={bold:true,size:11.5,color:{argb:"FFFFFFFF"},name:DOC_FONT};
-  r7.alignment={horizontal:"center",vertical:"middle"};
-  r7.fill={type:"pattern",pattern:"solid",fgColor:{argb:HO_FILL[hoKey].color}};
-  ws.getRow(7).height=22;
-
-  // Header row
-  const headerRow = ws.getRow(HEADER_ROW);
-  ELCL_COL_HEADERS.forEach((h,i)=>{
-    const c = headerRow.getCell(i+1);
-    c.value=h;
-    c.font={bold:true,color:{argb:"FFFFFFFF"},size:11,name:DOC_FONT};
-    c.alignment={horizontal:"center",vertical:"middle",wrapText:true};
-    c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1F3864"}};
-    c.border={top:{style:"thin"},bottom:{style:"thin"},left:{style:"thin"},right:{style:"thin"}};
+function xlHeader(ws, headers){
+  const row = ws.getRow(XL.HEADER_ROW);
+  headers.forEach((h, i) => {
+    const c = row.getCell(i + 1);
+    c.value = h;
+    c.font = XL.font(11, { bold:true });
+    c.alignment = { horizontal:"center", vertical:"middle", wrapText:true };
+    c.border = XL.box;
   });
-  headerRow.height=30;
+  row.height = XL.H.header;
+}
 
-  const CENTER = new Set([0,1,5,6,7,10,11,12]);
-  const WRAP   = new Set([4,8,9]);
-  const colMaxLen = ELCL_COL_HEADERS.map(h=>String(h).length);
-
-  rows.forEach((r,idx)=>{
-    const emp = gdsInfo(r.empId, fmt);   // leave-taking employee (Col B/C)
-    const g2 = gdsInfo(r.subId, fmt);    // substitute GDS
-    const row = ws.getRow(HEADER_ROW+1+idx);
-    const values = [
-      idx+1, r.empId, r.empName, emp.desig, r.officeName,
-      fmtDate(r.startDate,fmt), fmtDate(r.endDate,fmt),
-      r.noDays===""?"":r.noDays,
-      (r.subName || g2.name), g2.desigOffice, r.subId, g2.dob, g2.dccs,
-    ];
-    values.forEach((v,i)=>{
-      const c = row.getCell(i+1);
-      c.value = v;
-      c.font={size:11,name:DOC_FONT,color:{argb:"FF1A2233"}};
-      c.border={top:{style:"thin",color:{argb:"FFD9D9D9"}},bottom:{style:"thin",color:{argb:"FFD9D9D9"}},left:{style:"thin",color:{argb:"FFD9D9D9"}},right:{style:"thin",color:{argb:"FFD9D9D9"}}};
-      c.alignment = {vertical:"middle",wrapText:WRAP.has(i)};
-      if(CENTER.has(i)) c.alignment={...c.alignment,horizontal:"center"};
-      if(r.manual){
-        c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFF3C7"}};
-      } else if(idx%2===1){
-        c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF2F2F2"}};
-      }
-      if((i===1||i===10) && typeof v==="string" && /^\d+$/.test(v)) c.numFmt = "0";
-      if(i===7 && typeof v==="number") c.numFmt = "0.##";
-      const len = (v==null?"":String(v)).length;
-      if(len>colMaxLen[i]) colMaxLen[i]=len;
+// Body rows. `center` columns are centred both ways; `wrap` columns wrap;
+// the rest sit left, vertically centred. `days`/`ids` are 0-based column indexes.
+function xlBody(ws, data, { center, wrap, days, ids, widths, baseHeight }){
+  data.forEach((values, idx) => {
+    const row = ws.getRow(XL.HEADER_ROW + 1 + idx);
+    values.forEach((v, i) => {
+      const c = row.getCell(i + 1);
+      if(i === days) xlDays(c, v === "" ? "" : v);
+      else c.value = ids.has(i) ? xlId(v) : v;
+      if(ids.has(i) && typeof c.value === "number") c.numFmt = "0";
+      c.font = XL.font(11);
+      c.border = XL.box;
+      c.alignment = center.has(i)
+        ? { horizontal:"center", vertical:"middle", wrapText:wrap.has(i) }
+        : { vertical:"middle", wrapText:wrap.has(i) };
     });
+    row.height = xlRowHeight(baseHeight, [...wrap].map(i => ({ text:values[i], width:widths[i] })));
+  });
+}
+
+// TOTAL label merged across columns 1..mergeTo, the day total in column daysCol, every cell boxed.
+function xlTotal(ws, ncols, { rowIdx, label, mergeTo, daysCol, days }){
+  ws.mergeCells(rowIdx, 1, rowIdx, mergeTo);
+  const lbl = ws.getCell(rowIdx, 1);
+  lbl.value = label;
+  lbl.font = XL.font(11, { bold:true });
+  lbl.alignment = { horizontal:"right", vertical:"middle" };
+  const tot = ws.getCell(rowIdx, daysCol);
+  xlDays(tot, days);
+  tot.font = XL.font(11, { bold:true });
+  tot.alignment = { horizontal:"center", vertical:"middle" };
+  for(let col = 1; col <= ncols; col++){
+    const c = ws.getCell(rowIdx, col);
+    c.border = XL.box;
+    if(col > mergeTo && col !== daysCol) c.font = XL.font(11);   // empty cells stay in Palatino too
+  }
+  ws.getRow(rowIdx).height = XL.H.total;
+}
+
+// White fill over the whole table, as on the office sheets (no gridlines show through).
+function xlWhite(ws, ncols, lastRow){
+  for(let r = 1; r <= lastRow; r++) for(let col = 1; col <= ncols; col++) ws.getCell(r, col).fill = XL.white;
+}
+
+const maxLen = (data, i) => data.reduce((m, v) => Math.max(m, String(v[i] ?? "").length), 0);
+
+// EL / CL substitute-arrangement sheet (12 columns, GDS details from the staff directory).
+function renderELCLSheet(wb, { g, hoKey, rows, days, hoLabel, kind, leaveMonth, presentDate, office, fmt }){
+  const NCOLS = XL_ELCL_HEADERS.length;
+  const meta = ELCL_META[kind];
+  const klt = hoKey === "kulittalai" ? " (KLT)" : "";
+  const ws = xlSheet(wb, `${hoLabel} - ${g.name}`);
+
+  xlLetterhead(ws, NCOLS, {
+    office,
+    memo: `${meta.memoPrefix} - ${monShortUpper(leaveMonth)}${klt}/dlgs dated at Karur ${presentDate}`,
+    notes: ELCL_NOTES[kind],
+    banner: `Karur Sub Division - ${leaveMonth}    |    Leave Type: ${meta.banner}    |    Total Records: ${rows.length}    |    Total Days: ${days}`,
+    bannerHeight: 29.25,
+  });
+  xlHeader(ws, XL_ELCL_HEADERS);
+
+  const data = rows.map((r, idx) => {
+    const emp = gdsInfo(r.empId, fmt);   // the employee on leave
+    const sub = gdsInfo(r.subId, fmt);   // the substitute GDS
+    return [
+      idx + 1, r.empId, r.empName, emp.desig, r.officeName,
+      fmtDate(r.startDate, fmt), fmtDate(r.endDate, fmt),
+      r.noDays === "" ? "" : r.noDays,
+      r.subName || sub.name, sub.desigOffice, r.subId,
+      norm(r.leaveType).replace(/\s*\([^)]*\)\s*$/, ""),   // "Casual Leave (CL)" → "Casual Leave"
+    ];
   });
 
-  // Total row — TOTAL spans cols 1..7, total days in the No._Of_Days column (8)
-  const totalRowIdx = HEADER_ROW+1+rows.length;
-  const tr = ws.getRow(totalRowIdx);
-  ws.mergeCells(totalRowIdx,1,totalRowIdx,7);
-  const tlbl = tr.getCell(1); tlbl.value="TOTAL"; tlbl.alignment={horizontal:"right",vertical:"middle"};
-  tlbl.font={bold:true,size:11,color:{argb:"FF1F3864"},name:DOC_FONT};
-  tlbl.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE7EEF9"}};
-  const tnum = tr.getCell(8); tnum.value=days;
-  tnum.font={bold:true,size:11,color:{argb:"FF1F3864"},name:DOC_FONT}; tnum.alignment={horizontal:"center",vertical:"middle"};
-  tnum.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE7EEF9"}};
-  for(let cc=1;cc<=NCOLS;cc++){
-    const c = tr.getCell(cc);
-    c.border={top:{style:"medium",color:{argb:"FF1F3864"}},bottom:{style:"thin"},left:{style:"thin",color:{argb:"FFD9D9D9"}},right:{style:"thin",color:{argb:"FFD9D9D9"}}};
-    if(cc!==1 && cc!==8){
-      c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE7EEF9"}};
-    }
-  }
+  const widths = [
+    6, 11, xlFit(maxLen(data, 2), 18, 28), xlFit(maxLen(data, 3), 15, 24), xlFit(maxLen(data, 4), 22, 30),
+    12, 12, 12, xlFit(maxLen(data, 8), 22, 30), xlFit(maxLen(data, 9), 25, 32), 13, xlFit(maxLen(data, 11), 16, 24),
+  ];
+  xlBody(ws, data, {
+    center: new Set([0, 1, 5, 6, 7, 10, 11]),
+    wrap:   new Set([4, 8, 9]),
+    days: 7, ids: new Set([1, 10]), widths, baseHeight: 33,
+  });
+  const totalRow = XL.HEADER_ROW + 1 + rows.length;
+  xlTotal(ws, NCOLS, { rowIdx:totalRow, label:"TOTAL", mergeTo:7, daysCol:8, days });
+  ws.columns = widths.map(width => ({ width }));
+  xlWhite(ws, NCOLS, totalRow);
+}
 
-  const MINS = [5, 11, 18, 12, 20, 12, 12, 9,  18, 24, 11, 11, 11];
-  const MAXS = [6, 16, 30, 22, 40, 14, 14, 12, 28, 40, 16, 13, 13];
-  ws.columns = ELCL_COL_HEADERS.map((_,i)=>({
-    width: Math.max(MINS[i], Math.min(MAXS[i], colMaxLen[i]+2)),
-  }));
-  ws.views=[{state:"frozen", ySplit:HEADER_ROW}];
+// Every other leave type: the GDS leave-order sheet (10 columns).
+function renderLeaveSheet(wb, { g, hoKey, rows, days, hoLabel, leaveMonth, presentDate, office, fmt }){
+  const NCOLS = COL_HEADERS.length;
+  let catName = g.name.replace(/-/g, " ");
+  if(g.name === "Training") catName = "GDS Training";
+  else if(g.name === "LWA") catName = "GDS LWA";
+  const klt = hoKey === "kulittalai" ? " (KLT)" : "";
+  const ws = xlSheet(wb, `${hoLabel} - ${g.name}`);
+
+  xlLetterhead(ws, NCOLS, {
+    office,
+    memo: `KRR/${catName} - ${leaveMonth}${klt}/dlgs dated at Karur ${presentDate}`,
+    notes: NOTES,
+    banner: `${hoLabel}    |    Leave Type: ${g.name}    |    Total Records: ${rows.length}    |    Total Days: ${days}`,
+    bannerHeight: 29.1,
+  });
+  xlHeader(ws, COL_HEADERS);
+
+  const data = rows.map((r, idx) => [
+    idx + 1, r.empId, r.empName, r.officeName,
+    fmtDate(r.startDate, fmt), fmtDate(r.endDate, fmt),
+    r.noDays === "" ? "" : r.noDays,
+    r.subName, r.subId, r.remarks,
+  ]);
+
+  // Fixed widths from the office sheets; name, office, substitute and remarks
+  // grow with their longest entry (remarks wraps past 55).
+  const widths = [
+    6, 11, xlFit(maxLen(data, 2), 22, 30), xlFit(maxLen(data, 3), 26, 32), 13, 13, 12,
+    xlFit(maxLen(data, 7), 22, 30), 15, xlFit(maxLen(data, 9), 20, 55, 3),
+  ];
+  xlBody(ws, data, {
+    center: new Set([0, 1, 4, 5, 6, 8]),
+    wrap:   new Set([3, 9]),
+    days: 6, ids: new Set([1, 8]), widths, baseHeight: 29.1,
+  });
+  const totalRow = XL.HEADER_ROW + 1 + rows.length;
+  xlTotal(ws, NCOLS, { rowIdx:totalRow, label:`TOTAL (${hoLabel})`, mergeTo:6, daysCol:7, days });
+  ws.columns = widths.map(width => ({ width }));
+  xlWhite(ws, NCOLS, totalRow);
 }
 
 async function buildWorkbook(groupsToInclude){
@@ -1899,8 +1982,6 @@ async function buildWorkbook(groupsToInclude){
   const leaveMonth = norm(document.getElementById("opt-leave-month").value) || monthLabel(CUR_MONTH || monthNow());
   const now = new Date();
   const presentDate = String(now.getDate()).padStart(2, '0') + '.' + String(now.getMonth()+1).padStart(2, '0') + '.' + now.getFullYear();
-  const NCOLS  = COL_HEADERS.length;
-  const HEADER_ROW = 8;
 
   const wb = new ExcelJS.Workbook();
   wb.creator = "Leave Orders — Karur Sub Division";
@@ -1914,144 +1995,11 @@ async function buildWorkbook(groupsToInclude){
       if(!rows.length) continue;
       const hoLabel = hoKey==="karur"?"Karur HO":hoKey==="kulittalai"?"Kulittalai HO":"Unknown";
       const days = g.daysByHO[hoKey];
-
+      const args = { g, hoKey, rows, days, hoLabel, leaveMonth, presentDate, office, fmt };
       // Earned Leave / Casual Leave use the official substitute-arrangement format.
       const kind = elclKind(g.name);
-      if(kind){
-        renderELCLSheet(wb, {g, hoKey, rows, days, hoLabel, kind, leaveMonth, presentDate, office, fmt});
-        continue;
-      }
-
-      let catName = g.name.replace(/-/g, ' ');
-      if (g.name === 'Training') catName = 'GDS Training';
-      else if (g.name === 'LWA') catName = 'GDS LWA';
-      const klt = hoKey === "kulittalai" ? " (KLT)" : "";
-      const memo = `KRR/${catName} - ${leaveMonth}${klt}/dlgs dated at Karur ${presentDate}`;
-
-      const sheetName = safeSheetName(`${hoLabel} - ${g.name}`);
-      const ws = wb.addWorksheet(sheetName,{
-        pageSetup:{
-          orientation:"landscape", paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:0,
-          margins:{left:0.4,right:0.4,top:0.45,bottom:0.45,header:0.2,footer:0.2},
-          printTitlesRow:`${HEADER_ROW}:${HEADER_ROW}`,
-          horizontalCentered:true,
-        },
-        properties:{defaultRowHeight:18},
-      });
-
-      // Letterhead
-      ws.mergeCells(1,1,1,NCOLS);
-      const r1 = ws.getCell(1,1); r1.value = DEPT_LINE;
-      r1.font={bold:true,size:16,color:{argb:"FFFFFFFF"},name:DOC_FONT};
-      r1.alignment={horizontal:"center",vertical:"middle"};
-      r1.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1F3864"}};
-      ws.getRow(1).height=26;
-
-      ws.mergeCells(2,1,2,NCOLS);
-      const r2 = ws.getCell(2,1); r2.value = office;
-      r2.font={bold:true,size:11.5,color:{argb:"FF1F3864"},name:DOC_FONT};
-      r2.alignment={horizontal:"center",vertical:"middle"};
-      r2.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFEEF3FB"}};
-      ws.getRow(2).height=20;
-
-      ws.mergeCells(3,1,3,NCOLS);
-      const r3 = ws.getCell(3,1); r3.value = `Memo No. ${memo}`;
-      r3.font={bold:true,size:11,color:{argb:"FF1F3864"},name:DOC_FONT};
-      r3.alignment={horizontal:"center",vertical:"middle"};
-      r3.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFEEF3FB"}};
-      ws.getRow(3).height=20;
-
-      for(let i=0;i<NOTES.length;i++){
-        const rr = 4+i;
-        ws.mergeCells(rr,1,rr,NCOLS);
-        const c = ws.getCell(rr,1); c.value = NOTES[i];
-        c.font={size:12,color:{argb:"FF1A2233"},name:DOC_FONT};
-        c.alignment={horizontal:"left",vertical:"center",wrapText:true,indent:1};
-        ws.getRow(rr).height = i===1?38:20;
-      }
-
-      // Leave type + HO + totals banner
-      ws.mergeCells(7,1,7,NCOLS);
-      const r7 = ws.getCell(7,1);
-      r7.value = `${hoLabel}    |    Leave Type: ${g.name}    |    Total Records: ${rows.length}    |    Total Days: ${days}`;
-      r7.font={bold:true,size:11.5,color:{argb:"FFFFFFFF"},name:DOC_FONT};
-      r7.alignment={horizontal:"center",vertical:"middle"};
-      r7.fill={type:"pattern",pattern:"solid",fgColor:{argb:HO_FILL[hoKey].color}};
-      ws.getRow(7).height=22;
-
-      // Header row
-      const headerRow = ws.getRow(HEADER_ROW);
-      COL_HEADERS.forEach((h,i)=>{
-        const c = headerRow.getCell(i+1);
-        c.value=h;
-        c.font={bold:true,color:{argb:"FFFFFFFF"},size:11,name:DOC_FONT};
-        c.alignment={horizontal:"center",vertical:"middle",wrapText:true};
-        c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1F3864"}};
-        c.border={top:{style:"thin"},bottom:{style:"thin"},left:{style:"thin"},right:{style:"thin"}};
-      });
-      headerRow.height=22;
-
-      // Body
-      const colMaxLen = COL_HEADERS.map(h=>String(h).length);
-      rows.forEach((r,idx)=>{
-        const row = ws.getRow(HEADER_ROW+1+idx);
-        const values = [
-          idx+1, r.empId, r.empName, r.officeName,
-          fmtDate(r.startDate,fmt), fmtDate(r.endDate,fmt),
-          r.noDays===""?"":r.noDays,
-          r.subName, r.subId, r.remarks,
-        ];
-        values.forEach((v,i)=>{
-          const c = row.getCell(i+1);
-          c.value = v;
-          c.font={size:11,name:DOC_FONT,color:{argb:"FF1A2233"}};
-          c.border={top:{style:"thin",color:{argb:"FFD9D9D9"}},bottom:{style:"thin",color:{argb:"FFD9D9D9"}},left:{style:"thin",color:{argb:"FFD9D9D9"}},right:{style:"thin",color:{argb:"FFD9D9D9"}}};
-          c.alignment = {vertical:"middle",wrapText:(i===3||i===9)};
-          if(i===0||i===1||i===4||i===5||i===6||i===8) c.alignment={...c.alignment,horizontal:"center"};
-          if(r.manual){
-            c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFF3C7"}};
-          } else if(idx%2===1){
-            c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF2F2F2"}};
-          }
-          if(i===1||i===8){
-            if(typeof v==="string" && /^\d+$/.test(v)){
-              c.numFmt = "0";
-            }
-          }
-          if(i===6 && typeof v==="number") c.numFmt = "0.##";
-          const len = (v==null?"":String(v)).length;
-          if(len>colMaxLen[i]) colMaxLen[i]=len;
-        });
-        // NOTE: do not set row.alignment here — in ExcelJS the Row.alignment
-        // setter overwrites every cell's alignment, which would wipe the
-        // per-column horizontal centering and wrapText set above. Each cell
-        // already carries vertical:"middle" individually.
-      });
-
-      // Total row
-      const totalRowIdx = HEADER_ROW+1+rows.length;
-      const tr = ws.getRow(totalRowIdx);
-      ws.mergeCells(totalRowIdx,1,totalRowIdx,6);
-      const tlbl = tr.getCell(1); tlbl.value=`TOTAL (${hoLabel})`; tlbl.alignment={horizontal:"right",vertical:"middle"};
-      tlbl.font={bold:true,size:11,color:{argb:"FF1F3864"},name:DOC_FONT};
-      tlbl.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE7EEF9"}};
-      const tnum = tr.getCell(7); tnum.value=days;
-      tnum.font={bold:true,size:11,color:{argb:"FF1F3864"},name:DOC_FONT}; tnum.alignment={horizontal:"center",vertical:"middle"};
-      tnum.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE7EEF9"}};
-      for(let cc=1;cc<=COL_HEADERS.length;cc++){
-        const c = tr.getCell(cc);
-        c.border={top:{style:"medium",color:{argb:"FF1F3864"}},bottom:{style:"thin"},left:{style:"thin",color:{argb:"FFD9D9D9"}},right:{style:"thin",color:{argb:"FFD9D9D9"}}};
-        if(cc!==1 && cc!==7){
-          c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE7EEF9"}};
-        }
-      }
-
-      const MINS = [5, 11, 22, 26, 13, 13, 10, 22, 12, 36];
-      const MAXS = [6, 16, 32, 44, 14, 14, 12, 32, 16, 60];
-      ws.columns = COL_HEADERS.map((_,i)=>({
-        width: Math.max(MINS[i], Math.min(MAXS[i], colMaxLen[i]+2)),
-      }));
-      ws.views=[{state:"frozen", ySplit:HEADER_ROW}];
+      if(kind) renderELCLSheet(wb, { ...args, kind });
+      else     renderLeaveSheet(wb, args);
     }
   }
 
