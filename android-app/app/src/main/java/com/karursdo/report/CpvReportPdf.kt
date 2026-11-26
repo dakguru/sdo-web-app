@@ -22,7 +22,11 @@ data class CpvReportMeta(
     val schemeLabel: String,
     val solId: String?,
     val branchId: String?,
-    val scheme: String = ""          // "PLI"/"RPLI" switch the report to insurance columns
+    val scheme: String = "",         // "PLI"/"RPLI" switch the report to insurance columns
+    // Which verification subset this report covers — "Verified", "Verified (clean)",
+    // "Verified with discrepancies" or "Unverified". Blank = the whole filtered list.
+    // It is stamped on the letterhead and carried into the file name.
+    val subset: String = ""
 )
 
 /**
@@ -44,6 +48,7 @@ object CpvReportPdf {
     private const val LINE = 0xFFCBD5E1.toInt()
     private const val ROW_ALT = 0xFFF0FAF8.toInt()
     private const val GREEN = 0xFF107850.toInt()
+    private const val GOLD = 0xFFB45309.toInt()       // amber ink for "verified with discrepancies"
     private const val ACCENT = 0xFF0E7490.toInt()
 
     private val STAMP = DateTimeFormatter.ofPattern("dd MMM yyyy, h:mm a", Locale.ENGLISH)
@@ -89,6 +94,7 @@ object CpvReportPdf {
         val tdBody = paint(INK, BODY_SIZE, serif)
         val tdBold = paint(INK, BODY_SIZE, serifBold)
         val tdGreen = paint(GREEN, BODY_SIZE, serifBold)
+        val tdGold = paint(GOLD, BODY_SIZE, serifBold)
         val tdMuted = paint(MUTED, BODY_SIZE, serif)
         val footPaint = paint(MUTED, 8f, serif)
 
@@ -108,6 +114,9 @@ object CpvReportPdf {
         val wVer = W_VER - 2 * CELL_PAD
 
         val verifiedCount = accounts.count { it.verified }
+        // Remark-driven discrepancy state, identical to the portal: a verified row carrying a
+        // non-empty remark is "verified with discrepancies"; verified with no remark is clean.
+        val discCount = accounts.count { it.verified && it.remarks.isNotBlank() }
 
         var pageNo = 0
         var page: PdfDocument.Page? = null
@@ -138,9 +147,13 @@ object CpvReportPdf {
                 append(meta.schemeLabel)
                 meta.solId?.takeIf { it.isNotBlank() }?.let { append("   ·   SOL $it") }
                 meta.branchId?.takeIf { it.isNotBlank() }?.let { append("   ·   Branch $it") }
+                meta.subset.takeIf { it.isNotBlank() }?.let { append("   ·   $it only") }
             }
             c.drawText(sub, MARGIN, 53f, subPaint)
-            val r1 = "Accounts: ${accounts.size}   ·   Verified: $verifiedCount / ${accounts.size}"
+            val r1 = buildString {
+                append("Accounts: ${accounts.size}   ·   Verified: $verifiedCount / ${accounts.size}")
+                if (discCount > 0) append("   ·   With discrepancies: $discCount")
+            }
             val r2 = "Generated: ${LocalDateTime.now().format(STAMP)}"
             c.drawText(r1, right - metaRight.measureText(r1), 26f, metaRight)
             c.drawText(r2, right - metaRight.measureText(r2), 44f, metaRight)
@@ -177,14 +190,16 @@ object CpvReportPdf {
             val r = a.record
             val nameLines = wrap(r.name.ifBlank { "—" }, tdBold, wName)
             val statusLines = wrap(r.status.ifBlank { "—" }, tdMuted, wStatus)
+            val disc = a.verified && a.remarks.isNotBlank()
             val verText = if (a.verified) {
                 buildString {
-                    append("Yes")
+                    append(if (disc) "Yes (discrepancy)" else "Yes")
                     if (a.verifiedBy.isNotBlank()) append(" · ${a.verifiedBy}")
                     if (a.verifiedAtMs != null) append(" · ${fmtDate(a.verifiedAtMs)}")
                 }
             } else "—"
-            val verLines = wrap(verText, if (a.verified) tdGreen else tdMuted, wVer)
+            val verInk = if (disc) tdGold else if (a.verified) tdGreen else tdMuted
+            val verLines = wrap(verText, verInk, wVer)
             val rmkLines = wrap(a.remarks.ifBlank { "—" }, tdBody, wRmk - 2 * CELL_PAD)
             val lines = maxOf(nameLines.size, statusLines.size, verLines.size, rmkLines.size, 1)
             val rowH = lines * LINE_H + 6f
@@ -202,8 +217,9 @@ object CpvReportPdf {
             val bal = r.balance?.let { money.format(it) } ?: "—"
             c.drawText(bal, xBal + W_BAL - CELL_PAD - tdBody.measureText(bal), baseY, tdBody)
             statusLines.forEachIndexed { i, ln -> c.drawText(ln, xStatus + CELL_PAD, baseY + i * LINE_H, tdMuted) }
-            verLines.forEachIndexed { i, ln -> c.drawText(ln, xVer + CELL_PAD, baseY + i * LINE_H, if (a.verified) tdGreen else tdMuted) }
-            rmkLines.forEachIndexed { i, ln -> c.drawText(ln, xRmk + CELL_PAD, baseY + i * LINE_H, tdBody) }
+            verLines.forEachIndexed { i, ln -> c.drawText(ln, xVer + CELL_PAD, baseY + i * LINE_H, verInk) }
+            val rmkInk = if (a.remarks.isNotBlank()) tdGold else tdBody
+            rmkLines.forEachIndexed { i, ln -> c.drawText(ln, xRmk + CELL_PAD, baseY + i * LINE_H, rmkInk) }
 
             y += rowH
             c.drawLine(xSl, y, right, y, stroke(LINE, 0.5f))
@@ -212,8 +228,7 @@ object CpvReportPdf {
         page?.let { doc.finishPage(it) }
 
         val dir = File(context.cacheDir, "reports").apply { mkdirs() }
-        val safe = "CPV_${meta.officeName}_${meta.schemeLabel}"
-            .replace(Regex("[^A-Za-z0-9]+"), "_").trim('_').take(60)
+        val safe = reportFileName(meta)
         val file = File(dir, "$safe.pdf")
         FileOutputStream(file).use { doc.writeTo(it) }
         doc.close()
@@ -243,6 +258,7 @@ object CpvReportPdf {
         val tdBody = paint(INK, BODY_SIZE, serif)
         val tdBold = paint(INK, BODY_SIZE, serifBold)
         val tdGreen = paint(GREEN, BODY_SIZE, serifBold)
+        val tdGold = paint(GOLD, BODY_SIZE, serifBold)
         val tdMuted = paint(MUTED, BODY_SIZE, serif)
         val footPaint = paint(MUTED, 8f, serif)
 
@@ -265,6 +281,9 @@ object CpvReportPdf {
         val verW = wVer - 2 * CELL_PAD
 
         val verifiedCount = accounts.count { it.verified }
+        // Remark-driven discrepancy state, identical to the portal: a verified row carrying a
+        // non-empty remark is "verified with discrepancies"; verified with no remark is clean.
+        val discCount = accounts.count { it.verified && it.remarks.isNotBlank() }
         var sumSA = 0.0; var sumPrem = 0.0
 
         var pageNo = 0
@@ -291,9 +310,13 @@ object CpvReportPdf {
                 append(meta.schemeLabel)
                 meta.solId?.takeIf { it.isNotBlank() }?.let { append("   ·   SOL $it") }
                 meta.branchId?.takeIf { it.isNotBlank() }?.let { append("   ·   Branch $it") }
+                meta.subset.takeIf { it.isNotBlank() }?.let { append("   ·   $it only") }
             }
             c.drawText(sub, MARGIN, 53f, subPaint)
-            val r1 = "Policies: ${accounts.size}   ·   Verified: $verifiedCount / ${accounts.size}"
+            val r1 = buildString {
+                append("Policies: ${accounts.size}   ·   Verified: $verifiedCount / ${accounts.size}")
+                if (discCount > 0) append("   ·   With discrepancies: $discCount")
+            }
             val r2 = "Generated: ${LocalDateTime.now().format(STAMP)}"
             c.drawText(r1, right - metaRight.measureText(r1), 26f, metaRight)
             c.drawText(r2, right - metaRight.measureText(r2), 44f, metaRight)
@@ -329,12 +352,14 @@ object CpvReportPdf {
             r.sumAssured?.let { sumSA += it }
             r.premium?.let { sumPrem += it }
             val nameLines = wrap(r.name.ifBlank { "—" }, tdBold, nameW)
+            val disc = a.verified && a.remarks.isNotBlank()
             val verText = if (a.verified) buildString {
-                append("Yes")
+                append(if (disc) "Yes (discrepancy)" else "Yes")
                 if (a.verifiedBy.isNotBlank()) append(" · ${a.verifiedBy}")
                 if (a.verifiedAtMs != null) append(" · ${fmtDate(a.verifiedAtMs)}")
             } else "—"
-            val verLines = wrap(verText, if (a.verified) tdGreen else tdMuted, verW)
+            val verInk = if (disc) tdGold else if (a.verified) tdGreen else tdMuted
+            val verLines = wrap(verText, verInk, verW)
             val rmkLines = wrap(a.remarks.ifBlank { "—" }, tdBody, wRmk - 2 * CELL_PAD)
             val lines = maxOf(nameLines.size, verLines.size, rmkLines.size, 1)
             val rowH = lines * LINE_H + 6f
@@ -355,8 +380,9 @@ object CpvReportPdf {
             c.drawText(monYearIso(r.paidIso, r.paidUpto, r.paidRaw), xPaid + CELL_PAD, baseY, tdMuted)
             val mon = r.monthsPaid?.toString() ?: "—"
             c.drawText(mon, xMon + wMon - CELL_PAD - tdBody.measureText(mon), baseY, tdBody)
-            verLines.forEachIndexed { i, ln -> c.drawText(ln, xVer + CELL_PAD, baseY + i * LINE_H, if (a.verified) tdGreen else tdMuted) }
-            rmkLines.forEachIndexed { i, ln -> c.drawText(ln, xRmk + CELL_PAD, baseY + i * LINE_H, tdBody) }
+            verLines.forEachIndexed { i, ln -> c.drawText(ln, xVer + CELL_PAD, baseY + i * LINE_H, verInk) }
+            val rmkInk = if (a.remarks.isNotBlank()) tdGold else tdBody
+            rmkLines.forEachIndexed { i, ln -> c.drawText(ln, xRmk + CELL_PAD, baseY + i * LINE_H, rmkInk) }
 
             y += rowH
             c.drawLine(xSl, y, right, y, stroke(LINE, 0.5f))
@@ -371,12 +397,23 @@ object CpvReportPdf {
 
         page?.let { doc.finishPage(it) }
         val dir = File(context.cacheDir, "reports").apply { mkdirs() }
-        val safe = "CPV_${meta.officeName}_${meta.schemeLabel}"
-            .replace(Regex("[^A-Za-z0-9]+"), "_").trim('_').take(60)
+        val safe = reportFileName(meta)
         val file = File(dir, "$safe.pdf")
         FileOutputStream(file).use { doc.writeTo(it) }
         doc.close()
         return file
+    }
+
+    /**
+     * `CPV_<office>_<scheme>[_<subset>].pdf`. The office/scheme part is capped on its own so a
+     * long office name can never truncate the subset away — the name must always say which
+     * subset the report holds, since the same office and scheme now yield several of them.
+     */
+    private fun reportFileName(meta: CpvReportMeta): String {
+        val base = "CPV_${meta.officeName}_${meta.schemeLabel}"
+            .replace(Regex("[^A-Za-z0-9]+"), "_").trim('_').take(55)
+        val subset = meta.subset.replace(Regex("[^A-Za-z0-9]+"), "_").trim('_')
+        return if (subset.isEmpty()) base else "${base}_$subset"
     }
 
     /** dd-MM-yyyy from an iso yyyy-mm-dd, else the raw text. */
